@@ -1,0 +1,28 @@
+import type { HTMLAttributes } from 'react'
+
+import { cn } from '@/lib/utils'
+
+export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('quant-panel rounded-lg', className)} {...props} />
+}
+
+export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('flex flex-col gap-1 border-b border-carbon-700 px-4 py-3', className)} {...props} />
+}
+
+export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+  return (
+    <h3
+      className={cn('text-sm font-medium tracking-wide text-silver-100 uppercase', className)}
+      {...props}
+    />
+  )
+}
+
+export function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
+  return <p className={cn('text-xs text-silver-400', className)} {...props} />
+}
+
+export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('px-4 py-3', className)} {...props} />
+}
