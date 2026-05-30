@@ -1,0 +1,70 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Carbon / graphite surfaces */
+  --color-carbon-950: #0a0b0c;
+  --color-carbon-900: #111315;
+  --color-carbon-800: #181b1f;
+  --color-carbon-700: #22262c;
+  --color-carbon-600: #2e333b;
+
+  /* Aged brass accents */
+  --color-brass-400: #c4a574;
+  --color-brass-500: #a88b52;
+  --color-brass-600: #8a7040;
+
+  /* Smoked silver typography */
+  --color-silver-100: #e8eaed;
+  --color-silver-200: #c5c9d0;
+  --color-silver-300: #9aa1ac;
+  --color-silver-400: #6f7785;
+
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', ui-monospace, monospace;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-carbon-950);
+    color: var(--color-silver-100);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-brass-500) 35%, transparent);
+    color: var(--color-silver-100);
+  }
+}
+
+@layer utilities {
+  .quant-mesh-bg {
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, var(--color-brass-600) 12%, transparent), transparent),
+      linear-gradient(180deg, var(--color-carbon-950) 0%, var(--color-carbon-900) 100%);
+  }
+
+  .quant-panel {
+    background: color-mix(in srgb, var(--color-carbon-800) 85%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-carbon-600) 60%, transparent);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-silver-400) 8%, transparent) inset;
+  }
+}
