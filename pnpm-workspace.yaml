@@ -1,0 +1,9 @@
+packages:
+  - '.'
+
+allowBuilds:
+  esbuild: true
+  msw: true
+
+overrides:
+  vite: ^6.0.5

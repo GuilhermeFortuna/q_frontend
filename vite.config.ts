@@ -6,7 +6,13 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 const host = process.env.TAURI_DEV_HOST
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), tsconfigPaths()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    tsconfigPaths({
+      projects: ['./tsconfig.app.json'],
+    }),
+  ],
   clearScreen: false,
   server: {
     port: 1420,
