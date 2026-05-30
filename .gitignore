@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+
+# Build
+dist
+dist-ssr
+*.local
+
+# Tauri
+src-tauri/target
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Test / coverage
+coverage
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MSW
+public/mockServiceWorker.js
