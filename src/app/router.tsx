@@ -55,13 +55,13 @@ const researchRoute = createRoute({
   },
 })
 
+import { BacktestsWorkspace } from '@/workspaces/backtests/BacktestsWorkspace'
+
 const backtestsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/backtests',
-  beforeLoad: () => {
-    syncWorkspace('backtests')
-    throw redirect({ to: '/' })
-  },
+  beforeLoad: () => syncWorkspace('backtests'),
+  component: BacktestsWorkspace,
 })
 
 const routeTree = rootRoute.addChildren([
