@@ -1,5 +1,5 @@
 import { endOfDay, startOfDay } from 'date-fns'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -15,6 +15,7 @@ import {
   type PositionSizingMode,
 } from '@/lib/backtesting/positionSizing'
 import { DEFAULT_MA_TYPE, MA_TYPES, type MaType } from '@/lib/backtesting/maTypes'
+import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
 
 type BacktestConfigFormProps = {
@@ -41,6 +42,43 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
   const [shortMaType, setShortMaType] = useState<MaType>(DEFAULT_MA_TYPE)
   const [longMaType, setLongMaType] = useState<MaType>(DEFAULT_MA_TYPE)
   const [threshold, setThreshold] = useState(0.0)
+
+  const pendingBacktestConfig = useAppStore((s) => s.pendingBacktestConfig)
+  const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
+
+  // Hydrate from a config staged by the Optimizer ("Load into Backtest"), then clear it.
+  useEffect(() => {
+    if (!pendingBacktestConfig) return
+    const cfg = pendingBacktestConfig
+
+    if (cfg.symbol) setSymbol(cfg.symbol)
+    if (cfg.timeframe) setTimeframe(cfg.timeframe)
+    if (cfg.start) setStartDate(startOfDay(new Date(cfg.start)))
+    if (cfg.end) setEndDate(endOfDay(new Date(cfg.end)))
+    if (cfg.initial_capital != null) setCapital(cfg.initial_capital)
+    if (cfg.point_value != null) setPointValue(cfg.point_value)
+    if (cfg.strategy) setStrategy(cfg.strategy)
+
+    const sp = cfg.strategy_params ?? {}
+    if (sp.short_period != null) setShortPeriod(Number(sp.short_period))
+    if (sp.long_period != null) setLongPeriod(Number(sp.long_period))
+    if (sp.short_ma_type != null) setShortMaType(String(sp.short_ma_type) as MaType)
+    if (sp.long_ma_type != null) setLongMaType(String(sp.long_ma_type) as MaType)
+    if (sp.threshold != null) setThreshold(Number(sp.threshold))
+
+    const ps = cfg.position_sizing
+    if (ps?.type === 'fixed_quantity') {
+      setSizingMode('fixed_quantity')
+      setQuantity(ps.quantity)
+    } else if (ps?.type === 'fixed_safety_margin') {
+      setSizingMode('fixed_safety_margin')
+      setSafetyMargin(ps.safety_margin_per_contract)
+      setMinContracts(ps.min_contracts)
+      setMaxContractsInput(ps.max_contracts != null ? String(ps.max_contracts) : '')
+    }
+
+    setPendingBacktestConfig(null)
+  }, [pendingBacktestConfig, setPendingBacktestConfig])
 
   const dateRangeInvalid = startDate >= endDate
 
