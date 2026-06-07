@@ -66,6 +66,10 @@ describe('BacktestConfigForm', () => {
       type: 'fixed_quantity',
       quantity: 1,
     })
+    expect(onSubmit.mock.calls[0][0].strategy_params).toMatchObject({
+      short_ma_type: 'sma',
+      long_ma_type: 'sma',
+    })
   })
 
   it('submits fixed_safety_margin payload with numeric values', async () => {
