@@ -58,7 +58,14 @@ export const handlers = [
     const url = new URL(request.url)
     const timeframe = url.searchParams.get('timeframe') ?? 'D1'
     const count = parseInt(url.searchParams.get('count') ?? '500', 10)
-    return HttpResponse.json(getMockOhlcv(symbol, timeframe, count))
+    const start = url.searchParams.get('start') ?? undefined
+    const end = url.searchParams.get('end') ?? undefined
+    return HttpResponse.json(
+      getMockOhlcv(symbol, timeframe, count, {
+        start,
+        end,
+      }),
+    )
   }),
 
   http.post('*/api/v1/backtest/run', async ({ request }) => {

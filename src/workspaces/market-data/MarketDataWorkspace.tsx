@@ -12,12 +12,8 @@ import {
   ChevronRight,
 } from 'lucide-react'
 
-import {
-  useInstruments,
-  useMarketSnapshot,
-  useOhlcv,
-  useSearchSymbols,
-} from '@/api/queries/market-data'
+import { useInstruments, useMarketSnapshot, useSearchSymbols } from '@/api/queries/market-data'
+import { useProgressiveOhlcv } from '@/api/queries/useProgressiveOhlcv'
 import { CandlestickChart } from '@/components/charts/CandlestickChart'
 import { DEFAULT_INDICATORS, IndicatorsPopover } from '@/components/charts/IndicatorsPopover'
 import { useDrawings } from '@/components/charts/hooks/useDrawings'
@@ -111,10 +107,9 @@ export function MarketDataWorkspace() {
   // 2. Fetch live metrics from queries
   const instrumentsQuery = useInstruments()
   const snapshotQuery = useMarketSnapshot(selectedSymbol)
-  const ohlcvQuery = useOhlcv(selectedSymbol, selectedTimeframe)
-
   const snapshot = snapshotQuery.data
-  const ohlcvData = ohlcvQuery.data || []
+  const ohlcv = useProgressiveOhlcv(selectedSymbol, selectedTimeframe)
+  const ohlcvData = ohlcv.bars
 
   // 2. Local Watchlist State (synced with localStorage)
   const [watchlist, setWatchlist] = useState<Instrument[]>(() => {
@@ -590,17 +585,24 @@ export function MarketDataWorkspace() {
           </div>
 
           {/* Chart panel body */}
-          <div className="min-h-0 flex-1 p-3">
-            {ohlcvQuery.isLoading ? (
+          <div className="relative min-h-0 flex-1 p-3">
+            {(ohlcv.isBackfilling || ohlcv.isProbingRange) && ohlcvData.length > 0 && (
+              <div className="text-brass-400 bg-carbon-950/80 border-brass-500/30 pointer-events-none absolute top-5 left-5 z-10 rounded border px-2 py-1 font-mono text-[10px] tracking-wide">
+                Loading history…
+              </div>
+            )}
+            {ohlcv.isInitialLoading ? (
               <div className="border-carbon-700 bg-carbon-900/40 text-silver-400 flex h-full w-full flex-col items-center justify-center gap-3 rounded-lg border">
                 <Activity className="text-brass-500 h-8 w-8 animate-pulse" />
                 <span className="font-mono text-sm">Loading market candles…</span>
               </div>
-            ) : ohlcvQuery.data && ohlcvQuery.data.length > 0 ? (
+            ) : ohlcvData.length > 0 ? (
               <CandlestickChart
-                data={ohlcvQuery.data}
+                ref={ohlcv.chartRef}
+                data={ohlcvData}
                 symbol={selectedSymbol}
                 timeframe={selectedTimeframe}
+                resetKey={`${selectedSymbol}:${selectedTimeframe}`}
                 showGrid={showGrid}
                 chartType={chartType}
                 indicators={indicators}
@@ -608,10 +610,13 @@ export function MarketDataWorkspace() {
                 drawings={drawings}
                 onDrawingsChange={setDrawings}
                 onHoverBar={setHoveredBar}
+                onViewportChange={ohlcv.handleViewportChange}
               />
             ) : (
               <div className="border-carbon-700 bg-carbon-900/40 flex h-full w-full items-center justify-center rounded-lg border text-rose-300">
-                Failed to load historical data for {selectedSymbol}.
+                {ohlcv.error
+                  ? ohlcv.error.message
+                  : `Failed to load historical data for ${selectedSymbol}.`}
               </div>
             )}
           </div>

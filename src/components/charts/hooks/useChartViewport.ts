@@ -7,7 +7,7 @@ import {
   MIN_VISIBLE_BARS,
 } from '@/components/charts/types/chart'
 
-export function useChartViewport(barCount: number) {
+export function useChartViewport(barCount: number, resetKey: string) {
   const [viewport, setViewport] = useState<ChartViewport>({ startIndex: 0, endIndex: 0 })
 
   useEffect(() => {
@@ -20,7 +20,29 @@ export function useChartViewport(barCount: number) {
       startIndex: Math.max(0, barCount - visible),
       endIndex: barCount - 1,
     })
+  }, [resetKey])
+
+  useEffect(() => {
+    if (barCount === 0) return
+    setViewport((prev) => {
+      if (prev.startIndex === 0 && prev.endIndex === 0) {
+        const visible = Math.min(DEFAULT_VISIBLE_BARS, barCount)
+        return {
+          startIndex: Math.max(0, barCount - visible),
+          endIndex: barCount - 1,
+        }
+      }
+      return prev
+    })
   }, [barCount])
+
+  const shiftViewport = useCallback((delta: number) => {
+    if (delta <= 0) return
+    setViewport((prev) => ({
+      startIndex: prev.startIndex + delta,
+      endIndex: prev.endIndex + delta,
+    }))
+  }, [])
 
   const resetViewport = useCallback(() => {
     if (barCount === 0) return
@@ -83,5 +105,5 @@ export function useChartViewport(barCount: number) {
     [barCount],
   )
 
-  return { viewport, setViewport, resetViewport, fitAll, zoomAt, panBy }
+  return { viewport, setViewport, resetViewport, fitAll, zoomAt, panBy, shiftViewport }
 }

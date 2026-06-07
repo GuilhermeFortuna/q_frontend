@@ -63,7 +63,33 @@ function generateOhlcv(symbol: string, timeframe: string, points = 500): OhlcvBa
   return bars
 }
 
-export function getMockOhlcv(symbol: string, timeframe = 'D1', count = 500): OhlcvBar[] {
+const mockSeriesCache = new Map<string, OhlcvBar[]>()
+
+function getMockSeries(symbol: string, timeframe: string): OhlcvBar[] {
+  const key = `${symbol}:${timeframe}`
+  if (!mockSeriesCache.has(key)) {
+    mockSeriesCache.set(key, generateOhlcv(symbol, timeframe, 5000))
+  }
+  return mockSeriesCache.get(key)!
+}
+
+export function getMockOhlcv(
+  symbol: string,
+  timeframe = 'D1',
+  count = 500,
+  range?: { start?: string; end?: string },
+): OhlcvBar[] {
+  const series = getMockSeries(symbol, timeframe)
+
+  if (range?.start || range?.end) {
+    const startMs = range.start ? new Date(range.start).getTime() : Number.NEGATIVE_INFINITY
+    const endMs = range.end ? new Date(range.end).getTime() : Number.POSITIVE_INFINITY
+    return series.filter((bar) => {
+      const ts = new Date(bar.timestamp).getTime()
+      return ts >= startMs && ts <= endMs
+    })
+  }
+
   const safeCount = Math.min(Math.max(count, 1), 5000)
-  return generateOhlcv(symbol, timeframe, safeCount)
+  return series.slice(-safeCount)
 }

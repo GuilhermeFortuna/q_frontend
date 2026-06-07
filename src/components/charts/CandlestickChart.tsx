@@ -1,4 +1,12 @@
-import { useMemo, useRef, useState, useCallback, useEffect } from 'react'
+import {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react'
 import { ParentSize } from '@visx/responsive'
 import { localPoint } from '@visx/event'
 
@@ -31,10 +39,15 @@ import { macd } from '@/lib/indicators'
 import { newDrawingId } from '@/components/charts/hooks/useDrawings'
 import type { OhlcvBar } from '@/types/api'
 
+export type CandlestickChartHandle = {
+  shiftViewport: (delta: number) => void
+}
+
 export type CandlestickChartProps = {
   data: OhlcvBar[]
   symbol: string
   timeframe?: string
+  resetKey?: string
   showGrid?: boolean
   chartType?: ChartType
   indicators?: IndicatorConfig[]
@@ -45,22 +58,36 @@ export type CandlestickChartProps = {
   onViewportChange?: (viewport: ChartViewport) => void
 }
 
-function ChartInner({
-  width,
-  height,
-  data,
-  timeframe = '1D',
-  showGrid = true,
-  chartType = 'candles',
-  indicators = [],
-  activeDrawingTool = 'cursor',
-  drawings = [],
-  onDrawingsChange,
-  onHoverBar,
-  onViewportChange,
-}: CandlestickChartProps & { width: number; height: number }) {
+const ChartInner = forwardRef<
+  CandlestickChartHandle,
+  CandlestickChartProps & { width: number; height: number }
+>(function ChartInner(
+  {
+    width,
+    height,
+    data,
+    symbol,
+    timeframe = '1D',
+    resetKey,
+    showGrid = true,
+    chartType = 'candles',
+    indicators = [],
+    activeDrawingTool = 'cursor',
+    drawings = [],
+    onDrawingsChange,
+    onHoverBar,
+    onViewportChange,
+  },
+  ref,
+) {
   const processed = useMemo(() => processBars(data), [data])
-  const { viewport, resetViewport, fitAll, zoomAt, panBy } = useChartViewport(processed.length)
+  const viewportResetKey = resetKey ?? `${symbol}:${timeframe}`
+  const { viewport, resetViewport, fitAll, zoomAt, panBy, shiftViewport } = useChartViewport(
+    processed.length,
+    viewportResetKey,
+  )
+
+  useImperativeHandle(ref, () => ({ shiftViewport }), [shiftViewport])
   const visibleBars = useMemo(
     () => processed.slice(viewport.startIndex, viewport.endIndex + 1),
     [processed, viewport],
@@ -372,22 +399,26 @@ function ChartInner({
       </svg>
     </div>
   )
-}
+})
 
-export function CandlestickChart(props: CandlestickChartProps) {
-  if (!props.data || props.data.length === 0) {
+export const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProps>(
+  function CandlestickChart(props, ref) {
+    if (!props.data || props.data.length === 0) {
+      return (
+        <div className="border-carbon-700 bg-carbon-900 text-silver-400 flex h-64 w-full items-center justify-center rounded-lg border">
+          No chart data available.
+        </div>
+      )
+    }
+
     return (
-      <div className="border-carbon-700 bg-carbon-900 text-silver-400 flex h-64 w-full items-center justify-center rounded-lg border">
-        No chart data available.
-      </div>
+      <ParentSize debounceTime={50}>
+        {({ width, height }) =>
+          width > 0 && height > 0 ? (
+            <ChartInner ref={ref} {...props} width={width} height={height} />
+          ) : null
+        }
+      </ParentSize>
     )
-  }
-
-  return (
-    <ParentSize debounceTime={50}>
-      {({ width, height }) =>
-        width > 0 && height > 0 ? <ChartInner {...props} width={width} height={height} /> : null
-      }
-    </ParentSize>
-  )
-}
+  },
+)
