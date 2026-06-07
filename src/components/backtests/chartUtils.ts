@@ -1,3 +1,5 @@
+import { formatDisplayDate } from '@/lib/formatDate'
+
 const CHART_COLORS = {
   grid: '#2e333b',
   axis: '#6f7785',
@@ -13,11 +15,7 @@ const CHART_COLORS = {
 export { CHART_COLORS }
 
 export function formatChartDate(timestamp: string) {
-  return new Date(timestamp).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  return formatDisplayDate(timestamp)
 }
 
 export function formatCurrency(value: number) {

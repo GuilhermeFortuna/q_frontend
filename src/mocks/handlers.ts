@@ -37,6 +37,22 @@ export const handlers = [
     return HttpResponse.json(snapshot)
   }),
 
+  http.get('*/api/v1/market/ohlcv/:symbol/available-range', ({ params, request }) => {
+    const symbol = String(params.symbol).toUpperCase()
+    const url = new URL(request.url)
+    const timeframe = url.searchParams.get('timeframe') ?? 'D1'
+    const end = new Date()
+    const start = new Date(end)
+    start.setFullYear(start.getFullYear() - 5)
+    return HttpResponse.json({
+      symbol,
+      timeframe,
+      start: start.toISOString(),
+      end: end.toISOString(),
+      bar_count: 1200,
+    })
+  }),
+
   http.get('*/api/v1/market/ohlcv/:symbol', ({ params, request }) => {
     const symbol = String(params.symbol).toUpperCase()
     const url = new URL(request.url)

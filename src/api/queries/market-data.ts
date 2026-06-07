@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
 import { toApiTimeframe } from '@/lib/market/timeframes'
-import type { Instrument, MarketSnapshot, OhlcvBar } from '@/types/api'
+import type { Instrument, MarketSnapshot, OhlcvAvailableRange, OhlcvBar } from '@/types/api'
 
 export type OhlcvQueryParams = {
   count?: number
@@ -16,6 +16,8 @@ export const marketDataKeys = {
   snapshot: (symbol: string) => [...marketDataKeys.all, 'snapshot', symbol] as const,
   ohlcv: (symbol: string, timeframe: string, params?: OhlcvQueryParams) =>
     [...marketDataKeys.all, 'ohlcv', symbol, timeframe, params ?? {}] as const,
+  availableRange: (symbol: string, timeframe: string) =>
+    [...marketDataKeys.all, 'available-range', symbol, timeframe] as const,
 }
 
 async function fetchInstruments(): Promise<Instrument[]> {
@@ -59,6 +61,26 @@ export function useMarketSnapshot(symbol: string) {
     queryFn: () => fetchMarketSnapshot(symbol),
     enabled: symbol.length > 0,
     staleTime: 10_000,
+  })
+}
+
+export async function fetchOhlcvAvailableRange(
+  symbol: string,
+  timeframe: string,
+): Promise<OhlcvAvailableRange> {
+  const { data } = await apiClient.get<OhlcvAvailableRange>(
+    `/api/v1/market/ohlcv/${symbol}/available-range`,
+    { params: { timeframe: toApiTimeframe(timeframe) } },
+  )
+  return data
+}
+
+export function useOhlcvAvailableRange(symbol: string, timeframe: string, enabled = false) {
+  return useQuery({
+    queryKey: marketDataKeys.availableRange(symbol, timeframe),
+    queryFn: () => fetchOhlcvAvailableRange(symbol, timeframe),
+    enabled: enabled && symbol.length > 0,
+    staleTime: 60_000,
   })
 }
 

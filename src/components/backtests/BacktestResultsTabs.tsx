@@ -5,6 +5,7 @@ import { DrawdownChart } from '@/components/backtests/DrawdownChart'
 import { EquityCurveChart } from '@/components/backtests/EquityCurveChart'
 import { MonthlyBreakdownTable } from '@/components/backtests/MonthlyBreakdownTable'
 import { MonthlyPnLChart } from '@/components/backtests/MonthlyPnLChart'
+import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
 import type { BacktestResponse, EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
 
@@ -23,6 +24,10 @@ type BacktestResultsTabsProps = {
   monthlyStats: MonthlyStats[]
 }
 
+function formatPositionSize(quantity: number): string {
+  return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2)
+}
+
 function TradeHistoryTable({ trades }: { trades: Trade[] }) {
   return (
     <div className="border-carbon-600/60 overflow-x-auto rounded-lg border">
@@ -31,6 +36,7 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
           <tr>
             <th className="px-4 py-3">Symbol</th>
             <th className="px-4 py-3">Action</th>
+            <th className="px-4 py-3 text-right">Size</th>
             <th className="px-4 py-3">Entry Time</th>
             <th className="px-4 py-3">Entry Price</th>
             <th className="px-4 py-3">Exit Time</th>
@@ -49,10 +55,13 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
                   {trade.action}
                 </span>
               </td>
-              <td className="px-4 py-3">{new Date(trade.entry_time).toLocaleString()}</td>
+              <td className="text-silver-100 px-4 py-3 text-right font-mono tabular-nums">
+                {formatPositionSize(trade.quantity)}
+              </td>
+              <td className="px-4 py-3">{formatDisplayDateTime(trade.entry_time)}</td>
               <td className="px-4 py-3">{trade.entry_price.toFixed(2)}</td>
               <td className="px-4 py-3">
-                {trade.exit_time ? new Date(trade.exit_time).toLocaleString() : '-'}
+                {trade.exit_time ? formatDisplayDateTime(trade.exit_time) : '-'}
               </td>
               <td className="px-4 py-3">{trade.exit_price ? trade.exit_price.toFixed(2) : '-'}</td>
               <td
@@ -64,7 +73,7 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
           ))}
           {trades.length === 0 && (
             <tr>
-              <td colSpan={7} className="text-silver-400 px-4 py-8 text-center">
+              <td colSpan={8} className="text-silver-400 px-4 py-8 text-center">
                 No trades executed in this backtest.
               </td>
             </tr>

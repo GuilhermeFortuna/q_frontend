@@ -1,5 +1,7 @@
 import { format } from 'date-fns'
 
+import { formatDisplayMonth } from '@/lib/formatDate'
+
 import type { EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
 
 function getClosedTrades(trades: Trade[]): Trade[] {
@@ -61,7 +63,7 @@ export function aggregateMonthlyStats(trades: Trade[]): MonthlyStats[] {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, stats]) => ({
       month,
-      label: format(new Date(`${month}-01T00:00:00Z`), 'MMM yyyy'),
+      label: formatDisplayMonth(new Date(`${month}-01T00:00:00Z`)),
       pnl: stats.pnl,
       trades: stats.trades,
       wins: stats.wins,

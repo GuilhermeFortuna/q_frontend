@@ -1,3 +1,17 @@
+export type FixedQuantityPositionSizing = {
+  type: 'fixed_quantity'
+  quantity: number
+}
+
+export type FixedSafetyMarginPositionSizing = {
+  type: 'fixed_safety_margin'
+  safety_margin_per_contract: number
+  min_contracts: number
+  max_contracts: number | null
+}
+
+export type PositionSizingConfig = FixedQuantityPositionSizing | FixedSafetyMarginPositionSizing
+
 export interface BacktestRequest {
   symbol: string
   timeframe?: string
@@ -7,6 +21,7 @@ export interface BacktestRequest {
   point_value?: number
   strategy?: string
   strategy_params?: Record<string, unknown>
+  position_sizing?: PositionSizingConfig
 }
 
 export interface Trade {

@@ -23,6 +23,14 @@ export type OhlcvBar = {
   volume: number
 }
 
+export type OhlcvAvailableRange = {
+  symbol: string
+  timeframe: string
+  start: string
+  end: string
+  bar_count: number
+}
+
 export type MarketSnapshot = {
   symbol: string
   last: number

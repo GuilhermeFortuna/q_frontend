@@ -1,3 +1,5 @@
+import { formatDisplayDate, formatDisplayTime } from '@/lib/formatDate'
+
 export const CHART_TIMEFRAMES = ['1m', '5m', '15m', '30m', '1H', '4H', '1D'] as const
 
 export type ChartTimeframe = (typeof CHART_TIMEFRAMES)[number]
@@ -47,9 +49,8 @@ export function isIntradayTimeframe(timeframe: string): boolean {
 
 /** Format timestamp for x-axis ticks. */
 export function formatTimeAxisLabel(timestamp: string, timeframe: string): string {
-  const date = new Date(timestamp)
   if (isIntradayTimeframe(timeframe)) {
-    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    return formatDisplayTime(timestamp)
   }
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return formatDisplayDate(timestamp)
 }

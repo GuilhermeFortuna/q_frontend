@@ -27,3 +27,14 @@ export function getDateRangeFromPreset(preset: DatePreset): { start: Date; end: 
 
 export const defaultBacktestStart = startOfDay(subMonths(new Date(), 12))
 export const defaultBacktestEnd = endOfDay(new Date())
+
+/** Map backend earliest bar to a backtest range ending today. */
+export function getAllAvailableDateRange(earliestAvailable: string | Date): {
+  start: Date
+  end: Date
+} {
+  return {
+    start: startOfDay(new Date(earliestAvailable)),
+    end: endOfDay(new Date()),
+  }
+}

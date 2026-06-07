@@ -1,5 +1,7 @@
+import { format } from 'date-fns'
 import { describe, expect, it } from 'vitest'
 
+import { getAllAvailableDateRange } from '@/lib/backtesting/dateRange'
 import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/performance'
 import type { Trade } from '@/types/backtesting'
 
@@ -26,6 +28,15 @@ function makeTrade(
     ...overrides,
   }
 }
+
+describe('getAllAvailableDateRange', () => {
+  it('uses backend earliest start and today as end', () => {
+    const { start, end } = getAllAvailableDateRange('2020-01-01T12:00:00')
+
+    expect(format(start, 'yyyy-MM-dd')).toBe('2020-01-01')
+    expect(format(end, 'yyyy-MM-dd')).toBe(format(new Date(), 'yyyy-MM-dd'))
+  })
+})
 
 describe('buildEquityCurve', () => {
   it('returns empty array for no closed trades', () => {

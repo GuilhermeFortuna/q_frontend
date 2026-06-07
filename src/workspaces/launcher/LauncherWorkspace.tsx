@@ -5,6 +5,7 @@ import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSystemHealth } from '@/api/queries/system'
+import { formatDisplayDateTime } from '@/lib/formatDate'
 
 const workspaceCards = [
   {
@@ -32,13 +33,13 @@ export function LauncherWorkspace() {
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         className="text-center"
       >
-        <p className="mb-2 font-mono text-xs tracking-[0.35em] text-brass-500 uppercase">
+        <p className="text-brass-500 mb-2 font-mono text-xs tracking-[0.35em] uppercase">
           Quant Desktop
         </p>
-        <h1 className="text-3xl font-medium tracking-tight text-silver-100">
+        <h1 className="text-silver-100 text-3xl font-medium tracking-tight">
           Research infrastructure, engineered.
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm text-silver-400">
+        <p className="text-silver-400 mx-auto mt-3 max-w-xl text-sm">
           Phase 1 foundation: Tauri shell, React workspaces, mock API, and the carbon / brass visual
           system. Connect q_backend when ready.
         </p>
@@ -57,7 +58,7 @@ export function LauncherWorkspace() {
               <Card className="h-full">
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 text-brass-400" />
+                    <Icon className="text-brass-400 h-4 w-4" />
                     <CardTitle>{item.title}</CardTitle>
                   </div>
                   <CardDescription>{item.description}</CardDescription>
@@ -88,21 +89,21 @@ export function LauncherWorkspace() {
             <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
               <div>
                 <dt className="text-silver-400">Version</dt>
-                <dd className="font-mono text-silver-100">{health.backendVersion}</dd>
+                <dd className="text-silver-100 font-mono">{health.backendVersion}</dd>
               </div>
               <div>
                 <dt className="text-silver-400">Data lake</dt>
-                <dd className="font-mono capitalize text-silver-100">{health.dataLakeStatus}</dd>
+                <dd className="text-silver-100 font-mono capitalize">{health.dataLakeStatus}</dd>
               </div>
               <div className="col-span-2">
                 <dt className="text-silver-400">Last sync</dt>
-                <dd className="font-mono text-silver-100">
-                  {new Date(health.lastSyncAt).toLocaleString()}
+                <dd className="text-silver-100 font-mono">
+                  {formatDisplayDateTime(health.lastSyncAt)}
                 </dd>
               </div>
             </dl>
           ) : (
-            <p className="text-sm text-silver-400">Unable to load health endpoint.</p>
+            <p className="text-silver-400 text-sm">Unable to load health endpoint.</p>
           )}
         </CardContent>
       </Card>

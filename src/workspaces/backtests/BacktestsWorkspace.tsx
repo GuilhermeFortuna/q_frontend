@@ -36,7 +36,7 @@ export function BacktestsWorkspace() {
     : null
 
   return (
-    <div className="bg-carbon-950 text-silver-100 flex h-full w-full flex-col gap-6 overflow-hidden p-6 md:flex-row">
+    <div className="bg-carbon-950 text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col gap-4 overflow-hidden md:flex-row md:gap-6">
       <BacktestConfigForm
         loading={runBacktest.isPending}
         error={errorMessage}
