@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { toApiTimeframe, timeframeToMs, isIntradayTimeframe } from '@/lib/market/timeframes'
+import {
+  formatCrosshairLabel,
+  formatTimeAxisLabel,
+  toApiTimeframe,
+  timeframeToMs,
+  isIntradayTimeframe,
+} from '@/lib/market/timeframes'
 
 describe('timeframes', () => {
   it('maps UI labels to MT5 codes', () => {
@@ -17,5 +23,17 @@ describe('timeframes', () => {
   it('detects intraday timeframes', () => {
     expect(isIntradayTimeframe('1m')).toBe(true)
     expect(isIntradayTimeframe('1D')).toBe(false)
+  })
+
+  it('formats axis labels with time-only for intraday', () => {
+    const ts = '2026-01-15T14:30:45.000Z'
+    expect(formatTimeAxisLabel(ts, '1m')).toMatch(/^\d{2}:\d{2}$/)
+    expect(formatTimeAxisLabel(ts, '1D')).toBe('2026/01/15')
+  })
+
+  it('formats crosshair labels with full date and time for intraday', () => {
+    const ts = '2026-01-15T14:30:45.000Z'
+    expect(formatCrosshairLabel(ts, '1m')).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/)
+    expect(formatCrosshairLabel(ts, '1D')).toBe('2026/01/15')
   })
 })

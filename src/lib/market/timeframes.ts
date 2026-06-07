@@ -1,4 +1,4 @@
-import { formatDisplayDate, formatDisplayTime } from '@/lib/formatDate'
+import { formatDisplayDate, formatDisplayDateTime, formatDisplayTime } from '@/lib/formatDate'
 
 export const CHART_TIMEFRAMES = ['1m', '5m', '15m', '30m', '1H', '4H', '1D'] as const
 
@@ -51,6 +51,14 @@ export function isIntradayTimeframe(timeframe: string): boolean {
 export function formatTimeAxisLabel(timestamp: string, timeframe: string): string {
   if (isIntradayTimeframe(timeframe)) {
     return formatDisplayTime(timestamp)
+  }
+  return formatDisplayDate(timestamp)
+}
+
+/** Format timestamp for crosshair / hover overlay labels. */
+export function formatCrosshairLabel(timestamp: string, timeframe: string): string {
+  if (isIntradayTimeframe(timeframe)) {
+    return formatDisplayDateTime(timestamp)
   }
   return formatDisplayDate(timestamp)
 }

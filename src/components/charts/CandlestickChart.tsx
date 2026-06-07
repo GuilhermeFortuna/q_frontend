@@ -272,10 +272,6 @@ const ChartInner = forwardRef<
         background: 'radial-gradient(circle at 50% 30%, #16273f 0%, #07101c 100%)',
       }}
     >
-      <div className="pointer-events-none absolute inset-0 opacity-5">
-        <div className="h-full w-full bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:40px_30px]" />
-      </div>
-
       <button
         type="button"
         onClick={resetViewport}

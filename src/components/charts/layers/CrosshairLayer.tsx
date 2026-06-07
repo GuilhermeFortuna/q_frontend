@@ -2,7 +2,7 @@ import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
 import type { ProcessedBar } from '@/components/charts/types/chart'
 import { BRASS_COLOR } from '@/components/charts/types/chart'
-import { formatTimeAxisLabel } from '@/lib/market/timeframes'
+import { formatCrosshairLabel } from '@/lib/market/timeframes'
 import { barCenterX } from '@/components/charts/hooks/useChartScales'
 
 type CrosshairLayerProps = {
@@ -28,6 +28,8 @@ export function CrosshairLayer({
 
   const cx = barCenterX(xScale, activeBar.timestamp) + left
   const priceY = mouseY ?? priceScale(activeBar.close)
+  const timeLabel = formatCrosshairLabel(activeBar.timestamp, timeframe)
+  const timeLabelWidth = Math.max(72, timeLabel.length * 5.6 + 12)
 
   return (
     <g pointerEvents="none">
@@ -66,9 +68,9 @@ export function CrosshairLayer({
         {activeBar.close.toFixed(2)}
       </text>
       <rect
-        x={cx - 36}
+        x={cx - timeLabelWidth / 2}
         y={layout.priceTop + layout.priceHeight + 4}
-        width={72}
+        width={timeLabelWidth}
         height={16}
         rx={3}
         fill="rgba(7, 16, 28, 0.9)"
@@ -82,7 +84,7 @@ export function CrosshairLayer({
         fontSize={9}
         fontFamily="monospace"
       >
-        {formatTimeAxisLabel(activeBar.timestamp, timeframe)}
+        {timeLabel}
       </text>
     </g>
   )
