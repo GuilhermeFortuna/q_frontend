@@ -1,20 +1,23 @@
 import { useState } from 'react'
 
 import { BacktestMetricsBar } from '@/components/backtests/BacktestMetricsBar'
+import { BacktestStrategyChart } from '@/components/backtests/BacktestStrategyChart'
 import { DrawdownChart } from '@/components/backtests/DrawdownChart'
 import { EquityCurveChart } from '@/components/backtests/EquityCurveChart'
 import { MonthlyBreakdownTable } from '@/components/backtests/MonthlyBreakdownTable'
 import { MonthlyPnLChart } from '@/components/backtests/MonthlyPnLChart'
 import { formatDisplayDateTime } from '@/lib/formatDate'
+import { formatCurrency, formatSignedCurrency } from '@/components/backtests/chartUtils'
 import { cn } from '@/lib/utils'
 import type { BacktestResponse, EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
 
-type TabId = 'performance' | 'monthly' | 'trades'
+type TabId = 'performance' | 'monthly' | 'trade-chart' | 'trades'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'performance', label: 'Performance' },
   { id: 'monthly', label: 'Monthly' },
-  { id: 'trades', label: 'Trades' },
+  { id: 'trade-chart', label: 'Trade Chart' },
+  { id: 'trades', label: 'Trade List' },
 ]
 
 type BacktestResultsTabsProps = {
@@ -22,6 +25,8 @@ type BacktestResultsTabsProps = {
   initialCapital: number
   equityCurve: EquityPoint[]
   monthlyStats: MonthlyStats[]
+  symbol: string
+  timeframe: string
 }
 
 function formatPositionSize(quantity: number): string {
@@ -59,15 +64,17 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
                 {formatPositionSize(trade.quantity)}
               </td>
               <td className="px-4 py-3">{formatDisplayDateTime(trade.entry_time)}</td>
-              <td className="px-4 py-3">{trade.entry_price.toFixed(2)}</td>
+              <td className="px-4 py-3">{formatCurrency(trade.entry_price)}</td>
               <td className="px-4 py-3">
                 {trade.exit_time ? formatDisplayDateTime(trade.exit_time) : '-'}
               </td>
-              <td className="px-4 py-3">{trade.exit_price ? trade.exit_price.toFixed(2) : '-'}</td>
+              <td className="px-4 py-3">
+                {trade.exit_price != null ? formatCurrency(trade.exit_price) : '-'}
+              </td>
               <td
-                className={`px-4 py-3 text-right font-medium ${trade.pnl && trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+                className={`px-4 py-3 text-right font-medium tabular-nums ${trade.pnl && trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
               >
-                {trade.pnl ? (trade.pnl >= 0 ? '+' : '') + trade.pnl.toFixed(2) : '-'}
+                {trade.pnl != null ? formatSignedCurrency(trade.pnl) : '-'}
               </td>
             </tr>
           ))}
@@ -89,6 +96,8 @@ export function BacktestResultsTabs({
   initialCapital,
   equityCurve,
   monthlyStats,
+  symbol,
+  timeframe,
 }: BacktestResultsTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('performance')
 
@@ -135,6 +144,18 @@ export function BacktestResultsTabs({
             <h3 className="text-silver-100 mb-4 text-lg font-semibold">Monthly Breakdown</h3>
             <MonthlyBreakdownTable data={monthlyStats} />
           </div>
+        </div>
+      )}
+
+      {activeTab === 'trade-chart' && (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <BacktestStrategyChart
+            bars={results.bars}
+            indicators={results.indicators}
+            trades={results.trades}
+            symbol={symbol}
+            timeframe={timeframe}
+          />
         </div>
       )}
 

@@ -10,6 +10,7 @@ import type { BacktestRequest } from '@/types/backtesting'
 export function BacktestsWorkspace() {
   const runBacktest = useRunBacktest()
   const [lastCapital, setLastCapital] = useState(100000)
+  const [lastRequest, setLastRequest] = useState<BacktestRequest | null>(null)
 
   const equityCurve = useMemo(() => {
     if (!runBacktest.data) return []
@@ -23,6 +24,7 @@ export function BacktestsWorkspace() {
 
   const handleSubmit = (request: BacktestRequest) => {
     setLastCapital(request.initial_capital ?? 100000)
+    setLastRequest(request)
     runBacktest.mutate(request)
   }
 
@@ -36,7 +38,7 @@ export function BacktestsWorkspace() {
     : null
 
   return (
-    <div className="bg-carbon-950 text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col gap-4 overflow-hidden md:flex-row md:gap-6">
+    <div className="text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col gap-4 overflow-hidden md:flex-row md:gap-6">
       <BacktestConfigForm
         loading={runBacktest.isPending}
         error={errorMessage}
@@ -57,9 +59,11 @@ export function BacktestsWorkspace() {
             initialCapital={lastCapital}
             equityCurve={equityCurve}
             monthlyStats={monthlyStats}
+            symbol={lastRequest?.symbol ?? runBacktest.data.trades[0]?.symbol ?? '—'}
+            timeframe={lastRequest?.timeframe ?? 'D1'}
           />
         ) : (
-          <div className="border-carbon-600/60 bg-carbon-900/20 flex flex-1 items-center justify-center rounded-xl border-2 border-dashed">
+          <div className="border-carbon-600/60 flex flex-1 items-center justify-center rounded-xl border-2 border-dashed bg-transparent">
             <div className="text-center">
               <h3 className="text-silver-200 text-xl font-medium">No Results Yet</h3>
               <p className="text-silver-400 mt-2 max-w-sm text-sm">
