@@ -11,7 +11,7 @@ export type WorkspaceSlice = {
 
 export const createWorkspaceSlice: StateCreator<WorkspaceSlice> = (set) => ({
   activeWorkspace: 'launcher',
-  selectedSymbol: 'SPY',
+  selectedSymbol: 'PETR4',
   setActiveWorkspace: (workspace) => set({ activeWorkspace: workspace }),
   setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
 })
