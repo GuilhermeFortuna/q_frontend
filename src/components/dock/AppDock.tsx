@@ -26,10 +26,17 @@ type AppDockProps = {
 }
 
 export function AppDock({ activeWorkspace }: AppDockProps) {
+  const isLauncher = activeWorkspace === 'launcher'
+
   return (
     <nav
       aria-label="Workspace dock"
-      className="border-carbon-600/80 bg-carbon-900/90 fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-end gap-1 rounded-xl border px-2 py-2 shadow-lg backdrop-blur-md"
+      className={cn(
+        'border-brass-600/30 bg-espresso-900/75 fixed left-1/2 z-20 flex -translate-x-1/2 items-end shadow-lg shadow-black/30 backdrop-blur-lg',
+        isLauncher
+          ? 'bottom-[18%] w-[min(720px,58vw)] justify-evenly gap-3 rounded-3xl border px-8 py-5'
+          : 'bottom-8 gap-1 rounded-2xl border px-3 py-2.5',
+      )}
     >
       {dockItems.map((item) => {
         const Icon = item.icon
@@ -40,10 +47,17 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
             <span
               key={item.id}
               title={`${item.label} (coming soon)`}
-              className="text-silver-400 flex cursor-not-allowed flex-col items-center gap-1 rounded-lg px-3 py-2 opacity-40"
+              className={cn(
+                'text-cream-300 flex cursor-not-allowed flex-col items-center opacity-40',
+                isLauncher ? 'gap-2 rounded-xl px-6 py-4' : 'gap-1 rounded-lg px-4 py-2.5',
+              )}
             >
-              <Icon className="h-5 w-5" />
-              <span className="text-[10px] tracking-wide uppercase">{item.label}</span>
+              <Icon className={isLauncher ? 'h-9 w-9' : 'h-6 w-6'} />
+              <span
+                className={cn('tracking-wide uppercase', isLauncher ? 'text-xs' : 'text-[11px]')}
+              >
+                {item.label}
+              </span>
             </span>
           )
         }
@@ -53,19 +67,30 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
             key={item.id}
             to={item.to}
             className={cn(
-              'text-silver-300 relative flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-colors',
-              isActive ? 'text-brass-400' : 'hover:text-silver-100',
+              'text-cream-300 relative flex flex-col items-center transition-colors',
+              isLauncher ? 'gap-2 rounded-xl px-6 py-4' : 'gap-1 rounded-lg px-4 py-2.5',
+              isActive ? 'text-gold-400' : 'hover:text-cream-200',
             )}
           >
             {isActive ? (
               <motion.span
                 layoutId="dock-active"
-                className="bg-brass-600/15 ring-brass-500/40 absolute inset-0 rounded-lg ring-1"
+                className={cn(
+                  'bg-brass-600/20 ring-gold-400/50 absolute inset-0 ring-1',
+                  isLauncher ? 'rounded-xl' : 'rounded-lg',
+                )}
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               />
             ) : null}
-            <Icon className="relative h-5 w-5" />
-            <span className="relative text-[10px] tracking-wide uppercase">{item.label}</span>
+            <Icon className={cn('relative', isLauncher ? 'h-9 w-9' : 'h-6 w-6')} />
+            <span
+              className={cn(
+                'relative tracking-wide uppercase',
+                isLauncher ? 'text-xs' : 'text-[11px]',
+              )}
+            >
+              {item.label}
+            </span>
           </Link>
         )
       })}
