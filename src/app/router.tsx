@@ -56,6 +56,7 @@ const researchRoute = createRoute({
 })
 
 import { BacktestsWorkspace } from '@/workspaces/backtests/BacktestsWorkspace'
+import { OptimizeWorkspace } from '@/workspaces/optimize/OptimizeWorkspace'
 
 const backtestsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -64,12 +65,20 @@ const backtestsRoute = createRoute({
   component: BacktestsWorkspace,
 })
 
+const optimizeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/optimize',
+  beforeLoad: () => syncWorkspace('optimize'),
+  component: OptimizeWorkspace,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   marketDataRoute,
   systemRoute,
   researchRoute,
   backtestsRoute,
+  optimizeRoute,
 ])
 
 export const router = createRouter({ routeTree })

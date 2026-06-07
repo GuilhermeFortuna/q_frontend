@@ -1,4 +1,10 @@
-export type WorkspaceId = 'launcher' | 'market-data' | 'research' | 'backtests' | 'system'
+export type WorkspaceId =
+  | 'launcher'
+  | 'market-data'
+  | 'research'
+  | 'backtests'
+  | 'optimize'
+  | 'system'
 
 export type SystemHealth = {
   status: 'healthy' | 'degraded' | 'down'

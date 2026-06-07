@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Activity, BarChart3, FlaskConical, Home, Settings } from 'lucide-react'
+import { Activity, BarChart3, FlaskConical, Home, Settings, SlidersHorizontal } from 'lucide-react'
 import { motion } from 'motion/react'
 
 import { cn } from '@/lib/utils'
@@ -18,6 +18,7 @@ const dockItems: DockItem[] = [
   { id: 'market-data', label: 'Market', to: '/market-data', icon: BarChart3, enabled: true },
   { id: 'research', label: 'Research', to: '/research', icon: FlaskConical, enabled: false },
   { id: 'backtests', label: 'Backtests', to: '/backtests', icon: Activity, enabled: true },
+  { id: 'optimize', label: 'Optimize', to: '/optimize', icon: SlidersHorizontal, enabled: true },
   { id: 'system', label: 'System', to: '/system', icon: Settings, enabled: true },
 ]
 

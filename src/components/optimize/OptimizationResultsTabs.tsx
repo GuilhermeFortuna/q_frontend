@@ -1,0 +1,100 @@
+import { useMemo, useState } from 'react'
+
+import { BestParamsCard } from '@/components/optimize/BestParamsCard'
+import { OptimizationLogs } from '@/components/optimize/OptimizationLogs'
+import { OptimizationMetricsBar } from '@/components/optimize/OptimizationMetricsBar'
+import { OptimizationScatter } from '@/components/optimize/OptimizationScatter'
+import { TrialsTable } from '@/components/optimize/TrialsTable'
+import { cn } from '@/lib/utils'
+import type { OptimizationBacktestConfig, OptimizationResults } from '@/types/optimization'
+
+type TabId = 'overview' | 'chart' | 'trials' | 'logs'
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'chart', label: 'Chart' },
+  { id: 'trials', label: 'Trials' },
+  { id: 'logs', label: 'Logs' },
+]
+
+type OptimizationResultsTabsProps = {
+  results: OptimizationResults
+  backtest: OptimizationBacktestConfig
+  statusLabel?: string
+}
+
+export function OptimizationResultsTabs({
+  results,
+  backtest,
+  statusLabel,
+}: OptimizationResultsTabsProps) {
+  const [activeTab, setActiveTab] = useState<TabId>('overview')
+  const [selectedTrialNumber, setSelectedTrialNumber] = useState<number | null>(
+    results.best_trial?.number ?? null,
+  )
+
+  const selectedTrial = useMemo(
+    () => results.trials.find((t) => t.number === selectedTrialNumber) ?? results.best_trial,
+    [results.trials, results.best_trial, selectedTrialNumber],
+  )
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+        <div className="border-carbon-600/60 flex gap-1 rounded-lg border p-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                activeTab === tab.id
+                  ? 'bg-brass-600/20 text-brass-400'
+                  : 'text-silver-400 hover:text-silver-200',
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {statusLabel && <span className="text-silver-400 text-xs">{statusLabel}</span>}
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {activeTab === 'overview' && (
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+            <OptimizationMetricsBar results={results} />
+            <BestParamsCard
+              results={results}
+              backtest={backtest}
+              trial={selectedTrial}
+              title={
+                selectedTrial?.number === results.best_trial?.number
+                  ? undefined
+                  : `Selected Trial #${selectedTrial?.number ?? '—'}`
+              }
+            />
+            <OptimizationScatter results={results} selectedTrialNumber={selectedTrialNumber} />
+          </div>
+        )}
+
+        {activeTab === 'chart' && (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <OptimizationScatter results={results} selectedTrialNumber={selectedTrialNumber} />
+          </div>
+        )}
+
+        {activeTab === 'trials' && (
+          <TrialsTable
+            results={results}
+            selectedTrialNumber={selectedTrialNumber}
+            onSelectTrial={setSelectedTrialNumber}
+          />
+        )}
+
+        {activeTab === 'logs' && <OptimizationLogs results={results} />}
+      </div>
+    </div>
+  )
+}

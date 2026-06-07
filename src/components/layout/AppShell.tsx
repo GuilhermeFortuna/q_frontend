@@ -17,9 +17,9 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="relative flex min-h-full flex-col">
       <QuantBackground />
-      <header className="border-brass-600/20 bg-espresso-950/40 flex items-center justify-between border-b px-6 py-4 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <QuantEmblem />
+      <header className="border-brass-600/20 bg-espresso-950/40 flex items-center justify-between border-b px-6 py-2.5 backdrop-blur-md">
+        <div className="flex items-center gap-2.5">
+          <QuantEmblem className="h-10 w-10" />
           <div>
             <p className="text-silver-100 text-sm font-medium tracking-[0.2em] uppercase">Quant</p>
             <p className="text-silver-400 text-xs">Desktop research platform</p>
