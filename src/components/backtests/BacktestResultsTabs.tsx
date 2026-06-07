@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FileDown, Loader2 } from 'lucide-react'
 
 import { BacktestMetricsBar } from '@/components/backtests/BacktestMetricsBar'
 import { BacktestStrategyChart } from '@/components/backtests/BacktestStrategyChart'
@@ -8,8 +9,15 @@ import { MonthlyBreakdownTable } from '@/components/backtests/MonthlyBreakdownTa
 import { MonthlyPnLChart } from '@/components/backtests/MonthlyPnLChart'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { formatCurrency, formatSignedCurrency } from '@/components/backtests/chartUtils'
+import { generateBacktestReport } from '@/lib/reports/backtestReport'
 import { cn } from '@/lib/utils'
-import type { BacktestResponse, EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
+import type {
+  BacktestRequest,
+  BacktestResponse,
+  EquityPoint,
+  MonthlyStats,
+  Trade,
+} from '@/types/backtesting'
 
 type TabId = 'performance' | 'monthly' | 'trade-chart' | 'trades'
 
@@ -22,6 +30,7 @@ const TABS: { id: TabId; label: string }[] = [
 
 type BacktestResultsTabsProps = {
   results: BacktestResponse
+  request: BacktestRequest | null
   initialCapital: number
   equityCurve: EquityPoint[]
   monthlyStats: MonthlyStats[]
@@ -93,6 +102,7 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
 
 export function BacktestResultsTabs({
   results,
+  request,
   initialCapital,
   equityCurve,
   monthlyStats,
@@ -100,6 +110,31 @@ export function BacktestResultsTabs({
   timeframe,
 }: BacktestResultsTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('performance')
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+
+  const handleExport = async () => {
+    if (exporting) return
+    setExporting(true)
+    setExportError(null)
+    try {
+      await generateBacktestReport({
+        results,
+        request,
+        initialCapital,
+        equityCurve,
+        monthlyStats,
+        symbol,
+        timeframe,
+      })
+    } catch (err) {
+      setExportError(
+        err instanceof Error ? err.message : typeof err === 'string' ? err : 'Failed to export PDF',
+      )
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden pr-2">
@@ -107,7 +142,7 @@ export function BacktestResultsTabs({
         <BacktestMetricsBar metrics={results.metrics} />
       </div>
 
-      <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
+      <div className="border-carbon-600/60 mb-4 flex shrink-0 items-center gap-1 border-b">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -123,6 +158,27 @@ export function BacktestResultsTabs({
             {tab.label}
           </button>
         ))}
+
+        <div className="ml-auto flex items-center gap-2 pb-1">
+          {exportError && (
+            <span className="max-w-[16rem] truncate text-xs text-rose-400" title={exportError}>
+              {exportError}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="border-carbon-600/60 text-silver-200 hover:border-brass-400/60 hover:text-brass-400 inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {exporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="h-4 w-4" />
+            )}
+            {exporting ? 'Exporting…' : 'Export PDF'}
+          </button>
+        </div>
       </div>
 
       {activeTab === 'performance' && (

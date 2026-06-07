@@ -56,6 +56,7 @@ export function BacktestsWorkspace() {
         ) : runBacktest.data ? (
           <BacktestResultsTabs
             results={runBacktest.data}
+            request={lastRequest}
             initialCapital={lastCapital}
             equityCurve={equityCurve}
             monthlyStats={monthlyStats}
