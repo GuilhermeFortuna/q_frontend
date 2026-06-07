@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { ChartViewport } from '@/components/charts/types/chart'
 import {
@@ -9,17 +9,25 @@ import {
 
 export function useChartViewport(barCount: number) {
   const [viewport, setViewport] = useState<ChartViewport>({ startIndex: 0, endIndex: 0 })
+  const initializedForBarCount = useRef<number | null>(null)
 
   useEffect(() => {
     if (barCount === 0) {
       setViewport({ startIndex: 0, endIndex: 0 })
+      initializedForBarCount.current = 0
       return
     }
+
+    if (initializedForBarCount.current === barCount) {
+      return
+    }
+
     const visible = Math.min(DEFAULT_VISIBLE_BARS, barCount)
     setViewport({
       startIndex: Math.max(0, barCount - visible),
       endIndex: barCount - 1,
     })
+    initializedForBarCount.current = barCount
   }, [barCount])
 
   const resetViewport = useCallback(() => {
