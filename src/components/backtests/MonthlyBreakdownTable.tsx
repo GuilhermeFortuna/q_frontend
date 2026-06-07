@@ -1,3 +1,4 @@
+import { formatSignedCurrency } from '@/components/backtests/chartUtils'
 import type { MonthlyStats } from '@/types/backtesting'
 
 type MonthlyBreakdownTableProps = {
@@ -31,10 +32,9 @@ export function MonthlyBreakdownTable({ data }: MonthlyBreakdownTableProps) {
             <tr key={row.month} className="border-carbon-700/50 hover:bg-carbon-800/30 border-b">
               <td className="text-silver-100 px-4 py-3 font-medium">{row.label}</td>
               <td
-                className={`px-4 py-3 text-right font-medium ${row.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+                className={`px-4 py-3 text-right font-medium tabular-nums ${row.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
               >
-                {row.pnl >= 0 ? '+' : ''}
-                {row.pnl.toFixed(2)}
+                {formatSignedCurrency(row.pnl)}
               </td>
               <td className="px-4 py-3 text-right">{row.trades}</td>
               <td className="px-4 py-3 text-right text-emerald-400">{row.wins}</td>

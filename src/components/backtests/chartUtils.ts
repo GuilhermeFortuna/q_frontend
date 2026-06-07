@@ -19,8 +19,15 @@ export function formatChartDate(timestamp: string) {
 }
 
 export function formatCurrency(value: number) {
-  return value.toLocaleString(undefined, {
+  return value.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+export function formatSignedCurrency(value: number) {
+  const formatted = formatCurrency(Math.abs(value))
+  if (value > 0) return `+${formatted}`
+  if (value < 0) return `-${formatted}`
+  return formatted
 }

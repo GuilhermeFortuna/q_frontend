@@ -8,10 +8,20 @@
   --color-carbon-700: #22262c;
   --color-carbon-600: #2e333b;
 
+  /* Warm espresso surfaces (background image palette) */
+  --color-espresso-950: #0d0907;
+  --color-espresso-900: #1a1008;
+  --color-espresso-800: #2d1b14;
+
   /* Aged brass accents */
   --color-brass-400: #c4a574;
   --color-brass-500: #a88b52;
   --color-brass-600: #8a7040;
+
+  /* Gold / cream accents (background image palette) */
+  --color-gold-400: #d4b06a;
+  --color-cream-300: #c9b896;
+  --color-cream-200: #f0e6d0;
 
   /* Smoked silver typography */
   --color-silver-100: #e8eaed;
@@ -43,7 +53,7 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--color-carbon-950);
+    background-color: var(--color-espresso-950);
     color: var(--color-silver-100);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -56,15 +66,9 @@
 }
 
 @layer utilities {
-  .quant-mesh-bg {
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, var(--color-brass-600) 12%, transparent), transparent),
-      linear-gradient(180deg, var(--color-carbon-950) 0%, var(--color-carbon-900) 100%);
-  }
-
   .quant-panel {
-    background: color-mix(in srgb, var(--color-carbon-800) 85%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-carbon-600) 60%, transparent);
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-silver-400) 8%, transparent) inset;
+    background: color-mix(in srgb, var(--color-espresso-900) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-brass-600) 25%, transparent);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-gold-400) 8%, transparent) inset;
   }
 }

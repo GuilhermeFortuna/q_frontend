@@ -1,4 +1,10 @@
-import type { BacktestRequest, BacktestResponse, Trade } from '@/types/backtesting'
+import type { OhlcvBar } from '@/types/api'
+import type {
+  BacktestRequest,
+  BacktestResponse,
+  ChartIndicatorSeries,
+  Trade,
+} from '@/types/backtesting'
 
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000
@@ -102,13 +108,99 @@ function computeMetrics(trades: Trade[], initialCapital: number) {
   }
 }
 
+function sma(values: number[], period: number): (number | null)[] {
+  return values.map((_, i) => {
+    if (i < period - 1) return null
+    const slice = values.slice(i - period + 1, i + 1)
+    return slice.reduce((sum, v) => sum + v, 0) / period
+  })
+}
+
+function generateMockChartData(
+  request: BacktestRequest,
+  trades: Trade[],
+): { bars: OhlcvBar[]; indicators: ChartIndicatorSeries[]; trades: Trade[] } {
+  const shortPeriod = Number(request.strategy_params?.short_period ?? 50)
+  const longPeriod = Number(request.strategy_params?.long_period ?? 200)
+  const barCount = 120
+  const now = Date.now()
+  const dayMs = 24 * 60 * 60 * 1000
+
+  const closes: number[] = []
+  const bars: OhlcvBar[] = []
+
+  for (let i = 0; i < barCount; i += 1) {
+    const close = 40 + seededRandom(i * 11) * 10 + i * 0.05
+    closes.push(close)
+    const open = close - 0.3
+    bars.push({
+      timestamp: new Date(now - (barCount - i) * dayMs).toISOString(),
+      open: Number(open.toFixed(2)),
+      high: Number((close + 0.8).toFixed(2)),
+      low: Number((open - 0.8).toFixed(2)),
+      close: Number(close.toFixed(2)),
+      volume: 1000 + i * 10,
+    })
+  }
+
+  const maShort = sma(closes, shortPeriod)
+  const maLong = sma(closes, longPeriod)
+  const delta = maShort.map((short, i) => {
+    const long = maLong[i]
+    if (short === null || long === null) return null
+    return short - long
+  })
+
+  const indicators: ChartIndicatorSeries[] = [
+    {
+      key: 'ma_short',
+      label: `MA Short (${shortPeriod})`,
+      pane: 'price',
+      color: '#c9a227',
+      values: maShort,
+    },
+    {
+      key: 'ma_long',
+      label: `MA Long (${longPeriod})`,
+      pane: 'price',
+      color: '#6eb5ff',
+      values: maLong,
+    },
+    {
+      key: 'delta',
+      label: 'Delta',
+      pane: 'oscillator',
+      color: '#c9a227',
+      values: delta,
+    },
+  ]
+
+  // Align mock trade timestamps to bar timestamps for chart markers
+  const alignedTrades = trades.map((trade, i) => {
+    const entryBar = bars[Math.min(barCount - 1, 10 + i * 2)]
+    const exitBar = bars[Math.min(barCount - 1, 12 + i * 2)]
+    return {
+      ...trade,
+      entry_time: entryBar.timestamp,
+      entry_price: entryBar.close,
+      exit_time: exitBar.timestamp,
+      exit_price: exitBar.close,
+    }
+  })
+
+  return { bars, indicators, trades: alignedTrades }
+}
+
 export function getMockBacktestResponse(request: BacktestRequest): BacktestResponse {
   const symbol = request.symbol || 'PETR4'
   const initialCapital = request.initial_capital ?? 100000
-  const trades = generateMockTrades(symbol, 48)
+  const rawTrades = generateMockTrades(symbol, 48)
+  const chartData = generateMockChartData(request, rawTrades)
 
   return {
-    metrics: computeMetrics(trades, initialCapital),
-    trades,
+    metrics: computeMetrics(chartData.trades, initialCapital),
+    trades: chartData.trades,
+    bars: chartData.bars,
+    indicators: chartData.indicators,
   }
 }

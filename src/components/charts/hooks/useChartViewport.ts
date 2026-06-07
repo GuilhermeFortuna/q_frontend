@@ -7,7 +7,7 @@ import {
   MIN_VISIBLE_BARS,
 } from '@/components/charts/types/chart'
 
-export function useChartViewport(barCount: number, resetKey: string) {
+export function useChartViewport(barCount: number, resetKey = '') {
   const [viewport, setViewport] = useState<ChartViewport>({ startIndex: 0, endIndex: 0 })
 
   useEffect(() => {

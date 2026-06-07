@@ -184,8 +184,10 @@ const ChartInner = forwardRef<
     (event: React.MouseEvent<SVGRectElement>) => {
       if (activeDrawingTool === 'cursor') {
         if (event.button === 0) {
+          const point = localPoint(event)
+          if (!point) return
           isPanning.current = true
-          panStart.current = { x: event.clientX, startIndex: viewport.startIndex }
+          panStart.current = { x: point.x, startIndex: viewport.startIndex }
         }
         return
       }
@@ -403,6 +405,8 @@ const ChartInner = forwardRef<
 
 export const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProps>(
   function CandlestickChart(props, ref) {
+    const lastSize = useRef({ width: 0, height: 0 })
+
     if (!props.data || props.data.length === 0) {
       return (
         <div className="border-carbon-700 bg-carbon-900 text-silver-400 flex h-64 w-full items-center justify-center rounded-lg border">
@@ -413,11 +417,16 @@ export const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickCh
 
     return (
       <ParentSize debounceTime={50}>
-        {({ width, height }) =>
-          width > 0 && height > 0 ? (
-            <ChartInner ref={ref} {...props} width={width} height={height} />
-          ) : null
-        }
+        {({ width, height }) => {
+          if (width > 0 && height > 0) {
+            lastSize.current = { width, height }
+          }
+          const stableWidth = lastSize.current.width || width
+          const stableHeight = lastSize.current.height || height
+          if (stableWidth <= 0 || stableHeight <= 0) return null
+
+          return <ChartInner ref={ref} {...props} width={stableWidth} height={stableHeight} />
+        }}
       </ParentSize>
     )
   },

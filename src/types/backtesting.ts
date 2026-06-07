@@ -1,3 +1,5 @@
+import type { OhlcvBar } from '@/types/api'
+
 export type FixedQuantityPositionSizing = {
   type: 'fixed_quantity'
   quantity: number
@@ -58,9 +60,19 @@ export interface BacktestMetrics {
   max_consecutive_losses: number
 }
 
+export interface ChartIndicatorSeries {
+  key: string
+  label: string
+  pane: 'price' | 'oscillator'
+  color?: string
+  values: (number | null)[]
+}
+
 export interface BacktestResponse {
   metrics: BacktestMetrics
   trades: Trade[]
+  bars: OhlcvBar[]
+  indicators: ChartIndicatorSeries[]
 }
 
 export interface EquityPoint {

@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 
-import { QuantMeshBackground } from '@/components/background/QuantMeshBackground'
+import { QuantBackground } from '@/components/background/QuantBackground'
+import { QuantEmblem } from '@/components/brand/QuantEmblem'
 import { AppDock } from '@/components/dock/AppDock'
+import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 
 type AppShellProps = {
@@ -10,26 +12,24 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const activeWorkspace = useAppStore((s) => s.activeWorkspace)
+  const isLauncher = activeWorkspace === 'launcher'
 
   return (
     <div className="relative flex min-h-full flex-col">
-      <QuantMeshBackground />
-      <header className="flex items-center justify-between border-b border-carbon-700/80 px-6 py-4">
+      <QuantBackground />
+      <header className="border-brass-600/20 bg-espresso-950/40 flex items-center justify-between border-b px-6 py-4 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-brass-600/40 bg-brass-600/10 font-mono text-sm text-brass-400"
-            aria-hidden
-          >
-            Q
-          </div>
+          <QuantEmblem />
           <div>
-            <p className="text-sm font-medium tracking-[0.2em] text-silver-100 uppercase">Quant</p>
-            <p className="text-xs text-silver-400">Desktop research platform</p>
+            <p className="text-silver-100 text-sm font-medium tracking-[0.2em] uppercase">Quant</p>
+            <p className="text-silver-400 text-xs">Desktop research platform</p>
           </div>
         </div>
-        <p className="font-mono text-xs text-silver-400">Phase 1 · Foundation</p>
+        <p className="text-silver-400 font-mono text-xs">Phase 1 · Foundation</p>
       </header>
-      <main className="flex-1 overflow-auto px-6 pb-28 pt-6">{children}</main>
+      <main className={cn('flex-1 overflow-auto px-6 pt-6', isLauncher ? 'pb-6' : 'pb-32')}>
+        {children}
+      </main>
       <AppDock activeWorkspace={activeWorkspace} />
     </div>
   )

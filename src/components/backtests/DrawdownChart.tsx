@@ -38,7 +38,7 @@ export function DrawdownChart({ data, className, fillHeight = false }: DrawdownC
   return (
     <div
       className={cn(
-        'quant-panel flex min-h-0 flex-col rounded-lg p-4',
+        'border-carbon-600/40 flex min-h-0 flex-col rounded-lg border bg-transparent p-4',
         fillHeight && 'flex-1',
         className,
       )}

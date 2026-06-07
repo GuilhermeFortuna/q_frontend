@@ -23,7 +23,7 @@ export function MonthlyPnLChart({ data }: MonthlyPnLChartProps) {
   }
 
   return (
-    <div className="quant-panel rounded-lg p-4">
+    <div className="border-carbon-600/40 rounded-lg border bg-transparent p-4">
       <h4 className="text-silver-200 mb-3 text-sm font-medium">Monthly PnL</h4>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>

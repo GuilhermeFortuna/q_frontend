@@ -17,6 +17,7 @@ import {
   validatePositionSizing,
   type PositionSizingMode,
 } from '@/lib/backtesting/positionSizing'
+import { DEFAULT_MA_TYPE, MA_TYPES, type MaType } from '@/lib/backtesting/maTypes'
 import type { BacktestRequest } from '@/types/backtesting'
 
 const DATE_PRESETS: { label: DatePreset; title: string }[] = [
@@ -59,6 +60,8 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
   const [strategy, setStrategy] = useState('MACrossover')
   const [shortPeriod, setShortPeriod] = useState(50)
   const [longPeriod, setLongPeriod] = useState(200)
+  const [shortMaType, setShortMaType] = useState<MaType>(DEFAULT_MA_TYPE)
+  const [longMaType, setLongMaType] = useState<MaType>(DEFAULT_MA_TYPE)
   const [threshold, setThreshold] = useState(0.0)
   const [activeDatePreset, setActiveDatePreset] = useState<DatePreset | 'ALL' | null>(null)
   const [allDataLoading, setAllDataLoading] = useState(false)
@@ -128,6 +131,8 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
       strategy_params: {
         short_period: shortPeriod,
         long_period: longPeriod,
+        short_ma_type: shortMaType,
+        long_ma_type: longMaType,
         threshold,
       },
     })
@@ -366,6 +371,20 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
           {strategy === 'MACrossover' && (
             <div className="bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3">
               <div className="space-y-1">
+                <label className="text-silver-400 text-xs">Short MA Type</label>
+                <select
+                  value={shortMaType}
+                  onChange={(e) => setShortMaType(e.target.value as MaType)}
+                  className={inputClass}
+                >
+                  {MA_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
                 <label className="text-silver-400 text-xs">Short Period</label>
                 <input
                   type="number"
@@ -373,6 +392,20 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
                   onChange={(e) => setShortPeriod(Number(e.target.value))}
                   className={inputClass}
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="text-silver-400 text-xs">Long MA Type</label>
+                <select
+                  value={longMaType}
+                  onChange={(e) => setLongMaType(e.target.value as MaType)}
+                  className={inputClass}
+                >
+                  {MA_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-silver-400 text-xs">Long Period</label>
