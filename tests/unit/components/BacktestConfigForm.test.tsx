@@ -1,10 +1,20 @@
 import { format } from 'date-fns'
-import { describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { fetchOhlcvAvailableRange } from '@/api/queries/market-data'
 import { BacktestConfigForm } from '@/components/backtests/BacktestConfigForm'
+import { handlers } from '@/mocks/handlers'
+import { mockStrategies } from '@/mocks/data'
+import { renderWithQueryClient } from '../testUtils'
+
+const server = setupServer(...handlers)
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
 
 vi.mock('@/api/queries/market-data', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api/queries/market-data')>()
@@ -17,7 +27,9 @@ vi.mock('@/api/queries/market-data', async (importOriginal) => {
 function renderForm(onSubmit = vi.fn()) {
   return {
     onSubmit,
-    ...render(<BacktestConfigForm loading={false} error={null} onSubmit={onSubmit} />),
+    ...renderWithQueryClient(
+      <BacktestConfigForm loading={false} error={null} onSubmit={onSubmit} />,
+    ),
   }
 }
 
@@ -54,10 +66,14 @@ describe('BacktestConfigForm', () => {
     expect(screen.getByText('Quantity must be greater than 0')).toBeInTheDocument()
   })
 
-  it('submits fixed_quantity payload', async () => {
+  it('submits fixed_quantity payload with schema defaults', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()
     renderForm(onSubmit)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('MACrossover')
+    })
 
     await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
 
@@ -66,9 +82,34 @@ describe('BacktestConfigForm', () => {
       type: 'fixed_quantity',
       quantity: 1,
     })
-    expect(onSubmit.mock.calls[0][0].strategy_params).toMatchObject({
+    expect(onSubmit.mock.calls[0][0].strategy).toBe('MACrossover')
+    expect(onSubmit.mock.calls[0][0].strategy_params).toEqual({
+      short_period: 50,
+      long_period: 200,
       short_ma_type: 'sma',
       long_ma_type: 'sma',
+      threshold: 0,
+    })
+  })
+
+  it('populates defaults when selecting a different strategy', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderForm(onSubmit)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('MACrossover')
+    })
+
+    await user.selectOptions(screen.getByLabelText('Strategy'), 'MACD')
+    await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+
+    const macd = mockStrategies.strategies.find((s) => s.name === 'MACD')!
+    expect(onSubmit.mock.calls[0][0].strategy).toBe('MACD')
+    expect(onSubmit.mock.calls[0][0].strategy_params).toEqual({
+      fast_period: macd.params.find((p) => p.name === 'fast_period')!.default,
+      slow_period: macd.params.find((p) => p.name === 'slow_period')!.default,
+      signal_period: macd.params.find((p) => p.name === 'signal_period')!.default,
     })
   })
 

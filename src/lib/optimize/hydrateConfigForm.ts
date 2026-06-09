@@ -1,7 +1,11 @@
 import { endOfDay, startOfDay } from 'date-fns'
 
 import type { RiskMode } from '@/components/optimize/optimizeFormShared'
-import type { MaType } from '@/lib/backtesting/maTypes'
+import {
+  defaultSearchSpaceFromSpecs,
+  hydrateSearchSpaceFromPayload,
+  type SearchSpaceFieldState,
+} from '@/lib/strategies/strategyParams'
 import type {
   CategoricalParam,
   FloatParam,
@@ -12,6 +16,7 @@ import type {
   Sampler,
   SearchParam,
 } from '@/types/optimization'
+import type { StrategyInfo } from '@/types/strategies'
 
 export type OptimizeFormHydration = {
   symbol: string
@@ -26,14 +31,8 @@ export type OptimizeFormHydration = {
   seed: number
   pruner: 'none' | 'median' | 'hyperband'
   continueOnTrialError: boolean
-  shortLow: number
-  shortHigh: number
-  longLow: number
-  longHigh: number
-  thresholdLow: number
-  thresholdHigh: number
-  shortMaChoices: MaType[]
-  longMaChoices: MaType[]
+  strategy: string
+  strategySearchSpace: Record<string, SearchSpaceFieldState>
   riskMode: RiskMode
   qtyLow: number
   qtyHigh: number
@@ -58,27 +57,32 @@ function readLogFloatRange(param: SearchParam | undefined): [number, number] | n
   return null
 }
 
-function readChoices(param: SearchParam | undefined): MaType[] | null {
-  if (param?.type !== 'categorical') return null
-  return param.choices.map(String) as MaType[]
-}
-
 function readRiskMode(riskParams: Record<string, SearchParam>): RiskMode {
   const typeParam = riskParams.type as CategoricalParam | undefined
   const choice = typeParam?.choices?.[0]
   return choice === 'fixed_safety_margin' ? 'fixed_safety_margin' : 'fixed_quantity'
 }
 
-export function hydrateOptimizeFormFromConfig(config: OptimizationConfig): OptimizeFormHydration {
+function resolveStrategyInfo(
+  strategies: StrategyInfo[],
+  strategyName: string,
+): StrategyInfo | undefined {
+  return strategies.find((entry) => entry.name === strategyName)
+}
+
+export function hydrateOptimizeFormFromConfig(
+  config: OptimizationConfig,
+  strategies: StrategyInfo[] = [],
+): OptimizeFormHydration {
   const strategyParams = config.search_space.strategy_params
   const riskParams = config.search_space.risk_params
   const riskMode = readRiskMode(riskParams)
+  const strategyName = config.backtest.strategy
 
-  const shortRange = readIntRange(strategyParams.short_period as IntParam | undefined) ?? [5, 30]
-  const longRange = readIntRange(strategyParams.long_period as IntParam | undefined) ?? [31, 100]
-  const thresholdRange = readFloatRange(strategyParams.threshold as FloatParam | undefined) ?? [
-    0, 2,
-  ]
+  const strategyInfo = resolveStrategyInfo(strategies, strategyName)
+  const strategySearchSpace = strategyInfo
+    ? hydrateSearchSpaceFromPayload(strategyParams, strategyInfo.params)
+    : hydrateSearchSpaceFromPayload(strategyParams, [])
 
   const qtyRange = readFloatRange(riskParams.quantity as FloatParam | undefined) ?? [1, 3]
   const marginRange = readLogFloatRange(
@@ -99,14 +103,11 @@ export function hydrateOptimizeFormFromConfig(config: OptimizationConfig): Optim
     seed: config.study.seed ?? 42,
     pruner: config.study.pruner ?? 'none',
     continueOnTrialError: config.study.continue_on_trial_error ?? false,
-    shortLow: shortRange[0],
-    shortHigh: shortRange[1],
-    longLow: longRange[0],
-    longHigh: longRange[1],
-    thresholdLow: thresholdRange[0],
-    thresholdHigh: thresholdRange[1],
-    shortMaChoices: readChoices(strategyParams.short_ma_type) ?? ['sma'],
-    longMaChoices: readChoices(strategyParams.long_ma_type) ?? ['sma'],
+    strategy: strategyName,
+    strategySearchSpace:
+      Object.keys(strategySearchSpace).length > 0
+        ? strategySearchSpace
+        : defaultSearchSpaceFromSpecs(strategyInfo?.params ?? []),
     riskMode,
     qtyLow: qtyRange[0],
     qtyHigh: qtyRange[1],

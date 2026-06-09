@@ -1,8 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { screen, waitFor } from '@testing-library/react'
 
 import { BacktestConfigForm } from '@/components/backtests/BacktestConfigForm'
+import { handlers } from '@/mocks/handlers'
 import { useAppStore } from '@/store/useAppStore'
+import { renderWithQueryClient } from '../testUtils'
+
+const server = setupServer(...handlers)
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
 
 vi.mock('@/api/queries/market-data', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api/queries/market-data')>()
@@ -23,16 +32,39 @@ describe('BacktestConfigForm — hydration from pending config', () => {
       position_sizing: { type: 'fixed_quantity', quantity: 4 },
     })
 
-    render(<BacktestConfigForm loading={false} error={null} onSubmit={vi.fn()} />)
+    renderWithQueryClient(<BacktestConfigForm loading={false} error={null} onSubmit={vi.fn()} />)
 
     const symbolInput = screen.getByPlaceholderText('e.g. PETR4') as HTMLInputElement
     expect(symbolInput.value).toBe('VALE3')
     expect(screen.getByDisplayValue('250000')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('12')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('48')).toBeInTheDocument()
 
     await waitFor(() => {
+      expect(screen.getByDisplayValue('12')).toBeInTheDocument()
+      expect(screen.getByDisplayValue('48')).toBeInTheDocument()
       expect(useAppStore.getState().pendingBacktestConfig).toBeNull()
     })
+  })
+
+  it('hydrates non-MA strategy params generically', async () => {
+    useAppStore.getState().setPendingBacktestConfig({
+      symbol: 'PETR4',
+      timeframe: 'D1',
+      start: '2024-01-01T00:00:00.000Z',
+      end: '2024-06-01T00:00:00.000Z',
+      initial_capital: 100000,
+      point_value: 1,
+      strategy: 'RSIMeanReversion',
+      strategy_params: { period: 21, oversold: 25, overbought: 75 },
+      position_sizing: { type: 'fixed_quantity', quantity: 1 },
+    })
+
+    renderWithQueryClient(<BacktestConfigForm loading={false} error={null} onSubmit={vi.fn()} />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('RSIMeanReversion')
+    })
+    expect(screen.getByDisplayValue('21')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('25')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('75')).toBeInTheDocument()
   })
 })

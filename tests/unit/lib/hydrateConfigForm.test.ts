@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
+import { mockStrategies } from '@/mocks/data'
 import type { OptimizationConfig } from '@/types/optimization'
 
 const sampleConfig: OptimizationConfig = {
@@ -39,7 +40,7 @@ const sampleConfig: OptimizationConfig = {
 
 describe('hydrateOptimizeFormFromConfig', () => {
   it('maps optimization config into form state', () => {
-    const hydrated = hydrateOptimizeFormFromConfig(sampleConfig)
+    const hydrated = hydrateOptimizeFormFromConfig(sampleConfig, mockStrategies.strategies)
 
     expect(hydrated.symbol).toBe('WIN$')
     expect(hydrated.timeframe).toBe('M5')
@@ -48,9 +49,16 @@ describe('hydrateOptimizeFormFromConfig', () => {
     expect(hydrated.seed).toBe(7)
     expect(hydrated.pruner).toBe('median')
     expect(hydrated.continueOnTrialError).toBe(true)
-    expect(hydrated.shortLow).toBe(5)
-    expect(hydrated.shortHigh).toBe(30)
-    expect(hydrated.shortMaChoices).toEqual(['sma', 'ema'])
+    expect(hydrated.strategy).toBe('MACrossover')
+    expect(hydrated.strategySearchSpace.short_period).toEqual({
+      kind: 'numeric',
+      low: 5,
+      high: 30,
+    })
+    expect(hydrated.strategySearchSpace.short_ma_type).toEqual({
+      kind: 'categorical',
+      choices: ['sma', 'ema'],
+    })
     expect(hydrated.riskMode).toBe('fixed_quantity')
     expect(hydrated.qtyHigh).toBe(3)
   })

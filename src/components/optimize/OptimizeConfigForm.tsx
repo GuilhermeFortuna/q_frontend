@@ -1,6 +1,7 @@
 import { endOfDay, startOfDay } from 'date-fns'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { useStrategies } from '@/api/queries/strategies'
 import { OptimizeAdvancedSection } from '@/components/optimize/OptimizeAdvancedSection'
 import { OptimizeRiskSection } from '@/components/optimize/OptimizeRiskSection'
 import { OptimizeStrategySection } from '@/components/optimize/OptimizeStrategySection'
@@ -8,8 +9,13 @@ import { OptimizeStudySection } from '@/components/optimize/OptimizeStudySection
 import { Button } from '@/components/ui/button'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
+import {
+  defaultSearchSpaceFromSpecs,
+  searchSpaceToPayload,
+  validateSearchSpace,
+  type SearchSpaceFieldState,
+} from '@/lib/strategies/strategyParams'
 import { useAppStore } from '@/store/useAppStore'
-import type { MaType } from '@/lib/backtesting/maTypes'
 import type { ObjectiveMode, OptimizationConfig, Sampler, SearchParam } from '@/types/optimization'
 
 import type { RiskMode } from '@/components/optimize/optimizeFormShared'
@@ -41,14 +47,10 @@ export function OptimizeConfigForm({
   const [pruner, setPruner] = useState<'none' | 'median' | 'hyperband'>('none')
   const [continueOnTrialError, setContinueOnTrialError] = useState(false)
 
-  const [shortLow, setShortLow] = useState(5)
-  const [shortHigh, setShortHigh] = useState(30)
-  const [longLow, setLongLow] = useState(31)
-  const [longHigh, setLongHigh] = useState(100)
-  const [thresholdLow, setThresholdLow] = useState(0.0)
-  const [thresholdHigh, setThresholdHigh] = useState(2.0)
-  const [shortMaChoices, setShortMaChoices] = useState<MaType[]>(['sma'])
-  const [longMaChoices, setLongMaChoices] = useState<MaType[]>(['sma'])
+  const [strategy, setStrategy] = useState('MACrossover')
+  const [strategySearchSpace, setStrategySearchSpace] = useState<
+    Record<string, SearchSpaceFieldState>
+  >({})
 
   const [riskMode, setRiskMode] = useState<RiskMode>('fixed_quantity')
   const [qtyLow, setQtyLow] = useState(1)
@@ -63,12 +65,27 @@ export function OptimizeConfigForm({
   const [studyOpen, setStudyOpen] = useState(true)
   const [advancedOpen, setAdvancedOpen] = useState(false)
 
+  const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
+  const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
+  const selectedStrategy = strategies.find((entry) => entry.name === strategy)
+  const searchSpaceInitialized = useRef(false)
+
   const pendingOptimizationConfig = useAppStore((s) => s.pendingOptimizationConfig)
   const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
 
   useEffect(() => {
+    if (strategies.length === 0 || searchSpaceInitialized.current) return
+    const info = strategies.find((entry) => entry.name === strategy) ?? strategies[0]
+    if (!strategies.some((entry) => entry.name === strategy)) {
+      setStrategy(info.name)
+    }
+    setStrategySearchSpace(defaultSearchSpaceFromSpecs(info.params))
+    searchSpaceInitialized.current = true
+  }, [strategies, strategy])
+
+  useEffect(() => {
     if (!pendingOptimizationConfig) return
-    const hydrated = hydrateOptimizeFormFromConfig(pendingOptimizationConfig)
+    const hydrated = hydrateOptimizeFormFromConfig(pendingOptimizationConfig, strategies)
 
     setSymbol(hydrated.symbol)
     setTimeframe(hydrated.timeframe)
@@ -82,14 +99,8 @@ export function OptimizeConfigForm({
     setSeed(hydrated.seed)
     setPruner(hydrated.pruner)
     setContinueOnTrialError(hydrated.continueOnTrialError)
-    setShortLow(hydrated.shortLow)
-    setShortHigh(hydrated.shortHigh)
-    setLongLow(hydrated.longLow)
-    setLongHigh(hydrated.longHigh)
-    setThresholdLow(hydrated.thresholdLow)
-    setThresholdHigh(hydrated.thresholdHigh)
-    setShortMaChoices(hydrated.shortMaChoices)
-    setLongMaChoices(hydrated.longMaChoices)
+    setStrategy(hydrated.strategy)
+    setStrategySearchSpace(hydrated.strategySearchSpace)
     setRiskMode(hydrated.riskMode)
     setQtyLow(hydrated.qtyLow)
     setQtyHigh(hydrated.qtyHigh)
@@ -97,34 +108,38 @@ export function OptimizeConfigForm({
     setMarginHigh(hydrated.marginHigh)
     setMinContractsLow(hydrated.minContractsLow)
     setMinContractsHigh(hydrated.minContractsHigh)
+    searchSpaceInitialized.current = true
 
     setPendingOptimizationConfig(null)
-  }, [pendingOptimizationConfig, setPendingOptimizationConfig])
+  }, [pendingOptimizationConfig, setPendingOptimizationConfig, strategies])
+
+  const handleStrategyChange = (nextStrategy: string) => {
+    setStrategy(nextStrategy)
+    const info = strategies.find((entry) => entry.name === nextStrategy)
+    if (info) {
+      setStrategySearchSpace(defaultSearchSpaceFromSpecs(info.params))
+    }
+  }
+
+  const handleSearchSpaceChange = (name: string, field: SearchSpaceFieldState) => {
+    setStrategySearchSpace((current) => ({ ...current, [name]: field }))
+  }
 
   const dateRangeInvalid = startDate >= endDate
   const rangesInvalid =
-    shortLow > shortHigh ||
-    longLow > longHigh ||
-    thresholdLow > thresholdHigh ||
     (riskMode === 'fixed_quantity'
       ? qtyLow > qtyHigh
-      : marginLow > marginHigh || minContractsLow > minContractsHigh)
-  const maChoicesInvalid = shortMaChoices.length === 0 || longMaChoices.length === 0
-  const formInvalid = dateRangeInvalid || rangesInvalid || maChoicesInvalid || nTrials < 1
+      : marginLow > marginHigh || minContractsLow > minContractsHigh) ||
+    !validateSearchSpace(strategySearchSpace)
+  const formInvalid = dateRangeInvalid || rangesInvalid || nTrials < 1
 
   const isMultiObjective = objective === 'multi_objective_return_drawdown'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (formInvalid || disabled) return
+    if (formInvalid || disabled || !selectedStrategy) return
 
-    const strategyParams: Record<string, SearchParam> = {
-      short_period: { type: 'int', low: shortLow, high: shortHigh },
-      long_period: { type: 'int', low: longLow, high: longHigh },
-      threshold: { type: 'float', low: thresholdLow, high: thresholdHigh },
-      short_ma_type: { type: 'categorical', choices: shortMaChoices },
-      long_ma_type: { type: 'categorical', choices: longMaChoices },
-    }
+    const strategyParams = searchSpaceToPayload(strategySearchSpace, selectedStrategy.params)
 
     const riskParams: Record<string, SearchParam> =
       riskMode === 'fixed_quantity'
@@ -155,7 +170,7 @@ export function OptimizeConfigForm({
         end: endOfDay(endDate).toISOString(),
         initial_capital: capital,
         point_value: pointValue,
-        strategy: 'MACrossover',
+        strategy,
       },
       search_space: {
         strategy_params: strategyParams,
@@ -178,6 +193,12 @@ export function OptimizeConfigForm({
           <OptimizeStrategySection
             open={strategyOpen}
             onToggle={() => setStrategyOpen((v) => !v)}
+            strategies={strategies}
+            strategiesLoading={strategiesLoading}
+            strategy={strategy}
+            onStrategyChange={handleStrategyChange}
+            searchSpace={strategySearchSpace}
+            onSearchSpaceChange={handleSearchSpaceChange}
             symbol={symbol}
             setSymbol={setSymbol}
             timeframe={timeframe}
@@ -190,23 +211,6 @@ export function OptimizeConfigForm({
             setCapital={setCapital}
             pointValue={pointValue}
             setPointValue={setPointValue}
-            shortLow={shortLow}
-            shortHigh={shortHigh}
-            setShortLow={setShortLow}
-            setShortHigh={setShortHigh}
-            longLow={longLow}
-            longHigh={longHigh}
-            setLongLow={setLongLow}
-            setLongHigh={setLongHigh}
-            thresholdLow={thresholdLow}
-            thresholdHigh={thresholdHigh}
-            setThresholdLow={setThresholdLow}
-            setThresholdHigh={setThresholdHigh}
-            shortMaChoices={shortMaChoices}
-            setShortMaChoices={setShortMaChoices}
-            longMaChoices={longMaChoices}
-            setLongMaChoices={setLongMaChoices}
-            maChoicesInvalid={maChoicesInvalid}
           />
 
           <OptimizeRiskSection
@@ -255,7 +259,7 @@ export function OptimizeConfigForm({
         <div className="shrink-0 pt-2">
           <Button
             type="submit"
-            disabled={loading || formInvalid || disabled}
+            disabled={loading || formInvalid || disabled || strategiesLoading}
             variant="brass"
             className="w-full"
           >

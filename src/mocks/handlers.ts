@@ -1,13 +1,16 @@
-﻿import { http, HttpResponse } from 'msw'
+import { http, HttpResponse } from 'msw'
 
 import { getMockBacktestResponse } from '@/mocks/backtest'
 import {
   getMockBacktestRunDetail,
+  getMockOptimizationResults,
+  getMockOptimizationStatus,
   getMockOhlcv,
   mockBacktestRunSummaries,
   mockInstruments,
   mockOptimizationStudySummaries,
   mockSnapshots,
+  mockStrategies,
   mockSystemHealth,
 } from '@/mocks/data'
 import type { BacktestRequest } from '@/types/backtesting'
@@ -26,6 +29,8 @@ export function resetMockOptimizationDeletes() {
 
 export const handlers = [
   http.get('*/api/v1/system/health', () => HttpResponse.json(mockSystemHealth)),
+
+  http.get('*/api/v1/strategies', () => HttpResponse.json(mockStrategies)),
 
   http.get('*/api/v1/market/instruments', () => HttpResponse.json(mockInstruments)),
 
@@ -193,19 +198,24 @@ export const handlers = [
     }
     const study = getUpdatedStudy(studyId)
 
-    if (!study) {
-      return new HttpResponse('Study not found', { status: 404 })
+    if (study) {
+      return HttpResponse.json({
+        study_id: study.study_id,
+        status: study.status,
+        completed_trials: study.completed_trials,
+        n_trials: study.n_trials,
+        best_value: study.status === 'pending' ? null : study.best_value,
+        best_params: study.status === 'pending' ? {} : study.best_params,
+        error: null,
+      })
     }
 
-    return HttpResponse.json({
-      study_id: study.study_id,
-      status: study.status,
-      completed_trials: study.completed_trials,
-      n_trials: study.n_trials,
-      best_value: study.status === 'pending' ? null : study.best_value,
-      best_params: study.status === 'pending' ? {} : study.best_params,
-      error: null,
-    })
+    const staticStatus = getMockOptimizationStatus(studyId)
+    if (staticStatus) {
+      return HttpResponse.json(staticStatus)
+    }
+
+    return new HttpResponse('Study not found', { status: 404 })
   }),
 
   // POST /api/v1/optimize/:study_id/cancel - cancel optimization
@@ -251,47 +261,52 @@ export const handlers = [
     }
     const study = getUpdatedStudy(studyId)
 
-    if (!study) {
-      return new HttpResponse('Study not found', { status: 404 })
-    }
+    if (study) {
+      // Return partial trials if cancelled, or all trials if completed
+      const activeTrialsCount = study.completed_trials
+      const sliceTrials = study.trials.slice(0, activeTrialsCount)
 
-    // Return partial trials if cancelled, or all trials if completed
-    const activeTrialsCount = study.completed_trials
-    const sliceTrials = study.trials.slice(0, activeTrialsCount)
-
-    // Calculate best trial and best params from the active slice
-    let bestSliceTrial: OptimizationTrial | null = null
-    let bestSliceValue = study.objective_mode.includes('minimize') ? Infinity : -Infinity
-    for (const t of sliceTrials) {
-      const val = t.values?.[0] ?? 0
-      const isBetter = study.objective_mode.includes('minimize')
-        ? val < bestSliceValue
-        : val > bestSliceValue
-      if (isBetter) {
-        bestSliceValue = val
-        bestSliceTrial = t
+      // Calculate best trial and best params from the active slice
+      let bestSliceTrial: OptimizationTrial | null = null
+      let bestSliceValue = study.objective_mode.includes('minimize') ? Infinity : -Infinity
+      for (const t of sliceTrials) {
+        const val = t.values?.[0] ?? 0
+        const isBetter = study.objective_mode.includes('minimize')
+          ? val < bestSliceValue
+          : val > bestSliceValue
+        if (isBetter) {
+          bestSliceValue = val
+          bestSliceTrial = t
+        }
       }
+
+      // Filter high-performance trials for pareto trials mockup (e.g. top 5 trials in slice)
+      const paretoTrials = [...sliceTrials]
+        .sort((a, b) => {
+          const valA = a.values?.[0] ?? -Infinity
+          const valB = b.values?.[0] ?? -Infinity
+          return valB - valA // Maximize
+        })
+        .slice(0, Math.min(5, Math.ceil(activeTrialsCount / 5)))
+
+      return HttpResponse.json({
+        study_id: study.study_id,
+        objective_mode: study.objective_mode,
+        is_multi_objective: study.objective_mode === 'multi_objective_return_drawdown',
+        best_params: bestSliceTrial ? bestSliceTrial.params : {},
+        best_trial: bestSliceTrial,
+        trials: sliceTrials,
+        pareto_trials: paretoTrials,
+        failures: [],
+      })
     }
 
-    // Filter high-performance trials for pareto trials mockup (e.g. top 5 trials in slice)
-    const paretoTrials = [...sliceTrials]
-      .sort((a, b) => {
-        const valA = a.values?.[0] ?? -Infinity
-        const valB = b.values?.[0] ?? -Infinity
-        return valB - valA // Maximize
-      })
-      .slice(0, Math.min(5, Math.ceil(activeTrialsCount / 5)))
+    const staticResults = getMockOptimizationResults(studyId)
+    if (staticResults) {
+      return HttpResponse.json(staticResults)
+    }
 
-    return HttpResponse.json({
-      study_id: study.study_id,
-      objective_mode: study.objective_mode,
-      is_multi_objective: study.objective_mode === 'multi_objective_return_drawdown',
-      best_params: bestSliceTrial ? bestSliceTrial.params : {},
-      best_trial: bestSliceTrial,
-      trials: sliceTrials,
-      pareto_trials: paretoTrials,
-      failures: [],
-    })
+    return new HttpResponse('Study not found', { status: 404 })
   }),
 ]
 

@@ -1,6 +1,7 @@
 import { endOfDay, startOfDay } from 'date-fns'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { useStrategies } from '@/api/queries/strategies'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -8,13 +9,18 @@ import {
   inputClass,
   InstrumentConfigFields,
 } from '@/components/shared/InstrumentConfigFields'
+import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import {
   buildPositionSizingPayload,
   validatePositionSizing,
   type PositionSizingMode,
 } from '@/lib/backtesting/positionSizing'
-import { DEFAULT_MA_TYPE, MA_TYPES, type MaType } from '@/lib/backtesting/maTypes'
+import {
+  defaultParamsFromSpecs,
+  mergeParamValues,
+  type StrategyParamValue,
+} from '@/lib/strategies/strategyParams'
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
 
@@ -37,14 +43,25 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
   const [minContracts, setMinContracts] = useState(1)
   const [maxContractsInput, setMaxContractsInput] = useState('')
   const [strategy, setStrategy] = useState('MACrossover')
-  const [shortPeriod, setShortPeriod] = useState(50)
-  const [longPeriod, setLongPeriod] = useState(200)
-  const [shortMaType, setShortMaType] = useState<MaType>(DEFAULT_MA_TYPE)
-  const [longMaType, setLongMaType] = useState<MaType>(DEFAULT_MA_TYPE)
-  const [threshold, setThreshold] = useState(0.0)
+  const [strategyParams, setStrategyParams] = useState<Record<string, StrategyParamValue>>({})
+
+  const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
+  const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
+  const selectedStrategy = strategies.find((entry) => entry.name === strategy)
+  const paramsInitialized = useRef(false)
 
   const pendingBacktestConfig = useAppStore((s) => s.pendingBacktestConfig)
   const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
+
+  useEffect(() => {
+    if (strategies.length === 0 || paramsInitialized.current) return
+    const info = strategies.find((entry) => entry.name === strategy) ?? strategies[0]
+    if (!strategies.some((entry) => entry.name === strategy)) {
+      setStrategy(info.name)
+    }
+    setStrategyParams(defaultParamsFromSpecs(info.params))
+    paramsInitialized.current = true
+  }, [strategies, strategy])
 
   // Hydrate from a config staged by the Optimizer ("Load into Backtest"), then clear it.
   useEffect(() => {
@@ -59,12 +76,15 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
     if (cfg.point_value != null) setPointValue(cfg.point_value)
     if (cfg.strategy) setStrategy(cfg.strategy)
 
-    const sp = cfg.strategy_params ?? {}
-    if (sp.short_period != null) setShortPeriod(Number(sp.short_period))
-    if (sp.long_period != null) setLongPeriod(Number(sp.long_period))
-    if (sp.short_ma_type != null) setShortMaType(String(sp.short_ma_type) as MaType)
-    if (sp.long_ma_type != null) setLongMaType(String(sp.long_ma_type) as MaType)
-    if (sp.threshold != null) setThreshold(Number(sp.threshold))
+    const strategyInfo =
+      strategies.find((entry) => entry.name === (cfg.strategy ?? strategy)) ?? selectedStrategy
+    if (strategyInfo) {
+      setStrategyParams(mergeParamValues(strategyInfo.params, cfg.strategy_params))
+      paramsInitialized.current = true
+    } else if (cfg.strategy_params) {
+      setStrategyParams(cfg.strategy_params as Record<string, StrategyParamValue>)
+      paramsInitialized.current = true
+    }
 
     const ps = cfg.position_sizing
     if (ps?.type === 'fixed_quantity') {
@@ -78,7 +98,19 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
     }
 
     setPendingBacktestConfig(null)
-  }, [pendingBacktestConfig, setPendingBacktestConfig])
+  }, [pendingBacktestConfig, setPendingBacktestConfig, strategies, strategy, selectedStrategy])
+
+  const handleStrategyChange = (nextStrategy: string) => {
+    setStrategy(nextStrategy)
+    const info = strategies.find((entry) => entry.name === nextStrategy)
+    if (info) {
+      setStrategyParams(defaultParamsFromSpecs(info.params))
+    }
+  }
+
+  const handleParamChange = (name: string, value: StrategyParamValue) => {
+    setStrategyParams((current) => ({ ...current, [name]: value }))
+  }
 
   const dateRangeInvalid = startDate >= endDate
 
@@ -112,13 +144,7 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
       point_value: pointValue,
       position_sizing: buildPositionSizingPayload(sizingMode, positionSizingFields),
       strategy,
-      strategy_params: {
-        short_period: shortPeriod,
-        long_period: longPeriod,
-        short_ma_type: shortMaType,
-        long_ma_type: longMaType,
-        threshold,
-      },
+      strategy_params: strategyParams,
     })
   }
 
@@ -233,80 +259,35 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
           <div className="bg-carbon-600/60 my-4 h-px w-full" />
 
           <div className="space-y-2">
-            <label className="text-silver-200 text-sm font-medium">Strategy</label>
+            <label htmlFor="backtest-strategy" className="text-silver-200 text-sm font-medium">
+              Strategy
+            </label>
             <select
+              id="backtest-strategy"
               value={strategy}
-              onChange={(e) => setStrategy(e.target.value)}
+              onChange={(e) => handleStrategyChange(e.target.value)}
               className={inputClass}
+              disabled={strategiesLoading || strategies.length === 0}
             >
-              <option value="MACrossover">MA Crossover</option>
+              {strategies.map((entry) => (
+                <option key={entry.name} value={entry.name}>
+                  {entry.label}
+                </option>
+              ))}
             </select>
           </div>
 
-          {strategy === 'MACrossover' && (
-            <div className="bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3">
-              <div className="space-y-1">
-                <label className="text-silver-400 text-xs">Short MA Type</label>
-                <select
-                  value={shortMaType}
-                  onChange={(e) => setShortMaType(e.target.value as MaType)}
-                  className={inputClass}
-                >
-                  {MA_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-silver-400 text-xs">Short Period</label>
-                <input
-                  type="number"
-                  value={shortPeriod}
-                  onChange={(e) => setShortPeriod(Number(e.target.value))}
-                  className={inputClass}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-silver-400 text-xs">Long MA Type</label>
-                <select
-                  value={longMaType}
-                  onChange={(e) => setLongMaType(e.target.value as MaType)}
-                  className={inputClass}
-                >
-                  {MA_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-silver-400 text-xs">Long Period</label>
-                <input
-                  type="number"
-                  onChange={(e) => setLongPeriod(Number(e.target.value))}
-                  value={longPeriod}
-                  className={inputClass}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-silver-400 text-xs">Threshold</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={threshold}
-                  onChange={(e) => setThreshold(Number(e.target.value))}
-                  className={inputClass}
-                />
-              </div>
-            </div>
+          {selectedStrategy && (
+            <StrategyParamFields
+              params={selectedStrategy.params}
+              values={strategyParams}
+              onChange={handleParamChange}
+            />
           )}
 
           <Button
             type="submit"
-            disabled={loading || formInvalid}
+            disabled={loading || formInvalid || strategiesLoading}
             variant="brass"
             className="mt-4 w-full"
           >
