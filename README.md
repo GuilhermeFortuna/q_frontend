@@ -45,7 +45,10 @@ For a comprehensive guide on the full engineering framework and long-term direct
 
 - **Launcher Workspace:** Central hub for application entry, asset selectors, and starting backtesting jobs.
 - **Market Data Workspace:** Immersive charting interface featuring high-frequency Recharts charts, real-time B3 price trackers, and historical candlesticks tables.
+- **Backtests Workspace:** Detailed backtesting suite where developers can configure strategies, run performance tests, inspect OHLCV/trades charts with technical indicators, evaluate drawdown/equity curves, and analyze monthly breakdowns.
+- **Optimize Workspace:** Configurable Optuna-driven hyperparameter sweeps that support single/multi-objective optimization, real-time job cancellation, log streaming, and interactive Pareto Front / historical trial scatter charts.
 - **System Workspace:** System diagnostics, data-lake sync telemetries, and live FastAPI connection heartbeats.
+- **Executive PDF Report Export:** Native Tauri-driven high-fidelity HTML-to-PDF report generation for exporting formatted backtest results directly to the user's filesystem.
 
 ### 2. High-Fidelity Design Tokens
 
@@ -71,21 +74,27 @@ q_frontend/
 │   └── q-frontend-tech-stack.md
 ├── src-tauri/           # Tauri 2 Desktop configuration and Rust shell entry
 │   ├── tauri.conf.json  # Desktop sizing, capabilities, and permissions configuration
-│   └── src/             # Rust desktop lifecycle entry points
+│   └── src/             # Rust desktop lifecycle entry points (including PDF print commands)
 ├── src/
 │   ├── app/             # Router providers, Router tree, and App entry configuration
 │   ├── api/             # Axios API client, query hooks, and TanStack Queries
 │   ├── store/           # Zustand global state client stores (layout, system status)
 │   ├── styles/          # Custom Tailwind v4 styling variables and theme configurations
+│   ├── lib/
+│   │   └── reports/     # HTML templates for high-fidelity PDF report generation
 │   ├── components/      # Reusable atomic presentation components
 │   │   ├── background/  # CSS/SVG interactive atmospheric grid meshes
+│   │   ├── backtests/   # Backtest metrics, charts, and breakdown tables
 │   │   ├── dock/        # Glassmorphic application menu bar (dock)
 │   │   ├── charts/      # Recharts OHLCV candle wrappers
+│   │   ├── optimize/    # Optuna study workbench, results panel, and Pareto scatter charts
 │   │   ├── tables/      # TanStack Table and Virtualized table displays
 │   │   └── ui/          # Standard layout controls
 │   ├── workspaces/      # Individual application workspaces
 │   │   ├── launcher/    # Main application landing dashboard
 │   │   ├── market-data/ # Live charts, asset parameters, and historical rates
+│   │   ├── backtests/   # Runs and showcases backtests, and allows PDF exporting
+│   │   ├── optimize/    # Workbench for Optuna study runs and Pareto analysis
 │   │   └── system/      # Telemetries, diagnostics, and connection endpoints
 │   ├── mocks/           # Mock Service Worker (MSW) client-side handlers
 │   └── main.tsx         # React bootstrap root
@@ -162,10 +171,20 @@ To transition from Mock Data to the live `q_backend` service:
 
 The frontend communicates directly with the following FastAPI endpoints:
 
+#### Core System & Market Data
+
 - `GET /api/v1/system/health` ➡️ Tracks MetaTrader 5 status and API health.
 - `GET /api/v1/market/instruments` ➡️ Fetches available assets list (`PETR4`, `VALE3`, `ITUB4`, etc.).
 - `GET /api/v1/market/snapshot/{symbol}` ➡️ Real-time bid/ask tick data.
 - `GET /api/v1/market/ohlcv/{symbol}` ➡️ Retrieves last 30 daily price candles.
+
+#### Backtesting & Optuna Optimization
+
+- `POST /api/v1/backtest/run` ➡️ Runs a strategy backtest and returns metrics and execution logs.
+- `POST /api/v1/optimize` ➡️ Initiates a multi/single-objective hyperparameter optimization study.
+- `GET /api/v1/optimize/{studyId}` ➡️ Polls the active optimization status and progress.
+- `POST /api/v1/optimize/{studyId}/cancel` ➡️ Terminates a running optimization job.
+- `GET /api/v1/optimize/{studyId}/results` ➡️ Fetches Optuna trials history, Pareto front, and best parameters.
 
 ---
 

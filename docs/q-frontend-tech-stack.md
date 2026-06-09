@@ -55,10 +55,10 @@ UE5/Blender = asset generation, not app runtime
 
 ### Chosen
 
-| Layer | Choice | Reason |
-|---|---|---|
+| Layer         | Choice    | Reason                                                               |
+| ------------- | --------- | -------------------------------------------------------------------- |
 | Desktop shell | **Tauri** | Lightweight, fast startup, smaller installer, lower memory footprint |
-| Alternative | Electron | Only if Node APIs inside the shell become necessary |
+| Alternative   | Electron  | Only if Node APIs inside the shell become necessary                  |
 
 ### Recommendation
 
@@ -72,11 +72,11 @@ Tauri is the right default because Quant is intended to feel like a premium nati
 
 ### Chosen
 
-| Layer | Choice | Reason |
-|---|---|---|
-| Framework | **React** | Best ecosystem for data apps, charts, R3F, animation, and desktop web UIs |
-| Build tool | **Vite** | Fast HMR, simple config, excellent TS support |
-| Language | **TypeScript** | Required for financial/data-heavy correctness |
+| Layer      | Choice         | Reason                                                                    |
+| ---------- | -------------- | ------------------------------------------------------------------------- |
+| Framework  | **React**      | Best ecosystem for data apps, charts, R3F, animation, and desktop web UIs |
+| Build tool | **Vite**       | Fast HMR, simple config, excellent TS support                             |
+| Language   | **TypeScript** | Required for financial/data-heavy correctness                             |
 
 ### Core packages
 
@@ -116,13 +116,13 @@ Use **TanStack Router**.
 
 Split state into separate layers.
 
-| State type | Library | Usage |
-|---|---|---|
-| Server/async state | **TanStack Query** | API calls, cached market data, polling, background refresh |
-| Global client state | **Zustand** | Workspace state, layout state, selected instruments, UI preferences |
-| Immutable updates | **Immer** | Cleaner Zustand slice updates |
-| Streams | **RxJS** | Tick streams, live signals, execution updates later |
-| WebSocket client | **socket.io-client** or native WS | Live data/events |
+| State type          | Library                           | Usage                                                               |
+| ------------------- | --------------------------------- | ------------------------------------------------------------------- |
+| Server/async state  | **TanStack Query**                | API calls, cached market data, polling, background refresh          |
+| Global client state | **Zustand**                       | Workspace state, layout state, selected instruments, UI preferences |
+| Immutable updates   | **Immer**                         | Cleaner Zustand slice updates                                       |
+| Streams             | **RxJS**                          | Tick streams, live signals, execution updates later                 |
+| WebSocket client    | **socket.io-client** or native WS | Live data/events                                                    |
 
 ```json
 {
