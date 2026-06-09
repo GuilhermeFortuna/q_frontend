@@ -67,8 +67,9 @@
 
 @layer utilities {
   .quant-panel {
-    background: color-mix(in srgb, var(--color-espresso-900) 80%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-brass-600) 25%, transparent);
+    background: color-mix(in srgb, var(--color-espresso-900) 86%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-brass-600) 28%, transparent);
     box-shadow: 0 1px 0 color-mix(in srgb, var(--color-gold-400) 8%, transparent) inset;
+    backdrop-filter: blur(8px);
   }
 }

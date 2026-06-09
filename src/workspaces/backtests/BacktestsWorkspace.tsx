@@ -57,7 +57,7 @@ export function BacktestsWorkspace() {
         onSubmit={handleSubmit}
       />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="quant-panel flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
         <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
           {RIGHT_PANEL_TABS.map((tab) => (
             <button

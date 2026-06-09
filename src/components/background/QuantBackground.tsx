@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 
 const BRANDED_BG = '/Quant_Background.jpeg'
-const CLEAN_BG = '/Quant_Background_clean.jpeg'
+const CLEAN_BG = '/Quant_Background_clean.png'
 
 export function QuantBackground() {
   const activeWorkspace = useAppStore((s) => s.activeWorkspace)
