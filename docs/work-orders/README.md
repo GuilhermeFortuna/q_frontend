@@ -31,6 +31,20 @@ WO1  ──►  WO2  ┐
 WO1 first. Once it merges, WO2 and WO3 can run **in parallel** (both depend only on
 WO1's `deps.py` + endpoint contracts). WO4 last, after WO3's contract is final.
 
+## Phase: Strategy Library (next batch)
+
+Makes strategies pluggable and broadens the library beyond the single MA crossover.
+The optimization layer is already strategy-agnostic and indicators auto-render, so the
+work is a registry + strategies + a schema endpoint (backend) and schema-driven param
+forms (frontend).
+
+| #   | File                                                                 | Repo       | Depends on   |
+| --- | -------------------------------------------------------------------- | ---------- | ------------ |
+| 5   | [WO5-backend-strategy-registry.md](WO5-backend-strategy-registry.md) | q_backend  | —            |
+| 6   | [WO6-frontend-strategy-forms.md](WO6-frontend-strategy-forms.md)     | q_frontend | WO5 contract |
+
+Dispatch WO5 first; WO6 builds its forms against WO5's `GET /api/v1/strategies` schema.
+
 ## Review checklist (apply to every returned PR)
 
 1. Does the compute path still work with Postgres **stopped**? (stop the container, run a backtest / a study)
