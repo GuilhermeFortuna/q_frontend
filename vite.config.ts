@@ -13,6 +13,9 @@ export default defineConfig({
       projects: ['./tsconfig.app.json'],
     }),
   ],
+  resolve: {
+    alias: [{ find: /^lodash\/(.*)$/, replacement: 'lodash-es/$1.js' }],
+  },
   clearScreen: false,
   server: {
     port: 1420,

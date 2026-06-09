@@ -6,5 +6,9 @@ describe('cn', () => {
   it('merges tailwind classes and resolves conflicts', () => {
     expect(cn('px-2', 'px-4')).toBe('px-4')
     expect(cn('text-silver-100', undefined, 'font-mono')).toBe('text-silver-100 font-mono')
+    const isHidden = false
+    expect(cn('text-silver-100', isHidden && 'hidden', 'font-mono')).toBe(
+      'text-silver-100 font-mono',
+    )
   })
 })
