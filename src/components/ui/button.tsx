@@ -10,8 +10,7 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
-  default:
-    'bg-carbon-700 text-silver-100 hover:bg-carbon-600 border border-carbon-600',
+  default: 'bg-carbon-700 text-silver-100 hover:bg-carbon-600 border border-carbon-600',
   ghost: 'bg-transparent text-silver-200 hover:bg-carbon-800 hover:text-silver-100',
   outline:
     'bg-transparent text-silver-200 border border-carbon-600 hover:border-brass-500 hover:text-brass-400',
@@ -33,7 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={cn(
           'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors',
-          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-500',
+          'focus-visible:outline-brass-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
           'disabled:pointer-events-none disabled:opacity-50',
           variantClasses[variant],
           sizeClasses[size],

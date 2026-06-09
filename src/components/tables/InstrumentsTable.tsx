@@ -12,14 +12,14 @@ const columnHelper = createColumnHelper<Instrument>()
 const columns = [
   columnHelper.accessor('symbol', {
     header: 'Symbol',
-    cell: (info) => <span className="font-mono text-brass-400">{info.getValue()}</span>,
+    cell: (info) => <span className="text-brass-400 font-mono">{info.getValue()}</span>,
   }),
   columnHelper.accessor('name', { header: 'Name' }),
   columnHelper.accessor('exchange', { header: 'Exchange' }),
   columnHelper.accessor('assetClass', {
     header: 'Class',
     cell: (info) => (
-      <span className="rounded bg-carbon-700 px-2 py-0.5 text-xs uppercase text-silver-300">
+      <span className="bg-carbon-700 text-silver-300 rounded px-2 py-0.5 text-xs uppercase">
         {info.getValue()}
       </span>
     ),
@@ -32,11 +32,7 @@ type InstrumentsTableProps = {
   onSelectSymbol: (symbol: string) => void
 }
 
-export function InstrumentsTable({
-  data,
-  selectedSymbol,
-  onSelectSymbol,
-}: InstrumentsTableProps) {
+export function InstrumentsTable({ data, selectedSymbol, onSelectSymbol }: InstrumentsTableProps) {
   const table = useReactTable({
     data,
     columns,
@@ -44,9 +40,9 @@ export function InstrumentsTable({
   })
 
   return (
-    <div className="overflow-auto rounded-md border border-carbon-700">
+    <div className="border-carbon-700 overflow-auto rounded-md border">
       <table className="w-full min-w-[480px] text-left text-sm">
-        <thead className="bg-carbon-800/80 text-xs tracking-wide text-silver-400 uppercase">
+        <thead className="bg-carbon-800/80 text-silver-400 text-xs tracking-wide uppercase">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
@@ -67,8 +63,8 @@ export function InstrumentsTable({
                 onClick={() => onSelectSymbol(symbol)}
                 className={
                   isSelected
-                    ? 'cursor-pointer bg-brass-600/10 text-silver-100'
-                    : 'cursor-pointer border-t border-carbon-800 text-silver-200 hover:bg-carbon-800/60'
+                    ? 'bg-brass-600/10 text-silver-100 cursor-pointer'
+                    : 'border-carbon-800 text-silver-200 hover:bg-carbon-800/60 cursor-pointer border-t'
                 }
               >
                 {row.getVisibleCells().map((cell) => (

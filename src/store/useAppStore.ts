@@ -1,9 +1,6 @@
 import { create } from 'zustand'
 
-import {
-  createPreferencesSlice,
-  type PreferencesSlice,
-} from '@/store/slices/preferencesSlice'
+import { createPreferencesSlice, type PreferencesSlice } from '@/store/slices/preferencesSlice'
 import { createWorkspaceSlice, type WorkspaceSlice } from '@/store/slices/workspaceSlice'
 
 export type AppStore = WorkspaceSlice & PreferencesSlice
