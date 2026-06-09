@@ -4,15 +4,17 @@ import { BestParamsCard } from '@/components/optimize/BestParamsCard'
 import { OptimizationLogs } from '@/components/optimize/OptimizationLogs'
 import { OptimizationMetricsBar } from '@/components/optimize/OptimizationMetricsBar'
 import { OptimizationScatter } from '@/components/optimize/OptimizationScatter'
+import { OptimizationTerrain3D } from '@/components/optimize/OptimizationTerrain3D'
 import { TrialsTable } from '@/components/optimize/TrialsTable'
 import { cn } from '@/lib/utils'
 import type { OptimizationBacktestConfig, OptimizationResults } from '@/types/optimization'
 
-type TabId = 'overview' | 'chart' | 'trials' | 'logs'
+type TabId = 'overview' | 'chart' | 'terrain' | 'trials' | 'logs'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'chart', label: 'Chart' },
+  { id: 'terrain', label: '3D Landscape' },
   { id: 'trials', label: 'Trials' },
   { id: 'logs', label: 'Logs' },
 ]
@@ -82,6 +84,16 @@ export function OptimizationResultsTabs({
         {activeTab === 'chart' && (
           <div className="min-h-0 flex-1 overflow-y-auto">
             <OptimizationScatter results={results} selectedTrialNumber={selectedTrialNumber} />
+          </div>
+        )}
+
+        {activeTab === 'terrain' && (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <OptimizationTerrain3D
+              results={results}
+              selectedTrialNumber={selectedTrialNumber}
+              onSelectTrial={setSelectedTrialNumber}
+            />
           </div>
         )}
 
