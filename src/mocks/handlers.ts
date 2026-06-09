@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+﻿import { http, HttpResponse } from 'msw'
 
 import { getMockBacktestResponse } from '@/mocks/backtest'
 import {
@@ -14,9 +14,14 @@ import type { BacktestRequest } from '@/types/backtesting'
 import type { OptimizationTrial } from '@/types/optimization'
 
 const deletedBacktestRunIds = new Set<string>()
+const deletedOptimizationStudyIds = new Set<string>()
 
 export function resetMockBacktestDeletes() {
   deletedBacktestRunIds.clear()
+}
+
+export function resetMockOptimizationDeletes() {
+  deletedOptimizationStudyIds.clear()
 }
 
 export const handlers = [
@@ -134,9 +139,13 @@ export const handlers = [
     const limit = parseInt(url.searchParams.get('limit') ?? '50', 10)
     const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
 
+    const items = mockOptimizationStudySummaries.filter(
+      (study) => !deletedOptimizationStudyIds.has(study.study_id),
+    )
+
     return HttpResponse.json({
-      items: mockOptimizationStudySummaries.slice(offset, offset + limit),
-      total: mockOptimizationStudySummaries.length,
+      items: items.slice(offset, offset + limit),
+      total: items.length,
       limit,
       offset,
     })
@@ -179,6 +188,9 @@ export const handlers = [
   // GET /api/v1/optimize/:study_id - get status
   http.get('*/api/v1/optimize/:study_id', ({ params }) => {
     const studyId = String(params.study_id)
+    if (deletedOptimizationStudyIds.has(studyId)) {
+      return HttpResponse.json({ detail: `Study '${studyId}' not found.` }, { status: 404 })
+    }
     const study = getUpdatedStudy(studyId)
 
     if (!study) {
@@ -199,6 +211,9 @@ export const handlers = [
   // POST /api/v1/optimize/:study_id/cancel - cancel optimization
   http.post('*/api/v1/optimize/:study_id/cancel', ({ params }) => {
     const studyId = String(params.study_id)
+    if (deletedOptimizationStudyIds.has(studyId)) {
+      return HttpResponse.json({ detail: `Study '${studyId}' not found.` }, { status: 404 })
+    }
     const study = mockStudies.get(studyId)
 
     if (!study) {
@@ -218,9 +233,22 @@ export const handlers = [
     })
   }),
 
+  http.delete('*/api/v1/optimizations/:studyId', ({ params }) => {
+    const studyId = String(params.studyId)
+    const exists = mockOptimizationStudySummaries.some((study) => study.study_id === studyId)
+    if (!exists || deletedOptimizationStudyIds.has(studyId)) {
+      return HttpResponse.json({ detail: `Study '${studyId}' not found.` }, { status: 404 })
+    }
+    deletedOptimizationStudyIds.add(studyId)
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   // GET /api/v1/optimize/:study_id/results - get results
   http.get('*/api/v1/optimize/:study_id/results', ({ params }) => {
     const studyId = String(params.study_id)
+    if (deletedOptimizationStudyIds.has(studyId)) {
+      return HttpResponse.json({ detail: `Study '${studyId}' not found.` }, { status: 404 })
+    }
     const study = getUpdatedStudy(studyId)
 
     if (!study) {

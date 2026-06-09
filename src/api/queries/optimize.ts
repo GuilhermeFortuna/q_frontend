@@ -48,6 +48,10 @@ export async function fetchOptimizationHistory(
   return data
 }
 
+export async function deleteOptimizationStudy(studyId: string): Promise<void> {
+  await apiClient.delete(`/api/v1/optimizations/${studyId}`)
+}
+
 export async function cancelOptimization(studyId: string): Promise<OptimizationStatus> {
   const { data } = await apiClient.post<OptimizationStatus>(`/api/v1/optimize/${studyId}/cancel`)
   return data
@@ -75,6 +79,17 @@ export function useOptimizationHistory(params: OptimizationHistoryParams = {}) {
 export function useCancelOptimization() {
   return useMutation({
     mutationFn: cancelOptimization,
+  })
+}
+
+export function useDeleteOptimization() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteOptimizationStudy,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...optimizeKeys.all, 'history'] })
+    },
   })
 }
 

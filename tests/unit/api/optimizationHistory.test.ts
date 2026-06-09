@@ -5,6 +5,7 @@ import { createElement, type ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
+  deleteOptimizationStudy,
   fetchOptimizationHistory,
   useOptimizationHistory,
   useOptimizationStatus,
@@ -66,5 +67,16 @@ describe('optimization history API', () => {
 
     expect(result.current.data?.items.length).toBeGreaterThan(0)
     expect(result.current.data?.total).toBe(result.current.data?.items.length)
+  })
+
+  it('deleteOptimizationStudy removes a study from history', async () => {
+    const before = await fetchOptimizationHistory()
+    const studyId = before.items[0].study_id
+
+    await deleteOptimizationStudy(studyId)
+
+    const after = await fetchOptimizationHistory()
+    expect(after.total).toBe(before.total - 1)
+    expect(after.items.find((study) => study.study_id === studyId)).toBeUndefined()
   })
 })
