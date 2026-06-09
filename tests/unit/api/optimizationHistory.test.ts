@@ -4,7 +4,11 @@ import { setupServer } from 'msw/node'
 import { createElement, type ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
-import { fetchOptimizationHistory, useOptimizationHistory } from '@/api/queries/optimize'
+import {
+  fetchOptimizationHistory,
+  useOptimizationHistory,
+  useOptimizationStatus,
+} from '@/api/queries/optimize'
 import { handlers } from '@/mocks/handlers'
 
 const server = setupServer(...handlers)
@@ -39,6 +43,19 @@ describe('optimization history API', () => {
       n_trials: expect.any(Number),
       completed_trials: expect.any(Number),
       created_at: expect.any(String),
+    })
+  })
+
+  it('optimization status includes optimization_config for history continue', async () => {
+    const { result } = renderHook(() => useOptimizationStatus('study-win-ma'), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    expect(result.current.data?.optimization_config).toMatchObject({
+      backtest: { symbol: 'WIN$' },
+      study: { name: 'WIN$ MA sweep' },
     })
   })
 

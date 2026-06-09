@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from 'date-fns'
-import { Loader2, RotateCcw } from 'lucide-react'
+import { Loader2, Play, RotateCcw } from 'lucide-react'
+import { useEffect } from 'react'
 
 import {
   useOptimizationHistory,
@@ -7,18 +8,22 @@ import {
   useOptimizationStatus,
 } from '@/api/queries/optimize'
 import { OptimizationResultsTabs } from '@/components/optimize/OptimizationResultsTabs'
+import { Button } from '@/components/ui/button'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
+import { useAppStore } from '@/store/useAppStore'
 import type {
   JobStatus,
   OptimizationBacktestConfig,
+  OptimizationConfig,
   OptimizationStudySummary,
 } from '@/types/optimization'
 
 type OptimizationHistoryPanelProps = {
   selectedStudyId: string | null
-  onSelectStudy: (studyId: string) => void
+  onSelectStudy: (studyId: string | null) => void
   studyBacktestConfigs: Record<string, OptimizationBacktestConfig>
+  onContinueStudy: (studyId: string, config: OptimizationConfig, status: JobStatus) => void
 }
 
 const statusStyles: Record<JobStatus, string> = {
@@ -81,10 +86,18 @@ export function OptimizationHistoryPanel({
   selectedStudyId,
   onSelectStudy,
   studyBacktestConfigs,
+  onContinueStudy,
 }: OptimizationHistoryPanelProps) {
   const historyQuery = useOptimizationHistory()
   const statusQuery = useOptimizationStatus(selectedStudyId)
   const status = statusQuery.data
+  const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
+
+  useEffect(() => {
+    if (status?.optimization_config) {
+      setPendingOptimizationConfig(status.optimization_config)
+    }
+  }, [status?.optimization_config, setPendingOptimizationConfig])
 
   const hasTerminalResults = status?.status === 'done' || status?.status === 'cancelled'
   const resultsQuery = useOptimizationResults(selectedStudyId, hasTerminalResults)
@@ -95,9 +108,12 @@ export function OptimizationHistoryPanel({
       ? (studyBacktestConfigs[selectedStudyId] ?? status?.backtest_config ?? null)
       : null
 
+  const canContinue = status?.optimization_config != null
+  const isActiveStudy = status?.status === 'pending' || status?.status === 'running'
+
   return (
     <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
-      <div className="border-carbon-600/60 flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border">
+      <div className="bg-carbon-900/50 border-carbon-600/60 flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border">
         <div className="border-carbon-600/60 shrink-0 border-b px-4 py-3">
           <h3 className="text-silver-100 font-medium">Past Studies</h3>
           <p className="text-silver-400 mt-0.5 text-xs">
@@ -136,7 +152,7 @@ export function OptimizationHistoryPanel({
         </div>
       </div>
 
-      <div className="border-carbon-600/60 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border">
+      <div className="bg-carbon-900/50 border-carbon-600/60 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border">
         {!selectedStudyId ? (
           <div className="text-silver-400 flex flex-1 flex-col items-center justify-center px-6 text-center">
             <RotateCcw className="text-silver-500 mb-3 h-8 w-8" />
@@ -181,6 +197,25 @@ export function OptimizationHistoryPanel({
             <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-400">
               {status.error ?? 'Optimization failed.'}
             </div>
+            {canContinue && (
+              <div className="border-carbon-600/40 bg-brass-500/5 mt-4 rounded-lg border p-4">
+                <p className="text-silver-300 text-sm">
+                  The saved configuration has been loaded into the optimizer form. Adjust parameters
+                  and run again to retry this study.
+                </p>
+                <Button
+                  type="button"
+                  variant="brass"
+                  className="mt-3"
+                  onClick={() =>
+                    onContinueStudy(selectedStudyId, status.optimization_config!, status.status)
+                  }
+                >
+                  <Play className="h-4 w-4" />
+                  Continue optimization
+                </Button>
+              </div>
+            )}
           </div>
         ) : resultsQuery.isLoading ? (
           <div className="text-silver-400 flex flex-1 items-center justify-center gap-2 text-sm">
@@ -218,6 +253,26 @@ export function OptimizationHistoryPanel({
                   : undefined
               }
             />
+            {canContinue && (
+              <div className="border-carbon-600/40 bg-brass-500/5 mt-4 shrink-0 rounded-lg border p-4">
+                <p className="text-silver-300 text-sm">
+                  {isActiveStudy
+                    ? 'This study is still running. Resume monitoring or adjust the loaded config in the workbench.'
+                    : 'The saved configuration has been loaded into the optimizer form. Adjust trial count or search space, then run again to continue exploring.'}
+                </p>
+                <Button
+                  type="button"
+                  variant="brass"
+                  className="mt-3"
+                  onClick={() =>
+                    onContinueStudy(selectedStudyId, status.optimization_config!, status.status)
+                  }
+                >
+                  <Play className="h-4 w-4" />
+                  {isActiveStudy ? 'Resume monitoring' : 'Continue optimization'}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -8,6 +8,7 @@ import type {
 } from '@/types/backtesting'
 import type {
   OptimizationBacktestConfig,
+  OptimizationConfig,
   OptimizationResults,
   OptimizationStatus,
   OptimizationStudySummary,
@@ -212,6 +213,52 @@ export const mockBacktestRunSummaries: BacktestRunSummary[] = [
   },
 ]
 
+function buildMockOptimizationConfig(
+  studyId: string,
+  backtest: OptimizationBacktestConfig,
+  overrides?: Partial<OptimizationConfig['study']> & {
+    objective?: OptimizationConfig['objective']
+  },
+): OptimizationConfig {
+  const studyName =
+    studyId === 'study-win-ma'
+      ? 'WIN$ MA sweep'
+      : studyId === 'study-vale-ma'
+        ? 'VALE3 Sharpe search'
+        : 'PETR4 D1 optimization'
+
+  return {
+    study: {
+      name: studyName,
+      n_trials:
+        overrides?.n_trials ??
+        (studyId === 'study-petr-failed' ? 25 : studyId === 'study-vale-ma' ? 20 : 30),
+      seed: 42,
+      sampler: studyId === 'study-vale-ma' ? 'tpe' : 'tpe',
+      pruner: 'none',
+      continue_on_trial_error: false,
+      ...overrides,
+    },
+    objective: overrides?.objective ?? {
+      mode: studyId === 'study-vale-ma' ? 'maximize_sharpe' : 'maximize_return_drawdown',
+    },
+    backtest,
+    search_space: {
+      strategy_params: {
+        short_period: { type: 'int', low: 5, high: 30 },
+        long_period: { type: 'int', low: 31, high: 100 },
+        threshold: { type: 'float', low: 0, high: 2 },
+        short_ma_type: { type: 'categorical', choices: ['sma'] },
+        long_ma_type: { type: 'categorical', choices: ['sma'] },
+      },
+      risk_params: {
+        type: { type: 'categorical', choices: ['fixed_quantity'] },
+        quantity: { type: 'float', low: 1, high: 3 },
+      },
+    },
+  }
+}
+
 const mockOptimizationBacktests: Record<string, OptimizationBacktestConfig> = {
   'study-win-ma': {
     symbol: 'WIN$',
@@ -325,6 +372,21 @@ mockOptimizationResults['study-win-ma'].best_trial =
 mockOptimizationResults['study-vale-ma'].best_trial =
   mockOptimizationResults['study-vale-ma'].trials.find((t) => t.number === 11) ?? null
 
+const mockOptimizationConfigs: Record<string, OptimizationConfig> = {
+  'study-win-ma': buildMockOptimizationConfig(
+    'study-win-ma',
+    mockOptimizationBacktests['study-win-ma'],
+  ),
+  'study-vale-ma': buildMockOptimizationConfig(
+    'study-vale-ma',
+    mockOptimizationBacktests['study-vale-ma'],
+  ),
+  'study-petr-failed': buildMockOptimizationConfig(
+    'study-petr-failed',
+    mockOptimizationBacktests['study-petr-failed'],
+  ),
+}
+
 const mockOptimizationStatuses: Record<string, OptimizationStatus> = {
   'study-win-ma': {
     study_id: 'study-win-ma',
@@ -335,6 +397,7 @@ const mockOptimizationStatuses: Record<string, OptimizationStatus> = {
     best_params: mockOptimizationResults['study-win-ma'].best_params,
     error: null,
     backtest_config: mockOptimizationBacktests['study-win-ma'],
+    optimization_config: mockOptimizationConfigs['study-win-ma'],
   },
   'study-vale-ma': {
     study_id: 'study-vale-ma',
@@ -345,6 +408,7 @@ const mockOptimizationStatuses: Record<string, OptimizationStatus> = {
     best_params: mockOptimizationResults['study-vale-ma'].best_params,
     error: null,
     backtest_config: mockOptimizationBacktests['study-vale-ma'],
+    optimization_config: mockOptimizationConfigs['study-vale-ma'],
   },
   'study-petr-failed': {
     study_id: 'study-petr-failed',
@@ -355,6 +419,7 @@ const mockOptimizationStatuses: Record<string, OptimizationStatus> = {
     best_params: {},
     error: 'Insufficient data for the requested range.',
     backtest_config: mockOptimizationBacktests['study-petr-failed'],
+    optimization_config: mockOptimizationConfigs['study-petr-failed'],
   },
 }
 

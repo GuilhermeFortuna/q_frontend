@@ -1,5 +1,5 @@
 import { endOfDay, startOfDay } from 'date-fns'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { OptimizeAdvancedSection } from '@/components/optimize/OptimizeAdvancedSection'
 import { OptimizeRiskSection } from '@/components/optimize/OptimizeRiskSection'
@@ -7,6 +7,8 @@ import { OptimizeStrategySection } from '@/components/optimize/OptimizeStrategyS
 import { OptimizeStudySection } from '@/components/optimize/OptimizeStudySection'
 import { Button } from '@/components/ui/button'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
+import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
+import { useAppStore } from '@/store/useAppStore'
 import type { MaType } from '@/lib/backtesting/maTypes'
 import type { ObjectiveMode, OptimizationConfig, Sampler, SearchParam } from '@/types/optimization'
 
@@ -60,6 +62,44 @@ export function OptimizeConfigForm({
   const [riskOpen, setRiskOpen] = useState(true)
   const [studyOpen, setStudyOpen] = useState(true)
   const [advancedOpen, setAdvancedOpen] = useState(false)
+
+  const pendingOptimizationConfig = useAppStore((s) => s.pendingOptimizationConfig)
+  const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
+
+  useEffect(() => {
+    if (!pendingOptimizationConfig) return
+    const hydrated = hydrateOptimizeFormFromConfig(pendingOptimizationConfig)
+
+    setSymbol(hydrated.symbol)
+    setTimeframe(hydrated.timeframe)
+    setStartDate(hydrated.startDate)
+    setEndDate(hydrated.endDate)
+    setCapital(hydrated.capital)
+    setPointValue(hydrated.pointValue)
+    setObjective(hydrated.objective)
+    setSampler(hydrated.sampler)
+    setNTrials(hydrated.nTrials)
+    setSeed(hydrated.seed)
+    setPruner(hydrated.pruner)
+    setContinueOnTrialError(hydrated.continueOnTrialError)
+    setShortLow(hydrated.shortLow)
+    setShortHigh(hydrated.shortHigh)
+    setLongLow(hydrated.longLow)
+    setLongHigh(hydrated.longHigh)
+    setThresholdLow(hydrated.thresholdLow)
+    setThresholdHigh(hydrated.thresholdHigh)
+    setShortMaChoices(hydrated.shortMaChoices)
+    setLongMaChoices(hydrated.longMaChoices)
+    setRiskMode(hydrated.riskMode)
+    setQtyLow(hydrated.qtyLow)
+    setQtyHigh(hydrated.qtyHigh)
+    setMarginLow(hydrated.marginLow)
+    setMarginHigh(hydrated.marginHigh)
+    setMinContractsLow(hydrated.minContractsLow)
+    setMinContractsHigh(hydrated.minContractsHigh)
+
+    setPendingOptimizationConfig(null)
+  }, [pendingOptimizationConfig, setPendingOptimizationConfig])
 
   const dateRangeInvalid = startDate >= endDate
   const rangesInvalid =

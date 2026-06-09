@@ -68,6 +68,8 @@ export type OptimizationStatus = {
   error: string | null
   /** Present when the backend can resolve the study's original backtest window. */
   backtest_config?: OptimizationBacktestConfig
+  /** Full optimization config for rehydrating the optimizer form. */
+  optimization_config?: OptimizationConfig
 }
 
 export type OptimizationTrial = {

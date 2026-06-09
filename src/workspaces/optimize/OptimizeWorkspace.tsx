@@ -12,7 +12,11 @@ import { OptimizationResultsPanel } from '@/components/optimize/OptimizationResu
 import { OptimizationWorkbench } from '@/components/optimize/OptimizationWorkbench'
 import { OptimizeConfigForm } from '@/components/optimize/OptimizeConfigForm'
 import { cn } from '@/lib/utils'
-import type { OptimizationBacktestConfig, OptimizationConfig } from '@/types/optimization'
+import type {
+  JobStatus,
+  OptimizationBacktestConfig,
+  OptimizationConfig,
+} from '@/types/optimization'
 
 type RightPanelTab = 'results' | 'history'
 
@@ -67,6 +71,28 @@ export function OptimizeWorkspace() {
     if (studyId) cancelOptimization.mutate(studyId)
   }
 
+  const handleContinueStudy = (
+    historyStudyId: string,
+    config: OptimizationConfig,
+    status: JobStatus,
+  ) => {
+    setSubmittedConfig(config)
+    setStudyBacktestConfigs((prev) => ({
+      ...prev,
+      [historyStudyId]: config.backtest,
+    }))
+
+    if (status === 'pending' || status === 'running') {
+      setStudyId(historyStudyId)
+      setRightPanelTab('results')
+      setWorkbenchOpen(false)
+      return
+    }
+
+    setWorkbenchOpen(true)
+    setRightPanelTab('results')
+  }
+
   const startError = startOptimization.error
     ? axios.isAxiosError(startOptimization.error)
       ? ((startOptimization.error.response?.data as { detail?: string })?.detail ??
@@ -85,7 +111,7 @@ export function OptimizeWorkspace() {
         />
       </OptimizationWorkbench>
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden p-4 md:p-6">
+      <div className="quant-panel flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6">
         <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
           {RIGHT_PANEL_TABS.map((tab) => (
             <button
@@ -109,6 +135,7 @@ export function OptimizeWorkspace() {
             selectedStudyId={selectedHistoryStudyId}
             onSelectStudy={setSelectedHistoryStudyId}
             studyBacktestConfigs={studyBacktestConfigs}
+            onContinueStudy={handleContinueStudy}
           />
         ) : (
           <OptimizationResultsPanel
