@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ParentSize } from '@visx/responsive'
 import { scaleBand, scaleLinear } from '@visx/scale'
 import { localPoint } from '@visx/event'
@@ -8,6 +8,7 @@ import {
   StrategyIndicatorLayer,
   StrategyOscillatorLayer,
 } from '@/components/backtests/StrategyIndicatorLayer'
+import { TradeHoverCard } from '@/components/backtests/TradeHoverCard'
 import { TradeMarkersLayer } from '@/components/backtests/TradeMarkersLayer'
 import { processBars } from '@/components/charts/hooks/useChartScales'
 import { useChartViewport } from '@/components/charts/hooks/useChartViewport'
@@ -145,6 +146,8 @@ function ChartInner({
   const isPanning = useRef(false)
   const panStart = useRef<{ x: number; startIndex: number } | null>(null)
   const chartRef = useRef<HTMLDivElement>(null)
+  const [hoveredTrade, setHoveredTrade] = useState<Trade | null>(null)
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     const el = chartRef.current
@@ -197,6 +200,19 @@ function ChartInner({
   const handleDoubleClick = useCallback(() => {
     fitAll()
   }, [fitAll])
+
+  const handleTradeHover = useCallback((trade: Trade | null, event?: React.MouseEvent) => {
+    setHoveredTrade(trade)
+    if (trade && event && chartRef.current) {
+      const bounds = chartRef.current.getBoundingClientRect()
+      setHoverPos({
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      })
+    } else {
+      setHoverPos(null)
+    }
+  }, [])
 
   return (
     <div
@@ -252,15 +268,6 @@ function ChartInner({
           left={CHART_MARGINS.left}
         />
 
-        <TradeMarkersLayer
-          trades={trades}
-          allBars={bars}
-          visibleTimestamps={visibleTimestamps}
-          xScale={scales.xScale}
-          yScale={scales.priceScale}
-          left={CHART_MARGINS.left}
-        />
-
         {hasOscillator &&
           layout.oscillatorTop !== undefined &&
           layout.oscillatorHeight !== undefined && (
@@ -302,10 +309,34 @@ function ChartInner({
           onMouseMove={handleMouseMove}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onMouseLeave={() => {
+            handleMouseUp()
+            handleTradeHover(null)
+          }}
           onDoubleClick={handleDoubleClick}
         />
+
+        <TradeMarkersLayer
+          trades={trades}
+          allBars={bars}
+          visibleTimestamps={visibleTimestamps}
+          xScale={scales.xScale}
+          yScale={scales.priceScale}
+          left={CHART_MARGINS.left}
+          hoveredTradeId={hoveredTrade?.id}
+          onTradeHover={handleTradeHover}
+        />
       </svg>
+
+      {hoveredTrade && hoverPos && (
+        <TradeHoverCard
+          trade={hoveredTrade}
+          x={hoverPos.x}
+          y={hoverPos.y}
+          containerWidth={width}
+          containerHeight={height}
+        />
+      )}
     </div>
   )
 }
@@ -325,16 +356,24 @@ function ChartLegend({ indicators }: { indicators: ChartIndicatorSeries[] }) {
         </span>
       ))}
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-0 w-0 border-r-4 border-b-[6px] border-l-4 border-r-transparent border-b-emerald-400 border-l-transparent" />
+        <span className="inline-block h-0 w-0 border-r-[5px] border-b-[8px] border-l-[5px] border-r-transparent border-b-emerald-400 border-l-transparent" />
         Long entry
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-0 w-0 border-t-[6px] border-r-4 border-l-4 border-t-rose-400 border-r-transparent border-l-transparent" />
+        <span className="inline-block h-0 w-0 border-t-[8px] border-r-[5px] border-l-[5px] border-t-rose-400 border-r-transparent border-l-transparent" />
         Short entry
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="border-silver-400 inline-block h-2.5 w-2.5 rounded-full border" />
+        <span className="border-silver-200 inline-block h-3 w-3 rounded-full border-2 border-emerald-400 bg-emerald-500/80" />
         Exit
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="inline-block h-0.5 w-4 bg-emerald-400/60" />
+        Winning trade
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="inline-block h-0.5 w-4 bg-rose-400/60" />
+        Losing trade
       </span>
       <span className="text-silver-500">
         Scroll to zoom · drag to pan · double-click to fit all
