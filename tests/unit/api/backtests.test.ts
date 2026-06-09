@@ -5,9 +5,11 @@ import { createElement, type ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
+  bulkDeleteBacktestRuns,
   deleteBacktestRun,
   fetchBacktestHistory,
   fetchBacktestRun,
+  patchBacktestRunSaved,
   useBacktestHistory,
   useBacktestRun,
 } from '@/api/queries/backtests'
@@ -85,6 +87,38 @@ describe('backtest history API', () => {
 
     expect(result.current.data?.items.length).toBeGreaterThan(0)
     expect(result.current.data?.total).toBe(result.current.data?.items.length)
+  })
+
+  it('fetchBacktestHistory supports saved filter and sort params', async () => {
+    const saved = await fetchBacktestHistory({ saved_only: true })
+    expect(saved.items.every((run) => run.is_saved)).toBe(true)
+
+    const sorted = await fetchBacktestHistory({ sort: 'pnl_desc' })
+    expect(sorted.items.length).toBeGreaterThan(0)
+  })
+
+  it('patchBacktestRunSaved toggles bookmark state', async () => {
+    const list = await fetchBacktestHistory()
+    const runId = list.items.find((run) => !run.is_saved)?.run_id
+    expect(runId).toBeDefined()
+
+    const saved = await patchBacktestRunSaved(runId!, true)
+    expect(saved.is_saved).toBe(true)
+
+    const unsaved = await patchBacktestRunSaved(runId!, false)
+    expect(unsaved.is_saved).toBe(false)
+  })
+
+  it('bulkDeleteBacktestRuns removes multiple runs', async () => {
+    const before = await fetchBacktestHistory()
+    const ids = before.items.slice(0, 2).map((run) => run.run_id)
+
+    const result = await bulkDeleteBacktestRuns([...ids, 'missing-id'])
+    expect(result.deleted).toBe(ids.length)
+    expect(result.not_found).toContain('missing-id')
+
+    const after = await fetchBacktestHistory()
+    expect(after.total).toBe(before.total - ids.length)
   })
 
   it('deleteBacktestRun removes a run from history', async () => {

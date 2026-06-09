@@ -192,6 +192,7 @@ export const mockBacktestRunSummaries: BacktestRunSummary[] = [
     timeframe: 'M5',
     status: 'completed',
     created_at: hoursAgo(2),
+    is_saved: true,
     summary: mockBacktestMetrics,
   },
   {
@@ -201,6 +202,7 @@ export const mockBacktestRunSummaries: BacktestRunSummary[] = [
     timeframe: 'H1',
     status: 'completed',
     created_at: hoursAgo(26),
+    is_saved: false,
     summary: mockBacktestMetricsAlt,
   },
   {
@@ -210,6 +212,7 @@ export const mockBacktestRunSummaries: BacktestRunSummary[] = [
     timeframe: 'D1',
     status: 'failed',
     created_at: hoursAgo(72),
+    is_saved: false,
     summary: null,
   },
 ]
@@ -487,6 +490,7 @@ export function getMockBacktestRunDetail(runId: string): BacktestRunDetail | nul
     started_at: startedAt,
     finished_at: finishedAt,
     created_at: createdAt,
+    is_saved: summary.is_saved,
   }
 }
 

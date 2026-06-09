@@ -79,6 +79,8 @@ export interface BacktestResponse {
 
 export type BacktestRunStatus = 'pending' | 'running' | 'completed' | 'failed'
 
+export type BacktestHistorySort = 'created_at_desc' | 'pnl_desc' | 'pnl_asc'
+
 export interface BacktestRunSummary {
   run_id: string
   symbol: string
@@ -86,6 +88,7 @@ export interface BacktestRunSummary {
   timeframe: string
   status: BacktestRunStatus
   created_at: string
+  is_saved: boolean
   /** Null when the run failed or metrics were not stored. */
   summary: BacktestMetrics | null
 }
@@ -104,6 +107,12 @@ export interface BacktestRunDetail {
   started_at: string | null
   finished_at: string | null
   created_at: string
+  is_saved: boolean
+}
+
+export interface BulkDeleteResponse {
+  deleted: number
+  not_found: string[]
 }
 
 export interface BacktestRunListResponse {

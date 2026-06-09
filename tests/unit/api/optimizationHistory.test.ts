@@ -5,17 +5,21 @@ import { createElement, type ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
+  bulkDeleteOptimizationStudies,
   deleteOptimizationStudy,
   fetchOptimizationHistory,
   useOptimizationHistory,
   useOptimizationStatus,
 } from '@/api/queries/optimize'
-import { handlers } from '@/mocks/handlers'
+import { handlers, resetMockOptimizationDeletes } from '@/mocks/handlers'
 
 const server = setupServer(...handlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  resetMockOptimizationDeletes()
+})
 afterAll(() => server.close())
 
 function createWrapper() {
@@ -67,6 +71,18 @@ describe('optimization history API', () => {
 
     expect(result.current.data?.items.length).toBeGreaterThan(0)
     expect(result.current.data?.total).toBe(result.current.data?.items.length)
+  })
+
+  it('bulkDeleteOptimizationStudies removes multiple studies', async () => {
+    const before = await fetchOptimizationHistory()
+    const ids = before.items.slice(0, 2).map((study) => study.study_id)
+
+    const result = await bulkDeleteOptimizationStudies([...ids, 'missing-id'])
+    expect(result.deleted).toBe(ids.length)
+    expect(result.not_found).toContain('missing-id')
+
+    const after = await fetchOptimizationHistory()
+    expect(after.total).toBe(before.total - ids.length)
   })
 
   it('deleteOptimizationStudy removes a study from history', async () => {

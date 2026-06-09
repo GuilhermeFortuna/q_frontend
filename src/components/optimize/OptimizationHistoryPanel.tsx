@@ -1,16 +1,21 @@
 import { formatDistanceToNow } from 'date-fns'
-import { Loader2, Play, RotateCcw, X } from 'lucide-react'
+import { Loader2, Play, RotateCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import {
-  useDeleteOptimization,
+  useBulkDeleteOptimizations,
   useOptimizationHistory,
   useOptimizationResults,
   useOptimizationStatus,
 } from '@/api/queries/optimize'
 import { OptimizationResultsTabs } from '@/components/optimize/OptimizationResultsTabs'
+import {
+  formatBulkDeleteDescription,
+  HistorySelectionToolbar,
+} from '@/components/shared/HistorySelectionToolbar'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useHistorySelection } from '@/hooks/useHistorySelection'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
@@ -44,64 +49,76 @@ function formatBestValue(value: number | null): string {
 function StudyListItem({
   study,
   selected,
+  selectionMode,
+  checked,
   onSelect,
-  onDelete,
-  deleting,
+  onToggleCheck,
 }: {
   study: OptimizationStudySummary
   selected: boolean
+  selectionMode: boolean
+  checked: boolean
   onSelect: () => void
-  onDelete: () => void
-  deleting: boolean
+  onToggleCheck: () => void
 }) {
+  const handleRowClick = () => {
+    if (selectionMode) {
+      onToggleCheck()
+      return
+    }
+    onSelect()
+  }
+
   return (
     <div
       className={cn(
         'border-carbon-600/60 hover:border-brass-500/40 relative w-full rounded-lg border transition-colors',
-        selected ? 'border-brass-500/60 bg-brass-500/5' : 'bg-carbon-900/30',
+        selected && !selectionMode ? 'border-brass-500/60 bg-brass-500/5' : 'bg-carbon-900/30',
+        selectionMode && checked ? 'border-brass-500/40 bg-brass-500/5' : null,
       )}
     >
-      <button
-        type="button"
-        onClick={onSelect}
-        className="w-full p-3 pr-9 text-left"
-        aria-label={`Select study ${study.name}`}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-silver-100 truncate font-medium">{study.name}</p>
-            <p className="text-silver-400 mt-0.5 text-xs">
-              {study.completed_trials}/{study.n_trials} trials ·{' '}
-              {formatDistanceToNow(new Date(study.created_at), { addSuffix: true })}
-            </p>
+      <div className="flex items-start gap-2 p-3">
+        {selectionMode ? (
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={onToggleCheck}
+            onClick={(e) => e.stopPropagation()}
+            className="border-carbon-500 text-brass-500 mt-1 h-3.5 w-3.5 shrink-0 rounded"
+            aria-label={`Select study ${study.name}`}
+          />
+        ) : null}
+
+        <button
+          type="button"
+          onClick={handleRowClick}
+          className="min-w-0 flex-1 text-left"
+          aria-label={`Select study ${study.name}`}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-silver-100 truncate text-sm font-medium">{study.name}</p>
+              <p className="text-silver-400 mt-0.5 text-xs">
+                {study.completed_trials}/{study.n_trials} trials ·{' '}
+                {formatDistanceToNow(new Date(study.created_at), { addSuffix: true })}
+              </p>
+            </div>
+            <span
+              className={cn(
+                'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize',
+                statusStyles[study.status],
+              )}
+            >
+              {study.status}
+            </span>
           </div>
-          <span
-            className={cn(
-              'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize',
-              statusStyles[study.status],
-            )}
-          >
-            {study.status}
-          </span>
-        </div>
 
-        <div className="text-silver-300 mt-2 text-xs tabular-nums">
-          Best objective <span className="text-brass-400">{formatBestValue(study.best_value)}</span>
-        </div>
-      </button>
-
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          onDelete()
-        }}
-        disabled={deleting}
-        className="text-silver-500 absolute top-2 right-2 rounded p-1 transition-colors hover:bg-rose-500/10 hover:text-rose-400 disabled:opacity-50"
-        aria-label={`Delete study ${study.name}`}
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
+          <div className="text-silver-300 mt-2 text-xs tabular-nums">
+            Best objective{' '}
+            <span className="text-brass-400">{formatBestValue(study.best_value)}</span>
+          </div>
+        </button>
+      </div>
     </div>
   )
 }
@@ -114,10 +131,11 @@ export function OptimizationHistoryPanel({
 }: OptimizationHistoryPanelProps) {
   const historyQuery = useOptimizationHistory()
   const statusQuery = useOptimizationStatus(selectedStudyId)
-  const deleteOptimization = useDeleteOptimization()
+  const bulkDelete = useBulkDeleteOptimizations()
+  const selection = useHistorySelection()
   const status = statusQuery.data
   const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
-  const [pendingDeleteStudyId, setPendingDeleteStudyId] = useState<string | null>(null)
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
   useEffect(() => {
     if (status?.optimization_config) {
@@ -129,16 +147,22 @@ export function OptimizationHistoryPanel({
   const resultsQuery = useOptimizationResults(selectedStudyId, hasTerminalResults)
 
   const studies = historyQuery.data?.items ?? []
-  const pendingDeleteStudy = studies.find((study) => study.study_id === pendingDeleteStudyId)
+  const pageStudyIds = studies.map((study) => study.study_id)
+  const selectedLabels = studies
+    .filter((study) => selection.selectedIds.has(study.study_id))
+    .map((study) => study.name)
 
-  const handleConfirmDelete = () => {
-    if (!pendingDeleteStudyId) return
-    deleteOptimization.mutate(pendingDeleteStudyId, {
+  const handleConfirmBulkDelete = () => {
+    const ids = [...selection.selectedIds]
+    if (ids.length === 0) return
+
+    bulkDelete.mutate(ids, {
       onSuccess: () => {
-        if (selectedStudyId === pendingDeleteStudyId) {
+        if (selectedStudyId && ids.includes(selectedStudyId)) {
           onSelectStudy(null)
         }
-        setPendingDeleteStudyId(null)
+        selection.exitSelectionMode()
+        setConfirmBulkDelete(false)
       },
     })
   }
@@ -155,12 +179,26 @@ export function OptimizationHistoryPanel({
       <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
         <div className="bg-carbon-900/50 border-carbon-600/60 flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border">
           <div className="border-carbon-600/60 shrink-0 border-b px-4 py-3">
-            <h3 className="text-silver-100 font-medium">Past Studies</h3>
-            <p className="text-silver-400 mt-0.5 text-xs">
-              {historyQuery.isLoading
-                ? 'Loading…'
-                : `${historyQuery.data?.total ?? studies.length} saved stud${(historyQuery.data?.total ?? studies.length) === 1 ? 'y' : 'ies'}`}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="text-silver-100 font-medium">Past Studies</h3>
+                <p className="text-silver-400 mt-0.5 text-xs">
+                  {historyQuery.isLoading
+                    ? 'Loading…'
+                    : `${historyQuery.data?.total ?? studies.length} stud${(historyQuery.data?.total ?? studies.length) === 1 ? 'y' : 'ies'}`}
+                </p>
+              </div>
+              <HistorySelectionToolbar
+                selectionMode={selection.selectionMode}
+                selectedCount={selection.selectedCount}
+                pageItemCount={studies.length}
+                onEnterSelection={selection.enterSelectionMode}
+                onExitSelection={selection.exitSelectionMode}
+                onSelectAllPage={() => selection.selectAll(pageStudyIds)}
+                onDeleteSelected={() => setConfirmBulkDelete(true)}
+                deleting={bulkDelete.isPending}
+              />
+            </div>
           </div>
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
@@ -179,7 +217,7 @@ export function OptimizationHistoryPanel({
 
             {!historyQuery.isLoading && studies.length === 0 && (
               <p className="text-silver-400 px-1 py-8 text-center text-sm">
-                No saved studies yet. Run an optimization to build history.
+                No studies yet. Run an optimization to build history.
               </p>
             )}
 
@@ -188,9 +226,10 @@ export function OptimizationHistoryPanel({
                 key={study.study_id}
                 study={study}
                 selected={selectedStudyId === study.study_id}
+                selectionMode={selection.selectionMode}
+                checked={selection.isSelected(study.study_id)}
                 onSelect={() => onSelectStudy(study.study_id)}
-                onDelete={() => setPendingDeleteStudyId(study.study_id)}
-                deleting={deleteOptimization.isPending && pendingDeleteStudyId === study.study_id}
+                onToggleCheck={() => selection.toggle(study.study_id)}
               />
             ))}
           </div>
@@ -323,17 +362,13 @@ export function OptimizationHistoryPanel({
       </div>
 
       <ConfirmDialog
-        open={pendingDeleteStudyId != null}
-        title="Delete optimization study?"
-        description={
-          pendingDeleteStudy
-            ? `Remove "${pendingDeleteStudy.name}" from history? This cannot be undone.`
-            : 'Remove this study from history? This cannot be undone.'
-        }
+        open={confirmBulkDelete}
+        title={`Delete ${selection.selectedCount} optimization stud${selection.selectedCount === 1 ? 'y' : 'ies'}?`}
+        description={formatBulkDeleteDescription(selectedLabels, 'studies')}
         confirmLabel="Delete"
-        loading={deleteOptimization.isPending}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setPendingDeleteStudyId(null)}
+        loading={bulkDelete.isPending}
+        onConfirm={handleConfirmBulkDelete}
+        onCancel={() => setConfirmBulkDelete(false)}
       />
     </>
   )

@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+﻿import { http, HttpResponse } from 'msw'
 
 import { getMockBacktestResponse } from '@/mocks/backtest'
 import {
@@ -18,9 +18,11 @@ import type { OptimizationTrial } from '@/types/optimization'
 
 const deletedBacktestRunIds = new Set<string>()
 const deletedOptimizationStudyIds = new Set<string>()
+const savedBacktestRunOverrides = new Map<string, boolean>()
 
 export function resetMockBacktestDeletes() {
   deletedBacktestRunIds.clear()
+  savedBacktestRunOverrides.clear()
 }
 
 export function resetMockOptimizationDeletes() {
@@ -103,10 +105,47 @@ export const handlers = [
     const limit = parseInt(url.searchParams.get('limit') ?? '50', 10)
     const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
     const symbol = url.searchParams.get('symbol')?.toUpperCase()
+    const strategy = url.searchParams.get('strategy') ?? undefined
+    const savedOnly = url.searchParams.get('saved_only') === 'true'
+    const sort = url.searchParams.get('sort') ?? 'created_at_desc'
 
-    let items = mockBacktestRunSummaries.filter((run) => !deletedBacktestRunIds.has(run.run_id))
+    let items = mockBacktestRunSummaries
+      .filter((run) => !deletedBacktestRunIds.has(run.run_id))
+      .map((run) => ({
+        ...run,
+        is_saved: savedBacktestRunOverrides.get(run.run_id) ?? run.is_saved,
+      }))
+
     if (symbol) {
       items = items.filter((run) => run.symbol.toUpperCase() === symbol)
+    }
+    if (strategy) {
+      items = items.filter((run) => run.strategy === strategy)
+    }
+    if (savedOnly) {
+      items = items.filter((run) => run.is_saved)
+    }
+
+    if (sort === 'pnl_desc') {
+      items = [...items].sort((a, b) => {
+        const aPnl = a.summary?.total_pnl ?? Number.NEGATIVE_INFINITY
+        const bPnl = b.summary?.total_pnl ?? Number.NEGATIVE_INFINITY
+        if (a.summary?.total_pnl == null && b.summary?.total_pnl == null) return 0
+        if (a.summary?.total_pnl == null) return 1
+        if (b.summary?.total_pnl == null) return -1
+        return bPnl - aPnl
+      })
+    } else if (sort === 'pnl_asc') {
+      items = [...items].sort((a, b) => {
+        if (a.summary?.total_pnl == null && b.summary?.total_pnl == null) return 0
+        if (a.summary?.total_pnl == null) return 1
+        if (b.summary?.total_pnl == null) return -1
+        return (a.summary?.total_pnl ?? 0) - (b.summary?.total_pnl ?? 0)
+      })
+    } else {
+      items = [...items].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )
     }
 
     return HttpResponse.json({
@@ -115,6 +154,39 @@ export const handlers = [
       limit,
       offset,
     })
+  }),
+
+  http.patch('*/api/v1/backtests/:runId', async ({ params, request }) => {
+    const runId = String(params.runId)
+    if (deletedBacktestRunIds.has(runId)) {
+      return HttpResponse.json({ detail: `Backtest run '${runId}' not found.` }, { status: 404 })
+    }
+    const body = (await request.json()) as { is_saved?: boolean }
+    const detail = getMockBacktestRunDetail(runId)
+    if (!detail || body.is_saved == null) {
+      return HttpResponse.json({ detail: `Backtest run '${runId}' not found.` }, { status: 404 })
+    }
+    savedBacktestRunOverrides.set(runId, body.is_saved)
+    return HttpResponse.json({ ...detail, is_saved: body.is_saved })
+  }),
+
+  http.post('*/api/v1/backtests/bulk-delete', async ({ request }) => {
+    const body = (await request.json()) as { run_ids?: string[] }
+    const runIds = body.run_ids ?? []
+    let deleted = 0
+    const notFound: string[] = []
+
+    for (const runId of runIds) {
+      const exists = mockBacktestRunSummaries.some((run) => run.run_id === runId)
+      if (!exists || deletedBacktestRunIds.has(runId)) {
+        notFound.push(runId)
+        continue
+      }
+      deletedBacktestRunIds.add(runId)
+      deleted += 1
+    }
+
+    return HttpResponse.json({ deleted, not_found: notFound })
   }),
 
   http.get('*/api/v1/backtests/:runId', ({ params }) => {
@@ -126,7 +198,10 @@ export const handlers = [
     if (!detail) {
       return HttpResponse.json({ detail: `Backtest run '${runId}' not found.` }, { status: 404 })
     }
-    return HttpResponse.json(detail)
+    return HttpResponse.json({
+      ...detail,
+      is_saved: savedBacktestRunOverrides.get(runId) ?? detail.is_saved,
+    })
   }),
 
   http.delete('*/api/v1/backtests/:runId', ({ params }) => {
@@ -241,6 +316,25 @@ export const handlers = [
       best_params: study.best_params,
       error: null,
     })
+  }),
+
+  http.post('*/api/v1/optimizations/bulk-delete', async ({ request }) => {
+    const body = (await request.json()) as { study_ids?: string[] }
+    const studyIds = body.study_ids ?? []
+    let deleted = 0
+    const notFound: string[] = []
+
+    for (const studyId of studyIds) {
+      const exists = mockOptimizationStudySummaries.some((study) => study.study_id === studyId)
+      if (!exists || deletedOptimizationStudyIds.has(studyId)) {
+        notFound.push(studyId)
+        continue
+      }
+      deletedOptimizationStudyIds.add(studyId)
+      deleted += 1
+    }
+
+    return HttpResponse.json({ deleted, not_found: notFound })
   }),
 
   http.delete('*/api/v1/optimizations/:studyId', ({ params }) => {

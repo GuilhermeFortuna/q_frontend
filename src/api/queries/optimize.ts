@@ -8,6 +8,7 @@ import type {
   OptimizationStatus,
   OptimizationStudyListResponse,
 } from '@/types/optimization'
+import type { BulkDeleteResponse } from '@/types/backtesting'
 
 export type OptimizationHistoryParams = {
   limit?: number
@@ -52,6 +53,15 @@ export async function deleteOptimizationStudy(studyId: string): Promise<void> {
   await apiClient.delete(`/api/v1/optimizations/${studyId}`)
 }
 
+export async function bulkDeleteOptimizationStudies(
+  studyIds: string[],
+): Promise<BulkDeleteResponse> {
+  const { data } = await apiClient.post<BulkDeleteResponse>('/api/v1/optimizations/bulk-delete', {
+    study_ids: studyIds,
+  })
+  return data
+}
+
 export async function cancelOptimization(studyId: string): Promise<OptimizationStatus> {
   const { data } = await apiClient.post<OptimizationStatus>(`/api/v1/optimize/${studyId}/cancel`)
   return data
@@ -79,6 +89,21 @@ export function useOptimizationHistory(params: OptimizationHistoryParams = {}) {
 export function useCancelOptimization() {
   return useMutation({
     mutationFn: cancelOptimization,
+  })
+}
+
+export function useBulkDeleteOptimizations() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: bulkDeleteOptimizationStudies,
+    onSuccess: (_data, studyIds) => {
+      for (const studyId of studyIds) {
+        queryClient.removeQueries({ queryKey: optimizeKeys.status(studyId) })
+        queryClient.removeQueries({ queryKey: optimizeKeys.results(studyId) })
+      }
+      queryClient.invalidateQueries({ queryKey: [...optimizeKeys.all, 'history'] })
+    },
   })
 }
 
