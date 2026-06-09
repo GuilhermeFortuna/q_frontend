@@ -202,5 +202,6 @@ export function getMockBacktestResponse(request: BacktestRequest): BacktestRespo
     trades: chartData.trades,
     bars: chartData.bars,
     indicators: chartData.indicators,
+    run_id: 'mock-persisted-run-id',
   }
 }

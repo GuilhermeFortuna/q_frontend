@@ -68,11 +68,49 @@ export interface ChartIndicatorSeries {
   values: (number | null)[]
 }
 
+/** Live run response — always includes full chart payload; run_id is null when persistence is unavailable. */
 export interface BacktestResponse {
   metrics: BacktestMetrics
   trades: Trade[]
   bars: OhlcvBar[]
   indicators: ChartIndicatorSeries[]
+  run_id?: string | null
+}
+
+export type BacktestRunStatus = 'pending' | 'running' | 'completed' | 'failed'
+
+export interface BacktestRunSummary {
+  run_id: string
+  symbol: string
+  strategy: string
+  timeframe: string
+  status: BacktestRunStatus
+  created_at: string
+  /** Null when the run failed or metrics were not stored. */
+  summary: BacktestMetrics | null
+}
+
+/** Persisted run detail — metrics + config only; no trades/bars/indicators. */
+export interface BacktestRunDetail {
+  run_id: string
+  symbol: string
+  strategy: string
+  timeframe: string
+  status: BacktestRunStatus
+  config: BacktestRequest
+  /** Null when the run failed or metrics were not stored. */
+  result_summary: BacktestMetrics | null
+  error_message: string | null
+  started_at: string | null
+  finished_at: string | null
+  created_at: string
+}
+
+export interface BacktestRunListResponse {
+  items: BacktestRunSummary[]
+  total: number
+  limit: number
+  offset: number
 }
 
 export interface EquityPoint {

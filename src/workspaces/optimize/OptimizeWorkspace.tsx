@@ -7,15 +7,29 @@ import {
   useOptimizationStatus,
   useStartOptimization,
 } from '@/api/queries/optimize'
+import { OptimizationHistoryPanel } from '@/components/optimize/OptimizationHistoryPanel'
 import { OptimizationResultsPanel } from '@/components/optimize/OptimizationResultsPanel'
 import { OptimizationWorkbench } from '@/components/optimize/OptimizationWorkbench'
 import { OptimizeConfigForm } from '@/components/optimize/OptimizeConfigForm'
-import type { OptimizationConfig } from '@/types/optimization'
+import { cn } from '@/lib/utils'
+import type { OptimizationBacktestConfig, OptimizationConfig } from '@/types/optimization'
+
+type RightPanelTab = 'results' | 'history'
+
+const RIGHT_PANEL_TABS: { id: RightPanelTab; label: string }[] = [
+  { id: 'results', label: 'Results' },
+  { id: 'history', label: 'History' },
+]
 
 export function OptimizeWorkspace() {
   const [studyId, setStudyId] = useState<string | null>(null)
   const [submittedConfig, setSubmittedConfig] = useState<OptimizationConfig | null>(null)
+  const [studyBacktestConfigs, setStudyBacktestConfigs] = useState<
+    Record<string, OptimizationBacktestConfig>
+  >({})
   const [workbenchOpen, setWorkbenchOpen] = useState(true)
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('results')
+  const [selectedHistoryStudyId, setSelectedHistoryStudyId] = useState<string | null>(null)
 
   const startOptimization = useStartOptimization()
   const cancelOptimization = useCancelOptimization()
@@ -36,9 +50,14 @@ export function OptimizeWorkspace() {
 
   const handleSubmit = (config: OptimizationConfig) => {
     setSubmittedConfig(config)
+    setRightPanelTab('results')
     startOptimization.mutate(config, {
       onSuccess: (res) => {
         setStudyId(res.study_id)
+        setStudyBacktestConfigs((prev) => ({
+          ...prev,
+          [res.study_id]: config.backtest,
+        }))
         setWorkbenchOpen(false)
       },
     })
@@ -67,15 +86,41 @@ export function OptimizeWorkspace() {
       </OptimizationWorkbench>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden p-4 md:p-6">
-        <OptimizationResultsPanel
-          isRunning={isRunning}
-          status={status}
-          results={resultsQuery.data}
-          backtest={submittedConfig?.backtest ?? null}
-          onCancel={handleCancel}
-          cancelling={cancelOptimization.isPending}
-          onOpenWorkbench={() => setWorkbenchOpen(true)}
-        />
+        <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
+          {RIGHT_PANEL_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setRightPanelTab(tab.id)}
+              className={cn(
+                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                rightPanelTab === tab.id
+                  ? 'border-brass-400 text-brass-400'
+                  : 'text-silver-400 hover:text-silver-200 border-transparent',
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {rightPanelTab === 'history' ? (
+          <OptimizationHistoryPanel
+            selectedStudyId={selectedHistoryStudyId}
+            onSelectStudy={setSelectedHistoryStudyId}
+            studyBacktestConfigs={studyBacktestConfigs}
+          />
+        ) : (
+          <OptimizationResultsPanel
+            isRunning={isRunning}
+            status={status}
+            results={resultsQuery.data}
+            backtest={submittedConfig?.backtest ?? null}
+            onCancel={handleCancel}
+            cancelling={cancelOptimization.isPending}
+            onOpenWorkbench={() => setWorkbenchOpen(true)}
+          />
+        )}
       </div>
     </div>
   )

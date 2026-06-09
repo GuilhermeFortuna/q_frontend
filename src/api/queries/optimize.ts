@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
 import type {
@@ -6,10 +6,18 @@ import type {
   OptimizationResults,
   OptimizationStartResponse,
   OptimizationStatus,
+  OptimizationStudyListResponse,
 } from '@/types/optimization'
+
+export type OptimizationHistoryParams = {
+  limit?: number
+  offset?: number
+}
 
 export const optimizeKeys = {
   all: ['optimize'] as const,
+  history: (params: OptimizationHistoryParams = {}) =>
+    [...optimizeKeys.all, 'history', params] as const,
   status: (studyId: string) => [...optimizeKeys.all, 'status', studyId] as const,
   results: (studyId: string) => [...optimizeKeys.all, 'results', studyId] as const,
 }
@@ -31,15 +39,36 @@ async function fetchOptimizationResults(studyId: string): Promise<OptimizationRe
   return data
 }
 
+export async function fetchOptimizationHistory(
+  params: OptimizationHistoryParams = {},
+): Promise<OptimizationStudyListResponse> {
+  const { data } = await apiClient.get<OptimizationStudyListResponse>('/api/v1/optimizations', {
+    params,
+  })
+  return data
+}
+
 export async function cancelOptimization(studyId: string): Promise<OptimizationStatus> {
   const { data } = await apiClient.post<OptimizationStatus>(`/api/v1/optimize/${studyId}/cancel`)
   return data
 }
 
 export function useStartOptimization() {
+  const queryClient = useQueryClient()
+
   return useMutation({
     mutationKey: optimizeKeys.all,
     mutationFn: startOptimization,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...optimizeKeys.all, 'history'] })
+    },
+  })
+}
+
+export function useOptimizationHistory(params: OptimizationHistoryParams = {}) {
+  return useQuery({
+    queryKey: optimizeKeys.history(params),
+    queryFn: () => fetchOptimizationHistory(params),
   })
 }
 

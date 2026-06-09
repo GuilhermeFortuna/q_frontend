@@ -66,6 +66,8 @@ export type OptimizationStatus = {
   best_value: number | null
   best_params: Record<string, unknown>
   error: string | null
+  /** Present when the backend can resolve the study's original backtest window. */
+  backtest_config?: OptimizationBacktestConfig
 }
 
 export type OptimizationTrial = {
@@ -92,4 +94,21 @@ export type OptimizationResults = {
   trials: OptimizationTrial[]
   pareto_trials: OptimizationTrial[]
   failures: { trial_number: number; error: string }[]
+}
+
+export type OptimizationStudySummary = {
+  study_id: string
+  name: string
+  status: JobStatus
+  best_value: number | null
+  n_trials: number
+  completed_trials: number
+  created_at: string
+}
+
+export type OptimizationStudyListResponse = {
+  items: OptimizationStudySummary[]
+  total: number
+  limit: number
+  offset: number
 }

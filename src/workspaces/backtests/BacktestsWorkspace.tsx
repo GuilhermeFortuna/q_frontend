@@ -3,14 +3,25 @@ import { useMemo, useState } from 'react'
 
 import { useRunBacktest } from '@/api/queries/backtests'
 import { BacktestConfigForm } from '@/components/backtests/BacktestConfigForm'
+import { BacktestHistoryPanel } from '@/components/backtests/BacktestHistoryPanel'
 import { BacktestResultsTabs } from '@/components/backtests/BacktestResultsTabs'
 import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/performance'
+import { cn } from '@/lib/utils'
 import type { BacktestRequest } from '@/types/backtesting'
+
+type RightPanelTab = 'results' | 'history'
+
+const RIGHT_PANEL_TABS: { id: RightPanelTab; label: string }[] = [
+  { id: 'results', label: 'Results' },
+  { id: 'history', label: 'History' },
+]
 
 export function BacktestsWorkspace() {
   const runBacktest = useRunBacktest()
   const [lastCapital, setLastCapital] = useState(100000)
   const [lastRequest, setLastRequest] = useState<BacktestRequest | null>(null)
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('results')
+  const [selectedHistoryRunId, setSelectedHistoryRunId] = useState<string | null>(null)
 
   const equityCurve = useMemo(() => {
     if (!runBacktest.data) return []
@@ -25,6 +36,7 @@ export function BacktestsWorkspace() {
   const handleSubmit = (request: BacktestRequest) => {
     setLastCapital(request.initial_capital ?? 100000)
     setLastRequest(request)
+    setRightPanelTab('results')
     runBacktest.mutate(request)
   }
 
@@ -46,7 +58,31 @@ export function BacktestsWorkspace() {
       />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        {runBacktest.isPending ? (
+        <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
+          {RIGHT_PANEL_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setRightPanelTab(tab.id)}
+              className={cn(
+                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                rightPanelTab === tab.id
+                  ? 'border-brass-400 text-brass-400'
+                  : 'text-silver-400 hover:text-silver-200 border-transparent',
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {rightPanelTab === 'history' ? (
+          <BacktestHistoryPanel
+            selectedRunId={selectedHistoryRunId}
+            onSelectRun={setSelectedHistoryRunId}
+            onReRun={handleSubmit}
+          />
+        ) : runBacktest.isPending ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="flex animate-pulse flex-col items-center">
               <div className="border-brass-500 mb-4 h-12 w-12 animate-spin rounded-full border-4 border-t-transparent" />

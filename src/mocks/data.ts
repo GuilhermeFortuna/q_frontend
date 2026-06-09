@@ -1,5 +1,17 @@
 import { timeframeToMs } from '@/lib/market/timeframes'
 import type { Instrument, MarketSnapshot, OhlcvBar, SystemHealth } from '@/types/api'
+import type {
+  BacktestMetrics,
+  BacktestRequest,
+  BacktestRunDetail,
+  BacktestRunSummary,
+} from '@/types/backtesting'
+import type {
+  OptimizationBacktestConfig,
+  OptimizationResults,
+  OptimizationStatus,
+  OptimizationStudySummary,
+} from '@/types/optimization'
 
 export const mockSystemHealth: SystemHealth = {
   status: 'healthy',
@@ -92,4 +104,322 @@ export function getMockOhlcv(
 
   const safeCount = Math.min(Math.max(count, 1), 5000)
   return series.slice(-safeCount)
+}
+
+const mockBacktestMetrics: BacktestMetrics = {
+  total_trades: 42,
+  total_pnl: 12_450.75,
+  win_rate: 0.57,
+  winning_trades: 24,
+  losing_trades: 18,
+  max_drawdown_value: 3200,
+  max_drawdown_pct: 0.032,
+  profit_factor: 1.42,
+  recovery_factor: 3.89,
+  expectancy: 296.45,
+  avg_win: 820.5,
+  avg_loss: -410.25,
+  win_loss_ratio: 2.0,
+  max_consecutive_wins: 5,
+  max_consecutive_losses: 3,
+}
+
+const mockBacktestMetricsAlt: BacktestMetrics = {
+  total_trades: 18,
+  total_pnl: -2400.5,
+  win_rate: 0.39,
+  winning_trades: 7,
+  losing_trades: 11,
+  max_drawdown_value: 5100,
+  max_drawdown_pct: 0.051,
+  profit_factor: 0.72,
+  recovery_factor: -0.47,
+  expectancy: -133.36,
+  avg_win: 540.0,
+  avg_loss: -560.8,
+  win_loss_ratio: 0.96,
+  max_consecutive_wins: 2,
+  max_consecutive_losses: 4,
+}
+
+const mockBacktestConfigs: Record<string, BacktestRequest> = {
+  'run-win-ma': {
+    symbol: 'WIN$',
+    timeframe: 'M5',
+    start: '2025-01-01T00:00:00.000Z',
+    end: '2025-06-01T00:00:00.000Z',
+    initial_capital: 100000,
+    point_value: 0.2,
+    strategy: 'MACrossover',
+    strategy_params: { short_period: 20, long_period: 80, threshold: 0.5 },
+    position_sizing: { type: 'fixed_quantity', quantity: 2 },
+  },
+  'run-vale-ma': {
+    symbol: 'VALE3',
+    timeframe: 'H1',
+    start: '2024-06-01T00:00:00.000Z',
+    end: '2025-01-01T00:00:00.000Z',
+    initial_capital: 250000,
+    point_value: 1,
+    strategy: 'MACrossover',
+    strategy_params: { short_period: 12, long_period: 48, threshold: 1.25 },
+    position_sizing: { type: 'fixed_quantity', quantity: 100 },
+  },
+  'run-petr-failed': {
+    symbol: 'PETR4',
+    timeframe: 'D1',
+    start: '2024-01-01T00:00:00.000Z',
+    end: '2024-12-31T00:00:00.000Z',
+    initial_capital: 100000,
+    point_value: 1,
+    strategy: 'MACrossover',
+    strategy_params: { short_period: 50, long_period: 200, threshold: 0 },
+    position_sizing: { type: 'fixed_quantity', quantity: 1 },
+  },
+}
+
+function hoursAgo(hours: number): string {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+}
+
+export const mockBacktestRunSummaries: BacktestRunSummary[] = [
+  {
+    run_id: 'run-win-ma',
+    symbol: 'WIN$',
+    strategy: 'MACrossover',
+    timeframe: 'M5',
+    status: 'completed',
+    created_at: hoursAgo(2),
+    summary: mockBacktestMetrics,
+  },
+  {
+    run_id: 'run-vale-ma',
+    symbol: 'VALE3',
+    strategy: 'MACrossover',
+    timeframe: 'H1',
+    status: 'completed',
+    created_at: hoursAgo(26),
+    summary: mockBacktestMetricsAlt,
+  },
+  {
+    run_id: 'run-petr-failed',
+    symbol: 'PETR4',
+    strategy: 'MACrossover',
+    timeframe: 'D1',
+    status: 'failed',
+    created_at: hoursAgo(72),
+    summary: null,
+  },
+]
+
+const mockOptimizationBacktests: Record<string, OptimizationBacktestConfig> = {
+  'study-win-ma': {
+    symbol: 'WIN$',
+    timeframe: 'M5',
+    start: '2025-01-01T00:00:00.000Z',
+    end: '2025-06-01T00:00:00.000Z',
+    initial_capital: 100000,
+    point_value: 0.2,
+    strategy: 'MACrossover',
+  },
+  'study-vale-ma': {
+    symbol: 'VALE3',
+    timeframe: 'H1',
+    start: '2024-06-01T00:00:00.000Z',
+    end: '2025-01-01T00:00:00.000Z',
+    initial_capital: 250000,
+    point_value: 1,
+    strategy: 'MACrossover',
+  },
+  'study-petr-failed': {
+    symbol: 'PETR4',
+    timeframe: 'D1',
+    start: '2024-01-01T00:00:00.000Z',
+    end: '2024-12-31T00:00:00.000Z',
+    initial_capital: 100000,
+    point_value: 1,
+    strategy: 'MACrossover',
+  },
+}
+
+function buildMockTrials(
+  studyId: string,
+  count: number,
+  bestNumber: number,
+): OptimizationResults['trials'] {
+  return Array.from({ length: count }, (_, i) => {
+    const number = i + 1
+    const value = 50 + number * 12 + (studyId === 'study-vale-ma' ? -number * 3 : 0)
+    return {
+      number,
+      params: {
+        strategy__short_period: 5 + number,
+        strategy__long_period: 40 + number * 2,
+      },
+      values: [value],
+      state: 'COMPLETE',
+      user_attrs: {
+        status: 'complete',
+        metrics: {
+          total_pnl: value * 100,
+          sharpe_ratio: 0.5 + number * 0.05,
+          max_drawdown_pct: 0.02 + number * 0.001,
+          total_trades: 10 + number,
+        },
+        strategy_params: {
+          short_period: 5 + number,
+          long_period: 40 + number * 2,
+          threshold: 0.5,
+        },
+        risk_params: { type: 'fixed_quantity', quantity: 2 },
+      },
+    }
+  }).map((trial) =>
+    trial.number === bestNumber
+      ? {
+          ...trial,
+          values: [trial.values![0]! + 200],
+          user_attrs: {
+            ...trial.user_attrs,
+            metrics: {
+              ...trial.user_attrs.metrics!,
+              total_pnl: trial.user_attrs.metrics!.total_pnl + 20_000,
+            },
+          },
+        }
+      : trial,
+  )
+}
+
+const mockOptimizationResults: Record<string, OptimizationResults> = {
+  'study-win-ma': {
+    study_id: 'study-win-ma',
+    objective_mode: 'maximize_return_drawdown',
+    is_multi_objective: false,
+    best_params: {
+      strategy__short_period: 12,
+      strategy__long_period: 64,
+    },
+    best_trial: null,
+    trials: buildMockTrials('study-win-ma', 30, 18),
+    pareto_trials: [],
+    failures: [],
+  },
+  'study-vale-ma': {
+    study_id: 'study-vale-ma',
+    objective_mode: 'maximize_sharpe',
+    is_multi_objective: false,
+    best_params: {
+      strategy__short_period: 8,
+      strategy__long_period: 52,
+    },
+    best_trial: null,
+    trials: buildMockTrials('study-vale-ma', 20, 11),
+    pareto_trials: [],
+    failures: [{ trial_number: 7, error: 'zero trades' }],
+  },
+}
+
+mockOptimizationResults['study-win-ma'].best_trial =
+  mockOptimizationResults['study-win-ma'].trials.find((t) => t.number === 18) ?? null
+mockOptimizationResults['study-vale-ma'].best_trial =
+  mockOptimizationResults['study-vale-ma'].trials.find((t) => t.number === 11) ?? null
+
+const mockOptimizationStatuses: Record<string, OptimizationStatus> = {
+  'study-win-ma': {
+    study_id: 'study-win-ma',
+    status: 'done',
+    completed_trials: 30,
+    n_trials: 30,
+    best_value: mockOptimizationResults['study-win-ma'].best_trial?.values?.[0] ?? null,
+    best_params: mockOptimizationResults['study-win-ma'].best_params,
+    error: null,
+    backtest_config: mockOptimizationBacktests['study-win-ma'],
+  },
+  'study-vale-ma': {
+    study_id: 'study-vale-ma',
+    status: 'done',
+    completed_trials: 20,
+    n_trials: 20,
+    best_value: mockOptimizationResults['study-vale-ma'].best_trial?.values?.[0] ?? null,
+    best_params: mockOptimizationResults['study-vale-ma'].best_params,
+    error: null,
+    backtest_config: mockOptimizationBacktests['study-vale-ma'],
+  },
+  'study-petr-failed': {
+    study_id: 'study-petr-failed',
+    status: 'error',
+    completed_trials: 4,
+    n_trials: 25,
+    best_value: null,
+    best_params: {},
+    error: 'Insufficient data for the requested range.',
+    backtest_config: mockOptimizationBacktests['study-petr-failed'],
+  },
+}
+
+export const mockOptimizationStudySummaries: OptimizationStudySummary[] = [
+  {
+    study_id: 'study-win-ma',
+    name: 'WIN$ MA sweep',
+    status: 'done',
+    best_value: mockOptimizationStatuses['study-win-ma'].best_value,
+    n_trials: 30,
+    completed_trials: 30,
+    created_at: hoursAgo(3),
+  },
+  {
+    study_id: 'study-vale-ma',
+    name: 'VALE3 Sharpe search',
+    status: 'done',
+    best_value: mockOptimizationStatuses['study-vale-ma'].best_value,
+    n_trials: 20,
+    completed_trials: 20,
+    created_at: hoursAgo(30),
+  },
+  {
+    study_id: 'study-petr-failed',
+    name: 'PETR4 D1 optimization',
+    status: 'error',
+    best_value: null,
+    n_trials: 25,
+    completed_trials: 4,
+    created_at: hoursAgo(96),
+  },
+]
+
+export function getMockOptimizationStatus(studyId: string): OptimizationStatus | null {
+  return mockOptimizationStatuses[studyId] ?? null
+}
+
+export function getMockOptimizationResults(studyId: string): OptimizationResults | null {
+  return mockOptimizationResults[studyId] ?? null
+}
+
+export function getMockBacktestRunDetail(runId: string): BacktestRunDetail | null {
+  const summary = mockBacktestRunSummaries.find((r) => r.run_id === runId)
+  const config = mockBacktestConfigs[runId]
+  if (!summary || !config) return null
+
+  const createdAt = summary.created_at
+  const startedAt = createdAt
+  const finishedAt =
+    summary.status === 'completed' || summary.status === 'failed'
+      ? new Date(new Date(createdAt).getTime() + 3000).toISOString()
+      : null
+
+  return {
+    run_id: summary.run_id,
+    symbol: summary.symbol,
+    strategy: summary.strategy,
+    timeframe: summary.timeframe,
+    status: summary.status,
+    config,
+    result_summary: summary.summary,
+    error_message:
+      summary.status === 'failed' ? 'Insufficient data for the requested range.' : null,
+    started_at: startedAt,
+    finished_at: finishedAt,
+    created_at: createdAt,
+  }
 }

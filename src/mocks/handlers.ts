@@ -1,7 +1,17 @@
 import { http, HttpResponse } from 'msw'
 
 import { getMockBacktestResponse } from '@/mocks/backtest'
-import { getMockOhlcv, mockInstruments, mockSnapshots, mockSystemHealth } from '@/mocks/data'
+import {
+  getMockBacktestRunDetail,
+  getMockOptimizationResults,
+  getMockOptimizationStatus,
+  getMockOhlcv,
+  mockBacktestRunSummaries,
+  mockInstruments,
+  mockOptimizationStudySummaries,
+  mockSnapshots,
+  mockSystemHealth,
+} from '@/mocks/data'
 import type { BacktestRequest } from '@/types/backtesting'
 
 export const handlers = [
@@ -71,5 +81,85 @@ export const handlers = [
   http.post('*/api/v1/backtest/run', async ({ request }) => {
     const body = (await request.json()) as BacktestRequest
     return HttpResponse.json(getMockBacktestResponse(body))
+  }),
+
+  http.get('*/api/v1/backtests', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = parseInt(url.searchParams.get('limit') ?? '50', 10)
+    const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
+    const symbol = url.searchParams.get('symbol')?.toUpperCase()
+
+    let items = mockBacktestRunSummaries
+    if (symbol) {
+      items = items.filter((run) => run.symbol.toUpperCase() === symbol)
+    }
+
+    return HttpResponse.json({
+      items: items.slice(offset, offset + limit),
+      total: items.length,
+      limit,
+      offset,
+    })
+  }),
+
+  http.get('*/api/v1/backtests/:runId', ({ params }) => {
+    const runId = String(params.runId)
+    const detail = getMockBacktestRunDetail(runId)
+    if (!detail) {
+      return HttpResponse.json({ detail: `Backtest run '${runId}' not found.` }, { status: 404 })
+    }
+    return HttpResponse.json(detail)
+  }),
+
+  http.get('*/api/v1/optimizations', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = parseInt(url.searchParams.get('limit') ?? '50', 10)
+    const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
+
+    return HttpResponse.json({
+      items: mockOptimizationStudySummaries.slice(offset, offset + limit),
+      total: mockOptimizationStudySummaries.length,
+      limit,
+      offset,
+    })
+  }),
+
+  http.get('*/api/v1/optimize/:studyId/results', ({ params }) => {
+    const studyId = String(params.studyId)
+    const results = getMockOptimizationResults(studyId)
+    if (!results) {
+      const status = getMockOptimizationStatus(studyId)
+      if (status?.status === 'error') {
+        return HttpResponse.json(
+          { detail: `Study '${studyId}' has no results yet (status: error).` },
+          { status: 409 },
+        )
+      }
+      return HttpResponse.json({ detail: `Study '${studyId}' not found.` }, { status: 404 })
+    }
+    return HttpResponse.json(results)
+  }),
+
+  http.get('*/api/v1/optimize/:studyId', ({ params }) => {
+    const studyId = String(params.studyId)
+    const status = getMockOptimizationStatus(studyId)
+    if (!status) {
+      return HttpResponse.json({ detail: `Study '${studyId}' not found.` }, { status: 404 })
+    }
+    return HttpResponse.json(status)
+  }),
+
+  http.post('*/api/v1/optimize', async () => {
+    const studyId = `study-${Date.now()}`
+    return HttpResponse.json({ study_id: studyId, status: 'pending' as const })
+  }),
+
+  http.post('*/api/v1/optimize/:studyId/cancel', ({ params }) => {
+    const studyId = String(params.studyId)
+    const status = getMockOptimizationStatus(studyId)
+    if (!status) {
+      return HttpResponse.json({ detail: `Study '${studyId}' not found.` }, { status: 404 })
+    }
+    return HttpResponse.json({ ...status, status: 'cancelled' as const })
   }),
 ]
