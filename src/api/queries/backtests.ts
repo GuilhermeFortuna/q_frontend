@@ -38,6 +38,10 @@ export async function fetchBacktestRun(runId: string): Promise<BacktestRunDetail
   return data
 }
 
+export async function deleteBacktestRun(runId: string): Promise<void> {
+  await apiClient.delete(`/api/v1/backtests/${runId}`)
+}
+
 export function useRunBacktest() {
   const queryClient = useQueryClient()
 
@@ -63,5 +67,16 @@ export function useBacktestRun(runId: string | null) {
     queryFn: () => fetchBacktestRun(runId as string),
     enabled: !!runId,
     staleTime: Infinity,
+  })
+}
+
+export function useDeleteBacktest() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteBacktestRun,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...backtestKeys.all, 'history'] })
+    },
   })
 }

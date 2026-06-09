@@ -5,17 +5,21 @@ import { createElement, type ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
+  deleteBacktestRun,
   fetchBacktestHistory,
   fetchBacktestRun,
   useBacktestHistory,
   useBacktestRun,
 } from '@/api/queries/backtests'
-import { handlers } from '@/mocks/handlers'
+import { handlers, resetMockBacktestDeletes } from '@/mocks/handlers'
 
 const server = setupServer(...handlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  resetMockBacktestDeletes()
+})
 afterAll(() => server.close())
 
 function createWrapper() {
@@ -81,6 +85,17 @@ describe('backtest history API', () => {
 
     expect(result.current.data?.items.length).toBeGreaterThan(0)
     expect(result.current.data?.total).toBe(result.current.data?.items.length)
+  })
+
+  it('deleteBacktestRun removes a run from history', async () => {
+    const before = await fetchBacktestHistory()
+    const runId = before.items[0].run_id
+
+    await deleteBacktestRun(runId)
+
+    const after = await fetchBacktestHistory()
+    expect(after.total).toBe(before.total - 1)
+    expect(after.items.find((run) => run.run_id === runId)).toBeUndefined()
   })
 
   it('useBacktestRun hook loads detail via MSW', async () => {

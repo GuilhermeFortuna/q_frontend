@@ -14,6 +14,12 @@ import {
 } from '@/mocks/data'
 import type { BacktestRequest } from '@/types/backtesting'
 
+const deletedBacktestRunIds = new Set<string>()
+
+export function resetMockBacktestDeletes() {
+  deletedBacktestRunIds.clear()
+}
+
 export const handlers = [
   http.get('*/api/v1/system/health', () => HttpResponse.json(mockSystemHealth)),
 
@@ -89,7 +95,7 @@ export const handlers = [
     const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
     const symbol = url.searchParams.get('symbol')?.toUpperCase()
 
-    let items = mockBacktestRunSummaries
+    let items = mockBacktestRunSummaries.filter((run) => !deletedBacktestRunIds.has(run.run_id))
     if (symbol) {
       items = items.filter((run) => run.symbol.toUpperCase() === symbol)
     }
@@ -104,11 +110,24 @@ export const handlers = [
 
   http.get('*/api/v1/backtests/:runId', ({ params }) => {
     const runId = String(params.runId)
+    if (deletedBacktestRunIds.has(runId)) {
+      return HttpResponse.json({ detail: `Backtest run '${runId}' not found.` }, { status: 404 })
+    }
     const detail = getMockBacktestRunDetail(runId)
     if (!detail) {
       return HttpResponse.json({ detail: `Backtest run '${runId}' not found.` }, { status: 404 })
     }
     return HttpResponse.json(detail)
+  }),
+
+  http.delete('*/api/v1/backtests/:runId', ({ params }) => {
+    const runId = String(params.runId)
+    const exists = mockBacktestRunSummaries.some((run) => run.run_id === runId)
+    if (!exists || deletedBacktestRunIds.has(runId)) {
+      return HttpResponse.json({ detail: `Backtest run '${runId}' not found.` }, { status: 404 })
+    }
+    deletedBacktestRunIds.add(runId)
+    return new HttpResponse(null, { status: 204 })
   }),
 
   http.get('*/api/v1/optimizations', ({ request }) => {
