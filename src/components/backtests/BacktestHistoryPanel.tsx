@@ -435,6 +435,14 @@ export function BacktestHistoryPanel({
                     <dt>Point value</dt>
                     <dd className="text-silver-200">{detail.config.point_value ?? '—'}</dd>
                   </div>
+                  <div>
+                    <dt>Day trading</dt>
+                    <dd className="text-silver-200">
+                      {detail.config.day_trade
+                        ? `Yes (${detail.config.day_trade_start_time}-${detail.config.day_trade_end_time}, close ${detail.config.day_trade_close_time})`
+                        : 'No'}
+                    </dd>
+                  </div>
                 </dl>
               </div>
 
