@@ -100,4 +100,15 @@
     animation: price-flash-down 600ms ease-out;
     border-radius: var(--radius-sm);
   }
+
+  .market-panel-resize-handle {
+    width: 1px;
+    background-color: var(--color-carbon-700);
+    transition: background-color 150ms ease;
+  }
+
+  .market-panel-resize-handle:hover,
+  .market-panel-resize-handle[data-separator='active'] {
+    background-color: color-mix(in srgb, var(--color-brass-500) 60%, transparent);
+  }
 }
