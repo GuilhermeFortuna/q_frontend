@@ -61,5 +61,8 @@ describe('hydrateOptimizeFormFromConfig', () => {
     })
     expect(hydrated.riskMode).toBe('fixed_quantity')
     expect(hydrated.qtyHigh).toBe(3)
+    expect(hydrated.engine).toBe('candle')
+    expect(hydrated.displayTimeframe).toBe('M1')
+    expect(hydrated.tickFlags).toBe('all')
   })
 })

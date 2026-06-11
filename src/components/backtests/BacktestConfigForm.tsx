@@ -23,6 +23,15 @@ import {
 } from '@/lib/strategies/strategyParams'
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
+import type { StrategyInfo } from '@/types/strategies'
+
+type BacktestEngine = 'candle' | 'tick'
+
+const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M15', 'H1'] as const
+
+function strategyEngine(info: StrategyInfo): BacktestEngine {
+  return info.engine ?? 'candle'
+}
 
 type BacktestConfigFormProps = {
   loading: boolean
@@ -44,10 +53,21 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
   const [maxContractsInput, setMaxContractsInput] = useState('')
   const [strategy, setStrategy] = useState('MACrossover')
   const [strategyParams, setStrategyParams] = useState<Record<string, StrategyParamValue>>({})
+  const [dayTrade, setDayTrade] = useState(false)
+  const [dayTradeStartTime, setDayTradeStartTime] = useState('09:00')
+  const [dayTradeEndTime, setDayTradeEndTime] = useState('16:00')
+  const [dayTradeCloseTime, setDayTradeCloseTime] = useState('17:00')
+  const [engine, setEngine] = useState<BacktestEngine>('candle')
+  const [displayTimeframe, setDisplayTimeframe] = useState('M1')
+  const [tickFlags, setTickFlags] = useState<'all' | 'trade'>('all')
 
   const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
   const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
-  const selectedStrategy = strategies.find((entry) => entry.name === strategy)
+  const filteredStrategies = useMemo(
+    () => strategies.filter((entry) => strategyEngine(entry) === engine),
+    [strategies, engine],
+  )
+  const selectedStrategy = filteredStrategies.find((entry) => entry.name === strategy)
   const paramsInitialized = useRef(false)
 
   const pendingBacktestConfig = useAppStore((s) => s.pendingBacktestConfig)
@@ -55,13 +75,15 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
 
   useEffect(() => {
     if (strategies.length === 0 || paramsInitialized.current) return
-    const info = strategies.find((entry) => entry.name === strategy) ?? strategies[0]
-    if (!strategies.some((entry) => entry.name === strategy)) {
+    const pool = strategies.filter((entry) => strategyEngine(entry) === engine)
+    const info = pool.find((entry) => entry.name === strategy) ?? pool[0]
+    if (!info) return
+    if (!pool.some((entry) => entry.name === strategy)) {
       setStrategy(info.name)
     }
     setStrategyParams(defaultParamsFromSpecs(info.params))
     paramsInitialized.current = true
-  }, [strategies, strategy])
+  }, [strategies, strategy, engine])
 
   // Hydrate from a config staged by the Optimizer ("Load into Backtest"), then clear it.
   useEffect(() => {
@@ -97,8 +119,28 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
       setMaxContractsInput(ps.max_contracts != null ? String(ps.max_contracts) : '')
     }
 
+    if (cfg.day_trade !== undefined) setDayTrade(cfg.day_trade)
+    if (cfg.day_trade_start_time) setDayTradeStartTime(cfg.day_trade_start_time)
+    if (cfg.day_trade_end_time) setDayTradeEndTime(cfg.day_trade_end_time)
+    if (cfg.day_trade_close_time) setDayTradeCloseTime(cfg.day_trade_close_time)
+    if (cfg.engine === 'tick' || cfg.engine === 'candle') setEngine(cfg.engine)
+    if (cfg.display_timeframe) setDisplayTimeframe(cfg.display_timeframe)
+    if (cfg.tick_flags === 'all' || cfg.tick_flags === 'trade') setTickFlags(cfg.tick_flags)
+
     setPendingBacktestConfig(null)
   }, [pendingBacktestConfig, setPendingBacktestConfig, strategies, strategy, selectedStrategy])
+
+  const handleEngineChange = (nextEngine: BacktestEngine) => {
+    setEngine(nextEngine)
+    const pool = strategies.filter((entry) => strategyEngine(entry) === nextEngine)
+    if (pool.length === 0) return
+    const currentValid = pool.some((entry) => entry.name === strategy)
+    if (!currentValid) {
+      const next = pool[0]
+      setStrategy(next.name)
+      setStrategyParams(defaultParamsFromSpecs(next.params))
+    }
+  }
 
   const handleStrategyChange = (nextStrategy: string) => {
     setStrategy(nextStrategy)
@@ -137,7 +179,7 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
 
     onSubmit({
       symbol,
-      timeframe,
+      ...(engine === 'candle' ? { timeframe } : {}),
       start: startOfDay(startDate).toISOString(),
       end: endOfDay(endDate).toISOString(),
       initial_capital: capital,
@@ -145,6 +187,17 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
       position_sizing: buildPositionSizingPayload(sizingMode, positionSizingFields),
       strategy,
       strategy_params: strategyParams,
+      day_trade: dayTrade,
+      day_trade_start_time: dayTradeStartTime,
+      day_trade_end_time: dayTradeEndTime,
+      day_trade_close_time: dayTradeCloseTime,
+      ...(engine === 'tick'
+        ? {
+            engine: 'tick' as const,
+            display_timeframe: displayTimeframe,
+            tick_flags: tickFlags,
+          }
+        : {}),
     })
   }
 
@@ -159,6 +212,21 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <div className="space-y-2">
+            <label htmlFor="backtest-engine" className="text-silver-200 text-sm font-medium">
+              Engine
+            </label>
+            <select
+              id="backtest-engine"
+              value={engine}
+              onChange={(e) => handleEngineChange(e.target.value as BacktestEngine)}
+              className={inputClass}
+            >
+              <option value="candle">Candle</option>
+              <option value="tick">Tick</option>
+            </select>
+          </div>
+
           <InstrumentConfigFields
             symbol={symbol}
             setSymbol={setSymbol}
@@ -172,7 +240,55 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
             setCapital={setCapital}
             pointValue={pointValue}
             setPointValue={setPointValue}
+            dayTrade={dayTrade}
+            setDayTrade={setDayTrade}
+            dayTradeStartTime={dayTradeStartTime}
+            setDayTradeStartTime={setDayTradeStartTime}
+            dayTradeEndTime={dayTradeEndTime}
+            setDayTradeEndTime={setDayTradeEndTime}
+            dayTradeCloseTime={dayTradeCloseTime}
+            setDayTradeCloseTime={setDayTradeCloseTime}
+            showTimeframe={engine === 'candle'}
           />
+
+          {engine === 'tick' ? (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <label htmlFor="display-timeframe" className="text-silver-200 text-sm font-medium">
+                  Display Timeframe
+                </label>
+                <p className="text-silver-400 text-xs">
+                  Chart bar size — does not affect tick data.
+                </p>
+                <select
+                  id="display-timeframe"
+                  value={displayTimeframe}
+                  onChange={(e) => setDisplayTimeframe(e.target.value)}
+                  className={inputClass}
+                >
+                  {DISPLAY_TIMEFRAME_OPTIONS.map((tf) => (
+                    <option key={tf} value={tf}>
+                      {tf}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="tick-source" className="text-silver-200 text-sm font-medium">
+                  Tick Source
+                </label>
+                <select
+                  id="tick-source"
+                  value={tickFlags}
+                  onChange={(e) => setTickFlags(e.target.value as 'all' | 'trade')}
+                  className={inputClass}
+                >
+                  <option value="all">All ticks</option>
+                  <option value="trade">Trades only</option>
+                </select>
+              </div>
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <h3 className="text-silver-200 text-sm font-medium">Risk Model</h3>
@@ -267,9 +383,9 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
               value={strategy}
               onChange={(e) => handleStrategyChange(e.target.value)}
               className={inputClass}
-              disabled={strategiesLoading || strategies.length === 0}
+              disabled={strategiesLoading || filteredStrategies.length === 0}
             >
-              {strategies.map((entry) => (
+              {filteredStrategies.map((entry) => (
                 <option key={entry.name} value={entry.name}>
                   {entry.label}
                 </option>

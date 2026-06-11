@@ -16,6 +16,7 @@ export type StrategyInfo = {
   label: string
   description: string
   params: StrategyParamSpec[]
+  engine?: 'candle' | 'tick'
 }
 
 export type StrategiesResponse = {
