@@ -1,8 +1,15 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 
 import { apiClient } from '@/api/client'
 import { toApiTimeframe } from '@/lib/market/timeframes'
-import type { Instrument, MarketSnapshot, OhlcvAvailableRange, OhlcvBar } from '@/types/api'
+import type {
+  Instrument,
+  MarketSnapshot,
+  MarketSnapshotsResponse,
+  OhlcvAvailableRange,
+  OhlcvBar,
+} from '@/types/api'
 
 export type OhlcvQueryParams = {
   count?: number
@@ -14,6 +21,8 @@ export const marketDataKeys = {
   all: ['market-data'] as const,
   instruments: () => [...marketDataKeys.all, 'instruments'] as const,
   snapshot: (symbol: string) => [...marketDataKeys.all, 'snapshot', symbol] as const,
+  snapshots: (symbols: string[]) =>
+    [...marketDataKeys.all, 'snapshots', [...symbols].sort().join(',')] as const,
   ohlcv: (symbol: string, timeframe: string, params?: OhlcvQueryParams) =>
     [...marketDataKeys.all, 'ohlcv', symbol, timeframe, params ?? {}] as const,
   availableRange: (symbol: string, timeframe: string) =>
@@ -28,6 +37,17 @@ async function fetchInstruments(): Promise<Instrument[]> {
 async function fetchMarketSnapshot(symbol: string): Promise<MarketSnapshot> {
   const { data } = await apiClient.get<MarketSnapshot>(`/api/v1/market/snapshot/${symbol}`)
   return data
+}
+
+export async function fetchMarketSnapshots(symbols: string[]): Promise<MarketSnapshotsResponse> {
+  const { data } = await apiClient.get<MarketSnapshotsResponse>('/api/v1/market/snapshots', {
+    params: { symbols: symbols.join(',') },
+  })
+  return data
+}
+
+export function isMt5OfflineError(error: unknown): boolean {
+  return isAxiosError(error) && error.response?.status === 503
 }
 
 export async function fetchOhlcv(
@@ -60,7 +80,27 @@ export function useMarketSnapshot(symbol: string) {
     queryKey: marketDataKeys.snapshot(symbol),
     queryFn: () => fetchMarketSnapshot(symbol),
     enabled: symbol.length > 0,
-    staleTime: 10_000,
+    staleTime: 2_000,
+    refetchInterval: 2_000,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useMarketSnapshots(symbols: string[]) {
+  const normalizedSymbols = [...symbols].sort()
+
+  return useQuery({
+    queryKey: marketDataKeys.snapshots(normalizedSymbols),
+    queryFn: () => fetchMarketSnapshots(symbols),
+    enabled: symbols.length > 0,
+    staleTime: 2_000,
+    refetchInterval: 3_000,
+    placeholderData: keepPreviousData,
+    select: (data) =>
+      Object.fromEntries(data.snapshots.map((snapshot) => [snapshot.symbol, snapshot])) as Record<
+        string,
+        MarketSnapshot
+      >,
   })
 }
 

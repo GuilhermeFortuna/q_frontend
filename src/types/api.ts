@@ -42,4 +42,18 @@ export type MarketSnapshot = {
   last: number
   changePct: number
   volume: number
+  bid: number
+  ask: number
+  spread: number
+  changeAbs: number
+  dayOpen: number
+  dayHigh: number
+  dayLow: number
+  prevClose: number
+  digits: number
+  tickTime: string | null
+}
+
+export type MarketSnapshotsResponse = {
+  snapshots: MarketSnapshot[]
 }

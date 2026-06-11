@@ -12,22 +12,39 @@ import {
   ChevronRight,
 } from 'lucide-react'
 
-import { useInstruments, useMarketSnapshot, useSearchSymbols } from '@/api/queries/market-data'
+import {
+  isMt5OfflineError,
+  useInstruments,
+  useMarketSnapshot,
+  useMarketSnapshots,
+  useSearchSymbols,
+} from '@/api/queries/market-data'
 import { useProgressiveOhlcv } from '@/api/queries/useProgressiveOhlcv'
 import { CandlestickChart } from '@/components/charts/CandlestickChart'
+import { FlashOnChange } from '@/components/shared/FlashOnChange'
 import { DEFAULT_INDICATORS, IndicatorsPopover } from '@/components/charts/IndicatorsPopover'
 import { useDrawings } from '@/components/charts/hooks/useDrawings'
 import type { DrawingTool, IndicatorConfig } from '@/components/charts/types/chart'
+import { formatPrice } from '@/lib/market/format'
 import { CHART_TIMEFRAMES } from '@/lib/market/timeframes'
 import { useAppStore } from '@/store/useAppStore'
 import type { OhlcvBar, Instrument } from '@/types/api'
 
-function formatPrice(value: number, symbol: string) {
-  const decimals = symbol.includes('USD') && symbol.length > 6 ? 2 : symbol === 'EURUSD' ? 4 : 2
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })
+type Mt5ConnectionStatus = 'live' | 'offline' | 'connecting'
+
+function resolveMt5ConnectionStatus(
+  snapshotLoading: boolean,
+  snapshotData: unknown,
+  snapshotError: unknown,
+  snapshotsError: unknown,
+): Mt5ConnectionStatus {
+  if (snapshotLoading && !snapshotData) {
+    return 'connecting'
+  }
+  if (isMt5OfflineError(snapshotError) || isMt5OfflineError(snapshotsError)) {
+    return 'offline'
+  }
+  return 'live'
 }
 
 function parseTimeframeInput(input: string): { label: string; value: string } | null {
@@ -84,19 +101,6 @@ function parseTimeframeInput(input: string): { label: string; value: string } | 
   return null
 }
 
-// Custom mock prices and changes for background elements in Market Watch list
-const mockPrices: Record<string, { last: number; changePct: number }> = {
-  PETR4: { last: 42.0, changePct: -1.2 },
-  VALE3: { last: 64.5, changePct: 0.35 },
-  ITUB4: { last: 32.1, changePct: -0.8 },
-  WIN$: { last: 128400.0, changePct: 1.05 },
-  WDO$: { last: 5120.5, changePct: -0.45 },
-  SPY: { last: 512.34, changePct: 0.42 },
-  AAPL: { last: 198.12, changePct: -0.18 },
-  EURUSD: { last: 1.0842, changePct: 0.05 },
-  BTCUSD: { last: 67420.5, changePct: 1.24 },
-}
-
 export function MarketDataWorkspace() {
   const selectedSymbol = useAppStore((s) => s.selectedSymbol)
   const setSelectedSymbol = useAppStore((s) => s.setSelectedSymbol)
@@ -104,18 +108,29 @@ export function MarketDataWorkspace() {
   // 1. Local Timeframe state (needed before useOhlcv query)
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1D')
 
-  // 2. Fetch live metrics from queries
-  const instrumentsQuery = useInstruments()
-  const snapshotQuery = useMarketSnapshot(selectedSymbol)
-  const snapshot = snapshotQuery.data
-  const ohlcv = useProgressiveOhlcv(selectedSymbol, selectedTimeframe)
-  const ohlcvData = ohlcv.bars
-
   // 2. Local Watchlist State (synced with localStorage)
   const [watchlist, setWatchlist] = useState<Instrument[]>(() => {
     const saved = localStorage.getItem('quant_watchlist')
     return saved ? JSON.parse(saved) : []
   })
+
+  const watchlistSymbols = useMemo(() => watchlist.map((item) => item.symbol), [watchlist])
+
+  // 3. Fetch live metrics from queries
+  const instrumentsQuery = useInstruments()
+  const snapshotQuery = useMarketSnapshot(selectedSymbol)
+  const snapshot = snapshotQuery.data
+  const snapshotsQuery = useMarketSnapshots(watchlistSymbols)
+  const snapshotsBySymbol = snapshotsQuery.data ?? {}
+  const priceDigits = snapshot?.digits ?? 2
+  const mt5Status = resolveMt5ConnectionStatus(
+    snapshotQuery.isLoading,
+    snapshotQuery.data,
+    snapshotQuery.error,
+    snapshotsQuery.error,
+  )
+  const ohlcv = useProgressiveOhlcv(selectedSymbol, selectedTimeframe)
+  const ohlcvData = ohlcv.bars
 
   useEffect(() => {
     const saved = localStorage.getItem('quant_watchlist')
@@ -307,6 +322,24 @@ export function MarketDataWorkspace() {
               <span className="bg-carbon-800 text-silver-400 border-carbon-700 rounded border px-1.5 py-0.5 font-mono text-[10px] tracking-wider uppercase">
                 {instrumentsQuery.data?.find((i) => i.symbol === selectedSymbol)?.exchange || 'MT5'}
               </span>
+              {mt5Status === 'live' && (
+                <span className="flex items-center gap-1 font-mono text-[10px] font-semibold tracking-wider text-emerald-400 uppercase">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  Live
+                </span>
+              )}
+              {mt5Status === 'offline' && (
+                <span className="flex items-center gap-1 font-mono text-[10px] font-semibold tracking-wider text-rose-400 uppercase">
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+                  MT5 Offline
+                </span>
+              )}
+              {mt5Status === 'connecting' && (
+                <span className="text-silver-400 flex animate-pulse items-center gap-1 font-mono text-[10px] font-semibold tracking-wider uppercase">
+                  <span className="bg-silver-400 h-1.5 w-1.5 rounded-full" />
+                  Connecting…
+                </span>
+              )}
             </div>
             <p className="text-silver-400 text-xs">
               {instrumentsQuery.data?.find((i) => i.symbol === selectedSymbol)?.name ||
@@ -321,19 +354,19 @@ export function MarketDataWorkspace() {
             <div>
               <span className="text-silver-400 text-[10px] font-semibold">O</span>{' '}
               <span className="text-silver-200">
-                {activeBar ? formatPrice(activeBar.open, selectedSymbol) : '—'}
+                {activeBar ? formatPrice(activeBar.open, priceDigits) : '—'}
               </span>
             </div>
             <div>
               <span className="text-silver-400 text-[10px] font-semibold">H</span>{' '}
               <span className="text-emerald-400">
-                {activeBar ? formatPrice(activeBar.high, selectedSymbol) : '—'}
+                {activeBar ? formatPrice(activeBar.high, priceDigits) : '—'}
               </span>
             </div>
             <div>
               <span className="text-silver-400 text-[10px] font-semibold">L</span>{' '}
               <span className="text-rose-400">
-                {activeBar ? formatPrice(activeBar.low, selectedSymbol) : '—'}
+                {activeBar ? formatPrice(activeBar.low, priceDigits) : '—'}
               </span>
             </div>
             <div>
@@ -345,7 +378,7 @@ export function MarketDataWorkspace() {
                     : 'text-rose-400'
                 }
               >
-                {activeBar ? formatPrice(activeBar.close, selectedSymbol) : '—'}
+                {activeBar ? formatPrice(activeBar.close, priceDigits) : '—'}
               </span>
             </div>
             <div className="border-carbon-700 mx-1 hidden h-3 border-l sm:block" />
@@ -361,9 +394,11 @@ export function MarketDataWorkspace() {
           {snapshot && (
             <div className="border-carbon-800 flex items-center gap-3 border-l pl-4">
               <div className="text-right">
-                <p className="text-silver-100 font-mono text-base font-bold">
-                  {formatPrice(snapshot.last, selectedSymbol)}
-                </p>
+                <FlashOnChange value={snapshot.last}>
+                  <p className="text-silver-100 font-mono text-base font-bold">
+                    {formatPrice(snapshot.last, priceDigits)}
+                  </p>
+                </FlashOnChange>
                 <p
                   className={`font-mono text-xs font-medium ${
                     snapshot.changePct >= 0 ? 'text-emerald-400' : 'text-rose-400'
@@ -410,15 +445,8 @@ export function MarketDataWorkspace() {
                   {filteredInstruments.length > 0 ? (
                     filteredInstruments.map((inst) => {
                       const isSelected = inst.symbol === selectedSymbol
-                      const activeSnap = inst.symbol === selectedSymbol ? snapshot : null
-                      const stats = mockPrices[inst.symbol]
-
-                      const price = activeSnap ? activeSnap.last : stats ? stats.last : 50.0
-                      const change = activeSnap
-                        ? activeSnap.changePct
-                        : stats
-                          ? stats.changePct
-                          : 0.0
+                      const rowSnap = snapshotsBySymbol[inst.symbol]
+                      const rowDigits = rowSnap?.digits ?? 2
 
                       return (
                         <div
@@ -443,17 +471,35 @@ export function MarketDataWorkspace() {
                             </span>
                           </div>
                           <div className="text-right transition-all duration-200 group-hover:pr-6">
-                            <span className="text-silver-200 block font-mono text-xs font-semibold">
-                              {formatPrice(price, inst.symbol)}
-                            </span>
-                            <span
-                              className={`font-mono text-[10px] ${
-                                change >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                              }`}
-                            >
-                              {change >= 0 ? '+' : ''}
-                              {change.toFixed(2)}%
-                            </span>
+                            {rowSnap ? (
+                              <>
+                                <FlashOnChange
+                                  value={rowSnap.last}
+                                  className="text-silver-200 block font-mono text-xs font-semibold"
+                                >
+                                  {formatPrice(rowSnap.last, rowDigits)}
+                                </FlashOnChange>
+                                <span
+                                  className={`font-mono text-[10px] ${
+                                    rowSnap.changePct >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                                  }`}
+                                >
+                                  {rowSnap.changePct >= 0 ? '+' : ''}
+                                  {rowSnap.changePct.toFixed(2)}%
+                                </span>
+                                <span className="text-silver-400 block font-mono text-[10px]">
+                                  {formatPrice(rowSnap.bid, rowDigits)} /{' '}
+                                  {formatPrice(rowSnap.ask, rowDigits)}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-silver-400 block font-mono text-xs font-semibold">
+                                  —
+                                </span>
+                                <span className="text-silver-500 font-mono text-[10px]">—</span>
+                              </>
+                            )}
                           </div>
 
                           {/* Hover Remove Button */}

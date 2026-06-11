@@ -72,4 +72,32 @@
     box-shadow: 0 1px 0 color-mix(in srgb, var(--color-gold-400) 8%, transparent) inset;
     backdrop-filter: blur(8px);
   }
+
+  @keyframes price-flash-up {
+    0% {
+      background-color: color-mix(in srgb, #34d399 35%, transparent);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  @keyframes price-flash-down {
+    0% {
+      background-color: color-mix(in srgb, #fb7185 35%, transparent);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .price-flash-up {
+    animation: price-flash-up 600ms ease-out;
+    border-radius: var(--radius-sm);
+  }
+
+  .price-flash-down {
+    animation: price-flash-down 600ms ease-out;
+    border-radius: var(--radius-sm);
+  }
 }

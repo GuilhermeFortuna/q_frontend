@@ -53,13 +53,25 @@ export const handlers = [
     return HttpResponse.json(matches)
   }),
 
+  http.get('*/api/v1/market/snapshots', ({ request }) => {
+    const url = new URL(request.url)
+    const symbols = (url.searchParams.get('symbols') || '')
+      .split(',')
+      .map((symbol) => symbol.trim().toUpperCase())
+      .filter(Boolean)
+
+    const snapshots = symbols
+      .map((symbol) => mockSnapshots[symbol])
+      .filter((snapshot): snapshot is NonNullable<typeof snapshot> => snapshot != null)
+
+    return HttpResponse.json({ snapshots })
+  }),
+
   http.get('*/api/v1/market/snapshot/:symbol', ({ params }) => {
     const symbol = String(params.symbol).toUpperCase()
-    const snapshot = mockSnapshots[symbol] || {
-      symbol,
-      last: symbol.includes('WIN') ? 128000 : symbol.includes('WDO') ? 5100 : 50.0,
-      changePct: 0.5,
-      volume: 15000,
+    const snapshot = mockSnapshots[symbol]
+    if (!snapshot) {
+      return HttpResponse.json({ detail: `Symbol '${symbol}' not found.` }, { status: 404 })
     }
     return HttpResponse.json(snapshot)
   }),

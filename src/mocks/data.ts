@@ -30,16 +30,81 @@ export const mockInstruments: Instrument[] = [
   { symbol: 'WDO$', name: 'DOLAR MINI', exchange: 'BMF', assetClass: 'future' },
 ]
 
+function enrichSnapshot(
+  snapshot: Pick<MarketSnapshot, 'symbol' | 'last' | 'changePct' | 'volume'> & {
+    digits?: number
+    bidOffset?: number
+    askOffset?: number
+  },
+): MarketSnapshot {
+  const digits = snapshot.digits ?? 2
+  const spread = snapshot.askOffset ?? snapshot.bidOffset ?? 0.02
+  const bid = Number((snapshot.last - spread / 2).toFixed(digits))
+  const ask = Number((snapshot.last + spread / 2).toFixed(digits))
+  const prevClose = Number(
+    (snapshot.last - snapshot.changePct * snapshot.last * 0.01).toFixed(digits),
+  )
+
+  return {
+    symbol: snapshot.symbol,
+    last: snapshot.last,
+    changePct: snapshot.changePct,
+    volume: snapshot.volume,
+    bid,
+    ask,
+    spread,
+    changeAbs: Number((snapshot.last - prevClose).toFixed(digits)),
+    dayOpen: Number((prevClose + spread).toFixed(digits)),
+    dayHigh: Number((snapshot.last + spread * 2).toFixed(digits)),
+    dayLow: Number((snapshot.last - spread * 3).toFixed(digits)),
+    prevClose,
+    digits,
+    tickTime: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+  }
+}
+
 export const mockSnapshots: Record<string, MarketSnapshot> = {
-  PETR4: { symbol: 'PETR4', last: 42.0, changePct: -1.2, volume: 48_200_000 },
-  VALE3: { symbol: 'VALE3', last: 64.5, changePct: 0.35, volume: 52_100_000 },
-  ITUB4: { symbol: 'ITUB4', last: 32.1, changePct: -0.8, volume: 35_000_000 },
-  WIN$: { symbol: 'WIN$', last: 128400.0, changePct: 1.05, volume: 120_000 },
-  WDO$: { symbol: 'WDO$', last: 5120.5, changePct: -0.45, volume: 95_000 },
-  SPY: { symbol: 'SPY', last: 512.34, changePct: 0.42, volume: 48_200_000 },
-  AAPL: { symbol: 'AAPL', last: 198.12, changePct: -0.18, volume: 52_100_000 },
-  EURUSD: { symbol: 'EURUSD', last: 1.0842, changePct: 0.05, volume: 0 },
-  BTCUSD: { symbol: 'BTCUSD', last: 67_420.5, changePct: 1.24, volume: 0 },
+  PETR4: enrichSnapshot({ symbol: 'PETR4', last: 42.0, changePct: -1.2, volume: 48_200_000 }),
+  VALE3: enrichSnapshot({ symbol: 'VALE3', last: 64.5, changePct: 0.35, volume: 52_100_000 }),
+  ITUB4: enrichSnapshot({ symbol: 'ITUB4', last: 32.1, changePct: -0.8, volume: 35_000_000 }),
+  WIN$: enrichSnapshot({
+    symbol: 'WIN$',
+    last: 128_400.0,
+    changePct: 1.05,
+    volume: 120_000,
+    digits: 0,
+    bidOffset: 5,
+    askOffset: 5,
+  }),
+  WDO$: enrichSnapshot({
+    symbol: 'WDO$',
+    last: 5120.5,
+    changePct: -0.45,
+    volume: 95_000,
+    digits: 1,
+    bidOffset: 0.5,
+    askOffset: 0.5,
+  }),
+  SPY: enrichSnapshot({ symbol: 'SPY', last: 512.34, changePct: 0.42, volume: 48_200_000 }),
+  AAPL: enrichSnapshot({ symbol: 'AAPL', last: 198.12, changePct: -0.18, volume: 52_100_000 }),
+  EURUSD: enrichSnapshot({
+    symbol: 'EURUSD',
+    last: 1.0842,
+    changePct: 0.05,
+    volume: 0,
+    digits: 4,
+    bidOffset: 0.0002,
+    askOffset: 0.0002,
+  }),
+  BTCUSD: enrichSnapshot({
+    symbol: 'BTCUSD',
+    last: 67_420.5,
+    changePct: 1.24,
+    volume: 0,
+    digits: 1,
+    bidOffset: 1,
+    askOffset: 1,
+  }),
 }
 
 function seededRandom(seed: number) {
