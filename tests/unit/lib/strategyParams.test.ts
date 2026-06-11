@@ -40,8 +40,28 @@ describe('strategyParams utilities', () => {
 
   it('builds default search space from min/max bounds', () => {
     const space = defaultSearchSpaceFromSpecs(maCrossover.params)
-    expect(space.short_period).toEqual({ kind: 'numeric', low: 2, high: 400 })
+    expect(space.short_period).toEqual({ kind: 'numeric', low: 2, high: 400, step: 1 })
     expect(space.short_ma_type).toEqual({ kind: 'categorical', choices: ['sma'] })
+  })
+
+  it('carries per-parameter step into the optimizer payload', () => {
+    const space = defaultSearchSpaceFromSpecs(maCrossover.params)
+    const payload = searchSpaceToPayload(space, maCrossover.params)
+    expect(payload.short_period).toMatchObject({ type: 'int', step: 1 })
+    expect(payload.threshold).toMatchObject({ type: 'float', step: 0.01 })
+  })
+
+  it('coerces invalid steps to safe values in the payload', () => {
+    const payload = searchSpaceToPayload(
+      {
+        short_period: { kind: 'numeric', low: 2, high: 400, step: 0 },
+        threshold: { kind: 'numeric', low: 0, high: 100, step: null },
+      },
+      maCrossover.params,
+    )
+    // int step must stay a positive integer; float step may be null (continuous).
+    expect(payload.short_period).toMatchObject({ type: 'int', step: 1 })
+    expect(payload.threshold).toMatchObject({ type: 'float', step: null })
   })
 
   it('round-trips search space through payload helpers', () => {

@@ -54,6 +54,7 @@ describe('hydrateOptimizeFormFromConfig', () => {
       kind: 'numeric',
       low: 5,
       high: 30,
+      step: 1,
     })
     expect(hydrated.strategySearchSpace.short_ma_type).toEqual({
       kind: 'categorical',

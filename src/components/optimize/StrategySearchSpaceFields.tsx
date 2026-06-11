@@ -71,12 +71,20 @@ export function StrategySearchSpaceFields({
             label={spec.label}
             low={field.low}
             high={field.high}
-            setLow={(low) => onChange(spec.name, { kind: 'numeric', low, high: field.high })}
-            setHigh={(high) => onChange(spec.name, { kind: 'numeric', low: field.low, high })}
+            setLow={(low) => onChange(spec.name, { ...field, kind: 'numeric', low })}
+            setHigh={(high) => onChange(spec.name, { ...field, kind: 'numeric', high })}
             step={String(step)}
+            stepValue={field.step ?? null}
+            setStepValue={(stepValue) =>
+              onChange(spec.name, { ...field, kind: 'numeric', step: stepValue })
+            }
           />
         )
       })}
+      <p className={labelClass}>
+        Step controls the sampling grid for each parameter. Coarser steps keep values clean and
+        reduce overfitting; leave a float step blank for a continuous range.
+      </p>
     </div>
   )
 }

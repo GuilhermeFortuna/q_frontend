@@ -39,6 +39,8 @@ export function RangeRow({
   setLow,
   setHigh,
   step = 'any',
+  stepValue,
+  setStepValue,
 }: {
   label: string
   low: number
@@ -46,12 +48,18 @@ export function RangeRow({
   setLow: (v: number) => void
   setHigh: (v: number) => void
   step?: string
+  /** Current sampling step. `null` means a continuous float range. */
+  stepValue?: number | null
+  /** When provided, an editable "Step" input is rendered alongside low/high. */
+  setStepValue?: (v: number | null) => void
 }) {
-  const invalid = low > high
+  const editableStep = typeof setStepValue === 'function'
+  const rangeInvalid = low > high
+  const stepInvalid = stepValue != null && stepValue <= 0
   return (
     <div className="space-y-1">
       <label className={labelClass}>{label}</label>
-      <div className="grid grid-cols-2 gap-2">
+      <div className={cn('grid gap-2', editableStep ? 'grid-cols-3' : 'grid-cols-2')}>
         <input
           type="number"
           step={step}
@@ -59,6 +67,7 @@ export function RangeRow({
           onChange={(e) => setLow(Number(e.target.value))}
           className={inputClass}
           placeholder="Low"
+          aria-label={`${label} low`}
         />
         <input
           type="number"
@@ -67,9 +76,26 @@ export function RangeRow({
           onChange={(e) => setHigh(Number(e.target.value))}
           className={inputClass}
           placeholder="High"
+          aria-label={`${label} high`}
         />
+        {editableStep && (
+          <input
+            type="number"
+            min="0"
+            step={step}
+            value={stepValue ?? ''}
+            onChange={(e) => {
+              const next = e.target.value.trim()
+              setStepValue(next === '' ? null : Number(next))
+            }}
+            className={inputClass}
+            placeholder="Step"
+            aria-label={`${label} step`}
+          />
+        )}
       </div>
-      {invalid && <p className={fieldErrorClass}>Low must be ≤ high.</p>}
+      {rangeInvalid && <p className={fieldErrorClass}>Low must be ≤ high.</p>}
+      {stepInvalid && <p className={fieldErrorClass}>Step must be greater than 0.</p>}
     </div>
   )
 }
