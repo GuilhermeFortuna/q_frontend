@@ -65,5 +65,35 @@ describe('hydrateOptimizeFormFromConfig', () => {
     expect(hydrated.engine).toBe('candle')
     expect(hydrated.displayTimeframe).toBe('M1')
     expect(hydrated.tickFlags).toBe('all')
+    expect(hydrated.costFields).toEqual({ costPerContract: 0, costBps: 0 })
+  })
+
+  it('hydrates costs and inverse-volatility risk params', () => {
+    const config: OptimizationConfig = {
+      ...sampleConfig,
+      backtest: {
+        ...sampleConfig.backtest,
+        costs: { cost_per_contract: 4, cost_bps: 2.5 },
+      },
+      search_space: {
+        ...sampleConfig.search_space,
+        risk_params: {
+          type: { type: 'categorical', choices: ['inverse_volatility'] },
+          target_volatility_pct: { type: 'float', low: 8, high: 12 },
+          min_contracts: { type: 'int', low: 0, high: 1 },
+          max_contracts: { type: 'int', low: 5, high: 5 },
+        },
+      },
+    }
+
+    const hydrated = hydrateOptimizeFormFromConfig(config, mockStrategies.strategies)
+
+    expect(hydrated.costFields).toEqual({ costPerContract: 4, costBps: 2.5 })
+    expect(hydrated.riskMode).toBe('inverse_volatility')
+    expect(hydrated.targetVolLow).toBe(8)
+    expect(hydrated.targetVolHigh).toBe(12)
+    expect(hydrated.inverseMinContractsLow).toBe(0)
+    expect(hydrated.inverseMinContractsHigh).toBe(1)
+    expect(hydrated.inverseMaxContractsInput).toBe('5')
   })
 })

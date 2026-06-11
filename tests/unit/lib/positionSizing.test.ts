@@ -2,15 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildPositionSizingPayload,
+  defaultPositionSizingFields,
+  hydratePositionSizingFields,
   validatePositionSizing,
 } from '@/lib/backtesting/positionSizing'
 
-const defaultFields = {
-  quantity: 1,
-  safetyMargin: 5000,
-  minContracts: 1,
-  maxContractsInput: '',
-}
+const defaultFields = defaultPositionSizingFields()
 
 describe('buildPositionSizingPayload', () => {
   it('builds fixed_quantity payload', () => {
@@ -45,6 +42,36 @@ describe('buildPositionSizingPayload', () => {
       min_contracts: 1,
       max_contracts: 10,
     })
+  })
+
+  it('builds inverse_volatility payload', () => {
+    const payload = buildPositionSizingPayload('inverse_volatility', {
+      ...defaultFields,
+      targetVolatilityPct: 12,
+      inverseMinContracts: 0,
+      inverseMaxContractsInput: '5',
+    })
+
+    expect(payload).toEqual({
+      type: 'inverse_volatility',
+      target_volatility_pct: 12,
+      min_contracts: 0,
+      max_contracts: 5,
+    })
+  })
+})
+
+describe('hydratePositionSizingFields', () => {
+  it('round-trips inverse_volatility config', () => {
+    const config = {
+      type: 'inverse_volatility' as const,
+      target_volatility_pct: 8,
+      min_contracts: 1,
+      max_contracts: 4,
+    }
+    const hydrated = hydratePositionSizingFields(config)
+    expect(hydrated.mode).toBe('inverse_volatility')
+    expect(buildPositionSizingPayload(hydrated.mode, hydrated.fields)).toEqual(config)
   })
 })
 
@@ -88,6 +115,27 @@ describe('validatePositionSizing', () => {
       ...defaultFields,
       minContracts: 5,
       maxContractsInput: '2',
+    })
+
+    expect(result.valid).toBe(false)
+    expect(result.errors.max_contracts).toBeDefined()
+  })
+
+  it('rejects non-positive target volatility', () => {
+    const result = validatePositionSizing('inverse_volatility', {
+      ...defaultFields,
+      targetVolatilityPct: 0,
+    })
+
+    expect(result.valid).toBe(false)
+    expect(result.errors.target_volatility_pct).toBeDefined()
+  })
+
+  it('rejects inverse max contracts less than min contracts', () => {
+    const result = validatePositionSizing('inverse_volatility', {
+      ...defaultFields,
+      inverseMinContracts: 5,
+      inverseMaxContractsInput: '2',
     })
 
     expect(result.valid).toBe(false)

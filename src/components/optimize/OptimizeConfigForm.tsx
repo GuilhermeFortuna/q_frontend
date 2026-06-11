@@ -10,6 +10,11 @@ import { Button } from '@/components/ui/button'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
 import {
+  buildCostsPayload,
+  defaultTransactionCostFields,
+  validateTransactionCosts,
+} from '@/lib/backtesting/transactionCosts'
+import {
   defaultSearchSpaceFromSpecs,
   searchSpaceToPayload,
   validateSearchSpace,
@@ -75,6 +80,12 @@ export function OptimizeConfigForm({
   const [marginHigh, setMarginHigh] = useState(10000)
   const [minContractsLow, setMinContractsLow] = useState(1)
   const [minContractsHigh, setMinContractsHigh] = useState(3)
+  const [targetVolLow, setTargetVolLow] = useState(5)
+  const [targetVolHigh, setTargetVolHigh] = useState(15)
+  const [inverseMinContractsLow, setInverseMinContractsLow] = useState(0)
+  const [inverseMinContractsHigh, setInverseMinContractsHigh] = useState(2)
+  const [inverseMaxContractsInput, setInverseMaxContractsInput] = useState('')
+  const [costFields, setCostFields] = useState(defaultTransactionCostFields)
 
   const [strategyOpen, setStrategyOpen] = useState(true)
   const [riskOpen, setRiskOpen] = useState(true)
@@ -130,6 +141,12 @@ export function OptimizeConfigForm({
     setMarginHigh(hydrated.marginHigh)
     setMinContractsLow(hydrated.minContractsLow)
     setMinContractsHigh(hydrated.minContractsHigh)
+    setTargetVolLow(hydrated.targetVolLow)
+    setTargetVolHigh(hydrated.targetVolHigh)
+    setInverseMinContractsLow(hydrated.inverseMinContractsLow)
+    setInverseMinContractsHigh(hydrated.inverseMinContractsHigh)
+    setInverseMaxContractsInput(hydrated.inverseMaxContractsInput)
+    setCostFields(hydrated.costFields)
     setDayTrade(hydrated.dayTrade)
     setDayTradeStartTime(hydrated.dayTradeStartTime)
     setDayTradeEndTime(hydrated.dayTradeEndTime)
@@ -167,12 +184,16 @@ export function OptimizeConfigForm({
   }
 
   const dateRangeInvalid = startDate >= endDate
+  const costValidation = useMemo(() => validateTransactionCosts(costFields), [costFields])
+
   const rangesInvalid =
     (riskMode === 'fixed_quantity'
       ? qtyLow > qtyHigh
-      : marginLow > marginHigh || minContractsLow > minContractsHigh) ||
+      : riskMode === 'fixed_safety_margin'
+        ? marginLow > marginHigh || minContractsLow > minContractsHigh
+        : targetVolLow > targetVolHigh || inverseMinContractsLow > inverseMinContractsHigh) ||
     !validateSearchSpace(strategySearchSpace)
-  const formInvalid = dateRangeInvalid || rangesInvalid || nTrials < 1
+  const formInvalid = dateRangeInvalid || rangesInvalid || nTrials < 1 || !costValidation.valid
 
   const isMultiObjective = objective === 'multi_objective_return_drawdown'
 
@@ -188,11 +209,32 @@ export function OptimizeConfigForm({
             type: { type: 'categorical', choices: ['fixed_quantity'] },
             quantity: { type: 'float', low: qtyLow, high: qtyHigh },
           }
-        : {
-            type: { type: 'categorical', choices: ['fixed_safety_margin'] },
-            safety_margin_per_contract: { type: 'log-float', low: marginLow, high: marginHigh },
-            min_contracts: { type: 'int', low: minContractsLow, high: minContractsHigh },
-          }
+        : riskMode === 'fixed_safety_margin'
+          ? {
+              type: { type: 'categorical', choices: ['fixed_safety_margin'] },
+              safety_margin_per_contract: { type: 'log-float', low: marginLow, high: marginHigh },
+              min_contracts: { type: 'int', low: minContractsLow, high: minContractsHigh },
+            }
+          : {
+              type: { type: 'categorical', choices: ['inverse_volatility'] },
+              target_volatility_pct: { type: 'float', low: targetVolLow, high: targetVolHigh },
+              min_contracts: {
+                type: 'int',
+                low: inverseMinContractsLow,
+                high: inverseMinContractsHigh,
+              },
+              ...(inverseMaxContractsInput.trim() !== ''
+                ? {
+                    max_contracts: {
+                      type: 'int',
+                      low: Number(inverseMaxContractsInput),
+                      high: Number(inverseMaxContractsInput),
+                    },
+                  }
+                : {}),
+            }
+
+    const costs = buildCostsPayload(costFields)
 
     onSubmit({
       study: {
@@ -212,6 +254,7 @@ export function OptimizeConfigForm({
         initial_capital: capital,
         point_value: pointValue,
         strategy,
+        ...(costs ? { costs } : {}),
         day_trade: dayTrade,
         day_trade_start_time: dayTradeStartTime,
         day_trade_end_time: dayTradeEndTime,
@@ -297,6 +340,23 @@ export function OptimizeConfigForm({
             minContractsHigh={minContractsHigh}
             setMinContractsLow={setMinContractsLow}
             setMinContractsHigh={setMinContractsHigh}
+            targetVolLow={targetVolLow}
+            targetVolHigh={targetVolHigh}
+            setTargetVolLow={setTargetVolLow}
+            setTargetVolHigh={setTargetVolHigh}
+            inverseMinContractsLow={inverseMinContractsLow}
+            inverseMinContractsHigh={inverseMinContractsHigh}
+            setInverseMinContractsLow={setInverseMinContractsLow}
+            setInverseMinContractsHigh={setInverseMinContractsHigh}
+            inverseMaxContractsInput={inverseMaxContractsInput}
+            setInverseMaxContractsInput={setInverseMaxContractsInput}
+            costPerContract={costFields.costPerContract}
+            setCostPerContract={(value) =>
+              setCostFields((current) => ({ ...current, costPerContract: value }))
+            }
+            costBps={costFields.costBps}
+            setCostBps={(value) => setCostFields((current) => ({ ...current, costBps: value }))}
+            costErrors={costValidation.errors}
           />
 
           <OptimizeStudySection

@@ -94,6 +94,62 @@ describe('BacktestConfigForm', () => {
     expect(payload.engine).toBeUndefined()
     expect(payload.display_timeframe).toBeUndefined()
     expect(payload.tick_flags).toBeUndefined()
+    expect(payload.costs).toBeUndefined()
+  })
+
+  it('omits costs from payload when both values are zero', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderForm(onSubmit)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('MACrossover')
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+
+    expect(onSubmit.mock.calls[0][0].costs).toBeUndefined()
+  })
+
+  it('includes costs in payload when cost per contract is set', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderForm(onSubmit)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('MACrossover')
+    })
+
+    const costInput = screen.getByLabelText('Cost per contract (per side)')
+    await user.clear(costInput)
+    await user.type(costInput, '5')
+
+    await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+
+    expect(onSubmit.mock.calls[0][0].costs).toEqual({
+      cost_per_contract: 5,
+      cost_bps: 0,
+    })
+  })
+
+  it('submits inverse_volatility position sizing payload', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderForm(onSubmit)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('MACrossover')
+    })
+
+    await user.selectOptions(screen.getByLabelText('Position Sizing'), 'inverse_volatility')
+    await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+
+    expect(onSubmit.mock.calls[0][0].position_sizing).toEqual({
+      type: 'inverse_volatility',
+      target_volatility_pct: 10,
+      min_contracts: 0,
+      max_contracts: null,
+    })
   })
 
   it('populates defaults when selecting a different strategy', async () => {

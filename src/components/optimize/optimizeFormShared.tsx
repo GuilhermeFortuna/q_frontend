@@ -26,7 +26,7 @@ export const PRUNERS = [
   { value: 'hyperband', label: 'Hyperband' },
 ] as const
 
-export type RiskMode = 'fixed_quantity' | 'fixed_safety_margin'
+export type RiskMode = 'fixed_quantity' | 'fixed_safety_margin' | 'inverse_volatility'
 
 export const labelClass = 'text-silver-400 text-xs'
 export const sectionTitleClass = 'text-silver-200 text-sm font-medium'

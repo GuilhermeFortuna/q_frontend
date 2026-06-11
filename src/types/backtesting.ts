@@ -12,7 +12,22 @@ export type FixedSafetyMarginPositionSizing = {
   max_contracts: number | null
 }
 
-export type PositionSizingConfig = FixedQuantityPositionSizing | FixedSafetyMarginPositionSizing
+export type InverseVolatilityPositionSizing = {
+  type: 'inverse_volatility'
+  target_volatility_pct: number
+  min_contracts: number
+  max_contracts: number | null
+}
+
+export type PositionSizingConfig =
+  | FixedQuantityPositionSizing
+  | FixedSafetyMarginPositionSizing
+  | InverseVolatilityPositionSizing
+
+export type TransactionCostConfig = {
+  cost_per_contract: number
+  cost_bps: number
+}
 
 export interface BacktestRequest {
   symbol: string
@@ -24,6 +39,7 @@ export interface BacktestRequest {
   strategy?: string
   strategy_params?: Record<string, unknown>
   position_sizing?: PositionSizingConfig
+  costs?: TransactionCostConfig
   day_trade?: boolean
   day_trade_start_time?: string
   day_trade_end_time?: string
@@ -54,6 +70,7 @@ export interface Trade {
 export interface BacktestMetrics {
   total_trades: number
   total_pnl: number
+  total_commission?: number
   win_rate: number
   winning_trades: number
   losing_trades: number

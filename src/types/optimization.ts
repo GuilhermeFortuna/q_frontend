@@ -1,6 +1,8 @@
 // TS mirrors of q_backend/src/q_backend/optimization/models.py and the
 // async job payloads exposed by the /api/v1/optimize endpoints.
 
+import type { TransactionCostConfig } from '@/types/backtesting'
+
 export type IntParam = { type: 'int'; low: number; high: number; step?: number }
 export type FloatParam = { type: 'float'; low: number; high: number; step?: number | null }
 export type LogFloatParam = { type: 'log-float'; low: number; high: number }
@@ -42,6 +44,7 @@ export type OptimizationBacktestConfig = {
   initial_capital: number
   point_value: number
   strategy: string
+  costs?: TransactionCostConfig
   day_trade?: boolean
   day_trade_start_time?: string
   day_trade_end_time?: string

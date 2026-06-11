@@ -4,18 +4,24 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStrategies } from '@/api/queries/strategies'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import {
-  fieldErrorClass,
-  inputClass,
-  InstrumentConfigFields,
-} from '@/components/shared/InstrumentConfigFields'
+import { inputClass, InstrumentConfigFields } from '@/components/shared/InstrumentConfigFields'
 import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
+import { PositionSizingModeFields } from '@/components/shared/PositionSizingModeFields'
+import { TransactionCostFields } from '@/components/shared/TransactionCostFields'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import {
   buildPositionSizingPayload,
+  defaultPositionSizingFields,
+  hydratePositionSizingFields,
   validatePositionSizing,
   type PositionSizingMode,
 } from '@/lib/backtesting/positionSizing'
+import {
+  buildCostsPayload,
+  defaultTransactionCostFields,
+  hydrateTransactionCostFields,
+  validateTransactionCosts,
+} from '@/lib/backtesting/transactionCosts'
 import {
   defaultParamsFromSpecs,
   mergeParamValues,
@@ -47,10 +53,8 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
   const [capital, setCapital] = useState(100000)
   const [pointValue, setPointValue] = useState(1.0)
   const [sizingMode, setSizingMode] = useState<PositionSizingMode>('fixed_quantity')
-  const [quantity, setQuantity] = useState(1)
-  const [safetyMargin, setSafetyMargin] = useState(5000)
-  const [minContracts, setMinContracts] = useState(1)
-  const [maxContractsInput, setMaxContractsInput] = useState('')
+  const [positionSizingFields, setPositionSizingFields] = useState(defaultPositionSizingFields)
+  const [costFields, setCostFields] = useState(defaultTransactionCostFields)
   const [strategy, setStrategy] = useState('MACrossover')
   const [strategyParams, setStrategyParams] = useState<Record<string, StrategyParamValue>>({})
   const [dayTrade, setDayTrade] = useState(false)
@@ -108,16 +112,10 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
       paramsInitialized.current = true
     }
 
-    const ps = cfg.position_sizing
-    if (ps?.type === 'fixed_quantity') {
-      setSizingMode('fixed_quantity')
-      setQuantity(ps.quantity)
-    } else if (ps?.type === 'fixed_safety_margin') {
-      setSizingMode('fixed_safety_margin')
-      setSafetyMargin(ps.safety_margin_per_contract)
-      setMinContracts(ps.min_contracts)
-      setMaxContractsInput(ps.max_contracts != null ? String(ps.max_contracts) : '')
-    }
+    const hydratedSizing = hydratePositionSizingFields(cfg.position_sizing)
+    setSizingMode(hydratedSizing.mode)
+    setPositionSizingFields(hydratedSizing.fields)
+    setCostFields(hydrateTransactionCostFields(cfg.costs))
 
     if (cfg.day_trade !== undefined) setDayTrade(cfg.day_trade)
     if (cfg.day_trade_start_time) setDayTradeStartTime(cfg.day_trade_start_time)
@@ -156,22 +154,14 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
 
   const dateRangeInvalid = startDate >= endDate
 
-  const positionSizingFields = useMemo(
-    () => ({
-      quantity,
-      safetyMargin,
-      minContracts,
-      maxContractsInput,
-    }),
-    [quantity, safetyMargin, minContracts, maxContractsInput],
-  )
-
   const positionSizingValidation = useMemo(
     () => validatePositionSizing(sizingMode, positionSizingFields),
     [sizingMode, positionSizingFields],
   )
 
-  const formInvalid = dateRangeInvalid || !positionSizingValidation.valid
+  const costValidation = useMemo(() => validateTransactionCosts(costFields), [costFields])
+
+  const formInvalid = dateRangeInvalid || !positionSizingValidation.valid || !costValidation.valid
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -185,6 +175,10 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
       initial_capital: capital,
       point_value: pointValue,
       position_sizing: buildPositionSizingPayload(sizingMode, positionSizingFields),
+      ...(() => {
+        const costs = buildCostsPayload(costFields)
+        return costs ? { costs } : {}
+      })(),
       strategy,
       strategy_params: strategyParams,
       day_trade: dayTrade,
@@ -202,6 +196,14 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
   }
 
   const sizingErrors = positionSizingValidation.errors
+  const costErrors = costValidation.errors
+
+  const updateSizingField = <K extends keyof typeof positionSizingFields>(
+    key: K,
+    value: (typeof positionSizingFields)[K],
+  ) => {
+    setPositionSizingFields((current) => ({ ...current, [key]: value }))
+  }
 
   return (
     <Card className="quant-panel border-carbon-600/60 flex w-full flex-shrink-0 flex-col overflow-hidden p-5 md:h-full md:max-h-full md:w-80">
@@ -303,74 +305,34 @@ export function BacktestConfigForm({ loading, error, onSubmit }: BacktestConfigF
             >
               <option value="fixed_quantity">Fixed Quantity</option>
               <option value="fixed_safety_margin">Fixed Safety Margin</option>
+              <option value="inverse_volatility">Inverse volatility (vol targeting)</option>
             </select>
 
-            {sizingMode === 'fixed_quantity' ? (
-              <div className="bg-carbon-900/50 border-carbon-600/40 space-y-1 rounded-lg border p-3">
-                <label htmlFor="position-quantity" className="text-silver-400 text-xs">
-                  Quantity
-                </label>
-                <input
-                  id="position-quantity"
-                  type="number"
-                  step="1"
-                  min="0.01"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  className={inputClass}
-                />
-                {sizingErrors.quantity && (
-                  <p className={fieldErrorClass}>{sizingErrors.quantity}</p>
-                )}
-              </div>
-            ) : (
-              <div className="bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3">
-                <div className="space-y-1">
-                  <label className="text-silver-400 text-xs">Safety Margin per Contract</label>
-                  <input
-                    type="number"
-                    step="1"
-                    min="1"
-                    value={safetyMargin}
-                    onChange={(e) => setSafetyMargin(Number(e.target.value))}
-                    className={inputClass}
-                  />
-                  {sizingErrors.safety_margin_per_contract && (
-                    <p className={fieldErrorClass}>{sizingErrors.safety_margin_per_contract}</p>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-silver-400 text-xs">Min Contracts</label>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={minContracts}
-                    onChange={(e) => setMinContracts(Number(e.target.value))}
-                    className={inputClass}
-                  />
-                  {sizingErrors.min_contracts && (
-                    <p className={fieldErrorClass}>{sizingErrors.min_contracts}</p>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-silver-400 text-xs">Max Contracts (optional)</label>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={maxContractsInput}
-                    onChange={(e) => setMaxContractsInput(e.target.value)}
-                    className={inputClass}
-                    placeholder="No limit"
-                  />
-                  {sizingErrors.max_contracts && (
-                    <p className={fieldErrorClass}>{sizingErrors.max_contracts}</p>
-                  )}
-                </div>
-              </div>
-            )}
+            <PositionSizingModeFields
+              mode={sizingMode}
+              fields={positionSizingFields}
+              setQuantity={(value) => updateSizingField('quantity', value)}
+              setSafetyMargin={(value) => updateSizingField('safetyMargin', value)}
+              setMinContracts={(value) => updateSizingField('minContracts', value)}
+              setMaxContractsInput={(value) => updateSizingField('maxContractsInput', value)}
+              setTargetVolatilityPct={(value) => updateSizingField('targetVolatilityPct', value)}
+              setInverseMinContracts={(value) => updateSizingField('inverseMinContracts', value)}
+              setInverseMaxContractsInput={(value) =>
+                updateSizingField('inverseMaxContractsInput', value)
+              }
+              errors={sizingErrors}
+            />
           </div>
+
+          <TransactionCostFields
+            costPerContract={costFields.costPerContract}
+            setCostPerContract={(value) =>
+              setCostFields((current) => ({ ...current, costPerContract: value }))
+            }
+            costBps={costFields.costBps}
+            setCostBps={(value) => setCostFields((current) => ({ ...current, costBps: value }))}
+            errors={costErrors}
+          />
 
           <div className="bg-carbon-600/60 my-4 h-px w-full" />
 

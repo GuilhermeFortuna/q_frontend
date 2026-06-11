@@ -67,4 +67,34 @@ describe('BacktestConfigForm — hydration from pending config', () => {
     expect(screen.getByDisplayValue('25')).toBeInTheDocument()
     expect(screen.getByDisplayValue('75')).toBeInTheDocument()
   })
+
+  it('hydrates costs and inverse-volatility position sizing', async () => {
+    useAppStore.getState().setPendingBacktestConfig({
+      symbol: 'WIN$',
+      timeframe: 'D1',
+      start: '2024-01-01T00:00:00.000Z',
+      end: '2024-06-01T00:00:00.000Z',
+      initial_capital: 100000,
+      point_value: 0.2,
+      strategy: 'MACrossover',
+      strategy_params: { short_period: 20, long_period: 60, threshold: 0 },
+      position_sizing: {
+        type: 'inverse_volatility',
+        target_volatility_pct: 8,
+        min_contracts: 1,
+        max_contracts: 6,
+      },
+      costs: { cost_per_contract: 3, cost_bps: 1.5 },
+    })
+
+    renderWithQueryClient(<BacktestConfigForm loading={false} error={null} onSubmit={vi.fn()} />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Position Sizing')).toHaveValue('inverse_volatility')
+    })
+
+    expect(screen.getByDisplayValue('8')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('3')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('1.5')).toBeInTheDocument()
+  })
 })

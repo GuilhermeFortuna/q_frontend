@@ -24,6 +24,7 @@ type BacktestReportPayload = {
     strategy?: string
     strategyParams: KeyValue[]
     positionSizing: KeyValue[]
+    transactionCosts: KeyValue[]
   }
   metrics: BacktestResponse['metrics']
   equityCurve: { equity: number; drawdownPct: number }[]
@@ -82,14 +83,34 @@ function buildPositionSizing(request: BacktestRequest | null): KeyValue[] {
       { label: 'Quantity', value: String(ps.quantity) },
     ]
   }
+  if (ps.type === 'fixed_safety_margin') {
+    return [
+      { label: 'Position Sizing', value: 'Fixed Safety Margin' },
+      { label: 'Safety Margin / Contract', value: String(ps.safety_margin_per_contract) },
+      { label: 'Min Contracts', value: String(ps.min_contracts) },
+      {
+        label: 'Max Contracts',
+        value: ps.max_contracts != null ? String(ps.max_contracts) : 'No limit',
+      },
+    ]
+  }
   return [
-    { label: 'Position Sizing', value: 'Fixed Safety Margin' },
-    { label: 'Safety Margin / Contract', value: String(ps.safety_margin_per_contract) },
+    { label: 'Position Sizing', value: 'Inverse Volatility (vol targeting)' },
+    { label: 'Target Volatility (%)', value: String(ps.target_volatility_pct) },
     { label: 'Min Contracts', value: String(ps.min_contracts) },
     {
       label: 'Max Contracts',
       value: ps.max_contracts != null ? String(ps.max_contracts) : 'No limit',
     },
+  ]
+}
+
+function buildTransactionCosts(request: BacktestRequest | null): KeyValue[] {
+  const costs = request?.costs
+  if (!costs) return []
+  return [
+    { label: 'Cost / Contract (per side)', value: String(costs.cost_per_contract) },
+    { label: 'Cost (bps, per side)', value: String(costs.cost_bps) },
   ]
 }
 
@@ -124,6 +145,7 @@ export function buildReportPayload({
       strategy: request?.strategy,
       strategyParams: buildStrategyParams(request?.strategy_params),
       positionSizing: buildPositionSizing(request),
+      transactionCosts: buildTransactionCosts(request),
     },
     metrics: results.metrics,
     equityCurve: equityCurve.map((p) => ({ equity: p.equity, drawdownPct: p.drawdownPct })),

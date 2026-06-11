@@ -20,6 +20,14 @@ export function buildPositionSizingFromRiskParams(
       max_contracts: risk.max_contracts != null ? Number(risk.max_contracts) : null,
     }
   }
+  if (type === 'inverse_volatility') {
+    return {
+      type: 'inverse_volatility',
+      target_volatility_pct: Number(risk.target_volatility_pct ?? 10),
+      min_contracts: Number(risk.min_contracts ?? 0),
+      max_contracts: risk.max_contracts != null ? Number(risk.max_contracts) : null,
+    }
+  }
   return undefined
 }
 
@@ -45,5 +53,6 @@ export function buildBacktestRequestFromTrial(
     strategy: backtest.strategy,
     strategy_params: strategyParams,
     position_sizing: buildPositionSizingFromRiskParams(riskParams),
+    ...(backtest.costs ? { costs: backtest.costs } : {}),
   }
 }

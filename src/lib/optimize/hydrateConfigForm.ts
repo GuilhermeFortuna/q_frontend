@@ -2,6 +2,10 @@ import { endOfDay, startOfDay } from 'date-fns'
 
 import type { RiskMode } from '@/components/optimize/optimizeFormShared'
 import {
+  hydrateTransactionCostFields,
+  type TransactionCostFields,
+} from '@/lib/backtesting/transactionCosts'
+import {
   defaultSearchSpaceFromSpecs,
   hydrateSearchSpaceFromPayload,
   type SearchSpaceFieldState,
@@ -40,6 +44,12 @@ export type OptimizeFormHydration = {
   marginHigh: number
   minContractsLow: number
   minContractsHigh: number
+  targetVolLow: number
+  targetVolHigh: number
+  inverseMinContractsLow: number
+  inverseMinContractsHigh: number
+  inverseMaxContractsInput: string
+  costFields: TransactionCostFields
   dayTrade: boolean
   dayTradeStartTime: string
   dayTradeEndTime: string
@@ -67,7 +77,16 @@ function readLogFloatRange(param: SearchParam | undefined): [number, number] | n
 function readRiskMode(riskParams: Record<string, SearchParam>): RiskMode {
   const typeParam = riskParams.type as CategoricalParam | undefined
   const choice = typeParam?.choices?.[0]
-  return choice === 'fixed_safety_margin' ? 'fixed_safety_margin' : 'fixed_quantity'
+  if (choice === 'fixed_safety_margin') return 'fixed_safety_margin'
+  if (choice === 'inverse_volatility') return 'inverse_volatility'
+  return 'fixed_quantity'
+}
+
+function readFixedIntParam(param: SearchParam | undefined): string {
+  if (param?.type === 'int' && param.low === param.high) {
+    return String(param.low)
+  }
+  return ''
 }
 
 function resolveStrategyInfo(
@@ -96,6 +115,13 @@ export function hydrateOptimizeFormFromConfig(
     riskParams.safety_margin_per_contract as LogFloatParam | undefined,
   ) ?? [1000, 10000]
   const minContractsRange = readIntRange(riskParams.min_contracts as IntParam | undefined) ?? [1, 3]
+  const targetVolRange = readFloatRange(
+    riskParams.target_volatility_pct as FloatParam | undefined,
+  ) ?? [5, 15]
+  const inverseMinContractsRange =
+    riskMode === 'inverse_volatility'
+      ? (readIntRange(riskParams.min_contracts as IntParam | undefined) ?? [0, 2])
+      : [0, 2]
 
   return {
     symbol: config.backtest.symbol,
@@ -122,6 +148,12 @@ export function hydrateOptimizeFormFromConfig(
     marginHigh: marginRange[1],
     minContractsLow: minContractsRange[0],
     minContractsHigh: minContractsRange[1],
+    targetVolLow: targetVolRange[0],
+    targetVolHigh: targetVolRange[1],
+    inverseMinContractsLow: inverseMinContractsRange[0],
+    inverseMinContractsHigh: inverseMinContractsRange[1],
+    inverseMaxContractsInput: readFixedIntParam(riskParams.max_contracts),
+    costFields: hydrateTransactionCostFields(config.backtest.costs),
     dayTrade: config.backtest.day_trade ?? false,
     dayTradeStartTime: config.backtest.day_trade_start_time ?? '09:00',
     dayTradeEndTime: config.backtest.day_trade_end_time ?? '16:00',
