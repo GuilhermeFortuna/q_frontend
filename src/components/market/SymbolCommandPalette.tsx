@@ -2,21 +2,37 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, Search } from 'lucide-react'
 
 import { useSearchSymbols } from '@/api/queries/market-data'
+import {
+  commandActionLabel,
+  commandSearchQuery,
+  parseCommand,
+  type ParsedCommand,
+} from '@/lib/market/commands'
 import { parseTimeframeInput } from '@/lib/market/timeframeCommands'
 import type { Instrument } from '@/types/api'
 
 export type SymbolCommandPaletteProps = {
   onSelectSymbol: (instrument: Instrument) => void
   onAddToWatchlist: (instrument: Instrument) => void
+  onRemoveFromWatchlist: (symbol: string) => void
   onSelectTimeframe: (timeframe: string) => void
   onQueryChange?: (query: string) => void
+  recentInstruments: Instrument[]
 }
+
+type DropdownItem =
+  | { type: 'command'; parsed: ParsedCommand; label: string }
+  | { type: 'timeframe'; label: string; value: string }
+  | { type: 'recent'; symbol: Instrument }
+  | { type: 'symbol'; symbol: Instrument }
 
 export function SymbolCommandPalette({
   onSelectSymbol,
   onAddToWatchlist,
+  onRemoveFromWatchlist,
   onSelectTimeframe,
   onQueryChange,
+  recentInstruments,
 }: SymbolCommandPaletteProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -25,15 +41,31 @@ export function SymbolCommandPalette({
   const searchInputRef = useRef<HTMLInputElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
 
-  const searchResultsQuery = useSearchSymbols(query)
-  const searchResults = searchResultsQuery.data || []
+  const parsedCommand = useMemo(() => parseCommand(query), [query])
+  const effectiveSearchQuery = useMemo(
+    () => commandSearchQuery(query, parsedCommand),
+    [parsedCommand, query],
+  )
+  const parsedTimeframe = useMemo(() => {
+    if (parsedCommand?.kind === 'symbol-timeframe') {
+      return null
+    }
+    return parseTimeframeInput(query)
+  }, [parsedCommand, query])
 
-  const parsedTimeframe = useMemo(() => parseTimeframeInput(query), [query])
+  const searchResultsQuery = useSearchSymbols(effectiveSearchQuery)
+  const searchResults = useMemo(() => searchResultsQuery.data ?? [], [searchResultsQuery.data])
 
   const dropdownItems = useMemo(() => {
-    const items: Array<
-      { type: 'timeframe'; label: string; value: string } | { type: 'symbol'; symbol: Instrument }
-    > = []
+    const items: DropdownItem[] = []
+
+    if (parsedCommand) {
+      items.push({
+        type: 'command',
+        parsed: parsedCommand,
+        label: commandActionLabel(parsedCommand),
+      })
+    }
 
     if (parsedTimeframe) {
       items.push({
@@ -41,6 +73,13 @@ export function SymbolCommandPalette({
         label: parsedTimeframe.label,
         value: parsedTimeframe.value,
       })
+    }
+
+    if (query.trim() === '') {
+      recentInstruments.forEach((inst) => {
+        items.push({ type: 'recent', symbol: inst })
+      })
+      return items
     }
 
     searchResults.forEach((inst) => {
@@ -51,7 +90,7 @@ export function SymbolCommandPalette({
     })
 
     return items
-  }, [parsedTimeframe, searchResults])
+  }, [parsedCommand, parsedTimeframe, query, recentInstruments, searchResults])
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -60,7 +99,7 @@ export function SymbolCommandPalette({
         return
       }
 
-      const isAlphanumericOrSpace = /^[a-zA-Z0-9$@\s]$/.test(e.key)
+      const isAlphanumericOrSpace = /^[a-zA-Z0-9$@\s+-]$/.test(e.key)
       if (isAlphanumericOrSpace && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const nextQuery = e.key === ' ' ? '' : e.key
         setOpen(true)
@@ -73,7 +112,7 @@ export function SymbolCommandPalette({
 
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [])
+  }, [onQueryChange])
 
   useEffect(() => {
     if (open && searchInputRef.current) {
@@ -94,21 +133,73 @@ export function SymbolCommandPalette({
     }
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
-  }, [open])
+  }, [onQueryChange, open])
 
-  const selectSearchResult = (inst: Instrument) => {
-    onAddToWatchlist(inst)
-    onSelectSymbol(inst)
+  const closePalette = () => {
     setOpen(false)
     setQuery('')
     onQueryChange?.('')
   }
 
+  const resolveInstrument = (): Instrument | undefined => {
+    if (searchResults.length > 0) {
+      return searchResults[0]
+    }
+
+    if (parsedCommand && parsedCommand.kind !== 'symbol-timeframe') {
+      const match = recentInstruments.find(
+        (item) => item.symbol.toLowerCase() === parsedCommand.symbolQuery.toLowerCase(),
+      )
+      if (match) {
+        return match
+      }
+    }
+
+    return undefined
+  }
+
+  const executeCommand = (parsed: ParsedCommand) => {
+    switch (parsed.kind) {
+      case 'add-to-watchlist': {
+        const instrument = resolveInstrument()
+        if (instrument) {
+          onAddToWatchlist(instrument)
+        }
+        closePalette()
+        break
+      }
+      case 'remove-from-watchlist': {
+        const instrument = resolveInstrument()
+        onRemoveFromWatchlist(instrument?.symbol ?? parsed.symbolQuery)
+        closePalette()
+        break
+      }
+      case 'symbol-timeframe': {
+        const instrument = resolveInstrument()
+        if (instrument) {
+          onAddToWatchlist(instrument)
+          onSelectSymbol(instrument)
+          onSelectTimeframe(parsed.timeframe.value)
+        }
+        closePalette()
+        break
+      }
+      default: {
+        const _exhaustive: never = parsed
+        return _exhaustive
+      }
+    }
+  }
+
+  const selectSearchResult = (inst: Instrument) => {
+    onAddToWatchlist(inst)
+    onSelectSymbol(inst)
+    closePalette()
+  }
+
   const handleSearchInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
-      setOpen(false)
-      setQuery('')
-      onQueryChange?.('')
+      closePalette()
       e.preventDefault()
     } else if (e.key === 'ArrowDown') {
       setSelectedIndex((prev) => Math.min(prev + 1, dropdownItems.length - 1))
@@ -119,11 +210,13 @@ export function SymbolCommandPalette({
     } else if (e.key === 'Enter') {
       const selectedItem = dropdownItems[selectedIndex]
       if (selectedItem) {
-        if (selectedItem.type === 'timeframe') {
+        if (selectedItem.type === 'command') {
+          executeCommand(selectedItem.parsed)
+        } else if (selectedItem.type === 'timeframe') {
           onSelectTimeframe(selectedItem.value)
-          setOpen(false)
-          setQuery('')
-          onQueryChange?.('')
+          closePalette()
+        } else if (selectedItem.type === 'recent') {
+          selectSearchResult(selectedItem.symbol)
         } else {
           selectSearchResult(selectedItem.symbol)
         }
@@ -163,11 +256,11 @@ export function SymbolCommandPalette({
         </div>
 
         <div className="min-h-[150px] flex-1 overflow-y-auto p-2">
-          {query.trim() === '' ? (
+          {query.trim() === '' && dropdownItems.length === 0 ? (
             <div className="text-silver-400 flex h-32 items-center justify-center font-mono text-xs">
-              Start typing to search symbols or switch timeframes…
+              No recent symbols yet.
             </div>
-          ) : searchResultsQuery.isLoading && dropdownItems.length === 0 ? (
+          ) : query.trim() !== '' && searchResultsQuery.isLoading && dropdownItems.length === 0 ? (
             <div className="text-silver-400 flex h-32 flex-col items-center justify-center gap-2 font-mono text-xs">
               <Activity className="text-brass-500 h-6 w-6 animate-pulse" />
               <span>Searching MetaTrader terminal…</span>
@@ -176,15 +269,34 @@ export function SymbolCommandPalette({
             <div className="flex flex-col gap-0.5">
               {dropdownItems.map((item, index) => {
                 const isActive = index === selectedIndex
+
+                if (item.type === 'command') {
+                  return (
+                    <div
+                      key={`cmd-${item.label}`}
+                      onClick={() => executeCommand(item.parsed)}
+                      onMouseEnter={() => setSelectedIndex(index)}
+                      className={`flex cursor-pointer items-center justify-between rounded px-3 py-2 font-mono text-xs transition-all select-none ${
+                        isActive
+                          ? 'bg-brass-500/20 text-brass-300 border-l-brass-500 border-l-2 font-semibold'
+                          : 'text-silver-300 hover:bg-carbon-800'
+                      }`}
+                    >
+                      <span className="text-silver-100 text-sm font-bold">{item.label}</span>
+                      <span className="bg-carbon-950 border-carbon-700 text-brass-400 rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase">
+                        Command
+                      </span>
+                    </div>
+                  )
+                }
+
                 if (item.type === 'timeframe') {
                   return (
                     <div
                       key={`tf-${item.value}`}
                       onClick={() => {
                         onSelectTimeframe(item.value)
-                        setOpen(false)
-                        setQuery('')
-                        onQueryChange?.('')
+                        closePalette()
                       }}
                       onMouseEnter={() => setSelectedIndex(index)}
                       className={`flex cursor-pointer items-center justify-between rounded px-3 py-2 font-mono text-xs transition-all select-none ${
@@ -206,10 +318,13 @@ export function SymbolCommandPalette({
                   )
                 }
 
-                const inst = item.symbol
+                const inst = item.type === 'recent' ? item.symbol : item.symbol
+                const rowKey =
+                  item.type === 'recent' ? `recent-${inst.symbol}` : `sym-${inst.symbol}`
+
                 return (
                   <div
-                    key={`sym-${inst.symbol}`}
+                    key={rowKey}
                     onClick={() => selectSearchResult(inst)}
                     onMouseEnter={() => setSelectedIndex(index)}
                     className={`flex cursor-pointer items-center justify-between rounded px-3 py-2 font-mono text-xs transition-all select-none ${
@@ -225,6 +340,11 @@ export function SymbolCommandPalette({
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-right">
+                      {item.type === 'recent' ? (
+                        <span className="bg-carbon-950 border-carbon-700 text-silver-400 rounded border px-1.5 py-0.5 text-[10px] uppercase">
+                          Recent
+                        </span>
+                      ) : null}
                       <span className="bg-carbon-950 border-carbon-700 text-silver-400 rounded border px-1.5 py-0.5 text-[10px] uppercase">
                         {inst.exchange}
                       </span>

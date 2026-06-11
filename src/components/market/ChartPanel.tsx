@@ -1,5 +1,6 @@
 import type { RefObject } from 'react'
 import { Activity } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
 
 import { CandlestickChart } from '@/components/charts/CandlestickChart'
 import type { CandlestickChartHandle } from '@/components/charts/CandlestickChart'
@@ -25,6 +26,7 @@ export type ChartPanelProps = {
   isBackfilling: boolean
   isProbingRange: boolean
   error: Error | null
+  tickTime: string | null
   chartRef: RefObject<CandlestickChartHandle | null>
   onHoverBar: (bar: OhlcvBar | null) => void
   onViewportChange: (viewport: ChartViewport) => void
@@ -44,6 +46,7 @@ export function ChartPanel({
   isBackfilling,
   isProbingRange,
   error,
+  tickTime,
   chartRef,
   onHoverBar,
   onViewportChange,
@@ -81,6 +84,11 @@ export function ChartPanel({
           {error ? error.message : `Failed to load historical data for ${symbol}.`}
         </div>
       )}
+      {tickTime ? (
+        <div className="text-silver-500 pointer-events-none absolute right-5 bottom-3 font-mono text-[9px] tracking-wide uppercase">
+          UPDATED {format(parseISO(tickTime), 'HH:mm:ss')}
+        </div>
+      ) : null}
     </div>
   )
 }

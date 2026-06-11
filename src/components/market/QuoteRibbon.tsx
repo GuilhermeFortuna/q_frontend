@@ -4,6 +4,8 @@ import { FlashOnChange } from '@/components/shared/FlashOnChange'
 import { formatPrice } from '@/lib/market/format'
 import type { Instrument, MarketSnapshot, OhlcvBar } from '@/types/api'
 
+import { ChangeBadge } from './ChangeBadge'
+import { SkeletonBar } from './SkeletonBar'
 import type { Mt5ConnectionStatus } from './types'
 
 export type QuoteRibbonProps = {
@@ -14,7 +16,26 @@ export type QuoteRibbonProps = {
   connectionStatus: Mt5ConnectionStatus
   priceDigits: number
   sidebarCollapsed: boolean
+  isLoadingInstrument?: boolean
   onToggleSidebar: () => void
+}
+
+function RibbonSkeleton() {
+  return (
+    <div className="border-carbon-700/60 flex flex-wrap items-center justify-between gap-4 border-b pb-3">
+      <div className="flex items-center gap-3">
+        <SkeletonBar className="h-8 w-8" />
+        <div className="flex flex-col gap-1.5">
+          <SkeletonBar className="h-6 w-24" />
+          <SkeletonBar className="h-3 w-36" />
+        </div>
+      </div>
+      <div className="flex items-center gap-6">
+        <SkeletonBar className="h-8 w-64" />
+        <SkeletonBar className="h-10 w-24" />
+      </div>
+    </div>
+  )
 }
 
 export function QuoteRibbon({
@@ -25,8 +46,13 @@ export function QuoteRibbon({
   connectionStatus,
   priceDigits,
   sidebarCollapsed,
+  isLoadingInstrument = false,
   onToggleSidebar,
 }: QuoteRibbonProps) {
+  if (isLoadingInstrument && !instrument) {
+    return <RibbonSkeleton />
+  }
+
   return (
     <div className="border-carbon-700/60 flex flex-wrap items-center justify-between gap-4 border-b pb-3">
       <div className="flex items-center gap-3">
@@ -71,7 +97,7 @@ export function QuoteRibbon({
       </div>
 
       <div className="flex items-center gap-6">
-        <div className="border-carbon-700/60 bg-carbon-900/80 text-silver-400 flex flex-wrap items-center gap-x-4 gap-y-1 rounded border px-3 py-1.5 font-mono text-xs">
+        <div className="border-carbon-700/60 bg-carbon-900/80 text-silver-400 quant-tabular-nums flex flex-wrap items-center gap-x-4 gap-y-1 rounded border px-3 py-1.5 font-mono text-xs">
           <div>
             <span className="text-silver-400 text-[10px] font-semibold">O</span>{' '}
             <span className="text-silver-200">
@@ -115,18 +141,11 @@ export function QuoteRibbon({
           <div className="border-carbon-800 flex items-center gap-3 border-l pl-4">
             <div className="text-right">
               <FlashOnChange value={snapshot.last}>
-                <p className="text-silver-100 font-mono text-base font-bold">
+                <p className="text-silver-100 quant-tabular-nums font-mono text-base font-bold">
                   {formatPrice(snapshot.last, priceDigits)}
                 </p>
               </FlashOnChange>
-              <p
-                className={`font-mono text-xs font-medium ${
-                  snapshot.changePct >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                }`}
-              >
-                {snapshot.changePct >= 0 ? '▲ +' : '▼ '}
-                {snapshot.changePct.toFixed(2)}%
-              </p>
+              <ChangeBadge changePct={snapshot.changePct} className="text-xs font-medium" />
             </div>
           </div>
         )}

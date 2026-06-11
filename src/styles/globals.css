@@ -111,4 +111,8 @@
   .market-panel-resize-handle[data-separator='active'] {
     background-color: color-mix(in srgb, var(--color-brass-500) 60%, transparent);
   }
+
+  .quant-tabular-nums {
+    font-variant-numeric: tabular-nums slashed-zero;
+  }
 }

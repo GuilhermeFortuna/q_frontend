@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Group, Panel, Separator, useDefaultLayout, usePanelRef } from 'react-resizable-panels'
 
 import {
@@ -19,6 +19,7 @@ import { MarketWatchPanel } from '@/components/market/MarketWatchPanel'
 import { QuoteRibbon } from '@/components/market/QuoteRibbon'
 import { SymbolCommandPalette } from '@/components/market/SymbolCommandPalette'
 import { useWatchlist } from '@/hooks/useWatchlist'
+import { useRecentSymbols } from '@/hooks/useRecentSymbols'
 import { resolveMt5ConnectionStatus } from '@/lib/market/connectionStatus'
 import { useAppStore } from '@/store/useAppStore'
 import type { OhlcvBar, Instrument } from '@/types/api'
@@ -46,7 +47,34 @@ export function MarketDataWorkspace() {
 
   const instrumentsQuery = useInstruments()
   const { watchlist, addToWatchlist, removeFromWatchlist } = useWatchlist(instrumentsQuery.data)
+  const { recentSymbols, recordSymbol } = useRecentSymbols()
   const watchlistSymbols = useMemo(() => watchlist.map((item) => item.symbol), [watchlist])
+
+  useEffect(() => {
+    if (selectedSymbol) {
+      recordSymbol(selectedSymbol)
+    }
+  }, [recordSymbol, selectedSymbol])
+
+  const recentInstruments = useMemo(() => {
+    const catalog = instrumentsQuery.data ?? []
+    const fromCatalog = recentSymbols
+      .map((symbol) => catalog.find((item) => item.symbol === symbol))
+      .filter((item): item is Instrument => item !== undefined)
+
+    const fromWatchlist = recentSymbols
+      .map((symbol) => watchlist.find((item) => item.symbol === symbol))
+      .filter((item): item is Instrument => item !== undefined)
+
+    const merged = new Map<string, Instrument>()
+    for (const instrument of [...fromWatchlist, ...fromCatalog]) {
+      merged.set(instrument.symbol, instrument)
+    }
+
+    return recentSymbols
+      .map((symbol) => merged.get(symbol))
+      .filter((item): item is Instrument => item !== undefined)
+  }, [instrumentsQuery.data, recentSymbols, watchlist])
 
   const snapshotQuery = useMarketSnapshot(selectedSymbol)
   const snapshot = snapshotQuery.data
@@ -97,6 +125,7 @@ export function MarketDataWorkspace() {
         connectionStatus={mt5Status}
         priceDigits={priceDigits}
         sidebarCollapsed={sidebarCollapsed}
+        isLoadingInstrument={instrumentsQuery.isLoading}
         onToggleSidebar={handleToggleSidebar}
       />
 
@@ -164,6 +193,7 @@ export function MarketDataWorkspace() {
                 isBackfilling={ohlcv.isBackfilling}
                 isProbingRange={ohlcv.isProbingRange}
                 error={ohlcv.error}
+                tickTime={snapshot?.tickTime ?? null}
                 chartRef={ohlcv.chartRef}
                 onHoverBar={setHoveredBar}
                 onViewportChange={ohlcv.handleViewportChange}
@@ -194,8 +224,10 @@ export function MarketDataWorkspace() {
       <SymbolCommandPalette
         onSelectSymbol={handleSelectSymbol}
         onAddToWatchlist={addToWatchlist}
+        onRemoveFromWatchlist={removeFromWatchlist}
         onSelectTimeframe={setSelectedTimeframe}
         onQueryChange={setChartSearchQuery}
+        recentInstruments={recentInstruments}
       />
     </div>
   )
