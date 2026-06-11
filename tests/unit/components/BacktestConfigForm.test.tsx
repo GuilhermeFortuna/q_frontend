@@ -78,18 +78,22 @@ describe('BacktestConfigForm', () => {
     await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
-    expect(onSubmit.mock.calls[0][0].position_sizing).toEqual({
+    const payload = onSubmit.mock.calls[0][0]
+    expect(payload.position_sizing).toEqual({
       type: 'fixed_quantity',
       quantity: 1,
     })
-    expect(onSubmit.mock.calls[0][0].strategy).toBe('MACrossover')
-    expect(onSubmit.mock.calls[0][0].strategy_params).toEqual({
+    expect(payload.strategy).toBe('MACrossover')
+    expect(payload.strategy_params).toEqual({
       short_period: 50,
       long_period: 200,
       short_ma_type: 'sma',
       long_ma_type: 'sma',
       threshold: 0,
     })
+    expect(payload.engine).toBeUndefined()
+    expect(payload.display_timeframe).toBeUndefined()
+    expect(payload.tick_flags).toBeUndefined()
   })
 
   it('populates defaults when selecting a different strategy', async () => {
@@ -168,5 +172,78 @@ describe('BacktestConfigForm', () => {
     const endInput = screen.getByLabelText('End', { selector: 'input' }) as HTMLInputElement
     expect(startInput.value).toBe('2020-01-01')
     expect(endInput.value).toBe(format(new Date(), 'yyyy-MM-dd'))
+  })
+
+  it('filters strategies by engine and resets selection when switching', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('MACrossover')
+    })
+
+    const strategySelect = screen.getByLabelText('Strategy')
+    const candleOptions = Array.from(strategySelect.querySelectorAll('option')).map(
+      (option) => option.textContent,
+    )
+    expect(candleOptions).not.toContain('Tick MA Breakout')
+    expect(candleOptions).toContain('MA Crossover')
+
+    await user.selectOptions(screen.getByLabelText('Engine'), 'tick')
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('TickMaBreakout')
+    })
+
+    const tickOptions = Array.from(strategySelect.querySelectorAll('option')).map(
+      (option) => option.textContent,
+    )
+    expect(tickOptions).toEqual(['Tick MA Breakout'])
+    expect(screen.getByLabelText('Display Timeframe')).toHaveValue('M1')
+    expect(screen.getByLabelText('Tick Source')).toHaveValue('all')
+    expect(screen.queryByLabelText('Timeframe')).not.toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('Engine'), 'candle')
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('BollingerReversion')
+    })
+    expect(screen.getByText('Timeframe')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Display Timeframe')).not.toBeInTheDocument()
+  })
+
+  it('submits tick engine payload with display timeframe, tick flags, and SL/TP params', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderForm(onSubmit)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('MACrossover')
+    })
+
+    await user.selectOptions(screen.getByLabelText('Engine'), 'tick')
+    await user.selectOptions(screen.getByLabelText('Display Timeframe'), 'M5')
+    await user.selectOptions(screen.getByLabelText('Tick Source'), 'trade')
+
+    const slInput = screen.getByLabelText('Stop Loss (points)')
+    await user.clear(slInput)
+    await user.type(slInput, '50')
+
+    await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    const payload = onSubmit.mock.calls[0][0]
+    expect(payload.engine).toBe('tick')
+    expect(payload.display_timeframe).toBe('M5')
+    expect(payload.tick_flags).toBe('trade')
+    expect(payload.timeframe).toBeUndefined()
+    expect(payload.strategy).toBe('TickMaBreakout')
+    expect(payload.strategy_params).toMatchObject({
+      short_period: 50,
+      long_period: 200,
+      threshold: 0,
+      sl_points: 50,
+      tp_points: 0,
+    })
   })
 })

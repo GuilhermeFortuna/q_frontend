@@ -41,6 +41,15 @@ type InstrumentConfigFieldsProps = {
   setCapital: (value: number) => void
   pointValue: number
   setPointValue: (value: number) => void
+  dayTrade?: boolean
+  setDayTrade?: (value: boolean) => void
+  dayTradeStartTime?: string
+  setDayTradeStartTime?: (value: string) => void
+  dayTradeEndTime?: string
+  setDayTradeEndTime?: (value: string) => void
+  dayTradeCloseTime?: string
+  setDayTradeCloseTime?: (value: string) => void
+  showTimeframe?: boolean
 }
 
 /**
@@ -61,6 +70,15 @@ export function InstrumentConfigFields({
   setCapital,
   pointValue,
   setPointValue,
+  dayTrade = false,
+  setDayTrade,
+  dayTradeStartTime = '09:00',
+  setDayTradeStartTime,
+  dayTradeEndTime = '16:00',
+  setDayTradeEndTime,
+  dayTradeCloseTime = '17:00',
+  setDayTradeCloseTime,
+  showTimeframe = true,
 }: InstrumentConfigFieldsProps) {
   const [activeDatePreset, setActiveDatePreset] = useState<DatePreset | 'ALL' | null>(null)
   const [allDataLoading, setAllDataLoading] = useState(false)
@@ -111,20 +129,22 @@ export function InstrumentConfigFields({
         />
       </div>
 
-      <div className="space-y-2">
-        <label className="text-silver-200 text-sm font-medium">Timeframe</label>
-        <select
-          value={timeframe}
-          onChange={(e) => setTimeframe(e.target.value)}
-          className={inputClass}
-        >
-          <option value="M1">1 Minute</option>
-          <option value="M5">5 Minutes</option>
-          <option value="M15">15 Minutes</option>
-          <option value="H1">1 Hour</option>
-          <option value="D1">1 Day</option>
-        </select>
-      </div>
+      {showTimeframe ? (
+        <div className="space-y-2">
+          <label className="text-silver-200 text-sm font-medium">Timeframe</label>
+          <select
+            value={timeframe}
+            onChange={(e) => setTimeframe(e.target.value)}
+            className={inputClass}
+          >
+            <option value="M1">1 Minute</option>
+            <option value="M5">5 Minutes</option>
+            <option value="M15">15 Minutes</option>
+            <option value="H1">1 Hour</option>
+            <option value="D1">1 Day</option>
+          </select>
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <label className="text-silver-200 text-sm font-medium">Date Range</label>
@@ -218,6 +238,66 @@ export function InstrumentConfigFields({
           required
         />
       </div>
+
+      {setDayTrade ? (
+        <div className="space-y-3 pt-2">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={dayTrade}
+              onChange={(e) => setDayTrade(e.target.checked)}
+              className="accent-brass-500 border-carbon-600 bg-carbon-900 text-brass-500 h-4 w-4 rounded"
+            />
+            <span className="text-silver-200 text-sm font-medium">Day Trading Mode</span>
+          </label>
+          <p className="text-silver-400 -mt-2 pl-6 text-xs">
+            Trades will not carry onto the next trading day.
+          </p>
+
+          {dayTrade && setDayTradeStartTime && setDayTradeEndTime && setDayTradeCloseTime ? (
+            <div className="bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <label className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+                    Start
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="09:00"
+                    value={dayTradeStartTime}
+                    onChange={(e) => setDayTradeStartTime(e.target.value)}
+                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded-md border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+                    End
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="16:00"
+                    value={dayTradeEndTime}
+                    onChange={(e) => setDayTradeEndTime(e.target.value)}
+                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded-md border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+                    Close
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="17:00"
+                    value={dayTradeCloseTime}
+                    onChange={(e) => setDayTradeCloseTime(e.target.value)}
+                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded-md border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </>
   )
 }

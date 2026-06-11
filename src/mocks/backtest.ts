@@ -1,4 +1,5 @@
 import type { OhlcvBar } from '@/types/api'
+import { timeframeToMs } from '@/lib/market/timeframes'
 import type {
   BacktestRequest,
   BacktestResponse,
@@ -191,17 +192,94 @@ function generateMockChartData(
   return { bars, indicators, trades: alignedTrades }
 }
 
+function generateMockTickChartData(
+  request: BacktestRequest,
+  trades: Trade[],
+): { bars: OhlcvBar[]; indicators: ChartIndicatorSeries[]; trades: Trade[] } {
+  const shortPeriod = Number(request.strategy_params?.short_period ?? 50)
+  const longPeriod = Number(request.strategy_params?.long_period ?? 200)
+  const displayTimeframe = request.display_timeframe ?? 'M1'
+  const barCount = 240
+  const now = Date.now()
+  const barMs = timeframeToMs(displayTimeframe)
+
+  const closes: number[] = []
+  const bars: OhlcvBar[] = []
+
+  for (let i = 0; i < barCount; i += 1) {
+    const close = 128400 + seededRandom(i * 11) * 200 + i * 0.5
+    closes.push(close)
+    const open = close - 2
+    bars.push({
+      timestamp: new Date(now - (barCount - i) * barMs).toISOString(),
+      open: Number(open.toFixed(1)),
+      high: Number((close + 5).toFixed(1)),
+      low: Number((open - 5).toFixed(1)),
+      close: Number(close.toFixed(1)),
+      volume: 500 + i * 5,
+    })
+  }
+
+  const maShort = sma(closes, Math.min(shortPeriod, barCount))
+  const maLong = sma(closes, Math.min(longPeriod, barCount))
+  const delta = maShort.map((short, i) => {
+    const long = maLong[i]
+    if (short === null || long === null) return null
+    return short - long
+  })
+
+  const indicators: ChartIndicatorSeries[] = [
+    {
+      key: 'ma_short',
+      label: `SMA Short (${shortPeriod} ticks)`,
+      pane: 'price',
+      color: '#c9a227',
+      values: maShort,
+    },
+    {
+      key: 'ma_long',
+      label: `SMA Long (${longPeriod} ticks)`,
+      pane: 'price',
+      color: '#6eb5ff',
+      values: maLong,
+    },
+    {
+      key: 'delta',
+      label: 'Delta',
+      pane: 'oscillator',
+      color: '#c9a227',
+      values: delta,
+    },
+  ]
+
+  // Align timestamps to bars for chart markers; preserve exact tick prices.
+  const alignedTrades = trades.map((trade, i) => {
+    const entryBar = bars[Math.min(barCount - 1, 10 + i * 2)]
+    const exitBar = bars[Math.min(barCount - 1, 12 + i * 2)]
+    return {
+      ...trade,
+      entry_time: entryBar.timestamp,
+      exit_time: exitBar.timestamp,
+    }
+  })
+
+  return { bars, indicators, trades: alignedTrades }
+}
+
 export function getMockBacktestResponse(request: BacktestRequest): BacktestResponse {
   const symbol = request.symbol || 'PETR4'
   const initialCapital = request.initial_capital ?? 100000
   const rawTrades = generateMockTrades(symbol, 48)
-  const chartData = generateMockChartData(request, rawTrades)
+  const chartData =
+    request.engine === 'tick'
+      ? generateMockTickChartData(request, rawTrades)
+      : generateMockChartData(request, rawTrades)
 
   return {
     metrics: computeMetrics(chartData.trades, initialCapital),
     trades: chartData.trades,
     bars: chartData.bars,
     indicators: chartData.indicators,
-    run_id: 'mock-persisted-run-id',
+    run_id: request.engine === 'tick' ? 'mock-tick-run-id' : 'mock-persisted-run-id',
   }
 }

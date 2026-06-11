@@ -45,4 +45,16 @@ describe('BacktestHistoryPanel', () => {
       expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
     })
   })
+
+  it('renders TICK timeframe label for tick engine runs', async () => {
+    renderWithQueryClient(
+      <BacktestHistoryPanel selectedRunId={null} onSelectRun={vi.fn()} onReRun={vi.fn()} />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/WIN\$ · TickMaBreakout/i)).toBeInTheDocument()
+    })
+
+    expect(screen.getByText(/TICK ·/)).toBeInTheDocument()
+  })
 })

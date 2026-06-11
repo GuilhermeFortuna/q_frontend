@@ -24,6 +24,15 @@ export interface BacktestRequest {
   strategy?: string
   strategy_params?: Record<string, unknown>
   position_sizing?: PositionSizingConfig
+  day_trade?: boolean
+  day_trade_start_time?: string
+  day_trade_end_time?: string
+  day_trade_close_time?: string
+  engine?: 'candle' | 'tick'
+  /** Tick-only: bar size for chart resampling (e.g. M1). */
+  display_timeframe?: string
+  /** Tick-only: tick source filter. */
+  tick_flags?: 'all' | 'trade'
 }
 
 export interface Trade {
