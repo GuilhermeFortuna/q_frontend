@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns'
+import { formatDisplayTimeSeconds } from '@/lib/formatDate'
 import { useMemo } from 'react'
 
 import { useRecentTicks } from '@/api/queries/market-data'
@@ -82,7 +82,7 @@ export function TimeAndSalesPanel({ symbol, enabled, priceDigits = 2 }: TimeAndS
               className="border-carbon-800/30 hover:bg-carbon-800/20 grid grid-cols-[1fr_1fr_1fr] gap-2 border-b px-3 py-1.5 transition-all duration-150"
             >
               <span className="text-silver-300 font-mono text-xs tabular-nums">
-                {format(parseISO(tick.timestamp), 'HH:mm:ss')}
+                {formatDisplayTimeSeconds(tick.timestamp)}
               </span>
               <span className={`text-right font-mono text-xs tabular-nums ${priceColor}`}>
                 {formatPrice(price, priceDigits)}

@@ -1,6 +1,4 @@
-import { format } from 'date-fns'
-
-import { formatDisplayMonth } from '@/lib/formatDate'
+import { formatDisplayMonth, formatDisplayMonthKey } from '@/lib/formatDate'
 
 import type { EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
 
@@ -49,7 +47,7 @@ export function aggregateMonthlyStats(trades: Trade[]): MonthlyStats[] {
 
   for (const trade of closed) {
     const exitTime = trade.exit_time!
-    const month = format(new Date(exitTime), 'yyyy-MM')
+    const month = formatDisplayMonthKey(exitTime)
     const pnl = trade.pnl ?? 0
     const existing = byMonth.get(month) ?? { pnl: 0, wins: 0, losses: 0, trades: 0 }
     existing.pnl += pnl

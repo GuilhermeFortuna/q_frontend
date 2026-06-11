@@ -1,6 +1,5 @@
-import { format, parseISO } from 'date-fns'
-
 import { FlashOnChange } from '@/components/shared/FlashOnChange'
+import { formatDisplayTimeSeconds } from '@/lib/formatDate'
 import { formatPrice } from '@/lib/market/format'
 import { computeDayRangeMarkerPosition } from '@/lib/market/dayRange'
 import type { MarketSnapshot } from '@/types/api'
@@ -52,7 +51,7 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
     snapshot.dayLow,
     snapshot.dayHigh,
   )
-  const lastUpdate = snapshot.tickTime ? format(parseISO(snapshot.tickTime), 'HH:mm:ss') : '—'
+  const lastUpdate = snapshot.tickTime ? formatDisplayTimeSeconds(snapshot.tickTime) : '—'
 
   return (
     <div className="flex flex-col gap-4 overflow-y-auto p-4">

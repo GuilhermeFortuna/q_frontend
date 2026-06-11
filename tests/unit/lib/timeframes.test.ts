@@ -25,15 +25,15 @@ describe('timeframes', () => {
     expect(isIntradayTimeframe('1D')).toBe(false)
   })
 
-  it('formats axis labels with time-only for intraday', () => {
+  it('formats axis labels with Brasília time for intraday', () => {
     const ts = '2026-01-15T14:30:45.000Z'
-    expect(formatTimeAxisLabel(ts, '1m')).toMatch(/^\d{2}:\d{2}$/)
+    expect(formatTimeAxisLabel(ts, '1m')).toBe('11:30')
     expect(formatTimeAxisLabel(ts, '1D')).toBe('2026/01/15')
   })
 
-  it('formats crosshair labels with full date and time for intraday', () => {
+  it('formats crosshair labels with Brasília date and time for intraday', () => {
     const ts = '2026-01-15T14:30:45.000Z'
-    expect(formatCrosshairLabel(ts, '1m')).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/)
+    expect(formatCrosshairLabel(ts, '1m')).toBe('2026/01/15 11:30:45')
     expect(formatCrosshairLabel(ts, '1D')).toBe('2026/01/15')
   })
 })

@@ -1,8 +1,7 @@
 import type { RefObject } from 'react'
 import { Activity } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
-
 import { CandlestickChart } from '@/components/charts/CandlestickChart'
+import { formatDisplayTimeSeconds } from '@/lib/formatDate'
 import type { CandlestickChartHandle } from '@/components/charts/CandlestickChart'
 import type {
   ChartViewport,
@@ -86,7 +85,7 @@ export function ChartPanel({
       )}
       {tickTime ? (
         <div className="text-silver-500 pointer-events-none absolute right-5 bottom-3 font-mono text-[9px] tracking-wide uppercase">
-          UPDATED {format(parseISO(tickTime), 'HH:mm:ss')}
+          UPDATED {formatDisplayTimeSeconds(tickTime)}
         </div>
       ) : null}
     </div>
