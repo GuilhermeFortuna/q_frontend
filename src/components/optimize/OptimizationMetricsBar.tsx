@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils'
 import type { OptimizationResults } from '@/types/optimization'
 
 type OptimizationMetricsBarProps = {
@@ -21,7 +22,7 @@ export function OptimizationMetricsBar({ results }: OptimizationMetricsBarProps)
       : '—'
 
   return (
-    <div className="border-carbon-600/40 bg-carbon-900/40 grid grid-cols-2 gap-3 rounded-lg border p-4 sm:grid-cols-4">
+    <div className="quant-panel grid grid-cols-2 gap-4 rounded-xl p-4.5 shadow-lg sm:grid-cols-4">
       <Metric label="Best Objective" value={bestObjective} highlight />
       <Metric label="Completed" value={String(completed)} />
       <Metric label="Pruned" value={String(pruned)} />
@@ -41,8 +42,13 @@ function Metric({
 }) {
   return (
     <div>
-      <p className="text-silver-400 text-xs">{label}</p>
-      <p className={highlight ? 'text-brass-400 text-sm font-medium' : 'text-silver-100 text-sm'}>
+      <p className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">{label}</p>
+      <p
+        className={cn(
+          'mt-1 font-mono text-xl font-bold tracking-tight',
+          highlight ? 'text-brass-400' : 'text-silver-100',
+        )}
+      >
         {value}
       </p>
     </div>

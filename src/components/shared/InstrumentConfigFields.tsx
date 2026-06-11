@@ -10,15 +10,15 @@ import {
 } from '@/lib/backtesting/dateRange'
 
 export const inputClass =
-  'w-full bg-carbon-900 border border-carbon-600/60 rounded-md px-3 py-2 text-sm text-silver-100 focus:outline-none focus:ring-2 focus:ring-brass-500/50'
+  'w-full bg-carbon-950/80 border border-brass-600/15 rounded-lg px-3 py-2 text-sm text-silver-100 placeholder-silver-500 focus:outline-none focus:border-brass-500/60 focus:ring-2 focus:ring-brass-500/15 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]'
 
-export const fieldErrorClass = 'text-xs text-rose-400'
+export const fieldErrorClass = 'text-xs font-medium text-rose-400 mt-1'
 
 export const presetButtonClass =
-  'text-silver-300 border-carbon-600/60 hover:border-brass-500/50 hover:text-brass-400 rounded border px-2 py-0.5 text-xs font-medium transition-colors'
+  'text-silver-300 border-brass-600/20 bg-carbon-900/40 hover:bg-carbon-800/80 hover:border-brass-500/40 hover:text-brass-400 rounded-md border px-2.5 py-1 text-xs font-semibold transition-all duration-150 active:scale-95'
 
 export const presetButtonActiveClass =
-  'text-brass-400 border-brass-500/50 rounded border px-2 py-0.5 text-xs font-medium'
+  'text-brass-400 border-brass-500/50 bg-brass-600/15 rounded-md border px-2.5 py-1 text-xs font-semibold shadow-[0_0_10px_rgba(196,165,116,0.08)]'
 
 const DATE_PRESETS: { label: DatePreset; title: string }[] = [
   { label: '1M', title: 'Last 1 month' },

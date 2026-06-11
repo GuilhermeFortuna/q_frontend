@@ -59,7 +59,7 @@ export function TimeAndSalesPanel({ symbol, enabled, priceDigits = 2 }: TimeAndS
         </button>
       )}
 
-      <div className="border-carbon-700 grid grid-cols-[1fr_1fr_1fr] gap-2 border-b px-3 py-2">
+      <div className="border-carbon-700/60 bg-carbon-950/35 grid grid-cols-[1fr_1fr_1fr] gap-2 border-b px-3 py-2">
         <span className="text-silver-500 font-mono text-[10px] tracking-wider uppercase">Time</span>
         <span className="text-silver-500 text-right font-mono text-[10px] tracking-wider uppercase">
           Price
@@ -79,7 +79,7 @@ export function TimeAndSalesPanel({ symbol, enabled, priceDigits = 2 }: TimeAndS
           return (
             <div
               key={`${tick.timestamp}-${index}`}
-              className="border-carbon-800/60 grid grid-cols-[1fr_1fr_1fr] gap-2 border-b px-3 py-1.5"
+              className="border-carbon-800/30 hover:bg-carbon-800/20 grid grid-cols-[1fr_1fr_1fr] gap-2 border-b px-3 py-1.5 transition-all duration-150"
             >
               <span className="text-silver-300 font-mono text-xs tabular-nums">
                 {format(parseISO(tick.timestamp), 'HH:mm:ss')}

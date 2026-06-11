@@ -11,6 +11,27 @@ import {
 import { parseTimeframeInput } from '@/lib/market/timeframeCommands'
 import type { Instrument } from '@/types/api'
 
+function highlightMatch(text: string, query: string) {
+  if (!query.trim()) return <>{text}</>
+  const cleanQuery = query.trim()
+  const parts = text.split(
+    new RegExp(`(${cleanQuery.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')})`, 'gi'),
+  )
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === cleanQuery.toLowerCase() ? (
+          <span key={i} className="text-brass-400 font-extrabold">
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  )
+}
+
 export type SymbolCommandPaletteProps = {
   onSelectSymbol: (instrument: Instrument) => void
   onAddToWatchlist: (instrument: Instrument) => void
@@ -230,10 +251,10 @@ export function SymbolCommandPalette({
   }
 
   return (
-    <div className="bg-carbon-950/60 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div className="bg-espresso-950/45 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md">
       <div
         ref={overlayRef}
-        className="quant-panel bg-carbon-900 border-brass-500/30 flex max-h-[400px] w-[480px] flex-col overflow-hidden rounded-xl border shadow-2xl"
+        className="quant-panel bg-carbon-900 border-brass-500/30 flex max-h-[400px] w-[480px] flex-col overflow-hidden rounded-xl border shadow-[0_0_50px_-12px_rgba(196,165,116,0.3)]"
       >
         <div className="border-carbon-700/60 bg-carbon-800/80 flex items-center gap-3 border-b p-4">
           <Search className="text-brass-400 h-4 w-4" />
@@ -276,10 +297,10 @@ export function SymbolCommandPalette({
                       key={`cmd-${item.label}`}
                       onClick={() => executeCommand(item.parsed)}
                       onMouseEnter={() => setSelectedIndex(index)}
-                      className={`flex cursor-pointer items-center justify-between rounded px-3 py-2 font-mono text-xs transition-all select-none ${
+                      className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 font-mono text-xs transition-all select-none ${
                         isActive
-                          ? 'bg-brass-500/20 text-brass-300 border-l-brass-500 border-l-2 font-semibold'
-                          : 'text-silver-300 hover:bg-carbon-800'
+                          ? 'bg-brass-500/10 text-brass-400 border-brass-500/30 font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_0_8px_rgba(196,165,116,0.1)]'
+                          : 'text-silver-300 hover:bg-carbon-800/40 border-transparent'
                       }`}
                     >
                       <span className="text-silver-100 text-sm font-bold">{item.label}</span>
@@ -299,10 +320,10 @@ export function SymbolCommandPalette({
                         closePalette()
                       }}
                       onMouseEnter={() => setSelectedIndex(index)}
-                      className={`flex cursor-pointer items-center justify-between rounded px-3 py-2 font-mono text-xs transition-all select-none ${
+                      className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 font-mono text-xs transition-all select-none ${
                         isActive
-                          ? 'bg-brass-500/20 text-brass-300 border-l-brass-500 border-l-2 font-semibold'
-                          : 'text-silver-300 hover:bg-carbon-800'
+                          ? 'bg-brass-500/10 text-brass-400 border-brass-500/30 font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_0_8px_rgba(196,165,116,0.1)]'
+                          : 'text-silver-300 hover:bg-carbon-800/40 border-transparent'
                       }`}
                     >
                       <div className="flex flex-col gap-0.5">
@@ -327,14 +348,16 @@ export function SymbolCommandPalette({
                     key={rowKey}
                     onClick={() => selectSearchResult(inst)}
                     onMouseEnter={() => setSelectedIndex(index)}
-                    className={`flex cursor-pointer items-center justify-between rounded px-3 py-2 font-mono text-xs transition-all select-none ${
+                    className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 font-mono text-xs transition-all select-none ${
                       isActive
-                        ? 'bg-brass-500/20 text-brass-300 border-l-brass-500 border-l-2 font-semibold'
-                        : 'text-silver-300 hover:bg-carbon-800'
+                        ? 'bg-brass-500/10 text-brass-400 border-brass-500/30 font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_0_8px_rgba(196,165,116,0.1)]'
+                        : 'text-silver-300 hover:bg-carbon-800/40 border-transparent'
                     }`}
                   >
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-silver-100 text-sm font-bold">{inst.symbol}</span>
+                      <span className="text-silver-100 text-sm font-bold">
+                        {highlightMatch(inst.symbol, effectiveSearchQuery)}
+                      </span>
                       <span className="text-silver-400 line-clamp-1 max-w-[300px] text-[10px]">
                         {inst.name}
                       </span>

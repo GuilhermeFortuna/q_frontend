@@ -24,16 +24,16 @@ export function ChartToolbar({
   onShowGridChange,
 }: ChartToolbarProps) {
   return (
-    <div className="border-carbon-700 bg-carbon-800/80 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
-      <div className="bg-carbon-900 border-carbon-700/50 flex items-center gap-1 rounded border p-0.5">
+    <div className="border-brass-600/10 bg-carbon-900/60 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2 backdrop-blur-md">
+      <div className="bg-carbon-950/60 border-brass-600/15 flex items-center gap-1 rounded-lg border p-0.5">
         {CHART_TIMEFRAMES.map((tf) => (
           <button
             key={tf}
             onClick={() => onTimeframeChange(tf)}
-            className={`rounded px-2 py-1 font-mono text-[10px] font-bold transition-all ${
+            className={`rounded-md border px-2.5 py-1 font-mono text-[10px] font-bold transition-all duration-150 active:scale-95 ${
               selectedTimeframe === tf
-                ? 'bg-brass-500 text-carbon-950 shadow'
-                : 'text-silver-400 hover:text-silver-100 hover:bg-carbon-800'
+                ? 'bg-brass-600/20 text-brass-400 border-brass-500/30 shadow-[0_0_10px_rgba(196,165,116,0.08)]'
+                : 'text-silver-400 hover:text-silver-100 hover:bg-carbon-800/40 border-transparent'
             }`}
           >
             {tf}
@@ -42,14 +42,14 @@ export function ChartToolbar({
       </div>
 
       <div className="flex items-center gap-4 text-xs">
-        <div className="border-carbon-700 flex items-center gap-1.5 border-r pr-4">
-          <span className="text-silver-400 text-[10px] font-semibold tracking-wider uppercase">
+        <div className="border-brass-600/15 flex items-center gap-1.5 border-r pr-4">
+          <span className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
             Style
           </span>
           <select
             value={chartType}
             onChange={(e) => onChartTypeChange(e.target.value as 'candles' | 'line' | 'area')}
-            className="border-carbon-700 bg-carbon-900 text-silver-200 focus:border-brass-500 rounded border px-2 py-0.5 text-xs outline-none"
+            className="border-brass-600/15 bg-carbon-950/80 text-silver-200 focus:border-brass-500/60 focus:ring-brass-500/15 rounded-lg border px-2.5 py-1 text-xs shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)] transition-all outline-none focus:ring-2"
           >
             <option value="candles">Candles</option>
             <option value="line">Line</option>

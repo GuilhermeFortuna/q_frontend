@@ -73,7 +73,7 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+      <div className="border-brass-600/10 bg-carbon-950/40 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]">
         <div className="text-right">
           <p className="text-silver-500 mb-0.5 font-mono text-[10px] tracking-wider uppercase">
             Bid
@@ -82,7 +82,7 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
             {formatPrice(snapshot.bid, digits)}
           </p>
         </div>
-        <div className="text-center">
+        <div className="px-2 text-center">
           <p className="text-silver-500 mb-0.5 font-mono text-[10px] tracking-wider uppercase">
             Spread
           </p>
@@ -100,10 +100,13 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
         </div>
       </div>
 
-      <div>
-        <div className="bg-carbon-700 relative h-2 rounded-full">
+      <div className="space-y-1">
+        <div className="bg-carbon-950/60 border-carbon-800/60 relative h-1.5 overflow-hidden rounded-full border">
+          <div className="via-brass-500/20 absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/20 to-emerald-500/20" />
+        </div>
+        <div className="relative -mt-2 h-2.5">
           <div
-            className="bg-brass-400 absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            className="bg-brass-400 border-carbon-950 absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border shadow-[0_0_8px_rgba(196,165,116,0.85)]"
             style={{ left: `${markerPosition}%` }}
           />
         </div>
@@ -117,7 +120,7 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
         </div>
       </div>
 
-      <div className="border-carbon-700 grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-3">
+      <div className="border-brass-600/10 grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-3">
         <StatRow label="Open" value={formatPrice(snapshot.dayOpen, digits)} />
         <StatRow label="Prev Close" value={formatPrice(snapshot.prevClose, digits)} />
         <StatRow label="Day High" value={formatPrice(snapshot.dayHigh, digits)} />

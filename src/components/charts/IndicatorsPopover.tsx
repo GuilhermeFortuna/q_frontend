@@ -41,28 +41,30 @@ export function IndicatorsPopover({ indicators, onChange }: IndicatorsPopoverPro
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="border-carbon-700 bg-carbon-900 text-silver-300 hover:border-brass-500 flex items-center gap-1.5 rounded border px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase"
+        className="border-brass-600/15 bg-carbon-900/50 hover:bg-carbon-800/85 text-silver-300 hover:text-brass-400 hover:border-brass-500/40 flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-150 active:scale-95"
       >
         Indicators
         {activeCount > 0 && (
-          <span className="bg-brass-500/20 text-brass-400 rounded px-1">{activeCount}</span>
+          <span className="bg-brass-500/20 text-brass-400 rounded px-1.5 py-0.5 text-[9px] leading-none font-bold">
+            {activeCount}
+          </span>
         )}
         <ChevronDown className="h-3 w-3" />
       </button>
 
       {open && (
-        <div className="border-carbon-700 bg-carbon-900 absolute top-full right-0 z-20 mt-1 w-56 rounded-lg border p-2 shadow-xl">
+        <div className="quant-panel absolute top-full right-0 z-20 mt-1.5 w-56 rounded-lg p-2.5 shadow-xl">
           {indicators.map((ind) => (
             <div
               key={ind.type}
-              className="hover:bg-carbon-800 flex items-center justify-between gap-2 rounded px-2 py-1.5"
+              className="hover:bg-carbon-800/60 flex items-center justify-between gap-2 rounded px-2 py-1.5 transition-colors duration-150"
             >
-              <label className="text-silver-300 flex flex-1 cursor-pointer items-center gap-2 font-mono text-[10px] uppercase">
+              <label className="text-silver-300 flex flex-1 cursor-pointer items-center gap-2 font-mono text-[10px] uppercase select-none">
                 <input
                   type="checkbox"
                   checked={ind.enabled}
                   onChange={() => toggle(ind.type)}
-                  className="accent-brass-500"
+                  className="accent-brass-500 border-carbon-700 rounded focus:ring-0"
                 />
                 {ind.type === 'sma' && `SMA (${ind.period})`}
                 {ind.type === 'ema' && `EMA (${ind.period})`}
@@ -80,7 +82,7 @@ export function IndicatorsPopover({ indicators, onChange }: IndicatorsPopoverPro
                   max={200}
                   value={ind.period}
                   onChange={(e) => updatePeriod(ind.type, 'period', Number(e.target.value))}
-                  className="border-carbon-700 bg-carbon-950 text-silver-200 w-12 rounded border px-1 py-0.5 text-[10px]"
+                  className="border-brass-600/15 bg-carbon-950/80 text-silver-200 focus:border-brass-500/50 w-12 rounded px-1.5 py-0.5 font-mono text-[10px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] focus:outline-none"
                 />
               )}
             </div>

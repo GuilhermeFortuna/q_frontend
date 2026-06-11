@@ -75,7 +75,7 @@ export function QuoteRibbon({
             </span>
             {connectionStatus === 'live' && (
               <span className="flex items-center gap-1 font-mono text-[10px] font-semibold tracking-wider text-emerald-400 uppercase">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="live-status-dot h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 Live
               </span>
             )}
@@ -97,27 +97,27 @@ export function QuoteRibbon({
       </div>
 
       <div className="flex items-center gap-6">
-        <div className="border-carbon-700/60 bg-carbon-900/80 text-silver-400 quant-tabular-nums flex flex-wrap items-center gap-x-4 gap-y-1 rounded border px-3 py-1.5 font-mono text-xs">
+        <div className="border-brass-600/15 bg-carbon-950/80 text-silver-400 quant-tabular-nums flex flex-wrap items-center gap-x-5 gap-y-1 rounded-full border px-4 py-1.5 font-mono text-xs shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
           <div>
-            <span className="text-silver-400 text-[10px] font-semibold">O</span>{' '}
+            <span className="text-silver-500 text-[10px] font-semibold">O</span>{' '}
             <span className="text-silver-200">
               {activeBar ? formatPrice(activeBar.open, priceDigits) : '—'}
             </span>
           </div>
           <div>
-            <span className="text-silver-400 text-[10px] font-semibold">H</span>{' '}
+            <span className="text-silver-500 text-[10px] font-semibold">H</span>{' '}
             <span className="text-emerald-400">
               {activeBar ? formatPrice(activeBar.high, priceDigits) : '—'}
             </span>
           </div>
           <div>
-            <span className="text-silver-400 text-[10px] font-semibold">L</span>{' '}
+            <span className="text-silver-500 text-[10px] font-semibold">L</span>{' '}
             <span className="text-rose-400">
               {activeBar ? formatPrice(activeBar.low, priceDigits) : '—'}
             </span>
           </div>
           <div>
-            <span className="text-silver-400 text-[10px] font-semibold">C</span>{' '}
+            <span className="text-silver-500 text-[10px] font-semibold">C</span>{' '}
             <span
               className={
                 activeBar && activeBar.close >= activeBar.open
@@ -128,9 +128,9 @@ export function QuoteRibbon({
               {activeBar ? formatPrice(activeBar.close, priceDigits) : '—'}
             </span>
           </div>
-          <div className="border-carbon-700 mx-1 hidden h-3 border-l sm:block" />
+          <div className="border-carbon-800 mx-1 hidden h-3 border-l sm:block" />
           <div className="hidden sm:block">
-            <span className="text-silver-400 text-[10px] font-semibold">VOL</span>{' '}
+            <span className="text-silver-500 text-[10px] font-semibold">VOL</span>{' '}
             <span className="text-silver-200">
               {activeBar ? activeBar.volume.toLocaleString() : '—'}
             </span>

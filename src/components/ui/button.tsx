@@ -10,12 +10,13 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
-  default: 'bg-carbon-700 text-silver-100 hover:bg-carbon-600 border border-carbon-600',
-  ghost: 'bg-transparent text-silver-200 hover:bg-carbon-800 hover:text-silver-100',
+  default:
+    'bg-carbon-800 text-silver-100 hover:bg-carbon-700 border border-carbon-700/80 hover:border-carbon-600 shadow-[0_1px_2px_rgba(0,0,0,0.2)]',
+  ghost: 'bg-transparent text-silver-300 hover:bg-carbon-800/80 hover:text-silver-100',
   outline:
-    'bg-transparent text-silver-200 border border-carbon-600 hover:border-brass-500 hover:text-brass-400',
+    'bg-transparent text-silver-300 border border-carbon-700 hover:border-brass-600 hover:text-brass-400',
   brass:
-    'bg-brass-600/20 text-brass-400 border border-brass-600/50 hover:bg-brass-600/30 hover:text-brass-400',
+    'bg-gradient-to-r from-brass-600/20 to-brass-500/10 text-brass-400 border border-brass-600/40 hover:from-brass-500/30 hover:to-brass-400/15 hover:border-brass-500/70 hover:text-cream-200 shadow-[0_2px_12px_-3px_rgba(196,165,116,0.15)]',
 }
 
 const sizeClasses: Record<NonNullable<ButtonProps['size']>, string> = {
@@ -31,9 +32,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors',
+          'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 ease-out',
           'focus-visible:outline-brass-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-          'disabled:pointer-events-none disabled:opacity-50',
+          'active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
           variantClasses[variant],
           sizeClasses[size],
           className,

@@ -19,17 +19,17 @@ export function DetailZone({ symbol, snapshot }: DetailZoneProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>('QUOTE')
 
   return (
-    <div className="quant-panel flex h-full flex-col overflow-hidden rounded-lg">
-      <div className="border-carbon-700 flex items-center gap-1 border-b px-3 py-2">
+    <div className="quant-panel flex h-full flex-col overflow-hidden rounded-xl">
+      <div className="border-brass-600/15 bg-carbon-950/40 flex items-center gap-1 border-b px-3 py-2">
         {DETAIL_TABS.map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`rounded px-2 py-1 font-mono text-[10px] font-bold tracking-wider uppercase transition-all ${
+            className={`rounded-md border px-3 py-1 font-mono text-[10px] font-bold tracking-wider uppercase transition-all duration-200 active:scale-95 ${
               activeTab === tab
-                ? 'bg-brass-500/20 text-brass-400'
-                : 'text-silver-400 hover:text-silver-200 hover:bg-carbon-800/60'
+                ? 'bg-brass-600/20 text-brass-400 border-brass-500/30 shadow-[0_0_10px_rgba(196,165,116,0.08)]'
+                : 'text-silver-400 hover:text-silver-200 hover:bg-carbon-800/40 border-transparent'
             }`}
           >
             {tab}

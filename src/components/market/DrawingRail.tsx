@@ -23,7 +23,7 @@ export function DrawingRail({
   onClearDrawings,
 }: DrawingRailProps) {
   return (
-    <div className="quant-panel bg-carbon-800/80 flex w-[44px] shrink-0 flex-col items-center gap-3 rounded-lg py-4">
+    <div className="quant-panel flex w-[44px] shrink-0 flex-col items-center gap-3.5 rounded-lg py-4">
       <div className="text-silver-400 mb-1 text-[9px] font-semibold tracking-wider uppercase select-none">
         Draw
       </div>
@@ -32,10 +32,10 @@ export function DrawingRail({
         <button
           key={tool}
           onClick={() => onActiveDrawingToolChange(tool)}
-          className={`flex h-8 w-8 items-center justify-center rounded transition-all ${
+          className={`flex h-8 w-8 items-center justify-center rounded transition-all duration-200 ${
             activeDrawingTool === tool
-              ? 'bg-brass-500 text-carbon-950 scale-105 shadow'
-              : 'text-silver-400 hover:text-silver-100 hover:bg-carbon-700/60'
+              ? 'from-brass-400 to-brass-500 text-carbon-950 scale-105 bg-gradient-to-br font-bold shadow-[0_0_12px_rgba(196,165,116,0.4)]'
+              : 'text-silver-400 hover:text-silver-100 hover:bg-carbon-800/50 hover:scale-105'
           }`}
           title={title}
         >

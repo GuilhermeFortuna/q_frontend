@@ -44,9 +44,9 @@ function formatPositionSize(quantity: number): string {
 
 function TradeHistoryTable({ trades }: { trades: Trade[] }) {
   return (
-    <div className="border-carbon-600/60 overflow-x-auto rounded-lg border">
+    <div className="border-brass-600/15 bg-carbon-900/40 overflow-x-auto rounded-xl border shadow-lg">
       <table className="text-silver-200 w-full text-left text-sm">
-        <thead className="text-silver-400 bg-carbon-800 border-carbon-600/60 border-b text-xs uppercase">
+        <thead className="text-silver-400 bg-carbon-950/60 border-brass-600/15 border-b text-[10px] font-bold tracking-wider uppercase">
           <tr>
             <th className="px-4 py-3">Symbol</th>
             <th className="px-4 py-3">Action</th>
@@ -58,30 +58,34 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
             <th className="px-4 py-3 text-right">PnL</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-carbon-800/60 divide-y">
           {trades.map((trade) => (
-            <tr key={trade.id} className="border-carbon-700/50 hover:bg-carbon-800/30 border-b">
-              <td className="text-silver-100 px-4 py-3 font-medium">{trade.symbol}</td>
+            <tr key={trade.id} className="hover:bg-carbon-800/30 transition-all">
+              <td className="text-silver-100 px-4 py-3 font-mono text-xs font-bold">
+                {trade.symbol}
+              </td>
               <td className="px-4 py-3">
                 <span
-                  className={`rounded-full px-2 py-1 text-xs font-medium ${trade.action === 'BUY' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}
+                  className={`rounded-md px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase ${trade.action === 'BUY' ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border border-rose-500/20 bg-rose-500/10 text-rose-400'}`}
                 >
                   {trade.action}
                 </span>
               </td>
-              <td className="text-silver-100 px-4 py-3 text-right font-mono tabular-nums">
+              <td className="text-silver-100 px-4 py-3 text-right font-mono text-xs tabular-nums">
                 {formatPositionSize(trade.quantity)}
               </td>
-              <td className="px-4 py-3">{formatDisplayDateTime(trade.entry_time)}</td>
-              <td className="px-4 py-3">{formatCurrency(trade.entry_price)}</td>
-              <td className="px-4 py-3">
+              <td className="px-4 py-3 font-mono text-xs">
+                {formatDisplayDateTime(trade.entry_time)}
+              </td>
+              <td className="px-4 py-3 font-mono text-xs">{formatCurrency(trade.entry_price)}</td>
+              <td className="px-4 py-3 font-mono text-xs">
                 {trade.exit_time ? formatDisplayDateTime(trade.exit_time) : '-'}
               </td>
-              <td className="px-4 py-3">
+              <td className="px-4 py-3 font-mono text-xs">
                 {trade.exit_price != null ? formatCurrency(trade.exit_price) : '-'}
               </td>
               <td
-                className={`px-4 py-3 text-right font-medium tabular-nums ${trade.pnl && trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+                className={`px-4 py-3 text-right font-mono text-xs font-bold tabular-nums ${trade.pnl && trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
               >
                 {trade.pnl != null ? formatSignedCurrency(trade.pnl) : '-'}
               </td>
@@ -142,16 +146,16 @@ export function BacktestResultsTabs({
         <BacktestMetricsBar metrics={results.metrics} />
       </div>
 
-      <div className="border-carbon-600/60 mb-4 flex shrink-0 items-center gap-1 border-b">
+      <div className="border-brass-600/15 mb-4 flex shrink-0 items-center gap-1 border-b">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+              '-mb-px border-b-2 px-4 py-2.5 text-[10px] font-bold tracking-wider uppercase transition-all duration-200',
               activeTab === tab.id
-                ? 'border-brass-400 text-brass-400'
+                ? 'border-brass-400 text-brass-400 drop-shadow-[0_0_8px_rgba(196,165,116,0.25)]'
                 : 'text-silver-400 hover:text-silver-200 border-transparent',
             )}
           >
@@ -169,7 +173,7 @@ export function BacktestResultsTabs({
             type="button"
             onClick={handleExport}
             disabled={exporting}
-            className="border-carbon-600/60 text-silver-200 hover:border-brass-400/60 hover:text-brass-400 inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            className="border-brass-600/15 bg-carbon-900/50 text-silver-200 hover:border-brass-400/50 hover:bg-carbon-800/85 hover:text-brass-400 inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
