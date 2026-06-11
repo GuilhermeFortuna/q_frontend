@@ -24,7 +24,7 @@ export function ChartToolbar({
   onShowGridChange,
 }: ChartToolbarProps) {
   return (
-    <div className="border-brass-600/10 bg-carbon-900/60 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2 backdrop-blur-md">
+    <div className="border-brass-600/10 bg-carbon-900/60 relative z-10 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2 backdrop-blur-md">
       <div className="bg-carbon-950/60 border-brass-600/15 flex items-center gap-1 rounded-lg border p-0.5">
         {CHART_TIMEFRAMES.map((tf) => (
           <button
