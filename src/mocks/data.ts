@@ -1,5 +1,13 @@
 import { timeframeToMs } from '@/lib/market/timeframes'
-import type { Instrument, MarketSnapshot, OhlcvBar, SystemHealth } from '@/types/api'
+import type {
+  Instrument,
+  InstrumentInfo,
+  MarketSnapshot,
+  OhlcvBar,
+  SystemHealth,
+  Tick,
+  TicksResponse,
+} from '@/types/api'
 import type {
   BacktestMetrics,
   BacktestRequest,
@@ -171,6 +179,101 @@ export function getMockOhlcv(
 
   const safeCount = Math.min(Math.max(count, 1), 5000)
   return series.slice(-safeCount)
+}
+
+export function getMockTicks(symbol: string, limit = 200): TicksResponse {
+  const snapshot = mockSnapshots[symbol]
+  const base = snapshot?.last ?? 100
+  const digits = snapshot?.digits ?? 2
+  const spread = snapshot?.spread ?? 0.02
+  const now = Date.now()
+  const ticks: Tick[] = []
+
+  for (let index = limit - 1; index >= 0; index -= 1) {
+    const side: Tick['side'] = index % 3 === 0 ? 'buy' : index % 3 === 1 ? 'sell' : null
+    const priceDelta = (seededRandom(index + symbol.length * 7) - 0.5) * (base * 0.001)
+    const last = Number((base + priceDelta).toFixed(digits))
+    const bid = Number((last - spread / 2).toFixed(digits))
+    const ask = Number((last + spread / 2).toFixed(digits))
+
+    ticks.push({
+      timestamp: new Date(now - index * 1000).toISOString(),
+      bid,
+      ask,
+      last,
+      volume: Math.floor(100 + seededRandom(index * 11) * 900),
+      side,
+    })
+  }
+
+  return { ticks }
+}
+
+export const mockInstrumentInfo: Record<string, InstrumentInfo> = {
+  PETR4: {
+    symbol: 'PETR4',
+    description: 'PETROBRAS PN N2',
+    exchange: 'BOVESPA',
+    currencyBase: 'BRL',
+    currencyProfit: 'BRL',
+    digits: 2,
+    point: 0.01,
+    tickSize: 0.01,
+    tickValue: 0.01,
+    contractSize: 1,
+    volumeMin: 100,
+    volumeMax: 1_000_000,
+    volumeStep: 100,
+    spreadFloating: true,
+  },
+  VALE3: {
+    symbol: 'VALE3',
+    description: 'VALE ON NM',
+    exchange: 'BOVESPA',
+    currencyBase: 'BRL',
+    currencyProfit: 'BRL',
+    digits: 2,
+    point: 0.01,
+    tickSize: 0.01,
+    tickValue: 0.01,
+    contractSize: 1,
+    volumeMin: 100,
+    volumeMax: 1_000_000,
+    volumeStep: 100,
+    spreadFloating: true,
+  },
+  WIN$: {
+    symbol: 'WIN$',
+    description: 'Mini Indice Bovespa',
+    exchange: 'BMF',
+    currencyBase: 'BRL',
+    currencyProfit: 'BRL',
+    digits: 0,
+    point: 1,
+    tickSize: 5,
+    tickValue: 1,
+    contractSize: 0.2,
+    volumeMin: 1,
+    volumeMax: 500,
+    volumeStep: 1,
+    spreadFloating: true,
+  },
+  EURUSD: {
+    symbol: 'EURUSD',
+    description: 'Euro vs US Dollar',
+    exchange: 'FOREX',
+    currencyBase: 'EUR',
+    currencyProfit: 'USD',
+    digits: 4,
+    point: 0.0001,
+    tickSize: 0.00001,
+    tickValue: 1,
+    contractSize: 100000,
+    volumeMin: 0.01,
+    volumeMax: 500,
+    volumeStep: 0.01,
+    spreadFloating: true,
+  },
 }
 
 const mockBacktestMetrics: BacktestMetrics = {

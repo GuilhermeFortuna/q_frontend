@@ -5,10 +5,12 @@ import { apiClient } from '@/api/client'
 import { toApiTimeframe } from '@/lib/market/timeframes'
 import type {
   Instrument,
+  InstrumentInfo,
   MarketSnapshot,
   MarketSnapshotsResponse,
   OhlcvAvailableRange,
   OhlcvBar,
+  TicksResponse,
 } from '@/types/api'
 
 export type OhlcvQueryParams = {
@@ -27,6 +29,9 @@ export const marketDataKeys = {
     [...marketDataKeys.all, 'ohlcv', symbol, timeframe, params ?? {}] as const,
   availableRange: (symbol: string, timeframe: string) =>
     [...marketDataKeys.all, 'available-range', symbol, timeframe] as const,
+  ticks: (symbol: string, limit: number) =>
+    [...marketDataKeys.all, 'ticks', symbol, limit] as const,
+  instrumentInfo: (symbol: string) => [...marketDataKeys.all, 'instrument-info', symbol] as const,
 }
 
 async function fetchInstruments(): Promise<Instrument[]> {
@@ -148,5 +153,56 @@ export function useSearchSymbols(query: string) {
     queryFn: () => fetchSearchSymbols(query),
     enabled: query.trim().length > 1,
     staleTime: 30_000,
+  })
+}
+
+async function fetchRecentTicks(symbol: string, limit = 200): Promise<TicksResponse> {
+  const { data } = await apiClient.get<TicksResponse>(`/api/v1/market/ticks/${symbol}`, {
+    params: { limit },
+  })
+  return data
+}
+
+async function fetchInstrumentInfo(symbol: string): Promise<InstrumentInfo> {
+  const { data } = await apiClient.get<InstrumentInfo>(`/api/v1/market/instrument-info/${symbol}`)
+  return data
+}
+
+export type UseRecentTicksOptions = {
+  enabled?: boolean
+  limit?: number
+}
+
+export function useRecentTicks(symbol: string, options: UseRecentTicksOptions = {}) {
+  const { enabled = true, limit = 200 } = options
+
+  return useQuery({
+    queryKey: marketDataKeys.ticks(symbol, limit),
+    queryFn: () => fetchRecentTicks(symbol, limit),
+    enabled: enabled && symbol.length > 0,
+    staleTime: 2_000,
+    refetchInterval: 2_000,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export type UseInstrumentInfoOptions = {
+  enabled?: boolean
+}
+
+export function useInstrumentInfo(symbol: string, options: UseInstrumentInfoOptions = {}) {
+  const { enabled = true } = options
+
+  return useQuery({
+    queryKey: marketDataKeys.instrumentInfo(symbol),
+    queryFn: () => fetchInstrumentInfo(symbol),
+    enabled: enabled && symbol.length > 0,
+    staleTime: 5 * 60_000,
+    retry: (failureCount, error) => {
+      if (isAxiosError(error) && error.response?.status === 404) {
+        return false
+      }
+      return failureCount < 1
+    },
   })
 }

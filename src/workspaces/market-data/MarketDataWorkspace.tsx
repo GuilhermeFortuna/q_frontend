@@ -106,8 +106,8 @@ export function MarketDataWorkspace() {
         defaultLayout={
           defaultLayout ?? {
             'market-watch': 20,
-            'chart-zone': 80,
-            'detail-zone': 0,
+            'chart-zone': 60,
+            'detail-zone': 20,
           }
         }
         onLayoutChanged={onLayoutChanged}
@@ -137,7 +137,7 @@ export function MarketDataWorkspace() {
 
         <Separator className="market-panel-resize-handle" />
 
-        <Panel id="chart-zone" defaultSize={80} minSize={40} className="min-w-0">
+        <Panel id="chart-zone" defaultSize={60} minSize={40} className="min-w-0">
           <div className="flex h-full min-h-0 gap-4">
             <div className="quant-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg">
               <ChartToolbar
@@ -181,13 +181,13 @@ export function MarketDataWorkspace() {
 
         <Panel
           id="detail-zone"
-          defaultSize={0}
+          defaultSize={20}
           minSize={15}
           collapsible
           collapsedSize={0}
           className="min-w-0"
         >
-          <DetailZone />
+          <DetailZone symbol={selectedSymbol} snapshot={snapshot} />
         </Panel>
       </Group>
 

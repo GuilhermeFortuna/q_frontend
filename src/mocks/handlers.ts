@@ -6,7 +6,9 @@ import {
   getMockOptimizationResults,
   getMockOptimizationStatus,
   getMockOhlcv,
+  getMockTicks,
   mockBacktestRunSummaries,
+  mockInstrumentInfo,
   mockInstruments,
   mockOptimizationStudySummaries,
   mockSnapshots,
@@ -74,6 +76,25 @@ export const handlers = [
       return HttpResponse.json({ detail: `Symbol '${symbol}' not found.` }, { status: 404 })
     }
     return HttpResponse.json(snapshot)
+  }),
+
+  http.get('*/api/v1/market/ticks/:symbol', ({ params, request }) => {
+    const symbol = String(params.symbol).toUpperCase()
+    const url = new URL(request.url)
+    const limit = parseInt(url.searchParams.get('limit') ?? '200', 10)
+    return HttpResponse.json(getMockTicks(symbol, limit))
+  }),
+
+  http.get('*/api/v1/market/instrument-info/:symbol', ({ params }) => {
+    const symbol = String(params.symbol).toUpperCase()
+    const info = mockInstrumentInfo[symbol]
+    if (!info) {
+      return HttpResponse.json(
+        { detail: `Instrument info for '${symbol}' not found.` },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(info)
   }),
 
   http.get('*/api/v1/market/ohlcv/:symbol/available-range', ({ params, request }) => {

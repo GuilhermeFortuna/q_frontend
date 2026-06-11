@@ -1,10 +1,21 @@
 import { useState } from 'react'
 
+import type { MarketSnapshot } from '@/types/api'
+
+import { InstrumentInfoPanel } from './InstrumentInfoPanel'
+import { QuotePanel } from './QuotePanel'
+import { TimeAndSalesPanel } from './TimeAndSalesPanel'
+
 const DETAIL_TABS = ['QUOTE', 'TAPE', 'INFO'] as const
 
 type DetailTab = (typeof DETAIL_TABS)[number]
 
-export function DetailZone() {
+export type DetailZoneProps = {
+  symbol: string
+  snapshot: MarketSnapshot | undefined
+}
+
+export function DetailZone({ symbol, snapshot }: DetailZoneProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>('QUOTE')
 
   return (
@@ -26,8 +37,18 @@ export function DetailZone() {
         ))}
       </div>
 
-      <div className="flex flex-1 items-center justify-center p-4">
-        <p className="text-silver-500 font-mono text-xs">Coming soon</p>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {activeTab === 'QUOTE' && <QuotePanel snapshot={snapshot} />}
+        {activeTab === 'TAPE' && (
+          <TimeAndSalesPanel
+            symbol={symbol}
+            enabled={activeTab === 'TAPE'}
+            priceDigits={snapshot?.digits ?? 2}
+          />
+        )}
+        {activeTab === 'INFO' && (
+          <InstrumentInfoPanel symbol={symbol} enabled={activeTab === 'INFO'} />
+        )}
       </div>
     </div>
   )

@@ -57,3 +57,35 @@ export type MarketSnapshot = {
 export type MarketSnapshotsResponse = {
   snapshots: MarketSnapshot[]
 }
+
+export type TickSide = 'buy' | 'sell' | null
+
+export type Tick = {
+  timestamp: string
+  bid: number
+  ask: number
+  last: number
+  volume: number
+  side: TickSide
+}
+
+export type TicksResponse = {
+  ticks: Tick[]
+}
+
+export type InstrumentInfo = {
+  symbol: string
+  description: string
+  exchange: string
+  currencyBase: string
+  currencyProfit: string
+  digits: number
+  point: number
+  tickSize: number
+  tickValue: number
+  contractSize: number
+  volumeMin: number
+  volumeMax: number
+  volumeStep: number
+  spreadFloating: boolean
+}

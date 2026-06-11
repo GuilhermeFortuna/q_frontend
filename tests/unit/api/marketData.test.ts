@@ -4,7 +4,12 @@ import { setupServer } from 'msw/node'
 import { createElement, type ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
-import { fetchMarketSnapshots, marketDataKeys, useMarketSnapshots } from '@/api/queries/market-data'
+import {
+  fetchMarketSnapshots,
+  marketDataKeys,
+  useMarketSnapshots,
+  useRecentTicks,
+} from '@/api/queries/market-data'
 import { handlers } from '@/mocks/handlers'
 
 const server = setupServer(...handlers)
@@ -70,5 +75,24 @@ describe('market snapshots API', () => {
 
     expect(result.current.fetchStatus).toBe('idle')
     expect(result.current.data).toBeUndefined()
+  })
+
+  it('useRecentTicks stays disabled when enabled is false', () => {
+    const { result } = renderHook(() => useRecentTicks('PETR4', { enabled: false }), {
+      wrapper: createWrapper(),
+    })
+
+    expect(result.current.fetchStatus).toBe('idle')
+    expect(result.current.data).toBeUndefined()
+  })
+
+  it('useRecentTicks fetches ticks when enabled', async () => {
+    const { result } = renderHook(() => useRecentTicks('PETR4', { enabled: true }), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(result.current.data?.ticks.length).toBeGreaterThan(0)
+    })
   })
 })
