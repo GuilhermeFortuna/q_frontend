@@ -36,12 +36,21 @@ export type ObjectiveConfig = { mode: ObjectiveMode }
 
 export type OptimizationBacktestConfig = {
   symbol: string
-  timeframe: string
+  timeframe?: string
   start: string
   end: string
   initial_capital: number
   point_value: number
   strategy: string
+  day_trade?: boolean
+  day_trade_start_time?: string
+  day_trade_end_time?: string
+  day_trade_close_time?: string
+  engine?: 'candle' | 'tick'
+  /** Tick-only: chart/display bar size. */
+  display_timeframe?: string
+  /** Tick-only: tick source filter. */
+  tick_flags?: 'all' | 'trade'
 }
 
 export type OptimizationConfig = {

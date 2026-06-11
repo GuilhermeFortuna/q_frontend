@@ -17,8 +17,17 @@ import {
 } from '@/lib/strategies/strategyParams'
 import { useAppStore } from '@/store/useAppStore'
 import type { ObjectiveMode, OptimizationConfig, Sampler, SearchParam } from '@/types/optimization'
+import type { StrategyInfo } from '@/types/strategies'
 
 import type { RiskMode } from '@/components/optimize/optimizeFormShared'
+
+type OptimizeEngine = 'candle' | 'tick'
+
+const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M15', 'H1'] as const
+
+function strategyEngine(info: StrategyInfo): OptimizeEngine {
+  return info.engine ?? 'candle'
+}
 
 type OptimizeConfigFormProps = {
   loading: boolean
@@ -39,6 +48,13 @@ export function OptimizeConfigForm({
   const [endDate, setEndDate] = useState(defaultBacktestEnd)
   const [capital, setCapital] = useState(100000)
   const [pointValue, setPointValue] = useState(1.0)
+  const [dayTrade, setDayTrade] = useState(false)
+  const [dayTradeStartTime, setDayTradeStartTime] = useState('09:00')
+  const [dayTradeEndTime, setDayTradeEndTime] = useState('16:00')
+  const [dayTradeCloseTime, setDayTradeCloseTime] = useState('17:00')
+  const [engine, setEngine] = useState<OptimizeEngine>('candle')
+  const [displayTimeframe, setDisplayTimeframe] = useState('M1')
+  const [tickFlags, setTickFlags] = useState<'all' | 'trade'>('all')
 
   const [objective, setObjective] = useState<ObjectiveMode>('maximize_return_drawdown')
   const [sampler, setSampler] = useState<Sampler>('tpe')
@@ -67,7 +83,11 @@ export function OptimizeConfigForm({
 
   const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
   const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
-  const selectedStrategy = strategies.find((entry) => entry.name === strategy)
+  const filteredStrategies = useMemo(
+    () => strategies.filter((entry) => strategyEngine(entry) === engine),
+    [strategies, engine],
+  )
+  const selectedStrategy = filteredStrategies.find((entry) => entry.name === strategy)
   const searchSpaceInitialized = useRef(false)
 
   const pendingOptimizationConfig = useAppStore((s) => s.pendingOptimizationConfig)
@@ -75,13 +95,15 @@ export function OptimizeConfigForm({
 
   useEffect(() => {
     if (strategies.length === 0 || searchSpaceInitialized.current) return
-    const info = strategies.find((entry) => entry.name === strategy) ?? strategies[0]
-    if (!strategies.some((entry) => entry.name === strategy)) {
+    const pool = strategies.filter((entry) => strategyEngine(entry) === engine)
+    const info = pool.find((entry) => entry.name === strategy) ?? pool[0]
+    if (!info) return
+    if (!pool.some((entry) => entry.name === strategy)) {
       setStrategy(info.name)
     }
     setStrategySearchSpace(defaultSearchSpaceFromSpecs(info.params))
     searchSpaceInitialized.current = true
-  }, [strategies, strategy])
+  }, [strategies, strategy, engine])
 
   useEffect(() => {
     if (!pendingOptimizationConfig) return
@@ -108,10 +130,29 @@ export function OptimizeConfigForm({
     setMarginHigh(hydrated.marginHigh)
     setMinContractsLow(hydrated.minContractsLow)
     setMinContractsHigh(hydrated.minContractsHigh)
+    setDayTrade(hydrated.dayTrade)
+    setDayTradeStartTime(hydrated.dayTradeStartTime)
+    setDayTradeEndTime(hydrated.dayTradeEndTime)
+    setDayTradeCloseTime(hydrated.dayTradeCloseTime)
+    setEngine(hydrated.engine)
+    setDisplayTimeframe(hydrated.displayTimeframe)
+    setTickFlags(hydrated.tickFlags)
     searchSpaceInitialized.current = true
 
     setPendingOptimizationConfig(null)
   }, [pendingOptimizationConfig, setPendingOptimizationConfig, strategies])
+
+  const handleEngineChange = (nextEngine: OptimizeEngine) => {
+    setEngine(nextEngine)
+    const pool = strategies.filter((entry) => strategyEngine(entry) === nextEngine)
+    if (pool.length === 0) return
+    const currentValid = pool.some((entry) => entry.name === strategy)
+    if (!currentValid) {
+      const next = pool[0]
+      setStrategy(next.name)
+      setStrategySearchSpace(defaultSearchSpaceFromSpecs(next.params))
+    }
+  }
 
   const handleStrategyChange = (nextStrategy: string) => {
     setStrategy(nextStrategy)
@@ -165,12 +206,23 @@ export function OptimizeConfigForm({
       objective: { mode: objective },
       backtest: {
         symbol,
-        timeframe,
+        ...(engine === 'candle' ? { timeframe } : {}),
         start: startOfDay(startDate).toISOString(),
         end: endOfDay(endDate).toISOString(),
         initial_capital: capital,
         point_value: pointValue,
         strategy,
+        day_trade: dayTrade,
+        day_trade_start_time: dayTradeStartTime,
+        day_trade_end_time: dayTradeEndTime,
+        day_trade_close_time: dayTradeCloseTime,
+        ...(engine === 'tick'
+          ? {
+              engine: 'tick' as const,
+              display_timeframe: displayTimeframe,
+              tick_flags: tickFlags,
+            }
+          : {}),
       },
       search_space: {
         strategy_params: strategyParams,
@@ -193,10 +245,17 @@ export function OptimizeConfigForm({
           <OptimizeStrategySection
             open={strategyOpen}
             onToggle={() => setStrategyOpen((v) => !v)}
-            strategies={strategies}
+            strategies={filteredStrategies}
             strategiesLoading={strategiesLoading}
             strategy={strategy}
             onStrategyChange={handleStrategyChange}
+            engine={engine}
+            onEngineChange={handleEngineChange}
+            displayTimeframe={displayTimeframe}
+            onDisplayTimeframeChange={setDisplayTimeframe}
+            tickFlags={tickFlags}
+            onTickFlagsChange={setTickFlags}
+            displayTimeframeOptions={DISPLAY_TIMEFRAME_OPTIONS}
             searchSpace={strategySearchSpace}
             onSearchSpaceChange={handleSearchSpaceChange}
             symbol={symbol}
@@ -211,6 +270,14 @@ export function OptimizeConfigForm({
             setCapital={setCapital}
             pointValue={pointValue}
             setPointValue={setPointValue}
+            dayTrade={dayTrade}
+            setDayTrade={setDayTrade}
+            dayTradeStartTime={dayTradeStartTime}
+            setDayTradeStartTime={setDayTradeStartTime}
+            dayTradeEndTime={dayTradeEndTime}
+            setDayTradeEndTime={setDayTradeEndTime}
+            dayTradeCloseTime={dayTradeCloseTime}
+            setDayTradeCloseTime={setDayTradeCloseTime}
           />
 
           <OptimizeRiskSection

@@ -40,6 +40,13 @@ export type OptimizeFormHydration = {
   marginHigh: number
   minContractsLow: number
   minContractsHigh: number
+  dayTrade: boolean
+  dayTradeStartTime: string
+  dayTradeEndTime: string
+  dayTradeCloseTime: string
+  engine: 'candle' | 'tick'
+  displayTimeframe: string
+  tickFlags: 'all' | 'trade'
 }
 
 function readIntRange(param: SearchParam | undefined): [number, number] | null {
@@ -92,7 +99,7 @@ export function hydrateOptimizeFormFromConfig(
 
   return {
     symbol: config.backtest.symbol,
-    timeframe: config.backtest.timeframe,
+    timeframe: config.backtest.timeframe ?? 'D1',
     startDate: startOfDay(new Date(config.backtest.start)),
     endDate: endOfDay(new Date(config.backtest.end)),
     capital: config.backtest.initial_capital,
@@ -115,5 +122,15 @@ export function hydrateOptimizeFormFromConfig(
     marginHigh: marginRange[1],
     minContractsLow: minContractsRange[0],
     minContractsHigh: minContractsRange[1],
+    dayTrade: config.backtest.day_trade ?? false,
+    dayTradeStartTime: config.backtest.day_trade_start_time ?? '09:00',
+    dayTradeEndTime: config.backtest.day_trade_end_time ?? '16:00',
+    dayTradeCloseTime: config.backtest.day_trade_close_time ?? '17:00',
+    engine: config.backtest.engine ?? 'candle',
+    displayTimeframe: config.backtest.display_timeframe ?? 'M1',
+    tickFlags:
+      config.backtest.tick_flags === 'trade' || config.backtest.tick_flags === 'all'
+        ? config.backtest.tick_flags
+        : 'all',
   }
 }
