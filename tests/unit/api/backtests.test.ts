@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   bulkDeleteBacktestRuns,
   deleteBacktestRun,
+  fetchBacktestEquityArtifact,
   fetchBacktestHistory,
   fetchBacktestRun,
   patchBacktestRunSaved,
@@ -130,6 +131,24 @@ describe('backtest history API', () => {
     const after = await fetchBacktestHistory()
     expect(after.total).toBe(before.total - 1)
     expect(after.items.find((run) => run.run_id === runId)).toBeUndefined()
+  })
+
+  it('fetchBacktestEquityArtifact returns points for artifact runs', async () => {
+    const artifact = await fetchBacktestEquityArtifact('run-win-ma')
+
+    expect(artifact.availability).toBe('available')
+    expect(artifact.points.length).toBeGreaterThan(0)
+    expect(artifact.points[0]).toMatchObject({
+      time: expect.any(String),
+      equity: expect.any(Number),
+    })
+  })
+
+  it('fetchBacktestEquityArtifact resolves unavailable on 404', async () => {
+    const artifact = await fetchBacktestEquityArtifact('run-petr-failed')
+
+    expect(artifact.availability).toBe('unavailable')
+    expect(artifact.points).toEqual([])
   })
 
   it('useBacktestRun hook loads detail via MSW', async () => {

@@ -1,38 +1,30 @@
-import { act, renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { useHistorySelection } from '@/hooks/useHistorySelection'
 
 describe('useHistorySelection', () => {
-  it('toggles ids and tracks selection mode', () => {
-    const { result } = renderHook(() => useHistorySelection())
+  it('blocks selection beyond maxSelection', () => {
+    const { result } = renderHook(() => useHistorySelection({ maxSelection: 5 }))
 
     act(() => {
       result.current.enterSelectionMode()
     })
-    expect(result.current.selectionMode).toBe(true)
 
     act(() => {
-      result.current.toggle('a')
-      result.current.toggle('b')
+      for (let index = 0; index < 5; index += 1) {
+        result.current.toggle(`run-${index}`)
+      }
     })
-    expect(result.current.selectedCount).toBe(2)
-    expect(result.current.isSelected('a')).toBe(true)
+
+    expect(result.current.selectedCount).toBe(5)
+    expect(result.current.selectionAtMax).toBe(true)
 
     act(() => {
-      result.current.toggle('a')
+      result.current.toggle('run-6')
     })
-    expect(result.current.selectedCount).toBe(1)
 
-    act(() => {
-      result.current.selectAll(['x', 'y', 'z'])
-    })
-    expect(result.current.selectedCount).toBe(3)
-
-    act(() => {
-      result.current.exitSelectionMode()
-    })
-    expect(result.current.selectionMode).toBe(false)
-    expect(result.current.selectedCount).toBe(0)
+    expect(result.current.selectedCount).toBe(5)
+    expect(result.current.selectionBlocked).toBe(true)
   })
 })

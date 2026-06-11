@@ -1,7 +1,16 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import axios from 'axios'
 
 import { apiClient } from '@/api/client'
 import type {
+  BacktestEquityArtifactResponse,
+  BacktestEquityArtifactResult,
   BacktestHistorySort,
   BacktestRequest,
   BacktestResponse,
@@ -26,6 +35,7 @@ export const backtestKeys = {
   history: (params: Omit<BacktestHistoryParams, 'offset'> = {}) =>
     [...backtestKeys.all, 'history', params] as const,
   run: (runId: string) => [...backtestKeys.all, 'run', runId] as const,
+  equityArtifact: (runId: string) => [...backtestKeys.all, 'equity-artifact', runId] as const,
 }
 
 export async function runBacktest(request: BacktestRequest): Promise<BacktestResponse> {
@@ -64,6 +74,49 @@ export async function bulkDeleteBacktestRuns(runIds: string[]): Promise<BulkDele
 
 export async function deleteBacktestRun(runId: string): Promise<void> {
   await apiClient.delete(`/api/v1/backtests/${runId}`)
+}
+
+export async function fetchBacktestEquityArtifact(
+  runId: string,
+): Promise<BacktestEquityArtifactResult> {
+  try {
+    const { data } = await apiClient.get<BacktestEquityArtifactResponse>(
+      `/api/v1/backtests/${runId}/artifacts/equity`,
+    )
+    return {
+      run_id: data.run_id,
+      availability: 'available',
+      points: data.points,
+    }
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return {
+        run_id: runId,
+        availability: 'unavailable',
+        points: [],
+      }
+    }
+    throw error
+  }
+}
+
+export function useBacktestEquityArtifact(runId: string | null) {
+  return useQuery({
+    queryKey: backtestKeys.equityArtifact(runId ?? ''),
+    queryFn: () => fetchBacktestEquityArtifact(runId as string),
+    enabled: !!runId,
+    staleTime: Infinity,
+  })
+}
+
+export function useBacktestEquityArtifacts(runIds: string[]) {
+  return useQueries({
+    queries: runIds.map((runId) => ({
+      queryKey: backtestKeys.equityArtifact(runId),
+      queryFn: () => fetchBacktestEquityArtifact(runId),
+      staleTime: Infinity,
+    })),
+  })
 }
 
 export function useRunBacktest() {

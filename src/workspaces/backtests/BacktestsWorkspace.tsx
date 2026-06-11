@@ -5,9 +5,10 @@ import { useRunBacktest } from '@/api/queries/backtests'
 import { BacktestConfigForm } from '@/components/backtests/BacktestConfigForm'
 import { BacktestHistoryPanel } from '@/components/backtests/BacktestHistoryPanel'
 import { BacktestResultsTabs } from '@/components/backtests/BacktestResultsTabs'
+import { RunComparisonView } from '@/components/backtests/RunComparisonView'
 import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/performance'
 import { cn } from '@/lib/utils'
-import type { BacktestRequest } from '@/types/backtesting'
+import type { BacktestRequest, BacktestRunSummary } from '@/types/backtesting'
 
 type RightPanelTab = 'results' | 'history'
 
@@ -22,6 +23,7 @@ export function BacktestsWorkspace() {
   const [lastRequest, setLastRequest] = useState<BacktestRequest | null>(null)
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('results')
   const [selectedHistoryRunId, setSelectedHistoryRunId] = useState<string | null>(null)
+  const [comparisonRuns, setComparisonRuns] = useState<BacktestRunSummary[] | null>(null)
 
   const equityCurve = useMemo(() => {
     if (!runBacktest.data) return []
@@ -77,11 +79,16 @@ export function BacktestsWorkspace() {
         </div>
 
         {rightPanelTab === 'history' ? (
-          <BacktestHistoryPanel
-            selectedRunId={selectedHistoryRunId}
-            onSelectRun={setSelectedHistoryRunId}
-            onReRun={handleSubmit}
-          />
+          comparisonRuns ? (
+            <RunComparisonView runs={comparisonRuns} onClose={() => setComparisonRuns(null)} />
+          ) : (
+            <BacktestHistoryPanel
+              selectedRunId={selectedHistoryRunId}
+              onSelectRun={setSelectedHistoryRunId}
+              onReRun={handleSubmit}
+              onCompare={setComparisonRuns}
+            />
+          )
         ) : runBacktest.isPending ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="flex animate-pulse flex-col items-center">

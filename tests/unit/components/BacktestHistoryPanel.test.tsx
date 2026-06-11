@@ -57,4 +57,33 @@ describe('BacktestHistoryPanel', () => {
 
     expect(screen.getByText(/TICK ·/)).toBeInTheDocument()
   })
+
+  it('enables compare at two selections', async () => {
+    const user = userEvent.setup()
+
+    renderWithQueryClient(
+      <BacktestHistoryPanel
+        selectedRunId={null}
+        onSelectRun={vi.fn()}
+        onReRun={vi.fn()}
+        onCompare={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Select' })).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Select' }))
+
+    expect(screen.getByRole('button', { name: /Compare \(0\)/i })).toBeDisabled()
+
+    const checkboxes = await screen.findAllByRole('checkbox')
+    await user.click(checkboxes[0]!)
+    expect(screen.getByRole('button', { name: /Compare \(1\)/i })).toBeDisabled()
+
+    await user.click(checkboxes[1]!)
+    expect(screen.getByRole('button', { name: /Compare \(2\)/i })).toBeEnabled()
+    expect(screen.getByText(/Select 2–5 runs to compare/i)).toBeInTheDocument()
+  })
 })

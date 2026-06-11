@@ -148,6 +148,24 @@ export interface BacktestRunListResponse {
   offset: number
 }
 
+export interface BacktestEquityArtifactPoint {
+  time: string
+  equity: number
+}
+
+export interface BacktestEquityArtifactResponse {
+  run_id: string
+  points: BacktestEquityArtifactPoint[]
+}
+
+export type BacktestEquityArtifactAvailability = 'available' | 'unavailable'
+
+export interface BacktestEquityArtifactResult {
+  run_id: string
+  availability: BacktestEquityArtifactAvailability
+  points: BacktestEquityArtifactPoint[]
+}
+
 export interface EquityPoint {
   timestamp: string
   equity: number

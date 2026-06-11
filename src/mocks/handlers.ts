@@ -1,6 +1,7 @@
 ﻿import { http, HttpResponse } from 'msw'
 
 import { getMockBacktestResponse } from '@/mocks/backtest'
+import { getMockBacktestEquityArtifact } from '@/mocks/backtestEquity'
 import {
   getMockBacktestRunDetail,
   getMockOptimizationResults,
@@ -260,6 +261,21 @@ export const handlers = [
     }
     deletedBacktestRunIds.add(runId)
     return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('*/api/v1/backtests/:runId/artifacts/equity', ({ params }) => {
+    const runId = String(params.runId)
+    if (deletedBacktestRunIds.has(runId)) {
+      return HttpResponse.json({ detail: `Backtest run '${runId}' not found.` }, { status: 404 })
+    }
+    const artifact = getMockBacktestEquityArtifact(runId)
+    if (!artifact) {
+      return HttpResponse.json(
+        { detail: `Backtest artifact 'equity' not found for run '${runId}'.` },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(artifact)
   }),
 
   http.get('*/api/v1/optimizations', ({ request }) => {

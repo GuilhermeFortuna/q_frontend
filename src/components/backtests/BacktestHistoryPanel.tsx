@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useHistorySelection } from '@/hooks/useHistorySelection'
+import { COMPARISON_MAX_RUNS } from '@/lib/backtesting/comparison'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
@@ -35,6 +36,7 @@ type BacktestHistoryPanelProps = {
   selectedRunId: string | null
   onSelectRun: (runId: string | null) => void
   onReRun: (request: BacktestRequest) => void
+  onCompare?: (runs: BacktestRunSummary[]) => void
 }
 
 const statusStyles: Record<BacktestRunStatus, string> = {
@@ -175,6 +177,7 @@ export function BacktestHistoryPanel({
   selectedRunId,
   onSelectRun,
   onReRun,
+  onCompare,
 }: BacktestHistoryPanelProps) {
   const [tab, setTab] = useState<BacktestHistoryTab>('all')
   const [symbolInput, setSymbolInput] = useState('')
@@ -183,7 +186,7 @@ export function BacktestHistoryPanel({
   const [sort, setSort] = useState<BacktestHistorySort>('created_at_desc')
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
-  const selection = useHistorySelection()
+  const selection = useHistorySelection({ maxSelection: COMPARISON_MAX_RUNS })
   const saveBacktest = useSaveBacktestRun()
   const bulkDelete = useBulkDeleteBacktests()
   const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
@@ -244,6 +247,13 @@ export function BacktestHistoryPanel({
     })
   }
 
+  const handleCompareSelected = () => {
+    const selectedRuns = runs.filter((run) => selection.selectedIds.has(run.run_id))
+    if (selectedRuns.length < 2) return
+    onCompare?.(selectedRuns)
+    selection.exitSelectionMode()
+  }
+
   const subtitle =
     tab === 'saved'
       ? historyQuery.isLoading
@@ -271,9 +281,22 @@ export function BacktestHistoryPanel({
                 onExitSelection={selection.exitSelectionMode}
                 onSelectAllPage={() => selection.selectAll(pageRunIds)}
                 onDeleteSelected={() => setConfirmBulkDelete(true)}
+                onCompareSelected={onCompare ? handleCompareSelected : undefined}
+                compareEnabled={
+                  selection.selectedCount >= 2 && selection.selectedCount <= COMPARISON_MAX_RUNS
+                }
                 deleting={bulkDelete.isPending}
               />
             </div>
+            {selection.selectionMode ? (
+              <p className="text-silver-500 mt-2 text-xs">
+                Select 2–{COMPARISON_MAX_RUNS} runs to compare.
+                {selection.selectionAtMax
+                  ? ' Maximum reached — deselect one to add another.'
+                  : null}
+                {selection.selectionBlocked ? ' Selection limit reached.' : null}
+              </p>
+            ) : null}
           </div>
 
           <BacktestHistoryFilters

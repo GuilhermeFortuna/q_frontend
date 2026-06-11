@@ -9,6 +9,8 @@ type HistorySelectionToolbarProps = {
   onExitSelection: () => void
   onSelectAllPage: () => void
   onDeleteSelected: () => void
+  onCompareSelected?: () => void
+  compareEnabled?: boolean
   deleting?: boolean
 }
 
@@ -20,6 +22,8 @@ export function HistorySelectionToolbar({
   onExitSelection,
   onSelectAllPage,
   onDeleteSelected,
+  onCompareSelected,
+  compareEnabled = false,
   deleting = false,
 }: HistorySelectionToolbarProps) {
   if (!selectionMode) {
@@ -57,6 +61,23 @@ export function HistorySelectionToolbar({
       >
         Select all on page
       </Button>
+      {onCompareSelected ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={!compareEnabled}
+          className={cn(
+            'h-7 px-2 text-xs',
+            compareEnabled
+              ? 'text-brass-400 hover:bg-brass-500/10 hover:text-brass-300'
+              : 'text-silver-500',
+          )}
+          onClick={onCompareSelected}
+        >
+          Compare ({selectedCount})
+        </Button>
+      ) : null}
       <Button
         type="button"
         variant="ghost"
