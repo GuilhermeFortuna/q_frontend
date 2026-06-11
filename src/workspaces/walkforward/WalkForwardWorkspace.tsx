@@ -1,0 +1,129 @@
+import axios from 'axios'
+import { useEffect, useState } from 'react'
+
+import {
+  shouldFetchWalkForwardResults,
+  useCancelWalkForward,
+  useStartWalkForward,
+  useWalkForwardResults,
+  useWalkForwardStatus,
+} from '@/api/queries/walkforward'
+import { OptimizationWorkbench } from '@/components/optimize/OptimizationWorkbench'
+import { WalkForwardConfigForm } from '@/components/walkforward/WalkForwardConfigForm'
+import { WalkForwardHistoryPanel } from '@/components/walkforward/WalkForwardHistoryPanel'
+import { WalkForwardResultsPanel } from '@/components/walkforward/WalkForwardResultsPanel'
+import { cn } from '@/lib/utils'
+import type { OptimizationBacktestConfig } from '@/types/optimization'
+import type { WalkForwardRequest } from '@/types/walkforward'
+
+type RightPanelTab = 'results' | 'history'
+
+const RIGHT_PANEL_TABS: { id: RightPanelTab; label: string }[] = [
+  { id: 'results', label: 'Results' },
+  { id: 'history', label: 'History' },
+]
+
+export function WalkForwardWorkspace() {
+  const [runId, setRunId] = useState<string | null>(null)
+  const [submittedBacktest, setSubmittedBacktest] = useState<OptimizationBacktestConfig | null>(
+    null,
+  )
+  const [workbenchOpen, setWorkbenchOpen] = useState(true)
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('results')
+  const [selectedHistoryRunId, setSelectedHistoryRunId] = useState<string | null>(null)
+
+  const startWalkForward = useStartWalkForward()
+  const cancelWalkForward = useCancelWalkForward()
+  const statusQuery = useWalkForwardStatus(runId)
+  const status = statusQuery.data
+
+  const hasTerminalResults = shouldFetchWalkForwardResults(status?.status)
+  const resultsQuery = useWalkForwardResults(runId, hasTerminalResults)
+
+  const isRunning =
+    startWalkForward.isPending || status?.status === 'pending' || status?.status === 'running'
+
+  useEffect(() => {
+    if (isRunning || hasTerminalResults) {
+      setWorkbenchOpen(false)
+    }
+  }, [isRunning, hasTerminalResults])
+
+  const handleSubmit = (body: WalkForwardRequest) => {
+    setSubmittedBacktest(body.optimization.backtest)
+    setRightPanelTab('results')
+    startWalkForward.mutate(body, {
+      onSuccess: (res) => {
+        setRunId(res.run_id)
+        setWorkbenchOpen(false)
+      },
+    })
+  }
+
+  const handleCancel = () => {
+    if (runId) cancelWalkForward.mutate(runId)
+  }
+
+  const startError = startWalkForward.error
+    ? axios.isAxiosError(startWalkForward.error)
+      ? ((startWalkForward.error.response?.data as { detail?: string })?.detail ??
+        startWalkForward.error.message)
+      : 'Failed to start walk-forward run'
+    : null
+
+  const backtest =
+    submittedBacktest ??
+    status?.backtest_config ??
+    resultsQuery.data?.optimization_config?.backtest ??
+    null
+
+  return (
+    <div className="text-silver-100 flex h-[calc(100dvh-4.5rem-7rem)] w-full overflow-hidden">
+      <OptimizationWorkbench open={workbenchOpen} onOpenChange={setWorkbenchOpen}>
+        <WalkForwardConfigForm
+          loading={startWalkForward.isPending}
+          error={startError}
+          disabled={isRunning}
+          onSubmit={handleSubmit}
+        />
+      </OptimizationWorkbench>
+
+      <div className="quant-panel flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6">
+        <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
+          {RIGHT_PANEL_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setRightPanelTab(tab.id)}
+              className={cn(
+                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                rightPanelTab === tab.id
+                  ? 'border-brass-400 text-brass-400'
+                  : 'text-silver-400 hover:text-silver-200 border-transparent',
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {rightPanelTab === 'history' ? (
+          <WalkForwardHistoryPanel
+            selectedRunId={selectedHistoryRunId}
+            onSelectRun={setSelectedHistoryRunId}
+          />
+        ) : (
+          <WalkForwardResultsPanel
+            isRunning={isRunning}
+            status={status}
+            results={resultsQuery.data}
+            backtest={backtest}
+            onCancel={handleCancel}
+            cancelling={cancelWalkForward.isPending}
+            onOpenWorkbench={() => setWorkbenchOpen(true)}
+          />
+        )}
+      </div>
+    </div>
+  )
+}

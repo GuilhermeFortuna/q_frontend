@@ -43,6 +43,8 @@ type OptimizeStrategySectionProps = {
   setDayTradeEndTime: (v: string) => void
   dayTradeCloseTime: string
   setDayTradeCloseTime: (v: string) => void
+  /** When false, hides engine/tick controls (e.g. walk-forward workspace). */
+  showEngineSelector?: boolean
 }
 
 export function OptimizeStrategySection({
@@ -81,6 +83,7 @@ export function OptimizeStrategySection({
   setDayTradeEndTime,
   dayTradeCloseTime,
   setDayTradeCloseTime,
+  showEngineSelector = true,
 }: OptimizeStrategySectionProps) {
   const selectedStrategy = strategies.find((entry) => entry.name === strategy)
 
@@ -110,59 +113,68 @@ export function OptimizeStrategySection({
         showTimeframe={engine === 'candle'}
       />
 
-      <div className="space-y-1">
-        <label htmlFor="optimize-engine" className="text-silver-200 text-sm font-medium">
-          Engine
-        </label>
-        <select
-          id="optimize-engine"
-          value={engine}
-          onChange={(e) => onEngineChange(e.target.value as OptimizeEngine)}
-          className={inputClass}
-        >
-          <option value="candle">Candle</option>
-          <option value="tick">Tick</option>
-        </select>
-      </div>
+      {showEngineSelector ? (
+        <>
+          <div className="space-y-1">
+            <label htmlFor="optimize-engine" className="text-silver-200 text-sm font-medium">
+              Engine
+            </label>
+            <select
+              id="optimize-engine"
+              value={engine}
+              onChange={(e) => onEngineChange(e.target.value as OptimizeEngine)}
+              className={inputClass}
+            >
+              <option value="candle">Candle</option>
+              <option value="tick">Tick</option>
+            </select>
+          </div>
 
-      {engine === 'tick' ? (
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label
-              htmlFor="optimize-display-timeframe"
-              className="text-silver-200 text-sm font-medium"
-            >
-              Display Timeframe
-            </label>
-            <p className="text-silver-400 text-xs">Chart bar size — does not affect tick data.</p>
-            <select
-              id="optimize-display-timeframe"
-              value={displayTimeframe}
-              onChange={(e) => onDisplayTimeframeChange(e.target.value)}
-              className={inputClass}
-            >
-              {displayTimeframeOptions.map((tf) => (
-                <option key={tf} value={tf}>
-                  {tf}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="optimize-tick-source" className="text-silver-200 text-sm font-medium">
-              Tick Source
-            </label>
-            <select
-              id="optimize-tick-source"
-              value={tickFlags}
-              onChange={(e) => onTickFlagsChange(e.target.value as 'all' | 'trade')}
-              className={inputClass}
-            >
-              <option value="all">All ticks</option>
-              <option value="trade">Trades only</option>
-            </select>
-          </div>
-        </div>
+          {engine === 'tick' ? (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label
+                  htmlFor="optimize-display-timeframe"
+                  className="text-silver-200 text-sm font-medium"
+                >
+                  Display Timeframe
+                </label>
+                <p className="text-silver-400 text-xs">
+                  Chart bar size — does not affect tick data.
+                </p>
+                <select
+                  id="optimize-display-timeframe"
+                  value={displayTimeframe}
+                  onChange={(e) => onDisplayTimeframeChange(e.target.value)}
+                  className={inputClass}
+                >
+                  {displayTimeframeOptions.map((tf) => (
+                    <option key={tf} value={tf}>
+                      {tf}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label
+                  htmlFor="optimize-tick-source"
+                  className="text-silver-200 text-sm font-medium"
+                >
+                  Tick Source
+                </label>
+                <select
+                  id="optimize-tick-source"
+                  value={tickFlags}
+                  onChange={(e) => onTickFlagsChange(e.target.value as 'all' | 'trade')}
+                  className={inputClass}
+                >
+                  <option value="all">All ticks</option>
+                  <option value="trade">Trades only</option>
+                </select>
+              </div>
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       <div className="space-y-1">

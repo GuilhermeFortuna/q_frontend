@@ -57,6 +57,7 @@ const researchRoute = createRoute({
 
 import { BacktestsWorkspace } from '@/workspaces/backtests/BacktestsWorkspace'
 import { OptimizeWorkspace } from '@/workspaces/optimize/OptimizeWorkspace'
+import { WalkForwardWorkspace } from '@/workspaces/walkforward/WalkForwardWorkspace'
 
 const backtestsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -72,6 +73,13 @@ const optimizeRoute = createRoute({
   component: OptimizeWorkspace,
 })
 
+const validateRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/validate',
+  beforeLoad: () => syncWorkspace('validate'),
+  component: WalkForwardWorkspace,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   marketDataRoute,
@@ -79,6 +87,7 @@ const routeTree = rootRoute.addChildren([
   researchRoute,
   backtestsRoute,
   optimizeRoute,
+  validateRoute,
 ])
 
 export const router = createRouter({ routeTree })

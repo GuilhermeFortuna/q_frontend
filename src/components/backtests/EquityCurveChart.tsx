@@ -19,6 +19,8 @@ type EquityCurveChartProps = {
   initialCapital: number
   className?: string
   fillHeight?: boolean
+  /** ISO timestamps for vertical window-boundary markers (e.g. OOS segment starts). */
+  windowBoundaries?: string[]
 }
 
 export function EquityCurveChart({
@@ -26,6 +28,7 @@ export function EquityCurveChart({
   initialCapital,
   className,
   fillHeight = false,
+  windowBoundaries = [],
 }: EquityCurveChartProps) {
   if (data.length === 0) {
     return (
@@ -40,6 +43,8 @@ export function EquityCurveChart({
     ...point,
     label: formatChartDate(point.timestamp),
   }))
+
+  const boundaryLabels = windowBoundaries.map((timestamp) => formatChartDate(timestamp))
 
   return (
     <div
@@ -93,6 +98,15 @@ export function EquityCurveChart({
                 position: 'insideTopRight',
               }}
             />
+            {boundaryLabels.map((label) => (
+              <ReferenceLine
+                key={label}
+                x={label}
+                stroke={CHART_COLORS.reference}
+                strokeDasharray="2 4"
+                strokeOpacity={0.65}
+              />
+            ))}
             <Line
               type="monotone"
               dataKey="equity"

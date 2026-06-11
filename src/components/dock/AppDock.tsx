@@ -1,5 +1,13 @@
 import { Link } from '@tanstack/react-router'
-import { Activity, BarChart3, FlaskConical, Home, Settings, SlidersHorizontal } from 'lucide-react'
+import {
+  Activity,
+  BarChart3,
+  FlaskConical,
+  Home,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { motion } from 'motion/react'
 
 import { cn } from '@/lib/utils'
@@ -19,6 +27,7 @@ const dockItems: DockItem[] = [
   { id: 'research', label: 'Research', to: '/research', icon: FlaskConical, enabled: false },
   { id: 'backtests', label: 'Backtests', to: '/backtests', icon: Activity, enabled: true },
   { id: 'optimize', label: 'Optimize', to: '/optimize', icon: SlidersHorizontal, enabled: true },
+  { id: 'validate', label: 'Validate', to: '/validate', icon: ShieldCheck, enabled: true },
   { id: 'system', label: 'System', to: '/system', icon: Settings, enabled: true },
 ]
 

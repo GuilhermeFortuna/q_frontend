@@ -15,6 +15,17 @@ import {
   mockStrategies,
   mockSystemHealth,
 } from '@/mocks/data'
+import {
+  deletedWalkForwardRunIds,
+  getMockWalkForwardResults,
+  getMockWalkForwardStatus,
+  getUpdatedWalkForwardJob,
+  mockWalkForwardJobs,
+  mockWalkForwardRunSummaries,
+  resetMockWalkForwardState,
+  walkForwardResultsFromJob,
+  walkForwardStatusFromJob,
+} from '@/mocks/walkforward'
 import type { BacktestRequest } from '@/types/backtesting'
 import type { OptimizationTrial } from '@/types/optimization'
 
@@ -29,6 +40,10 @@ export function resetMockBacktestDeletes() {
 
 export function resetMockOptimizationDeletes() {
   deletedOptimizationStudyIds.clear()
+}
+
+export function resetMockWalkForwardDeletes() {
+  resetMockWalkForwardState()
 }
 
 export const handlers = [
@@ -434,6 +449,133 @@ export const handlers = [
     }
 
     return new HttpResponse('Study not found', { status: 404 })
+  }),
+
+  http.get('*/api/v1/walkforwards', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = parseInt(url.searchParams.get('limit') ?? '50', 10)
+    const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
+
+    const items = mockWalkForwardRunSummaries.filter(
+      (run) => !deletedWalkForwardRunIds.has(run.run_id),
+    )
+
+    return HttpResponse.json({
+      items: items.slice(offset, offset + limit),
+      total: items.length,
+      limit,
+      offset,
+    })
+  }),
+
+  http.post('*/api/v1/walkforward', async ({ request }) => {
+    const body = await request.json()
+    const runId = `wf_${Math.random().toString(36).substring(2, 11)}`
+    const wf = (body as { walkforward?: { min_windows?: number } }).walkforward
+    const totalWindows = wf?.min_windows ?? 2
+
+    mockWalkForwardJobs.set(runId, {
+      run_id: runId,
+      status: 'pending',
+      total_windows: totalWindows,
+      start_time: Date.now(),
+      request_body: body,
+    })
+
+    return HttpResponse.json({ run_id: runId, status: 'pending' })
+  }),
+
+  http.get('*/api/v1/walkforward/:runId', ({ params }) => {
+    const runId = String(params.runId)
+    if (deletedWalkForwardRunIds.has(runId)) {
+      return HttpResponse.json(
+        { detail: `Walk-forward run '${runId}' not found.` },
+        { status: 404 },
+      )
+    }
+
+    const job = getUpdatedWalkForwardJob(runId)
+    if (job) {
+      return HttpResponse.json(walkForwardStatusFromJob(job))
+    }
+
+    const staticStatus = getMockWalkForwardStatus(runId)
+    if (staticStatus) {
+      return HttpResponse.json(staticStatus)
+    }
+
+    return HttpResponse.json({ detail: `Walk-forward run '${runId}' not found.` }, { status: 404 })
+  }),
+
+  http.get('*/api/v1/walkforward/:runId/results', ({ params }) => {
+    const runId = String(params.runId)
+    if (deletedWalkForwardRunIds.has(runId)) {
+      return HttpResponse.json(
+        { detail: `Walk-forward run '${runId}' not found.` },
+        { status: 404 },
+      )
+    }
+
+    const job = getUpdatedWalkForwardJob(runId)
+    if (job && (job.status === 'completed' || job.status === 'cancelled')) {
+      return HttpResponse.json(walkForwardResultsFromJob(job))
+    }
+
+    const staticResults = getMockWalkForwardResults(runId)
+    if (staticResults) {
+      return HttpResponse.json(staticResults)
+    }
+
+    return HttpResponse.json({ detail: `Walk-forward run '${runId}' not found.` }, { status: 404 })
+  }),
+
+  http.get('*/api/v1/walkforward/:runId/artifacts/equity', ({ params }) => {
+    const runId = String(params.runId)
+    const results = getMockWalkForwardResults(runId)
+    const job = getUpdatedWalkForwardJob(runId)
+    const points =
+      results?.equity_curve ??
+      (job && job.status === 'completed'
+        ? (getMockWalkForwardResults('wf-run-win-ma')?.equity_curve ?? [])
+        : [])
+
+    if (points.length === 0) {
+      return HttpResponse.json(
+        { detail: `Equity artifact not found for walk-forward run '${runId}'.` },
+        { status: 404 },
+      )
+    }
+
+    return HttpResponse.json({ run_id: runId, points })
+  }),
+
+  http.post('*/api/v1/walkforward/:runId/cancel', ({ params }) => {
+    const runId = String(params.runId)
+    const job = mockWalkForwardJobs.get(runId)
+    if (!job) {
+      return HttpResponse.json(
+        { detail: `Walk-forward run '${runId}' not found.` },
+        { status: 404 },
+      )
+    }
+    job.status = 'cancelled'
+    return HttpResponse.json(walkForwardStatusFromJob(job))
+  }),
+
+  http.delete('*/api/v1/walkforwards/:runId', ({ params }) => {
+    const runId = String(params.runId)
+    const exists =
+      mockWalkForwardRunSummaries.some((run) => run.run_id === runId) ||
+      mockWalkForwardJobs.has(runId)
+    if (!exists || deletedWalkForwardRunIds.has(runId)) {
+      return HttpResponse.json(
+        { detail: `Walk-forward run '${runId}' not found.` },
+        { status: 404 },
+      )
+    }
+    deletedWalkForwardRunIds.add(runId)
+    mockWalkForwardJobs.delete(runId)
+    return new HttpResponse(null, { status: 204 })
   }),
 ]
 
