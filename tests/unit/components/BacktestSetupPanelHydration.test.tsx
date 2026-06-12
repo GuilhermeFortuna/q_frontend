@@ -2,7 +2,8 @@ import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 
-import { BacktestConfigForm } from '@/components/backtests/BacktestConfigForm'
+import { BacktestSetupPanel } from '@/components/backtests/setup/BacktestSetupPanel'
+import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { handlers } from '@/mocks/handlers'
 import { useAppStore } from '@/store/useAppStore'
 import { renderWithQueryClient } from '../testUtils'
@@ -18,7 +19,12 @@ vi.mock('@/api/queries/market-data', async (importOriginal) => {
   return { ...actual, fetchOhlcvAvailableRange: vi.fn() }
 })
 
-describe('BacktestConfigForm — hydration from pending config', () => {
+function SetupPanelHarness() {
+  const config = useBacktestConfig()
+  return <BacktestSetupPanel config={config} loading={false} error={null} onSubmit={vi.fn()} />
+}
+
+describe('BacktestSetupPanel — hydration from pending config', () => {
   it('hydrates fields from a staged config and clears it', async () => {
     useAppStore.getState().setPendingBacktestConfig({
       symbol: 'VALE3',
@@ -32,7 +38,7 @@ describe('BacktestConfigForm — hydration from pending config', () => {
       position_sizing: { type: 'fixed_quantity', quantity: 4 },
     })
 
-    renderWithQueryClient(<BacktestConfigForm loading={false} error={null} onSubmit={vi.fn()} />)
+    renderWithQueryClient(<SetupPanelHarness />)
 
     const symbolInput = screen.getByPlaceholderText('e.g. PETR4') as HTMLInputElement
     expect(symbolInput.value).toBe('VALE3')
@@ -45,7 +51,7 @@ describe('BacktestConfigForm — hydration from pending config', () => {
     })
   })
 
-  it('hydrates non-MA strategy params generically', async () => {
+  it('hydrates non-MA strategy params and selects strategy in library', async () => {
     useAppStore.getState().setPendingBacktestConfig({
       symbol: 'PETR4',
       timeframe: 'D1',
@@ -58,10 +64,12 @@ describe('BacktestConfigForm — hydration from pending config', () => {
       position_sizing: { type: 'fixed_quantity', quantity: 1 },
     })
 
-    renderWithQueryClient(<BacktestConfigForm loading={false} error={null} onSubmit={vi.fn()} />)
+    renderWithQueryClient(<SetupPanelHarness />)
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Strategy')).toHaveValue('RSIMeanReversion')
+      expect(
+        screen.getByRole('button', { name: /RSI Mean Reversion/i, pressed: true }),
+      ).toBeInTheDocument()
     })
     expect(screen.getByDisplayValue('21')).toBeInTheDocument()
     expect(screen.getByDisplayValue('25')).toBeInTheDocument()
@@ -87,7 +95,7 @@ describe('BacktestConfigForm — hydration from pending config', () => {
       costs: { cost_per_contract: 3, cost_bps: 1.5 },
     })
 
-    renderWithQueryClient(<BacktestConfigForm loading={false} error={null} onSubmit={vi.fn()} />)
+    renderWithQueryClient(<SetupPanelHarness />)
 
     await waitFor(() => {
       expect(screen.getByLabelText('Position Sizing')).toHaveValue('inverse_volatility')

@@ -53,6 +53,27 @@ describe('StrategyParamFields', () => {
     expect(select).toHaveValue('sma')
   })
 
+  it('renders param hints when showHints is enabled', () => {
+    render(
+      <StrategyParamFields
+        params={[
+          {
+            name: 'period',
+            label: 'Period',
+            type: 'int',
+            default: 14,
+            hint: 'Shorter = noisier.',
+          },
+        ]}
+        values={{ period: 14 }}
+        onChange={vi.fn()}
+        showHints
+      />,
+    )
+
+    expect(screen.getByText('Shorter = noisier.')).toBeInTheDocument()
+  })
+
   it('reports value changes', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()

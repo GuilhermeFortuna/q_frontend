@@ -699,8 +699,22 @@ export const mockStrategies: StrategiesResponse = {
       name: 'BollingerReversion',
       label: 'Bollinger Band Reversion',
       description: 'Enter on band touch; exit on mean reversion to the middle band.',
+      category: 'mean_reversion',
+      thesis:
+        'Prices tend to revert toward their recent mean after stretching to statistical extremes. This strategy buys band touches and exits when price returns toward the middle band.',
+      strong_in: 'Range-bound markets with clear mean-reverting swings.',
+      weak_in: 'Strong trends that ride along the upper or lower band.',
       params: [
-        { name: 'period', label: 'Period', type: 'int', default: 20, min: 2, max: 400, step: 1 },
+        {
+          name: 'period',
+          label: 'Period',
+          type: 'int',
+          default: 20,
+          min: 2,
+          max: 400,
+          step: 1,
+          hint: 'Shorter = tighter bands, more signals.',
+        },
         {
           name: 'num_std',
           label: 'Std Dev Multiplier',
@@ -709,6 +723,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 0.5,
           max: 5.0,
           step: 0.1,
+          hint: 'Wider = fewer, more extreme entries.',
         },
       ],
     },
@@ -716,14 +731,33 @@ export const mockStrategies: StrategiesResponse = {
       name: 'DonchianBreakout',
       label: 'Donchian Breakout',
       description: 'Enter on upper/lower channel breakouts.',
+      category: 'breakout',
+      thesis:
+        'New highs and lows signal expanding range and potential trend continuation. Enters on channel breakouts in the direction of the break.',
+      strong_in: 'Markets breaking into sustained directional moves.',
+      weak_in: 'False breakouts in choppy, overlapping ranges.',
       params: [
-        { name: 'period', label: 'Period', type: 'int', default: 20, min: 2, max: 400, step: 1 },
+        {
+          name: 'period',
+          label: 'Period',
+          type: 'int',
+          default: 20,
+          min: 2,
+          max: 400,
+          step: 1,
+          hint: 'Shorter = more breakouts, more whipsaws.',
+        },
       ],
     },
     {
       name: 'MACD',
       label: 'MACD Crossover',
       description: 'Signal-line crossovers on MACD.',
+      category: 'trend',
+      thesis:
+        'Trend persistence shows up as momentum building before price fully turns. MACD crossovers capture shifts in that momentum — long when the MACD line crosses above signal, flat/short on the reverse.',
+      strong_in: 'Sustained directional trends with clear momentum swings.',
+      weak_in: 'Sideways markets — repeated crossover whipsaws.',
       params: [
         {
           name: 'fast_period',
@@ -733,6 +767,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 2,
           max: 100,
           step: 1,
+          hint: 'Shorter = faster momentum response, more noise.',
         },
         {
           name: 'slow_period',
@@ -742,6 +777,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 2,
           max: 400,
           step: 1,
+          hint: 'Longer = smoother trend filter, fewer signals.',
         },
         {
           name: 'signal_period',
@@ -751,6 +787,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 2,
           max: 100,
           step: 1,
+          hint: 'Shorter = earlier crossover entries.',
         },
       ],
     },
@@ -758,6 +795,11 @@ export const mockStrategies: StrategiesResponse = {
       name: 'MACrossover',
       label: 'MA Crossover',
       description: 'Short/long moving-average crossover.',
+      category: 'trend',
+      thesis:
+        'Trends persist because information diffuses slowly — price keeps moving in one direction while slower participants catch up. This strategy stays long while the fast average is above the slow one and flips on crossovers, accepting whipsaw losses in ranges as the price of catching large trends.',
+      strong_in: 'Sustained directional trends.',
+      weak_in: 'Choppy ranges — repeated whipsaw entries.',
       params: [
         {
           name: 'short_period',
@@ -767,6 +809,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 2,
           max: 400,
           step: 1,
+          hint: 'Shorter = more trades, more noise.',
         },
         {
           name: 'long_period',
@@ -776,6 +819,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 2,
           max: 400,
           step: 1,
+          hint: 'Longer = smoother trend filter, fewer signals.',
         },
         {
           name: 'short_ma_type',
@@ -783,6 +827,7 @@ export const mockStrategies: StrategiesResponse = {
           type: 'categorical',
           default: 'sma',
           choices: MA_TYPE_CHOICES,
+          hint: 'EMA reacts faster; SMA is smoother.',
         },
         {
           name: 'long_ma_type',
@@ -790,6 +835,7 @@ export const mockStrategies: StrategiesResponse = {
           type: 'categorical',
           default: 'sma',
           choices: MA_TYPE_CHOICES,
+          hint: 'Match or contrast with short MA for sensitivity.',
         },
         {
           name: 'threshold',
@@ -799,6 +845,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 0.0,
           max: 100.0,
           step: 0.01,
+          hint: 'Higher = require wider MA separation before entry.',
         },
       ],
     },
@@ -806,8 +853,22 @@ export const mockStrategies: StrategiesResponse = {
       name: 'RSIMeanReversion',
       label: 'RSI Mean Reversion',
       description: 'Buy when RSI crosses up out of oversold; exit or short on overbought.',
+      category: 'mean_reversion',
+      thesis:
+        'Short-term oversold bounces reflect temporary liquidity pressure rather than a regime change. Buys when RSI crosses up from oversold and exits or reverses on overbought readings.',
+      strong_in: 'Range-bound markets with oscillating momentum.',
+      weak_in: 'Strong trends that stay overbought or oversold for extended periods.',
       params: [
-        { name: 'period', label: 'Period', type: 'int', default: 14, min: 2, max: 200, step: 1 },
+        {
+          name: 'period',
+          label: 'Period',
+          type: 'int',
+          default: 14,
+          min: 2,
+          max: 200,
+          step: 1,
+          hint: 'Shorter = more reactive RSI, more signals.',
+        },
         {
           name: 'oversold',
           label: 'Oversold',
@@ -816,6 +877,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 0.0,
           max: 50.0,
           step: 0.5,
+          hint: 'Higher = stricter buy threshold, fewer entries.',
         },
         {
           name: 'overbought',
@@ -825,6 +887,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 50.0,
           max: 100.0,
           step: 0.5,
+          hint: 'Lower = earlier exits and shorts.',
         },
       ],
     },
@@ -833,6 +896,11 @@ export const mockStrategies: StrategiesResponse = {
       label: 'Tick MA Breakout',
       description: 'Tick-native SMA breakout with optional stop/target distances.',
       engine: 'tick',
+      category: 'breakout',
+      thesis:
+        'Microstructure momentum at the tick level can precede short-horizon directional moves. Enters on fast/slow tick SMA crossovers with optional stop and target distances in points.',
+      strong_in: 'Liquid instruments with persistent tick-level momentum.',
+      weak_in: 'Illiquid or noisy tick streams with frequent false crossovers.',
       params: [
         {
           name: 'short_period',
@@ -842,6 +910,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 2,
           max: 2000,
           step: 1,
+          hint: 'Shorter = faster response, more signals.',
         },
         {
           name: 'long_period',
@@ -851,6 +920,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 2,
           max: 5000,
           step: 1,
+          hint: 'Longer = smoother filter, fewer entries.',
         },
         {
           name: 'threshold',
@@ -860,6 +930,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 0.0,
           max: 100.0,
           step: 0.01,
+          hint: 'Higher = require wider MA gap before entry.',
         },
         {
           name: 'sl_points',
@@ -869,6 +940,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 0.0,
           max: 1000.0,
           step: 0.01,
+          hint: '0 disables stop; tighter = smaller losses, more exits.',
         },
         {
           name: 'tp_points',
@@ -878,6 +950,7 @@ export const mockStrategies: StrategiesResponse = {
           min: 0.0,
           max: 1000.0,
           step: 0.01,
+          hint: '0 disables target; wider = fewer hits, larger wins.',
         },
       ],
     },

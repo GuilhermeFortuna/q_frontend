@@ -1,4 +1,5 @@
 import { fieldErrorClass, inputClass } from '@/components/shared/InstrumentConfigFields'
+import { paramHint } from '@/lib/strategies/strategyPresentation'
 import type { StrategyParamValue } from '@/lib/strategies/strategyParams'
 import type { StrategyParamSpec } from '@/types/strategies'
 
@@ -7,6 +8,12 @@ type StrategyParamFieldsProps = {
   values: Record<string, StrategyParamValue>
   onChange: (name: string, value: StrategyParamValue) => void
   className?: string
+  /** When true, renders optional param hints beside/below each field. Default false. */
+  showHints?: boolean
+}
+
+function ParamHint({ hint }: { hint: string }) {
+  return <p className="text-silver-500 text-xs leading-snug">{hint}</p>
 }
 
 export function StrategyParamFields({
@@ -14,6 +21,7 @@ export function StrategyParamFields({
   values,
   onChange,
   className = 'bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3',
+  showHints = false,
 }: StrategyParamFieldsProps) {
   if (params.length === 0) return null
 
@@ -22,6 +30,7 @@ export function StrategyParamFields({
       {params.map((spec) => {
         const value = values[spec.name] ?? spec.default
         const id = `strategy-param-${spec.name}`
+        const hint = showHints ? paramHint(spec) : null
 
         if (spec.type === 'categorical') {
           const choices = spec.choices ?? []
@@ -30,6 +39,7 @@ export function StrategyParamFields({
               <label htmlFor={id} className="text-silver-400 text-xs">
                 {spec.label}
               </label>
+              {hint ? <ParamHint hint={hint} /> : null}
               <select
                 id={id}
                 value={String(value)}
@@ -56,6 +66,7 @@ export function StrategyParamFields({
             <label htmlFor={id} className="text-silver-400 text-xs">
               {spec.label}
             </label>
+            {hint ? <ParamHint hint={hint} /> : null}
             <input
               id={id}
               type="number"
