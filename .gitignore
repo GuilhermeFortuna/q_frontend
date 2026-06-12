@@ -8,6 +8,14 @@ dist-ssr
 
 # Tauri
 src-tauri/target
+# Auto-generated on `tauri dev` / `tauri build` (IDE $schema autocompletion)
+src-tauri/gen/schemas/
+
+# Self-hosted variable fonts (obtain locally; see globals.css @font-face)
+src/assets/fonts/
+
+# Agent/scratch recovery files
+*.wip
 
 # Editor
 .vscode/*
