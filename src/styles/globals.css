@@ -163,6 +163,19 @@
   .animate-fade-in-up {
     animation: fade-in-up 450ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
+  .backtest-workbench {
+    grid-template-rows: minmax(0, 1fr) auto;
+    transition: grid-template-rows 300ms ease;
+  }
+
+  .backtest-workbench[data-focus='results'] {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .backtest-workbench--reduce-motion {
+    transition: none;
+  }
 }
 
 /* Custom Premium Scrollbars */
