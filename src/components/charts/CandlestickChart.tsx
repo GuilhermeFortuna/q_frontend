@@ -35,12 +35,16 @@ import { IndicatorLayer } from '@/components/charts/layers/IndicatorLayer'
 import { OscillatorPane } from '@/components/charts/layers/OscillatorPane'
 import { CrosshairLayer } from '@/components/charts/layers/CrosshairLayer'
 import { DrawingLayer } from '@/components/charts/layers/DrawingLayer'
+import { ChevronRight } from 'lucide-react'
+
 import { macd } from '@/lib/indicators'
 import { newDrawingId } from '@/components/charts/hooks/useDrawings'
 import type { OhlcvBar } from '@/types/api'
 
 export type CandlestickChartHandle = {
   shiftViewport: (delta: number) => void
+  panBy: (barDelta: number) => void
+  scrollToEnd: () => void
 }
 
 export type CandlestickChartProps = {
@@ -82,12 +86,18 @@ const ChartInner = forwardRef<
 ) {
   const processed = useMemo(() => processBars(data), [data])
   const viewportResetKey = resetKey ?? `${symbol}:${timeframe}`
-  const { viewport, resetViewport, fitAll, zoomAt, panBy, shiftViewport } = useChartViewport(
-    processed.length,
-    viewportResetKey,
-  )
+  const { viewport, resetViewport, scrollToEnd, fitAll, zoomAt, panBy, shiftViewport } =
+    useChartViewport(processed.length, viewportResetKey)
 
-  useImperativeHandle(ref, () => ({ shiftViewport }), [shiftViewport])
+  const isViewportUnset = viewport.startIndex === 0 && viewport.endIndex === 0
+  const isAtLatestCandle =
+    processed.length === 0 || isViewportUnset || viewport.endIndex >= processed.length - 1
+
+  useImperativeHandle(ref, () => ({ shiftViewport, panBy, scrollToEnd }), [
+    shiftViewport,
+    panBy,
+    scrollToEnd,
+  ])
   const visibleBars = useMemo(
     () => processed.slice(viewport.startIndex, viewport.endIndex + 1),
     [processed, viewport],
@@ -125,6 +135,7 @@ const ChartInner = forwardRef<
   const [draftDrawing, setDraftDrawing] = useState<DrawingObject | null>(null)
   const isPanning = useRef(false)
   const panStart = useRef<{ x: number; startIndex: number } | null>(null)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     onViewportChange?.(viewport)
@@ -244,16 +255,21 @@ const ChartInner = forwardRef<
     onHoverBar?.(null)
   }, [onHoverBar])
 
-  const handleWheel = useCallback(
-    (event: React.WheelEvent<SVGRectElement>) => {
+  useEffect(() => {
+    const el = chartContainerRef.current
+    if (!el) return
+
+    const onWheel = (event: WheelEvent) => {
       event.preventDefault()
-      const point = localPoint(event)
-      if (!point) return
-      const ratio = Math.max(0, Math.min(1, (point.x - CHART_MARGINS.left) / layout.innerWidth))
+      const bounds = el.getBoundingClientRect()
+      const x = event.clientX - bounds.left
+      const ratio = Math.max(0, Math.min(1, (x - CHART_MARGINS.left) / layout.innerWidth))
       zoomAt(ratio, event.deltaY)
-    },
-    [zoomAt, layout.innerWidth],
-  )
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [zoomAt, layout.innerWidth])
 
   const handleDoubleClick = useCallback(() => {
     fitAll()
@@ -267,19 +283,33 @@ const ChartInner = forwardRef<
 
   return (
     <div
-      className="border-carbon-700 relative h-full w-full overflow-hidden rounded-lg border shadow-2xl"
+      ref={chartContainerRef}
+      className="border-carbon-700 relative h-full w-full overflow-hidden overscroll-contain rounded-lg border shadow-2xl"
       style={{
         background: 'radial-gradient(circle at 50% 30%, #16273f 0%, #07101c 100%)',
       }}
     >
-      <button
-        type="button"
-        onClick={resetViewport}
-        className="border-carbon-700 bg-carbon-900/80 text-silver-400 hover:border-brass-500 hover:text-brass-400 absolute top-2 right-3 z-10 rounded border px-2 py-0.5 font-mono text-[9px] uppercase"
-        aria-label="Reset chart view"
-      >
-        Reset
-      </button>
+      <div className="absolute top-2 right-3 z-10 flex items-center gap-1">
+        {!isAtLatestCandle && (
+          <button
+            type="button"
+            onClick={scrollToEnd}
+            className="border-brass-500/40 bg-carbon-900/95 text-brass-400 hover:border-brass-500 hover:bg-carbon-900 flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[9px] uppercase shadow-lg"
+            aria-label="Go to latest candle"
+          >
+            <ChevronRight className="h-3 w-3" aria-hidden />
+            Latest
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={resetViewport}
+          className="border-carbon-700 bg-carbon-900/80 text-silver-400 hover:border-brass-500 hover:text-brass-400 rounded border px-2 py-0.5 font-mono text-[9px] uppercase"
+          aria-label="Reset chart view"
+        >
+          Reset
+        </button>
+      </div>
 
       <svg width={width} height={height}>
         {showGrid && (
@@ -391,7 +421,6 @@ const ChartInner = forwardRef<
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          onWheel={handleWheel}
           onDoubleClick={handleDoubleClick}
         />
       </svg>

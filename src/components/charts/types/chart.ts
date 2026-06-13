@@ -48,7 +48,6 @@ export const GRID_COLOR = 'rgba(111, 119, 133, 0.12)'
 
 export const DEFAULT_VISIBLE_BARS = 120
 export const MIN_VISIBLE_BARS = 20
-export const MAX_VISIBLE_BARS = 500
 
 export const DEFAULT_INDICATORS: IndicatorConfig[] = [
   { type: 'sma', enabled: true, period: 20 },

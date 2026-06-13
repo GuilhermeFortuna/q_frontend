@@ -37,4 +37,38 @@ describe('useChartViewport', () => {
     expect(result.current.viewport.startIndex).toBe(before.startIndex + 20)
     expect(result.current.viewport.endIndex).toBe(before.endIndex + 20)
   })
+
+  it('scrollToEnd keeps zoom and aligns the viewport to the latest bar', () => {
+    const { result } = renderHook(() => useChartViewport(200, 'PETR4:1H'))
+
+    act(() => {
+      result.current.panBy(-80)
+    })
+
+    const visibleCount = result.current.viewport.endIndex - result.current.viewport.startIndex + 1
+    expect(result.current.viewport.endIndex).toBeLessThan(199)
+
+    act(() => {
+      result.current.scrollToEnd()
+    })
+
+    expect(result.current.viewport.endIndex).toBe(199)
+    expect(result.current.viewport.endIndex - result.current.viewport.startIndex + 1).toBe(
+      visibleCount,
+    )
+  })
+
+  it('zoomAt can zoom out to the full bar range', () => {
+    const barCount = 800
+    const { result } = renderHook(() => useChartViewport(barCount, 'PETR4:1D'))
+
+    act(() => {
+      for (let i = 0; i < 30; i += 1) {
+        result.current.zoomAt(0.5, 100)
+      }
+    })
+
+    expect(result.current.viewport.startIndex).toBe(0)
+    expect(result.current.viewport.endIndex).toBe(barCount - 1)
+  })
 })

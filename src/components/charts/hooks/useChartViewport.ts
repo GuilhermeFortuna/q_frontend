@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import type { ChartViewport } from '@/components/charts/types/chart'
-import {
-  DEFAULT_VISIBLE_BARS,
-  MAX_VISIBLE_BARS,
-  MIN_VISIBLE_BARS,
-} from '@/components/charts/types/chart'
+import { DEFAULT_VISIBLE_BARS, MIN_VISIBLE_BARS } from '@/components/charts/types/chart'
 
 export function useChartViewport(barCount: number, resetKey = '') {
   const [viewport, setViewport] = useState<ChartViewport>({ startIndex: 0, endIndex: 0 })
@@ -53,6 +49,16 @@ export function useChartViewport(barCount: number, resetKey = '') {
     })
   }, [barCount])
 
+  const scrollToEnd = useCallback(() => {
+    if (barCount === 0) return
+    setViewport((prev) => {
+      const count = prev.endIndex - prev.startIndex + 1
+      const end = barCount - 1
+      const start = Math.max(0, end - count + 1)
+      return { startIndex: start, endIndex: end }
+    })
+  }, [barCount])
+
   const fitAll = useCallback(() => {
     if (barCount === 0) return
     setViewport({ startIndex: 0, endIndex: barCount - 1 })
@@ -64,7 +70,7 @@ export function useChartViewport(barCount: number, resetKey = '') {
         const currentCount = prev.endIndex - prev.startIndex + 1
         const factor = delta > 0 ? 1.1 : 0.9
         let nextCount = Math.round(currentCount * factor)
-        nextCount = Math.max(MIN_VISIBLE_BARS, Math.min(MAX_VISIBLE_BARS, barCount, nextCount))
+        nextCount = Math.max(MIN_VISIBLE_BARS, Math.min(barCount, nextCount))
 
         const anchor = prev.startIndex + currentCount * cursorRatio
         let start = Math.round(anchor - nextCount * cursorRatio)
@@ -105,5 +111,14 @@ export function useChartViewport(barCount: number, resetKey = '') {
     [barCount],
   )
 
-  return { viewport, setViewport, resetViewport, fitAll, zoomAt, panBy, shiftViewport }
+  return {
+    viewport,
+    setViewport,
+    resetViewport,
+    scrollToEnd,
+    fitAll,
+    zoomAt,
+    panBy,
+    shiftViewport,
+  }
 }
