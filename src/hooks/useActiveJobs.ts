@@ -1,3 +1,4 @@
+import { useBacktestJobStatus } from '@/api/queries/backtests'
 import { useOptimizationStatus } from '@/api/queries/optimize'
 import { useStrategySearchStatus } from '@/api/queries/strategySearch'
 import { useWalkForwardStatus } from '@/api/queries/walkforward'
@@ -31,12 +32,19 @@ export function useActiveJobs(): ActiveJobsMap {
   const optimizeStudyId = useAppStore((s) => s.optimizeSession.studyId)
   const walkForwardRunId = useAppStore((s) => s.walkForwardSession.runId)
   const discoverRunId = useAppStore((s) => s.discoverSession.runId)
+  const backtestRunId = useAppStore((s) => s.backtestSession.runId)
 
   const optimize = useOptimizationStatus(optimizeStudyId).data
   const walkForward = useWalkForwardStatus(walkForwardRunId).data
   const discover = useStrategySearchStatus(discoverRunId).data
+  const backtest = useBacktestJobStatus(backtestRunId).data
 
   const map: ActiveJobsMap = {}
+
+  if (backtest?.status === 'running') {
+    // A single backtest has no granular progress; show an indeterminate caption.
+    map.backtests = { pct: 0, detail: 'Running…' }
+  }
 
   if (isActive(optimize?.status) && optimize) {
     map.optimize = {

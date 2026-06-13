@@ -45,6 +45,8 @@ import type { OptimizationTrial } from '@/types/optimization'
 const deletedBacktestRunIds = new Set<string>()
 const deletedOptimizationStudyIds = new Set<string>()
 const savedBacktestRunOverrides = new Map<string, boolean>()
+const mockBacktestJobs = new Map<string, ReturnType<typeof getMockBacktestResponse>>()
+let mockBacktestJobSeq = 1
 
 export function resetMockBacktestDeletes() {
   deletedBacktestRunIds.clear()
@@ -163,6 +165,31 @@ export const handlers = [
   http.post('*/api/v1/backtest/run', async ({ request }) => {
     const body = (await request.json()) as BacktestRequest
     return HttpResponse.json(getMockBacktestResponse(body))
+  }),
+
+  // Async backtest job endpoints. The mock resolves immediately to "completed" so
+  // polling tests settle on the first status fetch.
+  http.post('*/api/v1/backtest', async ({ request }) => {
+    const body = (await request.json()) as BacktestRequest
+    const runId = `mock-backtest-${mockBacktestJobSeq++}`
+    mockBacktestJobs.set(runId, getMockBacktestResponse(body))
+    return HttpResponse.json({ run_id: runId, status: 'running' })
+  }),
+
+  http.get('*/api/v1/backtest/:runId/result', ({ params }) => {
+    const result = mockBacktestJobs.get(params.runId as string)
+    if (!result) {
+      return HttpResponse.json({ detail: 'Backtest result not found.' }, { status: 404 })
+    }
+    return HttpResponse.json({ ...result, run_id: params.runId })
+  }),
+
+  http.get('*/api/v1/backtest/:runId', ({ params }) => {
+    const runId = params.runId as string
+    if (!mockBacktestJobs.has(runId)) {
+      return HttpResponse.json({ detail: 'Backtest run not found.' }, { status: 404 })
+    }
+    return HttpResponse.json({ run_id: runId, status: 'completed', error: null })
   }),
 
   http.get('*/api/v1/backtests', ({ request }) => {

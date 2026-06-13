@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { useMemo, useState } from 'react'
 
-import { useRunBacktest } from '@/api/queries/backtests'
+import { useBacktestJob } from '@/api/queries/backtests'
 import {
   BacktestFocusWorkbench,
   type BacktestWorkbenchFocus,
@@ -22,7 +22,7 @@ const RIGHT_PANEL_TABS: { id: RightPanelTab; label: string }[] = [
 ]
 
 export function BacktestsWorkspace() {
-  const runBacktest = useRunBacktest()
+  const runBacktest = useBacktestJob()
   const backtestConfig = useBacktestConfig()
   const reducedMotion = usePrefersReducedMotion()
   const [lastCapital, setLastCapital] = useState(100000)

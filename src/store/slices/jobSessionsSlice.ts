@@ -37,13 +37,24 @@ export type DiscoverSession = {
   selectedHistoryRunId: string | null
 }
 
+/**
+ * Backtests are now async jobs, so the active run id must outlive navigation just
+ * like the other job workspaces — when the workspace remounts the id is restored
+ * and polling resumes.
+ */
+export type BacktestSession = {
+  runId: string | null
+}
+
 export type JobSessionsSlice = {
   optimizeSession: OptimizeSession
   walkForwardSession: WalkForwardSession
   discoverSession: DiscoverSession
+  backtestSession: BacktestSession
   patchOptimizeSession: (patch: Partial<OptimizeSession>) => void
   patchWalkForwardSession: (patch: Partial<WalkForwardSession>) => void
   patchDiscoverSession: (patch: Partial<DiscoverSession>) => void
+  patchBacktestSession: (patch: Partial<BacktestSession>) => void
 }
 
 const initialOptimizeSession: OptimizeSession = {
@@ -71,14 +82,21 @@ const initialDiscoverSession: DiscoverSession = {
   selectedHistoryRunId: null,
 }
 
+const initialBacktestSession: BacktestSession = {
+  runId: null,
+}
+
 export const createJobSessionsSlice: StateCreator<JobSessionsSlice> = (set) => ({
   optimizeSession: initialOptimizeSession,
   walkForwardSession: initialWalkForwardSession,
   discoverSession: initialDiscoverSession,
+  backtestSession: initialBacktestSession,
   patchOptimizeSession: (patch) =>
     set((state) => ({ optimizeSession: { ...state.optimizeSession, ...patch } })),
   patchWalkForwardSession: (patch) =>
     set((state) => ({ walkForwardSession: { ...state.walkForwardSession, ...patch } })),
   patchDiscoverSession: (patch) =>
     set((state) => ({ discoverSession: { ...state.discoverSession, ...patch } })),
+  patchBacktestSession: (patch) =>
+    set((state) => ({ backtestSession: { ...state.backtestSession, ...patch } })),
 })

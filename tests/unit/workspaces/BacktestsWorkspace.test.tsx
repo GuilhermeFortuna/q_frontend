@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event'
 
 import { getMockBacktestResponse } from '@/mocks/backtest'
 import { handlers } from '@/mocks/handlers'
+import { useAppStore } from '@/store/useAppStore'
 import { BacktestsWorkspace } from '@/workspaces/backtests/BacktestsWorkspace'
 import { renderWithQueryClient } from '../testUtils'
 import type { BacktestRequest } from '@/types/backtesting'
@@ -13,7 +14,12 @@ import type { BacktestRequest } from '@/types/backtesting'
 const server = setupServer(...handlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  // Backtests now persist the active run id across navigation; clear it so a
+  // submitted run in one test doesn't leak completed results into the next.
+  useAppStore.getState().patchBacktestSession({ runId: null })
+})
 afterAll(() => server.close())
 
 async function waitForStrategyLibrary() {
@@ -61,13 +67,24 @@ describe('BacktestsWorkspace — focus swap', () => {
   it('returns to results from the collapsed teaser without refetching', async () => {
     const user = userEvent.setup()
     let runCalls = 0
+    let lastBody: BacktestRequest | null = null
 
+    // Count dispatches against the async endpoint; status/result resolve immediately.
     server.use(
-      http.post('*/api/v1/backtest/run', async ({ request }) => {
+      http.post('*/api/v1/backtest', async ({ request }) => {
         runCalls += 1
-        const body = (await request.json()) as BacktestRequest
-        return HttpResponse.json(getMockBacktestResponse(body))
+        lastBody = (await request.json()) as BacktestRequest
+        return HttpResponse.json({ run_id: `test-run-${runCalls}`, status: 'running' })
       }),
+      http.get('*/api/v1/backtest/:runId/result', ({ params }) =>
+        HttpResponse.json({
+          ...getMockBacktestResponse(lastBody as BacktestRequest),
+          run_id: params.runId,
+        }),
+      ),
+      http.get('*/api/v1/backtest/:runId', ({ params }) =>
+        HttpResponse.json({ run_id: params.runId, status: 'completed', error: null }),
+      ),
     )
 
     renderWithQueryClient(<BacktestsWorkspace />)
@@ -95,13 +112,24 @@ describe('BacktestsWorkspace — focus swap', () => {
   it('re-runs from the collapsed setup strip without expanding setup', async () => {
     const user = userEvent.setup()
     let runCalls = 0
+    let lastBody: BacktestRequest | null = null
 
+    // Count dispatches against the async endpoint; status/result resolve immediately.
     server.use(
-      http.post('*/api/v1/backtest/run', async ({ request }) => {
+      http.post('*/api/v1/backtest', async ({ request }) => {
         runCalls += 1
-        const body = (await request.json()) as BacktestRequest
-        return HttpResponse.json(getMockBacktestResponse(body))
+        lastBody = (await request.json()) as BacktestRequest
+        return HttpResponse.json({ run_id: `test-run-${runCalls}`, status: 'running' })
       }),
+      http.get('*/api/v1/backtest/:runId/result', ({ params }) =>
+        HttpResponse.json({
+          ...getMockBacktestResponse(lastBody as BacktestRequest),
+          run_id: params.runId,
+        }),
+      ),
+      http.get('*/api/v1/backtest/:runId', ({ params }) =>
+        HttpResponse.json({ run_id: params.runId, status: 'completed', error: null }),
+      ),
     )
 
     renderWithQueryClient(<BacktestsWorkspace />)

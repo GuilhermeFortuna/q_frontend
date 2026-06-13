@@ -6,8 +6,10 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import axios from 'axios'
+import { useEffect } from 'react'
 
 import { apiClient } from '@/api/client'
+import { useAppStore } from '@/store/useAppStore'
 import type {
   BacktestEquityArtifactResponse,
   BacktestEquityArtifactResult,
@@ -18,6 +20,14 @@ import type {
   BacktestRunListResponse,
   BulkDeleteResponse,
 } from '@/types/backtesting'
+
+export type BacktestJobStatus = {
+  run_id: string
+  status: 'running' | 'completed' | 'failed' | 'cancelled'
+  error?: string | null
+}
+
+export type BacktestStartResponse = { run_id: string; status: string }
 
 export type BacktestHistoryParams = {
   limit?: number
@@ -36,10 +46,22 @@ export const backtestKeys = {
     [...backtestKeys.all, 'history', params] as const,
   run: (runId: string) => [...backtestKeys.all, 'run', runId] as const,
   equityArtifact: (runId: string) => [...backtestKeys.all, 'equity-artifact', runId] as const,
+  jobStatus: (runId: string) => [...backtestKeys.all, 'job-status', runId] as const,
+  jobResult: (runId: string) => [...backtestKeys.all, 'job-result', runId] as const,
 }
 
-export async function runBacktest(request: BacktestRequest): Promise<BacktestResponse> {
-  const { data } = await apiClient.post<BacktestResponse>('/api/v1/backtest/run', request)
+export async function startBacktest(request: BacktestRequest): Promise<BacktestStartResponse> {
+  const { data } = await apiClient.post<BacktestStartResponse>('/api/v1/backtest', request)
+  return data
+}
+
+export async function fetchBacktestJobStatus(runId: string): Promise<BacktestJobStatus> {
+  const { data } = await apiClient.get<BacktestJobStatus>(`/api/v1/backtest/${runId}`)
+  return data
+}
+
+export async function fetchBacktestResult(runId: string): Promise<BacktestResponse> {
+  const { data } = await apiClient.get<BacktestResponse>(`/api/v1/backtest/${runId}/result`)
   return data
 }
 
@@ -119,16 +141,73 @@ export function useBacktestEquityArtifacts(runIds: string[]) {
   })
 }
 
-export function useRunBacktest() {
-  const queryClient = useQueryClient()
+export function useBacktestJobStatus(runId: string | null) {
+  return useQuery({
+    queryKey: backtestKeys.jobStatus(runId ?? ''),
+    queryFn: () => fetchBacktestJobStatus(runId as string),
+    enabled: !!runId,
+    // Poll while the backtest is still running; stop at a terminal state.
+    refetchInterval: (query) => (query.state.data?.status === 'running' ? 1000 : false),
+  })
+}
 
-  return useMutation({
+/**
+ * Backtests run asynchronously on the worker pool. This hook mirrors the old
+ * `useRunBacktest` mutation surface (`mutate`/`data`/`isPending`/`error`) but
+ * underneath it submits the job, persists the run id (so it survives navigation
+ * and shows in the dock), polls status, then fetches the full chart payload.
+ */
+export function useBacktestJob() {
+  const queryClient = useQueryClient()
+  const runId = useAppStore((s) => s.backtestSession.runId)
+  const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
+
+  const start = useMutation({
     mutationKey: backtestKeys.all,
-    mutationFn: runBacktest,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...backtestKeys.all, 'history'] })
+    mutationFn: startBacktest,
+    onSuccess: (data) => {
+      patchBacktestSession({ runId: data.run_id })
     },
   })
+
+  const status = useBacktestJobStatus(runId)
+  const jobStatus = status.data?.status
+
+  const result = useQuery({
+    queryKey: backtestKeys.jobResult(runId ?? ''),
+    queryFn: () => fetchBacktestResult(runId as string),
+    enabled: !!runId && jobStatus === 'completed',
+    staleTime: Infinity,
+  })
+
+  // Refresh history once a run reaches a terminal state.
+  useEffect(() => {
+    if (jobStatus === 'completed' || jobStatus === 'failed') {
+      queryClient.invalidateQueries({ queryKey: [...backtestKeys.all, 'history'] })
+    }
+  }, [jobStatus, queryClient])
+
+  const isPending =
+    start.isPending ||
+    (!!runId && (jobStatus === 'running' || (jobStatus === undefined && status.isFetching)))
+
+  const error: Error | null = start.error
+    ? (start.error as Error)
+    : jobStatus === 'failed'
+      ? new Error(status.data?.error ?? 'Backtest failed')
+      : ((result.error as Error | null) ?? null)
+
+  return {
+    mutate: (request: BacktestRequest) => start.mutate(request),
+    reset: () => {
+      patchBacktestSession({ runId: null })
+      start.reset()
+    },
+    data: jobStatus === 'completed' ? result.data : undefined,
+    isPending,
+    error,
+    status: jobStatus,
+  }
 }
 
 export function useBacktestHistory(params: BacktestHistoryParams = {}) {

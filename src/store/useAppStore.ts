@@ -23,6 +23,7 @@ export const useAppStore = create<AppStore>()(
         optimizeSession: state.optimizeSession,
         walkForwardSession: state.walkForwardSession,
         discoverSession: state.discoverSession,
+        backtestSession: state.backtestSession,
       }),
     },
   ),
