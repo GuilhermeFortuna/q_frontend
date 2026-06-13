@@ -182,10 +182,162 @@ messages.
 6. Do FMA/TRB holding periods count **bars**, not calendar days?
 7. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
 
+## Phase: Research Validation (next batch)
+
+Turns the platform from a backtest runner into a research instrument — the defense against
+overfitting. Today the Optuna optimizer reports in-sample results over a single range, and
+trades/equity curves vanish after the HTTP response. This batch: persist per-run artifacts
+to the Parquet lake (the schema's `lake_paths` column has waited since day one), add
+walk-forward analysis (rolling optimize → out-of-sample test → stitched OOS equity +
+efficiency ratio), give it a frontend workspace, and add cross-run comparison.
+
+| #   | File                                                                             | Repo       | Depends on         |
+| --- | -------------------------------------------------------------------------------- | ---------- | ------------------ |
+| 22  | [WO22-backend-data-lake-artifacts.md](WO22-backend-data-lake-artifacts.md)       | q_backend  | —                  |
+| 23  | [WO23-backend-walkforward-core.md](WO23-backend-walkforward-core.md)             | q_backend  | —                  |
+| 24  | [WO24-backend-walkforward-api.md](WO24-backend-walkforward-api.md)               | q_backend  | WO22 + WO23 merged |
+| 25  | [WO25-frontend-walkforward-workspace.md](WO25-frontend-walkforward-workspace.md) | q_frontend | WO24 contract      |
+| 26  | [WO26-frontend-run-comparison.md](WO26-frontend-run-comparison.md)               | q_frontend | WO22 contract      |
+
+### Dispatch order
+
+```
+WO22  ─┬─►  WO24  ──►  WO25
+WO23  ─┘
+WO22  ──►  WO26
+```
+
+WO22 and WO23 run **in parallel** (disjoint: lake module vs optimization core). WO24 wires
+both into the API and must paste the full JSON contracts in its completion message — WO25
+builds the entire frontend against that message. WO26 needs only WO22's artifact-endpoint
+contract, so it can run alongside WO23/WO24.
+
+### Batch-specific review checklist
+
+1. Lake writes are **best-effort both ways**: a backtest/walk-forward run still succeeds
+   with the lake unwritable, and artifacts are still written with Postgres stopped.
+2. Did anything sneak **series/trades into Postgres**? (stitched equity and OOS trades go
+   to the lake; window-level metrics JSON is summary metadata, allowed)
+3. Walk-forward data loads **once per run** (`from_market_data_sliced`, call-count test),
+   and the existing `from_market_data` is byte-for-byte unchanged.
+4. **No leakage:** every OOS trade timestamp falls inside its window's test range, and test
+   windows tile the history with no gaps/overlaps (the splitter tests prove it).
+5. Runs predating WO22 return 404 for artifacts and degrade to a marked-but-functional UI
+   state — never an error wall (WO26) or a crash (WO25 history).
+6. Are the new tables/fields strictly **additive** — no existing response field changed
+   shape, existing optimization/backtest tests untouched and green?
+7. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
+
+## Phase: Backtest Workbench (next batch)
+
+Redesigns the Backtests page from a thin config sidebar into a strategy-first workbench.
+Today a ~320px rail holds every input while the canvas shows "No Results Yet"; strategies
+are a bare `<select>` despite the registry serving 9+ of them with descriptions. The
+batch: move presentation metadata (category, thesis, regime notes, param hints) into the
+strategy registry (backend), rebuild setup as a full-canvas strategy library + detail
+panel + horizontal config band (frontend), then make setup and results two views of one
+workbench — whichever pane the user clicks gets the stage while the other collapses to a
+live teaser (collapsed setup = config digest + Run button; collapsed results = headline
+metrics + equity sparkline), reversibly and without losing state on either side.
+
+| #   | File                                                                   | Repo       | Depends on    |
+| --- | ---------------------------------------------------------------------- | ---------- | ------------- |
+| 27  | [WO27-backend-strategy-metadata.md](WO27-backend-strategy-metadata.md) | q_backend  | —             |
+| 28  | [WO28-frontend-strategy-library.md](WO28-frontend-strategy-library.md) | q_frontend | WO27 contract |
+| 29  | [WO29-frontend-focus-workbench.md](WO29-frontend-focus-workbench.md)   | q_frontend | WO28 merged   |
+
+### Dispatch order
+
+```
+WO27  ──►  WO28  ──►  WO29
+```
+
+WO27 first (its completion message pastes one full strategy object from
+`/api/v1/strategies` — WO28 types its fallbacks against it). WO28 may start in parallel if
+needed, since it must degrade gracefully against a pre-WO27 backend anyway, but its detail
+panel content can only be verified once WO27 merges. WO29 strictly after WO28 merges — it
+replaces WO28's interim "Edit setup" strip and animates the sibling-pane layout WO28 is
+required to leave behind.
+
+### Batch-specific review checklist
+
+1. Is the submitted `BacktestRequest` **byte-identical** to the old sidebar's for the same
+   inputs? (WO28's `buildRequest()` snapshot test — candle and tick variants — is the
+   proof; check it actually snapshots the full payload)
+2. Is `/api/v1/strategies` strictly **additive** — existing backend tests pass unmodified,
+   and the pre-WO28 frontend renders fine against the WO27 backend?
+3. Does Optimizer → "Load into Backtest" still hydrate the new setup UI (strategy selected
+   in the library, params merged, band populated)?
+4. Is the Optimize workspace pixel-identical? (shared field components may gain layout
+   props but defaults must not change)
+5. Tick engine intact: engine filter still constrains the library, tick-only fields still
+   appear, tick request payload unchanged.
+6. WO29: both panes stay **mounted** through swaps (form state, results, and history
+   selection survive), the collapsed setup strip can re-run without expanding, and
+   `prefers-reduced-motion` gets an instant swap.
+7. Did the agent actually run `pnpm test:run` / `uv run pytest` for real, or just claim
+   green?
+
+## Phase: Discovery — automatic strategy search (next batch)
+
+Turns the platform from "optimize one strategy at a time" into "find the strategy." Today a
+quant must hand-run the optimizer once per strategy, hand-write a search space each time, and
+eyeball the results. This batch adds **automatic strategy search**: point it at an instrument
+
+- date range and it sweeps every registered strategy, optimizes each, **walk-forward-validates
+  each**, and returns a leaderboard ranked on out-of-sample performance — never in-sample. The
+  whole feature is composition over what already exists (`WalkForwardRunner`, the registry, the
+  job/Redis/Postgres/lake plumbing, the workspace shell); the new code is a search-space
+  derivation, a candidate abstraction, an orchestrator, a job manager, and a workspace, each
+  mirroring an existing sibling. Crucially the search is defined over a `CandidateProvider`
+  **seam** so a later genetic-synthesis batch (option 2) drops in as a new provider without
+  re-plumbing — WO34 designs that and confirms the seam.
+
+| #   | File                                                                         | Repo       | Depends on    |
+| --- | ---------------------------------------------------------------------------- | ---------- | ------------- |
+| 30  | [WO30-backend-auto-search-space.md](WO30-backend-auto-search-space.md)       | q_backend  | —             |
+| 31  | [WO31-backend-strategy-search-core.md](WO31-backend-strategy-search-core.md) | q_backend  | WO30          |
+| 32  | [WO32-backend-strategy-search-api.md](WO32-backend-strategy-search-api.md)   | q_backend  | WO31          |
+| 33  | [WO33-frontend-discovery-workspace.md](WO33-frontend-discovery-workspace.md) | q_frontend | WO32 contract |
+| 34  | [WO34-genetic-search-design.md](WO34-genetic-search-design.md)               | docs       | WO31 seam     |
+
+### Dispatch order
+
+```
+WO30  ──►  WO31  ──►  WO32  ──►  WO33
+                 └──►  WO34 (design doc only)
+```
+
+Strictly sequential WO30→WO31→WO32→WO33 — each builds on the prior's contract. **WO31 must
+paste the `StrategySearchConfig` / `CandidateResult` / `StrategySearchResult` / `SearchProgress`
+field lists**; WO32 serializes them and **pastes the full JSON contracts** — WO33 builds the
+entire frontend against that message. WO34 is a paper that can run any time after WO31 lands
+(it only needs the seam to reason about), and it ships no code.
+
+### Batch-specific review checklist
+
+1. Is the leaderboard ranked on **out-of-sample** objective value (`resolve_objective` over
+   `oos_metrics`), never in-sample? Is `MINIMIZE_DRAWDOWN` oriented so "higher robustness =
+   better"?
+2. Does the whole search load market data **once** (`from_market_data_sliced`, call-count
+   spy), reusing the frame across every candidate's walk-forward?
+3. Does a single failing/zero-trade/tick candidate get flagged (`error`/`no_result`/
+   `unsupported`) **without aborting** the sweep?
+4. Are gated candidates kept on the leaderboard (flagged, sorted below passing ones), never
+   silently dropped?
+5. Did WO30/WO31 **reuse `WalkForwardRunner` / `OptimizationRunner` unchanged** (no fork), and
+   are the existing walk-forward + optimization tests green and untouched?
+6. Does the search **complete with Postgres stopped** and **with the lake unwritable** (best
+   effort both ways)? Did series/trades stay out of Postgres (lake only)?
+7. Does "Send to Backtest/Optimizer" hydrate the target workspace via the existing
+   `pendingBacktestConfig` / `pendingOptimizationConfig` seams?
+8. Is multi-objective rejected (422 / `ValueError`) since ranking needs a scalar?
+9. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
+
 ## Review checklist (apply to every returned PR)
 
 1. Does the compute path still work with Postgres **stopped**? (stop the container, run a backtest / a study)
 2. Are new id fields (`run_id`, `study_id`) strictly **additive** — did any existing response field change shape?
-3. Did anything sneak **trades / bars / indicator series into Postgres**? (must not — that's a later data-lake phase)
+3. Did anything sneak **trades / bars / indicator series into Postgres**? (must not — series belong in the Parquet lake, WO22+)
 4. Did background threads use `session_scope()` and **not** a request-scoped session?
 5. Did the agent actually **run the stated verification command**, or just claim green?
