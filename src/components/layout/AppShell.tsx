@@ -20,12 +20,11 @@ export function AppShell({ children }: AppShellProps) {
       <header className="border-brass-600/15 bg-espresso-950/40 flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] backdrop-blur-md">
         <div className="flex items-center gap-2.5">
           <QuantEmblem className="h-10 w-10" />
-          <div>
-            <h1 className="text-silver-100 text-sm font-medium tracking-[0.2em] uppercase">
-              Quant
-            </h1>
-            <p className="text-silver-400 text-xs">Desktop research platform</p>
-          </div>
+          <img
+            src="/quant-logo-text.png"
+            alt="QUANT"
+            className="block h-3.5 w-auto object-contain select-none"
+          />
         </div>
         <div className="border-brass-600/30 bg-brass-600/10 text-brass-400 flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase shadow-[0_0_10px_rgba(196,165,116,0.05)]">
           <span className="bg-brass-400 h-1 w-1 animate-pulse rounded-full" />
