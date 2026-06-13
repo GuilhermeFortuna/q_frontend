@@ -1,5 +1,6 @@
 import { IndicatorsPopover } from '@/components/charts/IndicatorsPopover'
-import type { IndicatorConfig } from '@/components/charts/types/chart'
+import { ChartSettingsPopover } from '@/components/charts/ChartSettingsPopover'
+import type { IndicatorConfig, ChartSettings } from '@/components/charts/types/chart'
 import { CHART_TIMEFRAMES } from '@/lib/market/timeframes'
 
 export type ChartToolbarProps = {
@@ -11,6 +12,8 @@ export type ChartToolbarProps = {
   onIndicatorsChange: (indicators: IndicatorConfig[]) => void
   showGrid: boolean
   onShowGridChange: (showGrid: boolean) => void
+  chartSettings?: ChartSettings
+  onChartSettingsChange?: (settings: ChartSettings) => void
 }
 
 export function ChartToolbar({
@@ -22,6 +25,8 @@ export function ChartToolbar({
   onIndicatorsChange,
   showGrid,
   onShowGridChange,
+  chartSettings,
+  onChartSettingsChange,
 }: ChartToolbarProps) {
   return (
     <div className="border-brass-600/10 bg-carbon-900/60 relative z-10 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2 backdrop-blur-md">
@@ -58,6 +63,10 @@ export function ChartToolbar({
         </div>
 
         <IndicatorsPopover indicators={indicators} onChange={onIndicatorsChange} />
+
+        {chartSettings && onChartSettingsChange ? (
+          <ChartSettingsPopover settings={chartSettings} onChange={onChartSettingsChange} />
+        ) : null}
 
         <label className="flex cursor-pointer items-center gap-1.5 select-none">
           <input

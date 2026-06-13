@@ -10,6 +10,7 @@ type CandlestickLayerProps = {
   chartType: ChartType
   left: number
   hoveredTimestamp?: string | null
+  candleOpacity?: number
 }
 
 export function CandlestickLayer({
@@ -19,6 +20,7 @@ export function CandlestickLayer({
   chartType,
   left,
   hoveredTimestamp,
+  candleOpacity = 0.85,
 }: CandlestickLayerProps) {
   const bandwidth = xScale.bandwidth()
 
@@ -102,6 +104,7 @@ export function CandlestickLayer({
                     1,
                   )}
                   fill={bar.isBullish ? 'url(#bull-gradient)' : 'url(#bear-gradient)'}
+                  fillOpacity={candleOpacity}
                   stroke={bar.color}
                   strokeWidth={1}
                   rx={1.5}

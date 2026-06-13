@@ -1,4 +1,4 @@
-export { sma } from './sma'
+export { sma, volumeSma } from './sma'
 export { ema } from './ema'
 export { bollingerBands, type BollingerBands } from './bollinger'
 export { rsi } from './rsi'

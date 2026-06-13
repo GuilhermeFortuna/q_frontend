@@ -42,6 +42,17 @@ function seriesPath(
   return parts.join(' ')
 }
 
+function getRsiCloudFill(color: string): string {
+  if (color.startsWith('#')) {
+    let hex = color
+    if (hex.length === 4) {
+      hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3]
+    }
+    return `${hex}0a` // ~4% opacity
+  }
+  return 'rgba(167, 139, 250, 0.04)'
+}
+
 export function OscillatorPane({
   allBars,
   visibleBars,
@@ -59,6 +70,10 @@ export function OscillatorPane({
 
   if (type === 'rsi' && config.type === 'rsi') {
     const values = rsi(allBars, config.period)
+    const color = config.color ?? '#a78bfa'
+    const strokeWidth = config.strokeWidth ?? 1.2
+    const showCloud = config.showCloud ?? true
+
     return (
       <g transform={`translate(${left}, 0)`}>
         <rect
@@ -70,14 +85,16 @@ export function OscillatorPane({
           stroke="rgba(111, 119, 133, 0.15)"
           shapeRendering="crispEdges"
         />
-        <rect
-          x={0}
-          y={Math.round(yScale(70))}
-          width={xScale.range()[1]}
-          height={Math.max(Math.round(yScale(30) - yScale(70)), 1)}
-          fill="rgba(167, 139, 250, 0.04)"
-          stroke="none"
-        />
+        {showCloud && (
+          <rect
+            x={0}
+            y={Math.round(yScale(70))}
+            width={xScale.range()[1]}
+            height={Math.max(Math.round(yScale(30) - yScale(70)), 1)}
+            fill={getRsiCloudFill(color)}
+            stroke="none"
+          />
+        )}
         <line
           x1={0}
           x2={xScale.range()[1]}
@@ -99,8 +116,8 @@ export function OscillatorPane({
         <path
           d={seriesPath(values, allBars, visibleSet, xScale, yScale)}
           fill="none"
-          stroke="#a78bfa"
-          strokeWidth={1.2}
+          stroke={color}
+          strokeWidth={strokeWidth}
         />
         <text x={4} y={top + 12} fill="#9ca3af" fontSize={9} fontFamily="monospace">
           RSI({config.period})
@@ -140,6 +157,9 @@ export function OscillatorPane({
       }
     })
 
+    const macdColor = config.macdColor ?? '#6eb5ff'
+    const signalColor = config.signalColor ?? '#c9a227'
+
     return (
       <g transform={`translate(${left}, 0)`}>
         <rect
@@ -178,13 +198,13 @@ export function OscillatorPane({
         <path
           d={seriesPath(macdLine, allBars, visibleSet, xScale, yScale)}
           fill="none"
-          stroke="#6eb5ff"
+          stroke={macdColor}
           strokeWidth={1.2}
         />
         <path
           d={seriesPath(signal, allBars, visibleSet, xScale, yScale)}
           fill="none"
-          stroke="#c9a227"
+          stroke={signalColor}
           strokeWidth={1}
           strokeDasharray="3 2"
         />

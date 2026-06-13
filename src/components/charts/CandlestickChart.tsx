@@ -20,6 +20,8 @@ import {
   type DrawingObject,
   type DrawingTool,
   type IndicatorConfig,
+  type ChartSettings,
+  DEFAULT_SETTINGS,
 } from '@/components/charts/types/chart'
 import {
   computePaneLayout,
@@ -64,6 +66,7 @@ export type CandlestickChartProps = {
   onDrawingsChange?: (drawings: DrawingObject[]) => void
   onHoverBar?: (bar: OhlcvBar | null) => void
   onViewportChange?: (viewport: ChartViewport) => void
+  chartSettings?: ChartSettings
 }
 
 const ChartInner = forwardRef<
@@ -85,6 +88,7 @@ const ChartInner = forwardRef<
     onDrawingsChange,
     onHoverBar,
     onViewportChange,
+    chartSettings = DEFAULT_SETTINGS,
   },
   ref,
 ) {
@@ -327,7 +331,10 @@ const ChartInner = forwardRef<
       ref={chartContainerRef}
       className="border-carbon-700 relative h-full w-full overflow-hidden overscroll-contain rounded-lg border shadow-2xl select-none"
       style={{
-        background: 'radial-gradient(circle at 50% 30%, #16273f 0%, #07101c 100%)',
+        background:
+          chartSettings.backgroundType === 'gradient' ? chartSettings.backgroundColor : undefined,
+        backgroundColor:
+          chartSettings.backgroundType === 'solid' ? chartSettings.backgroundColor : undefined,
       }}
     >
       {/* HUD Info Panel */}
@@ -405,7 +412,7 @@ const ChartInner = forwardRef<
         </defs>
 
         {/* Background Watermark */}
-        {layout.innerWidth > 100 && (
+        {chartSettings.showWatermark && layout.innerWidth > 100 && (
           <g
             pointerEvents="none"
             opacity={0.045}
@@ -449,10 +456,13 @@ const ChartInner = forwardRef<
         )}
 
         <VolumeLayer
-          bars={visibleBars}
+          visibleBars={visibleBars}
+          allBars={data}
           xScale={scales.xScale}
           yScale={scales.volumeScale}
           left={CHART_MARGINS.left}
+          indicators={indicators}
+          volumeOpacity={chartSettings.volumeOpacity}
         />
 
         <CandlestickLayer
@@ -462,6 +472,7 @@ const ChartInner = forwardRef<
           chartType={chartType}
           left={CHART_MARGINS.left}
           hoveredTimestamp={hoveredBar?.timestamp}
+          candleOpacity={chartSettings.candleOpacity}
         />
 
         <IndicatorLayer

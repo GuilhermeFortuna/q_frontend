@@ -16,11 +16,65 @@ export type DrawingObject =
   | { id: string; type: 'text'; point: DataPoint; label: string }
 
 export type IndicatorConfig =
-  | { type: 'sma'; enabled: boolean; period: number }
-  | { type: 'ema'; enabled: boolean; period: number }
-  | { type: 'bollinger'; enabled: boolean; period: number; stdDev: number }
-  | { type: 'rsi'; enabled: boolean; period: number }
-  | { type: 'macd'; enabled: boolean; fast: number; slow: number; signal: number }
+  | {
+      type: 'sma'
+      enabled: boolean
+      period: number
+      color?: string
+      strokeWidth?: number
+      lineStyle?: 'solid' | 'dashed' | 'dotted'
+    }
+  | {
+      type: 'ema'
+      enabled: boolean
+      period: number
+      color?: string
+      strokeWidth?: number
+      lineStyle?: 'solid' | 'dashed' | 'dotted'
+    }
+  | {
+      type: 'bollinger'
+      enabled: boolean
+      period: number
+      stdDev: number
+      color?: string
+      strokeWidth?: number
+      showCloud?: boolean
+    }
+  | {
+      type: 'rsi'
+      enabled: boolean
+      period: number
+      color?: string
+      strokeWidth?: number
+      showCloud?: boolean
+    }
+  | {
+      type: 'macd'
+      enabled: boolean
+      fast: number
+      slow: number
+      signal: number
+      macdColor?: string
+      signalColor?: string
+    }
+  | {
+      type: 'volumeMa'
+      enabled: boolean
+      period: number
+      color?: string
+      strokeWidth?: number
+      lineStyle?: 'solid' | 'dashed' | 'dotted'
+    }
+
+export type ChartSettings = {
+  backgroundType: 'gradient' | 'solid'
+  backgroundColor: string
+  showWatermark: boolean
+  candleOpacity: number
+  volumeOpacity: number
+  crosshairColor: string
+}
 
 export type ChartViewport = {
   startIndex: number
@@ -75,12 +129,59 @@ export const DEFAULT_VISIBLE_BARS = 120
 export const MIN_VISIBLE_BARS = 20
 
 export const DEFAULT_INDICATORS: IndicatorConfig[] = [
-  { type: 'sma', enabled: true, period: 20 },
-  { type: 'ema', enabled: false, period: 20 },
-  { type: 'bollinger', enabled: false, period: 20, stdDev: 2 },
-  { type: 'rsi', enabled: false, period: 14 },
-  { type: 'macd', enabled: false, fast: 12, slow: 26, signal: 9 },
+  {
+    type: 'sma',
+    enabled: true,
+    period: 20,
+    color: '#c9a227',
+    strokeWidth: 1.2,
+    lineStyle: 'dashed',
+  },
+  {
+    type: 'ema',
+    enabled: false,
+    period: 20,
+    color: '#6eb5ff',
+    strokeWidth: 1.2,
+    lineStyle: 'solid',
+  },
+  {
+    type: 'bollinger',
+    enabled: false,
+    period: 20,
+    stdDev: 2,
+    color: '#c9a227',
+    strokeWidth: 1.0,
+    showCloud: true,
+  },
+  { type: 'rsi', enabled: false, period: 14, color: '#a78bfa', strokeWidth: 1.2, showCloud: true },
+  {
+    type: 'macd',
+    enabled: false,
+    fast: 12,
+    slow: 26,
+    signal: 9,
+    macdColor: '#6eb5ff',
+    signalColor: '#c9a227',
+  },
+  {
+    type: 'volumeMa',
+    enabled: false,
+    period: 20,
+    color: '#a78bfa',
+    strokeWidth: 1.2,
+    lineStyle: 'solid',
+  },
 ]
+
+export const DEFAULT_SETTINGS: ChartSettings = {
+  backgroundType: 'gradient',
+  backgroundColor: 'radial-gradient(circle at 50% 30%, #16273f 0%, #07101c 100%)',
+  showWatermark: true,
+  candleOpacity: 0.85,
+  volumeOpacity: 0.4,
+  crosshairColor: 'rgba(201, 162, 39, 0.45)',
+}
 
 export type ProcessedBar = OhlcvBar & {
   index: number

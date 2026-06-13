@@ -9,3 +9,13 @@ export function sma(values: OhlcvBar[], period: number): (number | null)[] {
     return sum / period
   })
 }
+
+export function volumeSma(values: OhlcvBar[], period: number): (number | null)[] {
+  const vols = values.map((b) => b.volume)
+  return vols.map((_, i) => {
+    if (i < period - 1) return null
+    let sum = 0
+    for (let j = 0; j < period; j++) sum += vols[i - j]
+    return sum / period
+  })
+}

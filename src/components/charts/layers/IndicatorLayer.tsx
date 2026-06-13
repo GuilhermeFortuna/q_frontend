@@ -79,6 +79,23 @@ function bandsAreaPath(
     .join(' ')} Z`
 }
 
+function getStrokeDasharray(style?: 'solid' | 'dashed' | 'dotted'): string | undefined {
+  if (style === 'dashed') return '5 3'
+  if (style === 'dotted') return '2 3'
+  return undefined
+}
+
+function getCloudFill(color: string): string {
+  if (color.startsWith('#')) {
+    let hex = color
+    if (hex.length === 4) {
+      hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3]
+    }
+    return `${hex}0f`
+  }
+  return 'rgba(201, 162, 39, 0.05)'
+}
+
 export function IndicatorLayer({
   allBars,
   visibleBars,
@@ -96,58 +113,73 @@ export function IndicatorLayer({
 
         if (ind.type === 'sma') {
           const values = sma(allBars, ind.period)
+          const color = ind.color ?? BRASS_COLOR
+          const strokeWidth = ind.strokeWidth ?? 1.2
+          const dash = getStrokeDasharray(ind.lineStyle ?? 'dashed')
           return (
             <path
               key="sma"
               d={linePath(values, allBars, visibleSet, xScale, yScale)}
               fill="none"
-              stroke={BRASS_COLOR}
-              strokeWidth={1.2}
-              strokeDasharray="4 2"
+              stroke={color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={dash}
             />
           )
         }
 
         if (ind.type === 'ema') {
           const values = ema(allBars, ind.period)
+          const color = ind.color ?? '#6eb5ff'
+          const strokeWidth = ind.strokeWidth ?? 1.2
+          const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
           return (
             <path
               key="ema"
               d={linePath(values, allBars, visibleSet, xScale, yScale)}
               fill="none"
-              stroke="#6eb5ff"
-              strokeWidth={1.2}
+              stroke={color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={dash}
             />
           )
         }
 
         if (ind.type === 'bollinger') {
           const bands = bollingerBands(allBars, ind.period, ind.stdDev)
+          const color = ind.color ?? '#c9a227'
+          const strokeWidth = ind.strokeWidth ?? 1.0
+          const showCloud = ind.showCloud ?? true
           return (
             <g key="bollinger">
-              <path
-                d={bandsAreaPath(bands.upper, bands.lower, allBars, visibleSet, xScale, yScale)}
-                fill="rgba(201, 162, 39, 0.05)"
-                stroke="none"
-              />
+              {showCloud && (
+                <path
+                  d={bandsAreaPath(bands.upper, bands.lower, allBars, visibleSet, xScale, yScale)}
+                  fill={getCloudFill(color)}
+                  stroke="none"
+                />
+              )}
               <path
                 d={linePath(bands.upper, allBars, visibleSet, xScale, yScale)}
                 fill="none"
-                stroke="rgba(201, 162, 39, 0.45)"
-                strokeWidth={1}
+                stroke={color}
+                strokeWidth={strokeWidth}
+                opacity={0.8}
               />
               <path
                 d={linePath(bands.middle, allBars, visibleSet, xScale, yScale)}
                 fill="none"
-                stroke="rgba(201, 162, 39, 0.3)"
-                strokeWidth={1}
+                stroke={color}
+                strokeWidth={strokeWidth}
                 strokeDasharray="3 2"
+                opacity={0.5}
               />
               <path
                 d={linePath(bands.lower, allBars, visibleSet, xScale, yScale)}
                 fill="none"
-                stroke="rgba(201, 162, 39, 0.45)"
-                strokeWidth={1}
+                stroke={color}
+                strokeWidth={strokeWidth}
+                opacity={0.8}
               />
             </g>
           )

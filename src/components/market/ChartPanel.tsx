@@ -8,6 +8,7 @@ import type {
   DrawingObject,
   DrawingTool,
   IndicatorConfig,
+  ChartSettings,
 } from '@/components/charts/types/chart'
 import type { OhlcvBar } from '@/types/api'
 
@@ -29,6 +30,7 @@ export type ChartPanelProps = {
   chartRef: RefObject<CandlestickChartHandle | null>
   onHoverBar: (bar: OhlcvBar | null) => void
   onViewportChange: (viewport: ChartViewport) => void
+  chartSettings?: ChartSettings
 }
 
 export function ChartPanel({
@@ -49,6 +51,7 @@ export function ChartPanel({
   chartRef,
   onHoverBar,
   onViewportChange,
+  chartSettings,
 }: ChartPanelProps) {
   return (
     <div className="relative min-h-0 flex-1 p-3">
@@ -77,6 +80,7 @@ export function ChartPanel({
           onDrawingsChange={onDrawingsChange}
           onHoverBar={onHoverBar}
           onViewportChange={onViewportChange}
+          chartSettings={chartSettings}
         />
       ) : (
         <div className="border-carbon-700 bg-carbon-900/40 flex h-full w-full items-center justify-center rounded-lg border text-rose-300">

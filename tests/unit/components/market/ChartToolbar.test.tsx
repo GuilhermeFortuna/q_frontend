@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { DEFAULT_INDICATORS } from '@/components/charts/IndicatorsPopover'
+import { DEFAULT_INDICATORS, DEFAULT_SETTINGS } from '@/components/charts/types/chart'
 import { ChartToolbar } from '@/components/market/ChartToolbar'
 
 describe('ChartToolbar', () => {
@@ -20,6 +20,8 @@ describe('ChartToolbar', () => {
         onIndicatorsChange={vi.fn()}
         showGrid
         onShowGridChange={vi.fn()}
+        chartSettings={DEFAULT_SETTINGS}
+        onChartSettingsChange={vi.fn()}
       />,
     )
 

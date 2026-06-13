@@ -8,9 +8,14 @@ import {
   useSearchSymbols,
 } from '@/api/queries/market-data'
 import { useProgressiveOhlcv } from '@/api/queries/useProgressiveOhlcv'
-import { DEFAULT_INDICATORS } from '@/components/charts/IndicatorsPopover'
 import { useDrawings } from '@/components/charts/hooks/useDrawings'
-import type { DrawingTool, IndicatorConfig } from '@/components/charts/types/chart'
+import {
+  DEFAULT_INDICATORS,
+  type DrawingTool,
+  type IndicatorConfig,
+  type ChartSettings,
+  DEFAULT_SETTINGS,
+} from '@/components/charts/types/chart'
 import { ChartPanel } from '@/components/market/ChartPanel'
 import { ChartToolbar } from '@/components/market/ChartToolbar'
 import { DetailZone } from '@/components/market/DetailZone'
@@ -34,6 +39,7 @@ export function MarketDataWorkspace() {
   const [chartType, setChartType] = useState<'candles' | 'line' | 'area'>('candles')
   const [indicators, setIndicators] = useState<IndicatorConfig[]>(DEFAULT_INDICATORS)
   const [showGrid, setShowGrid] = useState(true)
+  const [chartSettings, setChartSettings] = useState<ChartSettings>(DEFAULT_SETTINGS)
   const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingTool>('cursor')
   const [hoveredBar, setHoveredBar] = useState<OhlcvBar | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -178,6 +184,8 @@ export function MarketDataWorkspace() {
                 onIndicatorsChange={setIndicators}
                 showGrid={showGrid}
                 onShowGridChange={setShowGrid}
+                chartSettings={chartSettings}
+                onChartSettingsChange={setChartSettings}
               />
               <ChartPanel
                 symbol={selectedSymbol}
@@ -197,6 +205,7 @@ export function MarketDataWorkspace() {
                 chartRef={ohlcv.chartRef}
                 onHoverBar={setHoveredBar}
                 onViewportChange={ohlcv.handleViewportChange}
+                chartSettings={chartSettings}
               />
             </div>
             <DrawingRail
