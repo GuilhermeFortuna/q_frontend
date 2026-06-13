@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 import {
   useCancelOptimization,
@@ -12,28 +12,25 @@ import { OptimizationResultsPanel } from '@/components/optimize/OptimizationResu
 import { OptimizationWorkbench } from '@/components/optimize/OptimizationWorkbench'
 import { OptimizeConfigForm } from '@/components/optimize/OptimizeConfigForm'
 import { cn } from '@/lib/utils'
-import type {
-  JobStatus,
-  OptimizationBacktestConfig,
-  OptimizationConfig,
-} from '@/types/optimization'
+import { useAppStore } from '@/store/useAppStore'
+import type { JobPanelTab } from '@/store/slices/jobSessionsSlice'
+import type { JobStatus, OptimizationConfig } from '@/types/optimization'
 
-type RightPanelTab = 'results' | 'history'
-
-const RIGHT_PANEL_TABS: { id: RightPanelTab; label: string }[] = [
+const RIGHT_PANEL_TABS: { id: JobPanelTab; label: string }[] = [
   { id: 'results', label: 'Results' },
   { id: 'history', label: 'History' },
 ]
 
 export function OptimizeWorkspace() {
-  const [studyId, setStudyId] = useState<string | null>(null)
-  const [submittedConfig, setSubmittedConfig] = useState<OptimizationConfig | null>(null)
-  const [studyBacktestConfigs, setStudyBacktestConfigs] = useState<
-    Record<string, OptimizationBacktestConfig>
-  >({})
-  const [workbenchOpen, setWorkbenchOpen] = useState(true)
-  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('results')
-  const [selectedHistoryStudyId, setSelectedHistoryStudyId] = useState<string | null>(null)
+  const {
+    studyId,
+    submittedConfig,
+    studyBacktestConfigs,
+    workbenchOpen,
+    rightPanelTab,
+    selectedHistoryStudyId,
+  } = useAppStore((s) => s.optimizeSession)
+  const patchSession = useAppStore((s) => s.patchOptimizeSession)
 
   const startOptimization = useStartOptimization()
   const cancelOptimization = useCancelOptimization()
@@ -48,21 +45,22 @@ export function OptimizeWorkspace() {
 
   useEffect(() => {
     if (isRunning || hasTerminalResults) {
-      setWorkbenchOpen(false)
+      patchSession({ workbenchOpen: false })
     }
-  }, [isRunning, hasTerminalResults])
+  }, [isRunning, hasTerminalResults, patchSession])
 
   const handleSubmit = (config: OptimizationConfig) => {
-    setSubmittedConfig(config)
-    setRightPanelTab('results')
+    patchSession({ submittedConfig: config, rightPanelTab: 'results' })
     startOptimization.mutate(config, {
       onSuccess: (res) => {
-        setStudyId(res.study_id)
-        setStudyBacktestConfigs((prev) => ({
-          ...prev,
-          [res.study_id]: config.backtest,
-        }))
-        setWorkbenchOpen(false)
+        patchSession({
+          studyId: res.study_id,
+          studyBacktestConfigs: {
+            ...studyBacktestConfigs,
+            [res.study_id]: config.backtest,
+          },
+          workbenchOpen: false,
+        })
       },
     })
   }
@@ -76,21 +74,28 @@ export function OptimizeWorkspace() {
     config: OptimizationConfig,
     status: JobStatus,
   ) => {
-    setSubmittedConfig(config)
-    setStudyBacktestConfigs((prev) => ({
-      ...prev,
+    const studyBacktestConfigsNext = {
+      ...studyBacktestConfigs,
       [historyStudyId]: config.backtest,
-    }))
+    }
 
     if (status === 'pending' || status === 'running') {
-      setStudyId(historyStudyId)
-      setRightPanelTab('results')
-      setWorkbenchOpen(false)
+      patchSession({
+        submittedConfig: config,
+        studyBacktestConfigs: studyBacktestConfigsNext,
+        studyId: historyStudyId,
+        rightPanelTab: 'results',
+        workbenchOpen: false,
+      })
       return
     }
 
-    setWorkbenchOpen(true)
-    setRightPanelTab('results')
+    patchSession({
+      submittedConfig: config,
+      studyBacktestConfigs: studyBacktestConfigsNext,
+      workbenchOpen: true,
+      rightPanelTab: 'results',
+    })
   }
 
   const startError = startOptimization.error
@@ -102,7 +107,10 @@ export function OptimizeWorkspace() {
 
   return (
     <div className="text-silver-100 flex h-[calc(100dvh-4.5rem-7rem)] w-full overflow-hidden">
-      <OptimizationWorkbench open={workbenchOpen} onOpenChange={setWorkbenchOpen}>
+      <OptimizationWorkbench
+        open={workbenchOpen}
+        onOpenChange={(open) => patchSession({ workbenchOpen: open })}
+      >
         <OptimizeConfigForm
           loading={startOptimization.isPending}
           error={startError}
@@ -117,7 +125,7 @@ export function OptimizeWorkspace() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setRightPanelTab(tab.id)}
+              onClick={() => patchSession({ rightPanelTab: tab.id })}
               className={cn(
                 '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
                 rightPanelTab === tab.id
@@ -133,7 +141,7 @@ export function OptimizeWorkspace() {
         {rightPanelTab === 'history' ? (
           <OptimizationHistoryPanel
             selectedStudyId={selectedHistoryStudyId}
-            onSelectStudy={setSelectedHistoryStudyId}
+            onSelectStudy={(id) => patchSession({ selectedHistoryStudyId: id })}
             studyBacktestConfigs={studyBacktestConfigs}
             onContinueStudy={handleContinueStudy}
           />
@@ -145,7 +153,7 @@ export function OptimizeWorkspace() {
             backtest={submittedConfig?.backtest ?? null}
             onCancel={handleCancel}
             cancelling={cancelOptimization.isPending}
-            onOpenWorkbench={() => setWorkbenchOpen(true)}
+            onOpenWorkbench={() => patchSession({ workbenchOpen: true })}
           />
         )}
       </div>

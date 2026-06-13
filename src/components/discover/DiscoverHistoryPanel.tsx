@@ -7,6 +7,7 @@ import {
   useStrategySearchHistory,
   useStrategySearchResults,
   useStrategySearchStatus,
+  useCancelStrategySearch,
 } from '@/api/queries/strategySearch'
 import { DiscoverResultsPanel } from '@/components/discover/DiscoverResultsPanel'
 import { Button } from '@/components/ui/button'
@@ -82,6 +83,7 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
   const historyQuery = useStrategySearchHistory()
   const statusQuery = useStrategySearchStatus(selectedRunId)
   const deleteRun = useDeleteStrategySearch()
+  const cancelSearch = useCancelStrategySearch()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const status = statusQuery.data
@@ -187,7 +189,9 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading results…
             </div>
-          ) : resultsQuery.data && backtest ? (
+          ) : status?.status === 'pending' ||
+            status?.status === 'running' ||
+            (resultsQuery.data && backtest) ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-5">
               <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
                 <div>
@@ -195,9 +199,9 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
                     {selectedRun?.name ?? selectedRunId}
                   </h3>
                   <p className="text-silver-400 mt-1 text-sm">
-                    {backtest.symbol} · {backtest.timeframe ?? 'D1'} ·{' '}
+                    {backtest?.symbol ?? '—'} · {backtest?.timeframe ?? 'D1'} ·{' '}
                     {formatDisplayDateTime(selectedRun?.created_at ?? new Date().toISOString())}
-                    {resultsQuery.data.best?.objective_value != null ? (
+                    {resultsQuery.data?.best?.objective_value != null ? (
                       <>
                         {' · best OOS '}
                         {objectiveMetricLabel(resultsQuery.data.objective_mode)}:{' '}
@@ -222,12 +226,12 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
               </div>
               <DiscoverResultsPanel
                 runId={selectedRunId}
-                isRunning={false}
+                isRunning={status?.status === 'pending' || status?.status === 'running'}
                 status={status}
                 results={resultsQuery.data}
                 backtest={backtest}
-                onCancel={() => undefined}
-                cancelling={false}
+                onCancel={() => selectedRunId && cancelSearch.mutate(selectedRunId)}
+                cancelling={cancelSearch.isPending}
                 onOpenWorkbench={() => undefined}
               />
             </div>

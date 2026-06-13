@@ -101,8 +101,16 @@ export function useStrategySearchHistory(params: StrategySearchHistoryParams = {
 }
 
 export function useCancelStrategySearch() {
+  const queryClient = useQueryClient()
+
   return useMutation({
     mutationFn: cancelStrategySearch,
+    onSuccess: (status, runId) => {
+      // Reflect the cancelled status immediately so polling stops and the
+      // progress modal closes without waiting for the next status poll.
+      queryClient.setQueryData(strategySearchKeys.status(runId), status)
+      queryClient.invalidateQueries({ queryKey: [...strategySearchKeys.all, 'history'] })
+    },
   })
 }
 

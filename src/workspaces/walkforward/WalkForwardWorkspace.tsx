@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 import {
   shouldFetchWalkForwardResults,
@@ -13,24 +13,19 @@ import { WalkForwardConfigForm } from '@/components/walkforward/WalkForwardConfi
 import { WalkForwardHistoryPanel } from '@/components/walkforward/WalkForwardHistoryPanel'
 import { WalkForwardResultsPanel } from '@/components/walkforward/WalkForwardResultsPanel'
 import { cn } from '@/lib/utils'
-import type { OptimizationBacktestConfig } from '@/types/optimization'
+import { useAppStore } from '@/store/useAppStore'
+import type { JobPanelTab } from '@/store/slices/jobSessionsSlice'
 import type { WalkForwardRequest } from '@/types/walkforward'
 
-type RightPanelTab = 'results' | 'history'
-
-const RIGHT_PANEL_TABS: { id: RightPanelTab; label: string }[] = [
+const RIGHT_PANEL_TABS: { id: JobPanelTab; label: string }[] = [
   { id: 'results', label: 'Results' },
   { id: 'history', label: 'History' },
 ]
 
 export function WalkForwardWorkspace() {
-  const [runId, setRunId] = useState<string | null>(null)
-  const [submittedBacktest, setSubmittedBacktest] = useState<OptimizationBacktestConfig | null>(
-    null,
-  )
-  const [workbenchOpen, setWorkbenchOpen] = useState(true)
-  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('results')
-  const [selectedHistoryRunId, setSelectedHistoryRunId] = useState<string | null>(null)
+  const { runId, submittedBacktest, workbenchOpen, rightPanelTab, selectedHistoryRunId } =
+    useAppStore((s) => s.walkForwardSession)
+  const patchSession = useAppStore((s) => s.patchWalkForwardSession)
 
   const startWalkForward = useStartWalkForward()
   const cancelWalkForward = useCancelWalkForward()
@@ -45,17 +40,15 @@ export function WalkForwardWorkspace() {
 
   useEffect(() => {
     if (isRunning || hasTerminalResults) {
-      setWorkbenchOpen(false)
+      patchSession({ workbenchOpen: false })
     }
-  }, [isRunning, hasTerminalResults])
+  }, [isRunning, hasTerminalResults, patchSession])
 
   const handleSubmit = (body: WalkForwardRequest) => {
-    setSubmittedBacktest(body.optimization.backtest)
-    setRightPanelTab('results')
+    patchSession({ submittedBacktest: body.optimization.backtest, rightPanelTab: 'results' })
     startWalkForward.mutate(body, {
       onSuccess: (res) => {
-        setRunId(res.run_id)
-        setWorkbenchOpen(false)
+        patchSession({ runId: res.run_id, workbenchOpen: false })
       },
     })
   }
@@ -79,7 +72,10 @@ export function WalkForwardWorkspace() {
 
   return (
     <div className="text-silver-100 flex h-[calc(100dvh-4.5rem-7rem)] w-full overflow-hidden">
-      <OptimizationWorkbench open={workbenchOpen} onOpenChange={setWorkbenchOpen}>
+      <OptimizationWorkbench
+        open={workbenchOpen}
+        onOpenChange={(open) => patchSession({ workbenchOpen: open })}
+      >
         <WalkForwardConfigForm
           loading={startWalkForward.isPending}
           error={startError}
@@ -94,7 +90,7 @@ export function WalkForwardWorkspace() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setRightPanelTab(tab.id)}
+              onClick={() => patchSession({ rightPanelTab: tab.id })}
               className={cn(
                 '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
                 rightPanelTab === tab.id
@@ -110,7 +106,7 @@ export function WalkForwardWorkspace() {
         {rightPanelTab === 'history' ? (
           <WalkForwardHistoryPanel
             selectedRunId={selectedHistoryRunId}
-            onSelectRun={setSelectedHistoryRunId}
+            onSelectRun={(id) => patchSession({ selectedHistoryRunId: id })}
           />
         ) : (
           <WalkForwardResultsPanel
@@ -120,7 +116,7 @@ export function WalkForwardWorkspace() {
             backtest={backtest}
             onCancel={handleCancel}
             cancelling={cancelWalkForward.isPending}
-            onOpenWorkbench={() => setWorkbenchOpen(true)}
+            onOpenWorkbench={() => patchSession({ workbenchOpen: true })}
           />
         )}
       </div>
