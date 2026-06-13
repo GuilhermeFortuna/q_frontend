@@ -391,6 +391,75 @@ that message. WO37 is frontend-only and must degrade cleanly against a pre-WO36 
    cancel end the run cleanly with no further trials asked?
 9. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
 
+## Phase: Generative Discovery (next batch)
+
+Turns the platform from "find the best of the strategies we _wrote_" into "**invent** the
+strategy." Today Discovery (WO30–WO33) sweeps the ~10 hand-coded registry strategies, optimizes
+
+- walk-forward-validates each, and ranks on out-of-sample. This batch adds **genetic strategy
+  synthesis**: a JSON **genome DSL** composes indicator/rule primitives into novel strategies, a
+  `CompositeStrategy` interprets them under the existing closed-bar contract, and a
+  `GeneticCandidateProvider` evolves structure (selection/crossover/mutation) while Optuna + the
+  walk-forward runner optimize each genome's numeric params. It is **composition over the WO31
+  seam** — WO34 confirmed `evaluate_candidate` / `WalkForwardRunner` / `OptimizationRunner` need
+  **zero** semantic change; the new code is a DSL, an interpreter, a provider, a ~40-line
+  orchestrator, and additive UI. Because evolving thousands of genomes is a multiple-testing
+  trap, the **overfitting defense ships with it, not after**: a Deflated Sharpe Ratio correction
+  over the effective trial count, a held-out **lock-box** the champion is tested on exactly once,
+  and a parsimony penalty. Full design: [`../design/genetic-strategy-search.md`](../design/genetic-strategy-search.md).
+
+| #   | File                                                                                           | Repo       | Depends on       |
+| --- | ---------------------------------------------------------------------------------------------- | ---------- | ---------------- |
+| 38  | [WO38-backend-genome-dsl-interpreter.md](WO38-backend-genome-dsl-interpreter.md)               | q_backend  | WO31 (read-only) |
+| 39  | [WO39-backend-genetic-provider-orchestrator.md](WO39-backend-genetic-provider-orchestrator.md) | q_backend  | WO38             |
+| 40  | [WO40-backend-dsr-lockbox-persistence.md](WO40-backend-dsr-lockbox-persistence.md)             | q_backend  | WO39 + WO32      |
+| 41  | [WO41-frontend-discovery-genetic-mode.md](WO41-frontend-discovery-genetic-mode.md)             | q_frontend | WO40 + WO33      |
+
+### Dispatch order
+
+```
+WO38  ──►  WO39  ──►  WO40  ──►  WO41
+```
+
+Strictly sequential — each builds on the prior's contract. **WO38 is the riskiest** (DSL
+correctness) and must paste the `Genome`/`GenomeNode`/`NodeParam` field lists, the v1 primitive
+allowlist with output-type tags, the `GENOME_PARAM_BOUNDS` table, and the
+`derive_genome_search_space` return shape — WO39 evolves these and WO41 renders them. WO39
+pastes the `GeneticSearchConfig` fields, the extended `SearchProgress`, and the
+`select_search_orchestrator` switch. WO40 **must paste the full JSON contracts** (genetic
+request body, generation-aware status, genome/DSR/lock-box results) — WO41 builds the entire
+frontend against that message and must degrade cleanly against a pre-WO40 backend.
+
+### Batch-specific review checklist
+
+1. Is the **registry sweep byte-identical**? With `genetic` omitted and `lockbox.enabled=False`,
+   the request, compute path, persistence, and API payloads must match WO30–WO33 exactly (snapshot
+   both ways). Frontend registry-sweep Discover stays **pixel-identical**.
+2. Did WO38 **reuse the registry's indicator math verbatim** (every `ind.*` calls the same
+   `compute_*` the registry strategy calls — no new EMA/RSI/MACD), and is **every** registry
+   strategy backtest-parity-tested against its equivalent genome (identical signals)?
+3. Is the genome **causal by construction** — `shift.bars` hard-locked to 1, no centered windows,
+   validation rejecting look-ahead **before** any backtest — and does `CompositeStrategy` pass
+   `test_strategy_causality.py` for a canonical **and** N random valid genomes?
+4. Did genetic search **change nothing** in `evaluate_candidate` / `WalkForwardRunner` /
+   `OptimizationRunner` / `StrategySearchRunner` (the seam's whole premise)? New code = provider +
+   orchestrator + additive config only?
+5. Does the whole genetic run **load market data once** (`from_market_data_sliced`, call-count
+   spy) across every genome of every generation, **and** reuse that frame for the lock-box backtest?
+6. Is selection **OOS-only** (`robustness_score`, never in-sample), with the parsimony penalty
+   applied and `MINIMIZE_DRAWDOWN` oriented so higher fitness = more robust? Is the run
+   **deterministic** under `init_seed`?
+7. **No lock-box leakage:** every WF test-window timestamp falls strictly before the lock-box
+   start; the champion is evaluated on the lock-box **exactly once**, no re-optimization (date
+   assertions prove it). Does DSR **decrease** as `total_genomes_evaluated` rises?
+8. Are all new DB/lake/payload fields strictly **additive** (nullable columns / optional JSON
+   keys), and does a genetic run **complete with Postgres stopped and the lake unwritable** (best
+   effort both ways)? Did genomes-as-summary stay in Postgres while series/trades go to the lake?
+9. Does WO41 **degrade against a pre-WO40 backend** (missing genome/DSR/lock-box fields → normal
+   leaderboard, no crash), and does "Send to Backtest/Optimizer" promote a genome via the existing
+   `pendingBacktestConfig` / `pendingOptimizationConfig` seams?
+10. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
+
 ## Review checklist (apply to every returned PR)
 
 1. Does the compute path still work with Postgres **stopped**? (stop the container, run a backtest / a study)
