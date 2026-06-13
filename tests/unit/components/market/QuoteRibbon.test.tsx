@@ -32,7 +32,9 @@ describe('QuoteRibbon', () => {
         connectionStatus="live"
         priceDigits={2}
         sidebarCollapsed={false}
+        detailCollapsed={false}
         onToggleSidebar={onToggleSidebar}
+        onToggleDetailPanel={vi.fn()}
       />,
     )
 
@@ -42,5 +44,33 @@ describe('QuoteRibbon', () => {
 
     await user.click(screen.getByTitle('Toggle Market Watch Panel'))
     expect(onToggleSidebar).toHaveBeenCalledTimes(1)
+  })
+
+  it('toggles the detail panel', async () => {
+    const user = userEvent.setup()
+    const onToggleDetailPanel = vi.fn()
+
+    render(
+      <QuoteRibbon
+        symbol="PETR4"
+        instrument={{
+          symbol: 'PETR4',
+          name: 'PETROBRAS PN N2',
+          exchange: 'BOVESPA',
+          assetClass: 'equity',
+        }}
+        activeBar={null}
+        snapshot={mockSnapshots.PETR4}
+        connectionStatus="live"
+        priceDigits={2}
+        sidebarCollapsed={false}
+        detailCollapsed={false}
+        onToggleSidebar={vi.fn()}
+        onToggleDetailPanel={onToggleDetailPanel}
+      />,
+    )
+
+    await user.click(screen.getByTitle('Toggle Quote Panel'))
+    expect(onToggleDetailPanel).toHaveBeenCalledTimes(1)
   })
 })

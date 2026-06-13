@@ -211,3 +211,12 @@ export type PaneLayout = {
   innerWidth: number
   innerHeight: number
 }
+
+export type ChartProfile = {
+  id: string
+  name: string
+  chartType: 'candles' | 'line' | 'area'
+  showGrid: boolean
+  indicators: IndicatorConfig[]
+  chartSettings: ChartSettings
+}

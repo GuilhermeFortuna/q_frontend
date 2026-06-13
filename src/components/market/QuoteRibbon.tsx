@@ -16,8 +16,10 @@ export type QuoteRibbonProps = {
   connectionStatus: Mt5ConnectionStatus
   priceDigits: number
   sidebarCollapsed: boolean
+  detailCollapsed: boolean
   isLoadingInstrument?: boolean
   onToggleSidebar: () => void
+  onToggleDetailPanel: () => void
 }
 
 function RibbonSkeleton() {
@@ -46,8 +48,10 @@ export function QuoteRibbon({
   connectionStatus,
   priceDigits,
   sidebarCollapsed,
+  detailCollapsed,
   isLoadingInstrument = false,
   onToggleSidebar,
+  onToggleDetailPanel,
 }: QuoteRibbonProps) {
   if (isLoadingInstrument && !instrument) {
     return <RibbonSkeleton />
@@ -149,6 +153,18 @@ export function QuoteRibbon({
             </div>
           </div>
         )}
+
+        <button
+          onClick={onToggleDetailPanel}
+          className="border-carbon-700 bg-carbon-800 text-silver-300 hover:bg-carbon-700 flex h-8 w-8 items-center justify-center rounded border transition-all active:scale-95"
+          title="Toggle Quote Panel"
+        >
+          {detailCollapsed ? (
+            <ChevronLeft className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </button>
       </div>
     </div>
   )

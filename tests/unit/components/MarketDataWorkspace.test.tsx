@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -80,5 +80,37 @@ describe('MarketDataWorkspace', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
     expect(screen.getByText('UNKNOWN')).toBeInTheDocument()
     expect(screen.getByTestId('market-layout')).toBeInTheDocument()
+  })
+
+  it('supports chart profile switching, creation, and deletion', async () => {
+    const promptMock = vi.spyOn(window, 'prompt').mockReturnValue('Custom Profile')
+    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {})
+
+    renderWithQueryClient(<MarketDataWorkspace />)
+
+    // Wait for the default profile tabs to render
+    await screen.findByText('Limpo')
+    expect(screen.getByText('MA Crossover')).toBeInTheDocument()
+    expect(screen.getByText('Bollinger Bands')).toBeInTheDocument()
+
+    // 1. Switch profile
+    fireEvent.click(screen.getByText('MA Crossover'))
+
+    // 2. Add profile
+    const addBtn = screen.getByTitle('Create new profile')
+    fireEvent.click(addBtn)
+    expect(promptMock).toHaveBeenCalled()
+    await screen.findByText('Custom Profile')
+
+    // 3. Delete profile
+    const deleteButtons = screen.getAllByTitle('Delete profile')
+    fireEvent.click(deleteButtons[deleteButtons.length - 1])
+
+    await waitFor(() => {
+      expect(screen.queryByText('Custom Profile')).not.toBeInTheDocument()
+    })
+
+    promptMock.mockRestore()
+    alertMock.mockRestore()
   })
 })

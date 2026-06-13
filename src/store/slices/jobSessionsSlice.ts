@@ -71,6 +71,7 @@ export type MarketDataSession = {
   chartSettings: ChartSettings
   activeDrawingTool: DrawingTool
   sidebarCollapsed: boolean
+  detailCollapsed: boolean
 }
 
 export type JobSessionsSlice = {
@@ -129,6 +130,7 @@ const initialMarketDataSession: MarketDataSession = {
   chartSettings: DEFAULT_SETTINGS,
   activeDrawingTool: 'cursor',
   sidebarCollapsed: false,
+  detailCollapsed: false,
 }
 
 export const createJobSessionsSlice: StateCreator<JobSessionsSlice> = (set) => ({

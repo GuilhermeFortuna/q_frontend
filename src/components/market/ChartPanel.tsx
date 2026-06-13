@@ -1,5 +1,5 @@
 import type { RefObject } from 'react'
-import { Activity } from 'lucide-react'
+import { Activity, Plus, X } from 'lucide-react'
 import { CandlestickChart } from '@/components/charts/CandlestickChart'
 import { formatDisplayTimeSeconds } from '@/lib/formatDate'
 import type { CandlestickChartHandle } from '@/components/charts/CandlestickChart'
@@ -9,6 +9,7 @@ import type {
   DrawingTool,
   IndicatorConfig,
   ChartSettings,
+  ChartProfile,
 } from '@/components/charts/types/chart'
 import { DEFAULT_SETTINGS } from '@/components/charts/types/chart'
 import type { OhlcvBar } from '@/types/api'
@@ -32,6 +33,11 @@ export type ChartPanelProps = {
   onHoverBar: (bar: OhlcvBar | null) => void
   onViewportChange: (viewport: ChartViewport) => void
   chartSettings?: ChartSettings
+  profiles?: ChartProfile[]
+  activeProfileId?: string
+  onSelectProfile?: (id: string) => void
+  onAddProfile?: () => void
+  onDeleteProfile?: (id: string, e: React.MouseEvent | React.KeyboardEvent) => void
 }
 
 export function ChartPanel({
@@ -53,6 +59,11 @@ export function ChartPanel({
   onHoverBar,
   onViewportChange,
   chartSettings,
+  profiles = [],
+  activeProfileId = '',
+  onSelectProfile,
+  onAddProfile,
+  onDeleteProfile,
 }: ChartPanelProps) {
   const settings = {
     ...DEFAULT_SETTINGS,
@@ -104,6 +115,53 @@ export function ChartPanel({
           {error ? error.message : `Failed to load historical data for ${symbol}.`}
         </div>
       )}
+      {/* Profiles tabs overlay */}
+      {profiles.length > 0 && onSelectProfile && onAddProfile && onDeleteProfile && (
+        <div className="border-brass-600/15 bg-carbon-950/60 absolute bottom-3 left-6 z-15 flex items-center gap-1.5 rounded-lg border p-0.5 shadow-lg backdrop-blur-md">
+          {profiles.map((profile) => {
+            const isActive = profile.id === activeProfileId
+            return (
+              <button
+                key={profile.id}
+                type="button"
+                onClick={() => onSelectProfile(profile.id)}
+                className={`group flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[9px] font-bold tracking-wide transition-all duration-150 active:scale-95 ${
+                  isActive
+                    ? 'border-brass-500/30 bg-brass-500/10 text-brass-400'
+                    : 'text-silver-400 hover:bg-carbon-800/40 hover:text-silver-200 border-transparent'
+                }`}
+              >
+                <span>{profile.name}</span>
+                {profiles.length > 1 && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => onDeleteProfile(profile.id, e)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        onDeleteProfile(profile.id, e)
+                      }
+                    }}
+                    className="text-silver-500 ml-0.5 rounded-full p-0.5 opacity-60 transition-all group-hover:opacity-100 hover:bg-rose-500/20 hover:text-rose-400"
+                    title="Delete profile"
+                  >
+                    <X className="h-2 w-2" />
+                  </span>
+                )}
+              </button>
+            )
+          })}
+          <button
+            type="button"
+            onClick={onAddProfile}
+            className="border-brass-500/10 hover:bg-carbon-800/40 text-brass-400 hover:text-brass-300 flex items-center gap-1 rounded border border-dashed px-2 py-0.5 font-mono text-[9px] font-bold transition-all active:scale-95"
+            title="Create new profile"
+          >
+            <Plus className="h-2 w-2" />
+          </button>
+        </div>
+      )}
+
       {tickTime ? (
         <div className="text-silver-500 pointer-events-none absolute right-5 bottom-3 font-mono text-[9px] tracking-wide uppercase">
           UPDATED {formatDisplayTimeSeconds(tickTime)}

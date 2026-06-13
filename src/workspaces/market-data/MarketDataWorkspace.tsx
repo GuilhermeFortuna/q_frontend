@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Group, Panel, Separator, useDefaultLayout, usePanelRef } from 'react-resizable-panels'
 
 import {
@@ -9,6 +9,7 @@ import {
 } from '@/api/queries/market-data'
 import { useProgressiveOhlcv } from '@/api/queries/useProgressiveOhlcv'
 import { useDrawings } from '@/components/charts/hooks/useDrawings'
+import { DEFAULT_SETTINGS, type ChartProfile } from '@/components/charts/types/chart'
 
 import { ChartPanel } from '@/components/market/ChartPanel'
 import { ChartToolbar } from '@/components/market/ChartToolbar'
@@ -25,6 +26,60 @@ import type { OhlcvBar, Instrument } from '@/types/api'
 
 const MARKET_PANEL_IDS = ['market-watch', 'chart-zone', 'detail-zone'] as const
 
+const DEFAULT_PROFILES: ChartProfile[] = [
+  {
+    id: 'profile-clean',
+    name: 'Limpo',
+    chartType: 'candles',
+    showGrid: true,
+    indicators: [],
+    chartSettings: DEFAULT_SETTINGS,
+  },
+  {
+    id: 'profile-ma',
+    name: 'MA Crossover',
+    chartType: 'candles',
+    showGrid: true,
+    indicators: [
+      {
+        type: 'sma',
+        enabled: true,
+        period: 20,
+        color: '#c9a227',
+        strokeWidth: 1.5,
+        lineStyle: 'solid',
+      },
+      {
+        type: 'ema',
+        enabled: true,
+        period: 9,
+        color: '#26a69a',
+        strokeWidth: 1.5,
+        lineStyle: 'solid',
+      },
+    ],
+    chartSettings: DEFAULT_SETTINGS,
+  },
+  {
+    id: 'profile-bollinger',
+    name: 'Bollinger Bands',
+    chartType: 'candles',
+    showGrid: true,
+    indicators: [
+      {
+        type: 'bollinger',
+        enabled: true,
+        period: 20,
+        stdDev: 2,
+        color: '#6eb5ff',
+        strokeWidth: 1.2,
+        showCloud: true,
+      },
+    ],
+    chartSettings: DEFAULT_SETTINGS,
+  },
+]
+
 export function MarketDataWorkspace() {
   const selectedSymbol = useAppStore((s) => s.selectedSymbol)
   const setSelectedSymbol = useAppStore((s) => s.setSelectedSymbol)
@@ -37,13 +92,117 @@ export function MarketDataWorkspace() {
     chartSettings,
     activeDrawingTool,
     sidebarCollapsed,
+    detailCollapsed,
   } = useAppStore((s) => s.marketDataSession)
   const patchMarketDataSession = useAppStore((s) => s.patchMarketDataSession)
+
+  const [profiles, setProfiles] = useState<ChartProfile[]>(() => {
+    const raw = localStorage.getItem('quant:chart-profiles')
+    if (raw) {
+      try {
+        return JSON.parse(raw)
+      } catch {
+        // Fall back to default
+      }
+    }
+    return DEFAULT_PROFILES
+  })
+
+  const [activeProfileId, setActiveProfileId] = useState<string>(() => {
+    const savedActive = localStorage.getItem('quant:active-chart-profile-id')
+    return savedActive || 'profile-clean'
+  })
+
+  useEffect(() => {
+    // Sync active profile settings to Zustand on mount
+    const active = profiles.find((p) => p.id === activeProfileId)
+    if (active) {
+      patchMarketDataSession({
+        chartType: active.chartType,
+        showGrid: active.showGrid,
+        indicators: active.indicators,
+        chartSettings: active.chartSettings,
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const updateActiveProfile = useCallback(
+    (updates: Partial<Omit<ChartProfile, 'id' | 'name'>>) => {
+      setProfiles((prev) => {
+        const next = prev.map((p) => (p.id === activeProfileId ? { ...p, ...updates } : p))
+        localStorage.setItem('quant:chart-profiles', JSON.stringify(next))
+        return next
+      })
+    },
+    [activeProfileId],
+  )
+
+  const handleSelectProfile = useCallback(
+    (id: string) => {
+      setActiveProfileId(id)
+      localStorage.setItem('quant:active-chart-profile-id', id)
+      const prof = profiles.find((p) => p.id === id)
+      if (prof) {
+        patchMarketDataSession({
+          chartType: prof.chartType,
+          showGrid: prof.showGrid,
+          indicators: prof.indicators,
+          chartSettings: prof.chartSettings,
+        })
+      }
+    },
+    [profiles, patchMarketDataSession],
+  )
+
+  const handleAddProfile = useCallback(() => {
+    const name = window.prompt('Enter new profile name:', `Profile ${profiles.length + 1}`)
+    if (!name || !name.trim()) return
+
+    const newId = `profile-${Date.now()}`
+    const active = profiles.find((p) => p.id === activeProfileId) || profiles[0]
+    const newProfile: ChartProfile = {
+      id: newId,
+      name: name.trim(),
+      chartType: active.chartType,
+      showGrid: active.showGrid,
+      indicators: [...active.indicators],
+      chartSettings: { ...active.chartSettings },
+    }
+
+    const next = [...profiles, newProfile]
+    setProfiles(next)
+    localStorage.setItem('quant:chart-profiles', JSON.stringify(next))
+    handleSelectProfile(newId)
+  }, [profiles, activeProfileId, handleSelectProfile])
+
+  const handleDeleteProfile = useCallback(
+    (id: string, event: React.MouseEvent | React.KeyboardEvent) => {
+      event.stopPropagation()
+      if (profiles.length <= 1) {
+        alert('You must keep at least one profile.')
+        return
+      }
+
+      const index = profiles.findIndex((p) => p.id === id)
+      const next = profiles.filter((p) => p.id !== id)
+      setProfiles(next)
+      localStorage.setItem('quant:chart-profiles', JSON.stringify(next))
+
+      if (activeProfileId === id) {
+        const fallbackIndex = Math.max(0, index - 1)
+        const fallbackProfile = next[fallbackIndex]
+        handleSelectProfile(fallbackProfile.id)
+      }
+    },
+    [profiles, activeProfileId, handleSelectProfile],
+  )
 
   const [hoveredBar, setHoveredBar] = useState<OhlcvBar | null>(null)
   const [chartSearchQuery, setChartSearchQuery] = useState('')
 
   const leftPanelRef = usePanelRef()
+  const rightPanelRef = usePanelRef()
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: 'quant-market-layout',
     panelIds: [...MARKET_PANEL_IDS],
@@ -113,6 +272,16 @@ export function MarketDataWorkspace() {
     }
   }
 
+  const handleToggleDetailPanel = () => {
+    const panel = rightPanelRef.current
+    if (!panel) return
+    if (panel.isCollapsed()) {
+      panel.expand()
+    } else {
+      panel.collapse()
+    }
+  }
+
   const handleSelectSymbol = (instrument: Instrument) => {
     setSelectedSymbol(instrument.symbol)
   }
@@ -127,8 +296,10 @@ export function MarketDataWorkspace() {
         connectionStatus={mt5Status}
         priceDigits={priceDigits}
         sidebarCollapsed={sidebarCollapsed}
+        detailCollapsed={detailCollapsed}
         isLoadingInstrument={instrumentsQuery.isLoading}
         onToggleSidebar={handleToggleSidebar}
+        onToggleDetailPanel={handleToggleDetailPanel}
       />
 
       <Group
@@ -181,13 +352,25 @@ export function MarketDataWorkspace() {
                 selectedTimeframe={selectedTimeframe}
                 onTimeframeChange={(val) => patchMarketDataSession({ selectedTimeframe: val })}
                 chartType={chartType}
-                onChartTypeChange={(val) => patchMarketDataSession({ chartType: val })}
+                onChartTypeChange={(val) => {
+                  patchMarketDataSession({ chartType: val })
+                  updateActiveProfile({ chartType: val })
+                }}
                 indicators={indicators}
-                onIndicatorsChange={(val) => patchMarketDataSession({ indicators: val })}
+                onIndicatorsChange={(val) => {
+                  patchMarketDataSession({ indicators: val })
+                  updateActiveProfile({ indicators: val })
+                }}
                 showGrid={showGrid}
-                onShowGridChange={(val) => patchMarketDataSession({ showGrid: val })}
+                onShowGridChange={(val) => {
+                  patchMarketDataSession({ showGrid: val })
+                  updateActiveProfile({ showGrid: val })
+                }}
                 chartSettings={chartSettings}
-                onChartSettingsChange={(val) => patchMarketDataSession({ chartSettings: val })}
+                onChartSettingsChange={(val) => {
+                  patchMarketDataSession({ chartSettings: val })
+                  updateActiveProfile({ chartSettings: val })
+                }}
               />
               <ChartPanel
                 symbol={selectedSymbol}
@@ -208,6 +391,11 @@ export function MarketDataWorkspace() {
                 onHoverBar={setHoveredBar}
                 onViewportChange={ohlcv.handleViewportChange}
                 chartSettings={chartSettings}
+                profiles={profiles}
+                activeProfileId={activeProfileId}
+                onSelectProfile={handleSelectProfile}
+                onAddProfile={handleAddProfile}
+                onDeleteProfile={handleDeleteProfile}
               />
             </div>
             <DrawingRail
@@ -224,11 +412,18 @@ export function MarketDataWorkspace() {
 
         <Panel
           id="detail-zone"
+          panelRef={rightPanelRef}
           defaultSize={20}
           minSize={15}
           collapsible
           collapsedSize={0}
           className="min-w-0"
+          onResize={(size) => {
+            const isCollapsed = size.asPercentage === 0
+            if (isCollapsed !== detailCollapsed) {
+              patchMarketDataSession({ detailCollapsed: isCollapsed })
+            }
+          }}
         >
           <DetailZone symbol={selectedSymbol} snapshot={snapshot} />
         </Panel>
