@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "node tauri-dev.js",
+    "tauri:dev:docker": "node scripts/tauri-dev-docker.js",
     "tauri:build": "tauri build",
     "lint": "eslint .",
     "format": "prettier --write .",

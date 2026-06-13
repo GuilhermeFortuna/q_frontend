@@ -1,23 +1,15 @@
 import { spawn } from 'child_process'
-import fs from 'fs'
 import path from 'path'
+import { freePort, readDevPort } from './scripts/free-port.js'
 
-// Read .env file
-let port = '1420'
-try {
-  const envPath = path.resolve(process.cwd(), '.env')
-  if (fs.existsSync(envPath)) {
-    const envContent = fs.readFileSync(envPath, 'utf8')
-    const portMatch = envContent.match(/^(PORT|VITE_PORT)\s*=\s*(\d+)/m)
-    if (portMatch) {
-      port = portMatch[2]
-    }
-  }
-} catch (e) {
-  console.error('Error reading .env file:', e)
-}
+const port = String(readDevPort())
+const hmrPort = String(Number.parseInt(port, 10) + 1)
 
 console.log(`Starting Tauri dev on port ${port}...`)
+
+for (const devPort of [port, hmrPort]) {
+  freePort(devPort)
+}
 
 const configObj = {
   build: {
@@ -25,25 +17,11 @@ const configObj = {
   },
 }
 
-// Escape quotes for Windows cmd.exe shell execution
-let configStr = JSON.stringify(configObj)
-if (process.platform === 'win32') {
-  configStr = configStr.replace(/"/g, '\\"')
-}
+const tauriCli = path.resolve(process.cwd(), 'node_modules', '@tauri-apps', 'cli', 'tauri.js')
+const args = ['dev', '--config', JSON.stringify(configObj)]
 
-// Find local tauri CLI binary
-const tauriBin =
-  process.platform === 'win32'
-    ? path.resolve(process.cwd(), 'node_modules', '.bin', 'tauri.cmd')
-    : path.resolve(process.cwd(), 'node_modules', '.bin', 'tauri')
-
-const args = ['dev', '--config', configStr]
-
-// Windows batch (.cmd) files require shell: true in modern Node.js
-const isWin = process.platform === 'win32'
-const child = spawn(tauriBin, args, {
+const child = spawn(process.execPath, [tauriCli, ...args], {
   stdio: 'inherit',
-  shell: isWin,
 })
 
 child.on('close', (code) => {
