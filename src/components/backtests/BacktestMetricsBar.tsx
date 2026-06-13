@@ -2,7 +2,7 @@ import { formatSignedCurrency } from '@/components/backtests/chartUtils'
 import type { BacktestMetrics } from '@/types/backtesting'
 
 const metricCardClass =
-  'quant-panel rounded-xl p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-all hover:scale-[1.02] hover:border-brass-400/30'
+  'quant-panel quant-panel--shimmer rounded-xl p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-all hover:scale-[1.02] hover:border-brass-400/30'
 
 type BacktestMetricsBarProps = {
   metrics: BacktestMetrics

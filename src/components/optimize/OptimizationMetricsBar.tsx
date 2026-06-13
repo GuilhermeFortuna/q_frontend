@@ -9,6 +9,9 @@ function countByStatus(trials: OptimizationResults['trials'], status: string) {
   return trials.filter((t) => (t.user_attrs.status ?? t.state.toLowerCase()) === status).length
 }
 
+const metricCardClass =
+  'quant-panel quant-panel--shimmer rounded-xl p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-all hover:scale-[1.02] hover:border-brass-400/30'
+
 export function OptimizationMetricsBar({ results }: OptimizationMetricsBarProps) {
   const completed = countByStatus(results.trials, 'complete')
   const pruned = results.trials.filter(
@@ -22,11 +25,24 @@ export function OptimizationMetricsBar({ results }: OptimizationMetricsBarProps)
       : '—'
 
   return (
-    <div className="quant-panel grid grid-cols-2 gap-4 rounded-xl p-4.5 shadow-lg sm:grid-cols-4">
-      <Metric label="Best Objective" value={bestObjective} highlight />
-      <Metric label="Completed" value={String(completed)} />
-      <Metric label="Pruned" value={String(pruned)} />
-      <Metric label="Failed" value={String(failed)} />
+    <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div
+        className={cn(
+          metricCardClass,
+          'quant-panel--glow quant-panel--glow-breathing hover:scale-[1.02]',
+        )}
+      >
+        <Metric label="Best Objective" value={bestObjective} highlight />
+      </div>
+      <div className={metricCardClass}>
+        <Metric label="Completed" value={String(completed)} />
+      </div>
+      <div className={metricCardClass}>
+        <Metric label="Pruned" value={String(pruned)} />
+      </div>
+      <div className={metricCardClass}>
+        <Metric label="Failed" value={String(failed)} />
+      </div>
     </div>
   )
 }
@@ -45,7 +61,7 @@ function Metric({
       <p className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">{label}</p>
       <p
         className={cn(
-          'mt-1 font-mono text-xl font-bold tracking-tight',
+          'mt-1.5 font-mono text-xl font-bold tracking-tight',
           highlight ? 'text-brass-400' : 'text-silver-100',
         )}
       >

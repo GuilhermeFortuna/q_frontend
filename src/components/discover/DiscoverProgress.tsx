@@ -36,7 +36,7 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
 
   return (
     <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-4">
-      <div className="quant-panel w-full max-w-md rounded-2xl px-6 py-8 shadow-xl">
+      <div className="quant-panel quant-panel--glow quant-panel--glow-breathing quant-panel--shimmer-loop w-full max-w-md rounded-2xl px-6 py-8 shadow-xl">
         <p className="text-silver-200 mb-1 text-center text-sm font-medium">{headerLabel}</p>
         {!hasLiveDetail && status.status === 'running' ? (
           <p className="text-silver-500 mb-3 text-center text-xs">

@@ -15,7 +15,7 @@ export function OptimizationProgress({ status, onCancel, cancelling }: Optimizat
 
   return (
     <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-4">
-      <div className="quant-panel w-full max-w-md rounded-2xl px-6 py-8 shadow-xl">
+      <div className="quant-panel quant-panel--glow quant-panel--glow-breathing quant-panel--shimmer-loop w-full max-w-md rounded-2xl px-6 py-8 shadow-xl">
         <div className="text-silver-300 mb-2.5 flex justify-between font-mono text-xs font-bold tracking-wide uppercase">
           <span>
             Progress: {status.completed_trials} / {status.n_trials} Trials
