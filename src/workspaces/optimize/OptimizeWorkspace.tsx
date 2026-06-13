@@ -98,11 +98,17 @@ export function OptimizeWorkspace() {
     })
   }
 
+  const formatApiError = (error: unknown, fallback: string) =>
+    axios.isAxiosError(error)
+      ? ((error.response?.data as { detail?: string })?.detail ?? error.message)
+      : fallback
+
   const startError = startOptimization.error
-    ? axios.isAxiosError(startOptimization.error)
-      ? ((startOptimization.error.response?.data as { detail?: string })?.detail ??
-        startOptimization.error.message)
-      : 'Failed to start optimization'
+    ? formatApiError(startOptimization.error, 'Failed to start optimization')
+    : null
+
+  const cancelError = cancelOptimization.error
+    ? formatApiError(cancelOptimization.error, 'Failed to cancel optimization')
     : null
 
   return (
@@ -153,6 +159,7 @@ export function OptimizeWorkspace() {
             backtest={submittedConfig?.backtest ?? null}
             onCancel={handleCancel}
             cancelling={cancelOptimization.isPending}
+            cancelError={cancelError}
             onOpenWorkbench={() => patchSession({ workbenchOpen: true })}
           />
         )}

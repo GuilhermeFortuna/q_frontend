@@ -87,8 +87,13 @@ export function useOptimizationHistory(params: OptimizationHistoryParams = {}) {
 }
 
 export function useCancelOptimization() {
+  const queryClient = useQueryClient()
+
   return useMutation({
     mutationFn: cancelOptimization,
+    onSuccess: (data, studyId) => {
+      queryClient.setQueryData(optimizeKeys.status(studyId), data)
+    },
   })
 }
 

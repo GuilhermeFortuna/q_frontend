@@ -14,6 +14,7 @@ type OptimizationResultsPanelProps = {
   backtest: OptimizationBacktestConfig | null
   onCancel: () => void
   cancelling: boolean
+  cancelError?: string | null
   onOpenWorkbench: () => void
 }
 
@@ -24,12 +25,18 @@ export function OptimizationResultsPanel({
   backtest,
   onCancel,
   cancelling,
+  cancelError,
   onOpenWorkbench,
 }: OptimizationResultsPanelProps) {
   if (isRunning && status) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        <OptimizationProgress status={status} onCancel={onCancel} cancelling={cancelling} />
+        <OptimizationProgress
+          status={status}
+          onCancel={onCancel}
+          cancelling={cancelling}
+          cancelError={cancelError}
+        />
       </div>
     )
   }

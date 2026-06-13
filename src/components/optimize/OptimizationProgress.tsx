@@ -6,9 +6,15 @@ type OptimizationProgressProps = {
   status: OptimizationStatus
   onCancel: () => void
   cancelling: boolean
+  cancelError?: string | null
 }
 
-export function OptimizationProgress({ status, onCancel, cancelling }: OptimizationProgressProps) {
+export function OptimizationProgress({
+  status,
+  onCancel,
+  cancelling,
+  cancelError,
+}: OptimizationProgressProps) {
   const pct =
     status.n_trials > 0
       ? Math.min(100, Math.round((status.completed_trials / status.n_trials) * 100))
@@ -39,16 +45,19 @@ export function OptimizationProgress({ status, onCancel, cancelling }: Optimizat
               </span>
             </p>
           )}
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex flex-col items-center gap-2">
             <Button
               type="button"
-              variant="ghost"
-              className="text-silver-400 text-xs font-bold tracking-wider uppercase hover:text-red-400"
+              variant="outline"
+              className="border-carbon-600 text-silver-200 text-xs font-bold tracking-wider uppercase hover:border-rose-500/60 hover:bg-rose-500/10 hover:text-rose-400"
               onClick={onCancel}
               disabled={cancelling}
             >
               {cancelling ? 'Cancelling...' : 'Cancel Job'}
             </Button>
+            {cancelError ? (
+              <p className="max-w-xs text-center text-xs text-rose-400">{cancelError}</p>
+            ) : null}
           </div>
         </div>
       </div>
