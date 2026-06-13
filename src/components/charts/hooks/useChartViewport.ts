@@ -80,7 +80,7 @@ export function useChartViewport(barCount: number, resetKey = '') {
           start = 0
           end = Math.min(barCount - 1, nextCount - 1)
         }
-        if (end >= barCount) {
+        if (end > barCount - 1) {
           end = barCount - 1
           start = Math.max(0, end - nextCount + 1)
         }
@@ -101,8 +101,9 @@ export function useChartViewport(barCount: number, resetKey = '') {
           start = 0
           end = count - 1
         }
-        if (end >= barCount) {
-          end = barCount - 1
+        const maxEndIndex = barCount - 1 + count
+        if (end > maxEndIndex) {
+          end = maxEndIndex
           start = end - count + 1
         }
         return { startIndex: start, endIndex: end }

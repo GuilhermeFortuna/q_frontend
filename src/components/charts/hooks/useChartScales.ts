@@ -1,9 +1,49 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { scaleBand, scaleLinear } from '@visx/scale'
 
-import type { IndicatorConfig, PaneLayout, ProcessedBar } from '@/components/charts/types/chart'
+import type {
+  ChartSlot,
+  IndicatorConfig,
+  PaneLayout,
+  ProcessedBar,
+} from '@/components/charts/types/chart'
 import type { OhlcvBar } from '@/types/api'
 import { BULL_COLOR, BEAR_COLOR } from '@/components/charts/types/chart'
+
+export function computePriceDomain(bars: ProcessedBar[], paddingRatio = 0.06) {
+  if (bars.length === 0) {
+    return { min: 0, max: 1, span: 1 }
+  }
+  const priceMin = Math.min(...bars.map((b) => b.low))
+  const priceMax = Math.max(...bars.map((b) => b.high))
+  const pricePad = (priceMax - priceMin) * paddingRatio || 1
+  const min = priceMin - pricePad
+  const max = priceMax + pricePad
+  return { min, max, span: max - min }
+}
+
+export function usePricePan(resetKey: string) {
+  const [offset, setOffset] = useState(0)
+
+  useEffect(() => {
+    setOffset(0)
+  }, [resetKey])
+
+  const resetPricePan = useCallback(() => {
+    setOffset(0)
+  }, [])
+
+  const panPriceByPixels = useCallback(
+    (deltaY: number, pricePaneHeight: number, domainSpan: number) => {
+      if (pricePaneHeight <= 0 || domainSpan <= 0) return
+      const pricePerPixel = domainSpan / pricePaneHeight
+      setOffset((prev) => prev + deltaY * pricePerPixel)
+    },
+    [],
+  )
+
+  return { pricePanOffset: offset, resetPricePan, panPriceByPixels }
+}
 
 const VOLUME_RATIO = 0.18
 const OSCILLATOR_RATIO = 0.14
@@ -75,29 +115,29 @@ export function computePaneLayout(
 }
 
 export function useChartScales(
-  visibleBars: ProcessedBar[],
+  slots: ChartSlot[],
   layout: PaneLayout,
   margins: { left: number },
+  pricePanOffset = 0,
 ) {
   return useMemo(() => {
-    const domain = visibleBars.map((b) => b.timestamp)
+    const barsInView = slots.flatMap((slot) => (slot.bar ? [slot.bar] : []))
+    const domain = slots.map((slot) => slot.key)
     const xScale = scaleBand<string>({
       domain,
       range: [0, layout.innerWidth],
       padding: 0.25,
     })
 
-    const priceMin = Math.min(...visibleBars.map((b) => b.low))
-    const priceMax = Math.max(...visibleBars.map((b) => b.high))
-    const pricePad = (priceMax - priceMin) * 0.06 || 1
+    const { min: priceMin, max: priceMax } = computePriceDomain(barsInView)
 
     const priceScale = scaleLinear<number>({
-      domain: [priceMin - pricePad, priceMax + pricePad],
+      domain: [priceMin + pricePanOffset, priceMax + pricePanOffset],
       range: [layout.priceTop + layout.priceHeight, layout.priceTop],
       nice: true,
     })
 
-    const maxVolume = Math.max(...visibleBars.map((b) => b.volume), 1)
+    const maxVolume = Math.max(...barsInView.map((b) => b.volume), 1)
     const volumeScale = scaleLinear<number>({
       domain: [0, maxVolume],
       range: [layout.volumeTop + layout.volumeHeight, layout.volumeTop],
@@ -123,7 +163,7 @@ export function useChartScales(
       macdScale,
       marginLeft: margins.left,
     }
-  }, [visibleBars, layout, margins.left])
+  }, [slots, layout, margins.left, pricePanOffset])
 }
 
 export function barCenterX(

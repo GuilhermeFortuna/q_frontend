@@ -30,9 +30,8 @@ describe('CandlestickChart', () => {
         <CandlestickChart data={mockBars} symbol="PETR4" timeframe="1D" />
       </div>,
     )
-    expect(await screen.findByLabelText('Reset chart view')).toBeInTheDocument()
+    await waitFor(() => expect(container.querySelector('svg')).toBeTruthy())
     expect(screen.queryByLabelText('Go to latest candle')).not.toBeInTheDocument()
-    expect(container.querySelector('svg')).toBeTruthy()
   })
 
   it('shows latest button when scrolled away from the end and jumps back on click', async () => {
@@ -56,8 +55,8 @@ describe('CandlestickChart', () => {
       </div>,
     )
 
-    await screen.findByLabelText('Reset chart view')
     await waitFor(() => expect(chartRef.current).not.toBeNull())
+    await waitFor(() => expect(document.querySelector('svg')).toBeTruthy())
 
     act(() => {
       chartRef.current!.panBy(-50)

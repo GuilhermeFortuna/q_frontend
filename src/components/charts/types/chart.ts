@@ -27,6 +27,31 @@ export type ChartViewport = {
   endIndex: number
 }
 
+export type ChartSlot = {
+  key: string
+  bar: ProcessedBar | null
+}
+
+export function isPaddingSlotKey(key: string): boolean {
+  return key.startsWith('__pad:')
+}
+
+export function buildViewportSlots(
+  processed: ProcessedBar[],
+  viewport: ChartViewport,
+): ChartSlot[] {
+  const slots: ChartSlot[] = []
+  for (let i = viewport.startIndex; i <= viewport.endIndex; i += 1) {
+    const bar = processed[i] ?? null
+    slots.push({ key: bar?.timestamp ?? `__pad:${i}`, bar })
+  }
+  return slots
+}
+
+export function barsFromSlots(slots: ChartSlot[]): ProcessedBar[] {
+  return slots.flatMap((slot) => (slot.bar ? [slot.bar] : []))
+}
+
 export type ChartMargins = {
   top: number
   right: number
@@ -41,8 +66,8 @@ export const CHART_MARGINS: ChartMargins = {
   left: 8,
 }
 
-export const BULL_COLOR = '#00c076'
-export const BEAR_COLOR = '#ff3b30'
+export const BULL_COLOR = '#26a69a'
+export const BEAR_COLOR = '#ef5350'
 export const BRASS_COLOR = '#c9a227'
 export const GRID_COLOR = 'rgba(111, 119, 133, 0.12)'
 

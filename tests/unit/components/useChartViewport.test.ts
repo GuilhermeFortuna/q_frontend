@@ -71,4 +71,18 @@ describe('useChartViewport', () => {
     expect(result.current.viewport.startIndex).toBe(0)
     expect(result.current.viewport.endIndex).toBe(barCount - 1)
   })
+
+  it('panBy allows right padding past the last bar', () => {
+    const barCount = 120
+    const { result } = renderHook(() => useChartViewport(barCount, 'PETR4:1H'))
+
+    const count = result.current.viewport.endIndex - result.current.viewport.startIndex + 1
+
+    act(() => {
+      result.current.panBy(20)
+    })
+
+    expect(result.current.viewport.endIndex).toBeGreaterThan(barCount - 1)
+    expect(result.current.viewport.endIndex).toBeLessThanOrEqual(barCount - 1 + count)
+  })
 })

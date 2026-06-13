@@ -1,6 +1,7 @@
 import { AxisBottom, AxisRight } from '@visx/axis'
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
+import { isPaddingSlotKey } from '@/components/charts/types/chart'
 import { formatTimeAxisLabel } from '@/lib/market/timeframes'
 
 type ChartAxesProps = {
@@ -82,7 +83,9 @@ export function ChartAxes({
         top={xTop}
         left={left}
         scale={xScale}
-        tickFormat={(v) => formatTimeAxisLabel(String(v), timeframe)}
+        tickFormat={(v) =>
+          isPaddingSlotKey(String(v)) ? '' : formatTimeAxisLabel(String(v), timeframe)
+        }
         numTicks={Math.min(8, xScale.domain().length)}
         {...axisStyle}
       />

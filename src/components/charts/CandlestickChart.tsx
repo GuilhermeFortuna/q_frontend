@@ -12,6 +12,8 @@ import { localPoint } from '@visx/event'
 
 import {
   CHART_MARGINS,
+  buildViewportSlots,
+  barsFromSlots,
   type ChartType,
   type ChartViewport,
   type DataPoint,
@@ -21,10 +23,12 @@ import {
 } from '@/components/charts/types/chart'
 import {
   computePaneLayout,
+  computePriceDomain,
   dataPointFromEvent,
   processBars,
   timestampAtX,
   useChartScales,
+  usePricePan,
 } from '@/components/charts/hooks/useChartScales'
 import { useChartViewport } from '@/components/charts/hooks/useChartViewport'
 import { CandlestickLayer } from '@/components/charts/layers/CandlestickLayer'
@@ -86,29 +90,34 @@ const ChartInner = forwardRef<
 ) {
   const processed = useMemo(() => processBars(data), [data])
   const viewportResetKey = resetKey ?? `${symbol}:${timeframe}`
-  const { viewport, resetViewport, scrollToEnd, fitAll, zoomAt, panBy, shiftViewport } =
-    useChartViewport(processed.length, viewportResetKey)
+  const { viewport, scrollToEnd, fitAll, zoomAt, panBy, shiftViewport } = useChartViewport(
+    processed.length,
+    viewportResetKey,
+  )
+  const { pricePanOffset, resetPricePan, panPriceByPixels } = usePricePan(viewportResetKey)
+
+  const viewportSlots = useMemo(
+    () => buildViewportSlots(processed, viewport),
+    [processed, viewport],
+  )
+  const visibleBars = useMemo(() => barsFromSlots(viewportSlots), [viewportSlots])
 
   const isViewportUnset = viewport.startIndex === 0 && viewport.endIndex === 0
   const isAtLatestCandle =
-    processed.length === 0 || isViewportUnset || viewport.endIndex >= processed.length - 1
+    processed.length === 0 || isViewportUnset || viewport.endIndex === processed.length - 1
 
   useImperativeHandle(ref, () => ({ shiftViewport, panBy, scrollToEnd }), [
     shiftViewport,
     panBy,
     scrollToEnd,
   ])
-  const visibleBars = useMemo(
-    () => processed.slice(viewport.startIndex, viewport.endIndex + 1),
-    [processed, viewport],
-  )
 
   const layout = useMemo(
     () => computePaneLayout(width, height, indicators, CHART_MARGINS),
     [width, height, indicators],
   )
 
-  const scales = useChartScales(visibleBars, layout, CHART_MARGINS)
+  const scales = useChartScales(viewportSlots, layout, CHART_MARGINS, pricePanOffset)
 
   const macdValues = useMemo(() => {
     const macdInd = indicators.find((i) => i.type === 'macd' && i.enabled)
@@ -134,7 +143,7 @@ const ChartInner = forwardRef<
   const [draftPoint, setDraftPoint] = useState<DataPoint | null>(null)
   const [draftDrawing, setDraftDrawing] = useState<DrawingObject | null>(null)
   const isPanning = useRef(false)
-  const panStart = useRef<{ x: number; startIndex: number } | null>(null)
+  const panStart = useRef<{ x: number; y: number } | null>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -160,9 +169,16 @@ const ChartInner = forwardRef<
         const barDelta = Math.round(
           (point.x - panStart.current.x) / Math.max(scales.xScale.step(), 4),
         )
+        const deltaY = point.y - panStart.current.y
         if (barDelta !== 0) {
           panBy(-barDelta)
-          panStart.current = { x: point.x, startIndex: viewport.startIndex }
+        }
+        if (deltaY !== 0) {
+          const { span } = computePriceDomain(visibleBars)
+          panPriceByPixels(deltaY, layout.priceHeight, span)
+        }
+        if (barDelta !== 0 || deltaY !== 0) {
+          panStart.current = { x: point.x, y: point.y }
         }
         return
       }
@@ -179,7 +195,7 @@ const ChartInner = forwardRef<
         }
       }
     },
-    [visibleBars, scales, draftPoint, draftDrawing, panBy, viewport.startIndex],
+    [visibleBars, scales, draftPoint, draftDrawing, panBy, panPriceByPixels, layout.priceHeight],
   )
 
   const finishDrawing = useCallback(
@@ -198,7 +214,7 @@ const ChartInner = forwardRef<
           const point = localPoint(event)
           if (!point) return
           isPanning.current = true
-          panStart.current = { x: point.x, startIndex: viewport.startIndex }
+          panStart.current = { x: point.x, y: point.y }
         }
         return
       }
@@ -240,7 +256,7 @@ const ChartInner = forwardRef<
         }
       }
     },
-    [activeDrawingTool, visibleBars, scales, draftPoint, finishDrawing, viewport.startIndex],
+    [activeDrawingTool, visibleBars, scales, draftPoint, finishDrawing],
   )
 
   const handleMouseUp = useCallback(() => {
@@ -271,9 +287,15 @@ const ChartInner = forwardRef<
     return () => el.removeEventListener('wheel', onWheel)
   }, [zoomAt, layout.innerWidth])
 
+  const handleGoToLatest = useCallback(() => {
+    scrollToEnd()
+    resetPricePan()
+  }, [scrollToEnd, resetPricePan])
+
   const handleDoubleClick = useCallback(() => {
     fitAll()
-  }, [fitAll])
+    resetPricePan()
+  }, [fitAll, resetPricePan])
 
   const rsiInd = indicators.find((i) => i.type === 'rsi')
   const macdInd = indicators.find((i) => i.type === 'macd')
@@ -289,27 +311,19 @@ const ChartInner = forwardRef<
         background: 'radial-gradient(circle at 50% 30%, #16273f 0%, #07101c 100%)',
       }}
     >
-      <div className="absolute top-2 right-3 z-10 flex items-center gap-1">
-        {!isAtLatestCandle && (
+      {!isAtLatestCandle && (
+        <div className="absolute top-2 right-3 z-10">
           <button
             type="button"
-            onClick={scrollToEnd}
+            onClick={handleGoToLatest}
             className="border-brass-500/40 bg-carbon-900/95 text-brass-400 hover:border-brass-500 hover:bg-carbon-900 flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[9px] uppercase shadow-lg"
             aria-label="Go to latest candle"
           >
             <ChevronRight className="h-3 w-3" aria-hidden />
             Latest
           </button>
-        )}
-        <button
-          type="button"
-          onClick={resetViewport}
-          className="border-carbon-700 bg-carbon-900/80 text-silver-400 hover:border-brass-500 hover:text-brass-400 rounded border px-2 py-0.5 font-mono text-[9px] uppercase"
-          aria-label="Reset chart view"
-        >
-          Reset
-        </button>
-      </div>
+        </div>
+      )}
 
       <svg width={width} height={height}>
         {showGrid && (
