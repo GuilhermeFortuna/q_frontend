@@ -1,10 +1,8 @@
 import {
   FormSection,
   inputClass,
-  labelClass,
   OBJECTIVE_MODES,
   SAMPLERS,
-  sectionTitleClass,
 } from '@/components/optimize/optimizeFormShared'
 import type { ObjectiveMode, Sampler } from '@/types/optimization'
 
@@ -32,50 +30,56 @@ export function OptimizeStudySection({
   isMultiObjective,
 }: OptimizeStudySectionProps) {
   return (
-    <FormSection title="Optimization" open={open} onToggle={onToggle}>
-      <div className="space-y-2">
-        <label className={sectionTitleClass}>Objective</label>
-        <select
-          value={objective}
-          onChange={(e) => setObjective(e.target.value as ObjectiveMode)}
-          className={inputClass}
-        >
-          {OBJECTIVE_MODES.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+    <FormSection title="Optimization Study" open={open} onToggle={onToggle}>
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <label className="text-silver-300 text-xs font-semibold">Objective</label>
+          <select
+            value={objective}
+            onChange={(e) => setObjective(e.target.value as ObjectiveMode)}
+            className={inputClass}
+          >
+            {OBJECTIVE_MODES.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div className="space-y-2">
-        <label className={sectionTitleClass}>Sampler</label>
-        <select
-          value={isMultiObjective ? 'nsgaii' : sampler}
-          onChange={(e) => setSampler(e.target.value as Sampler)}
-          disabled={isMultiObjective}
-          className={`${inputClass} disabled:opacity-60`}
-        >
-          {SAMPLERS.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        {isMultiObjective && (
-          <p className={labelClass}>NSGA-II is used for multi-objective studies.</p>
-        )}
-      </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-silver-300 text-xs font-semibold">Sampler</label>
+            <select
+              value={isMultiObjective ? 'nsgaii' : sampler}
+              onChange={(e) => setSampler(e.target.value as Sampler)}
+              disabled={isMultiObjective}
+              className={`${inputClass} disabled:opacity-60`}
+            >
+              {SAMPLERS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            {isMultiObjective && (
+              <p className="text-silver-500 mt-0.5 text-[10px] leading-normal">
+                NSGA-II is used for multi-objective studies.
+              </p>
+            )}
+          </div>
 
-      <div className="space-y-2">
-        <label className={sectionTitleClass}>Trials</label>
-        <input
-          type="number"
-          min="1"
-          value={nTrials}
-          onChange={(e) => setNTrials(Number(e.target.value))}
-          className={inputClass}
-        />
+          <div className="space-y-1">
+            <label className="text-silver-300 text-xs font-semibold">Trials</label>
+            <input
+              type="number"
+              min="1"
+              value={nTrials}
+              onChange={(e) => setNTrials(Number(e.target.value))}
+              className={inputClass}
+            />
+          </div>
+        </div>
       </div>
     </FormSection>
   )

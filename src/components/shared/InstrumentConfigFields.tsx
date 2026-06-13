@@ -8,6 +8,7 @@ import {
   getDateRangeFromPreset,
   type DatePreset,
 } from '@/lib/backtesting/dateRange'
+import { cn } from '@/lib/utils'
 
 export const inputClass =
   'w-full bg-carbon-950/80 border border-brass-600/15 rounded-lg px-3 py-2 text-sm text-silver-100 placeholder-silver-500 focus:outline-none focus:border-brass-500/60 focus:ring-2 focus:ring-brass-500/15 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]'
@@ -209,35 +210,38 @@ export function InstrumentConfigFields({
   showTimeframe = true,
 }: InstrumentConfigFieldsProps) {
   return (
-    <>
-      <div className="space-y-2">
-        <label className="text-silver-200 text-sm font-medium">Symbol</label>
-        <input
-          type="text"
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-          className={inputClass}
-          placeholder="e.g. PETR4"
-          required
-        />
-      </div>
-
-      {showTimeframe ? (
-        <div className="space-y-2">
-          <label className="text-silver-200 text-sm font-medium">Timeframe</label>
-          <select
-            value={timeframe}
-            onChange={(e) => setTimeframe(e.target.value)}
+    <div className="space-y-4">
+      {/* Group Symbol and Timeframe side-by-side */}
+      <div className={cn('grid gap-3', showTimeframe ? 'grid-cols-2' : 'grid-cols-1')}>
+        <div className="space-y-1">
+          <label className="text-silver-300 text-xs font-semibold">Symbol</label>
+          <input
+            type="text"
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
             className={inputClass}
-          >
-            <option value="M1">1 Minute</option>
-            <option value="M5">5 Minutes</option>
-            <option value="M15">15 Minutes</option>
-            <option value="H1">1 Hour</option>
-            <option value="D1">1 Day</option>
-          </select>
+            placeholder="e.g. PETR4"
+            required
+          />
         </div>
-      ) : null}
+
+        {showTimeframe ? (
+          <div className="space-y-1">
+            <label className="text-silver-300 text-xs font-semibold">Timeframe</label>
+            <select
+              value={timeframe}
+              onChange={(e) => setTimeframe(e.target.value)}
+              className={inputClass}
+            >
+              <option value="M1">1 Minute</option>
+              <option value="M5">5 Minutes</option>
+              <option value="M15">15 Minutes</option>
+              <option value="H1">1 Hour</option>
+              <option value="D1">1 Day</option>
+            </select>
+          </div>
+        ) : null}
+      </div>
 
       <DateRangePresetsFields
         startDate={startDate}
@@ -248,33 +252,36 @@ export function InstrumentConfigFields({
         timeframe={timeframe}
       />
 
-      <div className="space-y-2">
-        <label className="text-silver-200 text-sm font-medium">Initial Capital</label>
-        <input
-          type="number"
-          value={capital}
-          onChange={(e) => setCapital(Number(e.target.value))}
-          className={inputClass}
-          min="1000"
-          required
-        />
-      </div>
+      {/* Group Capital and Value per Point side-by-side */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-silver-300 text-xs font-semibold">Initial Capital</label>
+          <input
+            type="number"
+            value={capital}
+            onChange={(e) => setCapital(Number(e.target.value))}
+            className={inputClass}
+            min="1000"
+            required
+          />
+        </div>
 
-      <div className="space-y-2">
-        <label className="text-silver-200 text-sm font-medium">Value per Point</label>
-        <input
-          type="number"
-          step="0.01"
-          value={pointValue}
-          onChange={(e) => setPointValue(Number(e.target.value))}
-          className={inputClass}
-          min="0.01"
-          required
-        />
+        <div className="space-y-1">
+          <label className="text-silver-300 text-xs font-semibold">Value / Point</label>
+          <input
+            type="number"
+            step="0.01"
+            value={pointValue}
+            onChange={(e) => setPointValue(Number(e.target.value))}
+            className={inputClass}
+            min="0.01"
+            required
+          />
+        </div>
       </div>
 
       {setDayTrade ? (
-        <div className="space-y-3 pt-2">
+        <div className="border-carbon-600/20 space-y-3 border-t pt-3">
           <label className="flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
@@ -282,17 +289,17 @@ export function InstrumentConfigFields({
               onChange={(e) => setDayTrade(e.target.checked)}
               className="accent-brass-500 border-carbon-600 bg-carbon-900 text-brass-500 h-4 w-4 rounded"
             />
-            <span className="text-silver-200 text-sm font-medium">Day Trading Mode</span>
+            <span className="text-silver-200 text-sm font-semibold">Day Trading Mode</span>
           </label>
-          <p className="text-silver-400 -mt-2 pl-6 text-xs">
+          <p className="text-silver-400 -mt-2 pl-6 text-xs leading-normal">
             Trades will not carry onto the next trading day.
           </p>
 
           {dayTrade && setDayTradeStartTime && setDayTradeEndTime && setDayTradeCloseTime ? (
-            <div className="bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3">
+            <div className="bg-carbon-950/40 border-carbon-600/35 ml-6 space-y-2 rounded-lg border p-2.5">
               <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1">
-                  <label className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+                <div className="space-y-1 text-center">
+                  <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
                     Start
                   </label>
                   <input
@@ -300,11 +307,11 @@ export function InstrumentConfigFields({
                     placeholder="09:00"
                     value={dayTradeStartTime}
                     onChange={(e) => setDayTradeStartTime(e.target.value)}
-                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded-md border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+                <div className="space-y-1 text-center">
+                  <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
                     End
                   </label>
                   <input
@@ -312,11 +319,11 @@ export function InstrumentConfigFields({
                     placeholder="16:00"
                     value={dayTradeEndTime}
                     onChange={(e) => setDayTradeEndTime(e.target.value)}
-                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded-md border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+                <div className="space-y-1 text-center">
+                  <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
                     Close
                   </label>
                   <input
@@ -324,7 +331,7 @@ export function InstrumentConfigFields({
                     placeholder="17:00"
                     value={dayTradeCloseTime}
                     onChange={(e) => setDayTradeCloseTime(e.target.value)}
-                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded-md border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
                   />
                 </div>
               </div>
@@ -332,6 +339,6 @@ export function InstrumentConfigFields({
           ) : null}
         </div>
       ) : null}
-    </>
+    </div>
   )
 }
