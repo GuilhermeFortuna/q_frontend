@@ -7,6 +7,8 @@ export type WalkForwardConfig = {
   test_days: number
   mode: WalkForwardMode
   min_windows: number
+  /** Worker processes for parallel window execution. Omit/null = auto (one per CPU). */
+  max_workers?: number | null
 }
 
 export type WalkForwardRequest = {
@@ -28,6 +30,8 @@ export type WalkForwardStatus = {
   status: WalkForwardJobStatus
   current_window: number
   total_windows: number
+  /** Worker processes running windows in parallel. >1 means parallel execution. */
+  workers?: number
   phase: WalkForwardPhase | null
   windows_completed: number
   error: string | null

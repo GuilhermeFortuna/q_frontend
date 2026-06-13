@@ -22,6 +22,24 @@ describe('WalkForwardProgress', () => {
     expect(screen.getByText(/Windows completed: 2 \/ 5/i)).toBeInTheDocument()
   })
 
+  it('shows parallel execution header when running across multiple workers', () => {
+    const status: WalkForwardStatus = {
+      run_id: 'wf-par',
+      status: 'running',
+      current_window: 6,
+      total_windows: 28,
+      workers: 16,
+      phase: 'testing',
+      windows_completed: 6,
+      error: null,
+    }
+
+    render(<WalkForwardProgress status={status} onCancel={vi.fn()} cancelling={false} />)
+
+    expect(screen.getByText(/Optimizing 28 windows · 16 in parallel/i)).toBeInTheDocument()
+    expect(screen.getByText(/Windows completed: 6 \/ 28/i)).toBeInTheDocument()
+  })
+
   it('shows restart hint when phase is unavailable', () => {
     const status: WalkForwardStatus = {
       run_id: 'wf-2',

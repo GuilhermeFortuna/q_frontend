@@ -17,18 +17,24 @@ export function WalkForwardProgress({ status, onCancel, cancelling }: WalkForwar
   const total = Math.max(status.total_windows, 1)
   const completed = status.windows_completed
   const pct = Math.min(100, Math.round((completed / total) * 100))
-  const windowLabel =
-    status.total_windows > 0
-      ? `Window ${Math.min(status.current_window + 1, status.total_windows)} / ${status.total_windows}`
+  const isParallel = (status.workers ?? 1) > 1
+
+  // In parallel mode many windows run at once, so a single "current window N"
+  // index is meaningless — lead with the parallel-execution status instead.
+  const headerLabel = isParallel
+    ? status.total_windows > 0
+      ? `Optimizing ${status.total_windows} windows · ${status.workers} in parallel`
       : 'Preparing windows…'
-  const phase = status.phase ? phaseLabel(status.phase) : 'resumed from history'
+    : status.total_windows > 0
+      ? `Window ${Math.min(status.current_window + 1, status.total_windows)} / ${status.total_windows} — ${
+          status.phase ? phaseLabel(status.phase) : 'resumed from history'
+        }`
+      : 'Preparing windows…'
 
   return (
     <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-4">
-      <div className="quant-panel w-full max-w-md rounded-2xl px-6 py-8 shadow-xl">
-        <p className="text-silver-200 mb-1 text-center text-sm font-medium">
-          {windowLabel} — {phase}
-        </p>
+      <div className="quant-panel quant-panel--glow quant-panel--glow-breathing quant-panel--shimmer-loop w-full max-w-md rounded-2xl px-6 py-8 shadow-xl">
+        <p className="text-silver-200 mb-1 text-center text-sm font-medium">{headerLabel}</p>
         {!status.phase && status.status === 'running' ? (
           <p className="text-silver-500 mb-3 text-center text-xs">
             Live phase unavailable — showing persisted window progress after restart.
