@@ -74,17 +74,36 @@ export type MarketDataSession = {
   detailCollapsed: boolean
 }
 
+export type LauncherPanelLayout = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export type LauncherPanelLayouts = {
+  market: LauncherPanelLayout
+  system: LauncherPanelLayout
+}
+
+export type LauncherSession = {
+  /** Null until the dashboard container is measured on first mount. */
+  panelLayouts: LauncherPanelLayouts | null
+}
+
 export type JobSessionsSlice = {
   optimizeSession: OptimizeSession
   walkForwardSession: WalkForwardSession
   discoverSession: DiscoverSession
   backtestSession: BacktestSession
   marketDataSession: MarketDataSession
+  launcherSession: LauncherSession
   patchOptimizeSession: (patch: Partial<OptimizeSession>) => void
   patchWalkForwardSession: (patch: Partial<WalkForwardSession>) => void
   patchDiscoverSession: (patch: Partial<DiscoverSession>) => void
   patchBacktestSession: (patch: Partial<BacktestSession>) => void
   patchMarketDataSession: (patch: Partial<MarketDataSession>) => void
+  patchLauncherSession: (patch: Partial<LauncherSession>) => void
 }
 
 const initialOptimizeSession: OptimizeSession = {
@@ -133,12 +152,17 @@ const initialMarketDataSession: MarketDataSession = {
   detailCollapsed: false,
 }
 
+const initialLauncherSession: LauncherSession = {
+  panelLayouts: null,
+}
+
 export const createJobSessionsSlice: StateCreator<JobSessionsSlice> = (set) => ({
   optimizeSession: initialOptimizeSession,
   walkForwardSession: initialWalkForwardSession,
   discoverSession: initialDiscoverSession,
   backtestSession: initialBacktestSession,
   marketDataSession: initialMarketDataSession,
+  launcherSession: initialLauncherSession,
   patchOptimizeSession: (patch) =>
     set((state) => ({ optimizeSession: { ...state.optimizeSession, ...patch } })),
   patchWalkForwardSession: (patch) =>
@@ -149,4 +173,6 @@ export const createJobSessionsSlice: StateCreator<JobSessionsSlice> = (set) => (
     set((state) => ({ backtestSession: { ...state.backtestSession, ...patch } })),
   patchMarketDataSession: (patch) =>
     set((state) => ({ marketDataSession: { ...state.marketDataSession, ...patch } })),
+  patchLauncherSession: (patch) =>
+    set((state) => ({ launcherSession: { ...state.launcherSession, ...patch } })),
 })

@@ -8,7 +8,6 @@ import {
   Database,
   HardDrive,
   GripHorizontal,
-  Maximize2,
   RefreshCw,
   Clock,
   TrendingUp,
@@ -34,58 +33,126 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { mockArticles } from '@/mocks/news'
 import { env } from '@/lib/env'
 import { cn } from '@/lib/utils'
+import type { LauncherPanelLayout, LauncherPanelLayouts } from '@/store/slices/jobSessionsSlice'
+import { useAppStore } from '@/store/useAppStore'
 
 const DEFAULT_SYMBOLS = ['BTCUSD', 'EURUSD', 'PETR4', 'VALE3']
 const LOCAL_STORAGE_KEY = 'quant-dashboard-symbols'
-const PANEL_LAYOUT_STORAGE_KEY = 'quant-launcher-panel-layouts'
+const LEGACY_PANEL_LAYOUT_STORAGE_KEY = 'quant-launcher-panel-layouts'
 const PANEL_MIN_WIDTH = 320
 const PANEL_MIN_HEIGHT = 360
+const PANEL_DEFAULT_WIDTH = 360
+const PANEL_DEFAULT_HEIGHT_RATIO = 0.72
 
 type PanelKey = 'market' | 'system'
 
-type PanelLayout = {
-  x: number
-  y: number
-  width: number
-  height: number
+type ResizeMode = 'resize-se' | 'resize-e' | 'resize-s'
+
+function getDefaultPanelHeight(containerHeight: number): number {
+  if (containerHeight <= 0) return PANEL_MIN_HEIGHT
+  return Math.max(
+    PANEL_MIN_HEIGHT,
+    Math.min(Math.round(containerHeight * PANEL_DEFAULT_HEIGHT_RATIO), containerHeight - 24),
+  )
 }
 
-type PanelLayouts = Record<PanelKey, PanelLayout>
-
-function getDefaultPanelLayouts(containerWidth = 0): PanelLayouts {
-  const width = 360
-  const height = 790
+function getDefaultPanelLayouts(containerWidth = 0, containerHeight = 0): LauncherPanelLayouts {
+  const width = PANEL_DEFAULT_WIDTH
+  const height = getDefaultPanelHeight(containerHeight)
   const rightX = Math.max(containerWidth - width, 0)
+  const y = containerHeight > height ? Math.floor((containerHeight - height) / 2) : 0
 
   return {
-    market: { x: 0, y: 0, width, height },
-    system: { x: rightX, y: 0, width, height },
+    market: { x: 0, y, width, height },
+    system: { x: rightX, y, width, height },
   }
 }
 
-function readStoredPanelLayouts(): Partial<PanelLayouts> {
+function readLegacyPanelLayouts(): Partial<LauncherPanelLayouts> {
   try {
-    const stored = localStorage.getItem(PANEL_LAYOUT_STORAGE_KEY)
-    return stored ? JSON.parse(stored) : {}
+    const stored = localStorage.getItem(LEGACY_PANEL_LAYOUT_STORAGE_KEY)
+    if (!stored) return {}
+    const parsed = JSON.parse(stored) as Partial<LauncherPanelLayouts>
+    localStorage.removeItem(LEGACY_PANEL_LAYOUT_STORAGE_KEY)
+    return parsed
   } catch {
     return {}
   }
 }
 
-function clampPanelLayout(layout: PanelLayout, container: DOMRectReadOnly | null): PanelLayout {
-  const maxWidth = Math.max(PANEL_MIN_WIDTH, container?.width ?? layout.width)
-  const maxHeight = Math.max(PANEL_MIN_HEIGHT, container?.height ?? layout.height)
-  const width = Math.min(Math.max(layout.width, PANEL_MIN_WIDTH), maxWidth)
-  const height = Math.min(Math.max(layout.height, PANEL_MIN_HEIGHT), maxHeight)
-  const maxX = Math.max((container?.width ?? width) - width, 0)
-  const maxY = Math.max((container?.height ?? height) - height, 0)
+type ContainerRect = {
+  width: number
+  height: number
+}
 
-  return {
-    x: Math.min(Math.max(layout.x, 0), maxX),
-    y: Math.min(Math.max(layout.y, 0), maxY),
-    width,
-    height,
+function clampPanelLayout(
+  layout: LauncherPanelLayout,
+  container: ContainerRect | null,
+): LauncherPanelLayout {
+  const containerWidth = Math.max(container?.width ?? 0, layout.width)
+  const containerHeight = Math.max(container?.height ?? 0, layout.height)
+  const width = Math.min(Math.max(layout.width, PANEL_MIN_WIDTH), containerWidth)
+  let height = Math.min(Math.max(layout.height, PANEL_MIN_HEIGHT), containerHeight)
+  let y = Math.max(layout.y, 0)
+  const x = Math.min(Math.max(layout.x, 0), Math.max(containerWidth - width, 0))
+
+  if (y + height > containerHeight) {
+    y = Math.max(0, containerHeight - height)
   }
+
+  const maxY = Math.max(containerHeight - height, 0)
+  y = Math.min(y, maxY)
+
+  if (y + height > containerHeight) {
+    height = Math.max(PANEL_MIN_HEIGHT, containerHeight - y)
+  }
+
+  return { x, y, width, height }
+}
+
+function normalizePanelLayout(
+  layout: LauncherPanelLayout,
+  container: ContainerRect,
+  defaults: LauncherPanelLayout,
+): LauncherPanelLayout {
+  const clamped = clampPanelLayout(layout, container)
+  const fillsContainer =
+    container.height > 0 && clamped.height >= container.height - 4 && clamped.y <= 4
+
+  if (fillsContainer) {
+    return clampPanelLayout(
+      {
+        ...clamped,
+        height: defaults.height,
+        y: defaults.y,
+      },
+      container,
+    )
+  }
+
+  return clamped
+}
+
+function readContainerRect(node: HTMLDivElement | null): ContainerRect | null {
+  if (!node) return null
+  const bounds = node.getBoundingClientRect()
+  const width = bounds.width || node.clientWidth
+  const height = bounds.height || node.clientHeight
+  if (width <= 0 || height <= 0) return null
+  return { width, height }
+}
+
+function layoutsAreEqual(a: LauncherPanelLayouts, b: LauncherPanelLayouts): boolean {
+  return (
+    a.market.x === b.market.x &&
+    a.market.y === b.market.y &&
+    a.market.width === b.market.width &&
+    a.market.height === b.market.height &&
+    a.system.x === b.system.x &&
+    a.system.y === b.system.y &&
+    a.system.width === b.system.width &&
+    a.system.height === b.system.height
+  )
 }
 
 // Simple Sparkline component using shared sparkline helpers
@@ -133,24 +200,26 @@ type FloatingLauncherPanelProps = {
   children: ReactNode
   className?: string
   containerRef: RefObject<HTMLDivElement | null>
-  layout: PanelLayout
+  interactionRef: RefObject<boolean>
+  layout: LauncherPanelLayout
   panel: PanelKey
-  setLayout: (panel: PanelKey, layout: PanelLayout) => void
+  setLayout: (panel: PanelKey, layout: LauncherPanelLayout) => void
 }
 
 function FloatingLauncherPanel({
   children,
   className,
   containerRef,
+  interactionRef,
   layout,
   panel,
   setLayout,
 }: FloatingLauncherPanelProps) {
   const dragStartRef = useRef<{
-    layout: PanelLayout
+    layout: LauncherPanelLayout
     pointerX: number
     pointerY: number
-    mode: 'drag' | 'resize'
+    mode: 'drag' | ResizeMode
   } | null>(null)
 
   const updateFromPointer = (clientX: number, clientY: number) => {
@@ -159,27 +228,50 @@ function FloatingLauncherPanel({
 
     const deltaX = clientX - start.pointerX
     const deltaY = clientY - start.pointerY
-    const containerRect = containerRef.current?.getBoundingClientRect() ?? null
+    const containerRect = readContainerRect(containerRef.current)
 
-    const next =
-      start.mode === 'drag'
-        ? {
-            ...start.layout,
-            x: start.layout.x + deltaX,
-            y: start.layout.y + deltaY,
-          }
-        : {
-            ...start.layout,
-            width: start.layout.width + deltaX,
-            height: start.layout.height + deltaY,
-          }
+    let next: LauncherPanelLayout
+    switch (start.mode) {
+      case 'drag':
+        next = {
+          ...start.layout,
+          x: start.layout.x + deltaX,
+          y: start.layout.y + deltaY,
+        }
+        break
+      case 'resize-e':
+        next = {
+          ...start.layout,
+          width: start.layout.width + deltaX,
+        }
+        break
+      case 'resize-s':
+        next = {
+          ...start.layout,
+          height: start.layout.height + deltaY,
+        }
+        break
+      case 'resize-se':
+        next = {
+          ...start.layout,
+          width: start.layout.width + deltaX,
+          height: start.layout.height + deltaY,
+        }
+        break
+      default: {
+        const unhandledMode: never = start.mode
+        throw new Error(`Unhandled panel interaction mode: ${unhandledMode}`)
+      }
+    }
 
     setLayout(panel, clampPanelLayout(next, containerRect))
   }
 
   const startInteraction =
-    (mode: 'drag' | 'resize') => (event: React.MouseEvent<HTMLButtonElement>) => {
+    (mode: 'drag' | ResizeMode) => (event: React.MouseEvent<HTMLElement>) => {
       event.preventDefault()
+      event.stopPropagation()
+      interactionRef.current = true
       dragStartRef.current = {
         layout,
         pointerX: event.clientX,
@@ -192,6 +284,7 @@ function FloatingLauncherPanel({
       }
 
       const handleMouseUp = () => {
+        interactionRef.current = false
         dragStartRef.current = null
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
@@ -202,13 +295,9 @@ function FloatingLauncherPanel({
     }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: panel === 'market' ? -30 : 30 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+    <div
       className={cn(
-        'quant-panel bg-espresso-950/45 absolute z-30 flex flex-col overflow-hidden rounded-2xl backdrop-blur-xl',
-        className,
+        'quant-panel bg-espresso-950/45 absolute z-30 flex min-h-0 flex-col overflow-hidden rounded-2xl backdrop-blur-xl',
       )}
       style={{
         left: layout.x,
@@ -217,40 +306,52 @@ function FloatingLauncherPanel({
         height: layout.height,
       }}
     >
-      <button
-        type="button"
-        aria-label={`Move ${panel} panel`}
-        title="Drag panel"
+      <div
+        role="presentation"
         onMouseDown={startInteraction('drag')}
-        className="border-brass-600/20 bg-carbon-950/70 text-silver-400 hover:text-brass-400 hover:border-brass-500/40 absolute top-2 left-1/2 z-20 flex h-6 w-10 -translate-x-1/2 cursor-grab touch-none items-center justify-center rounded-full border shadow-lg active:cursor-grabbing"
+        className="border-brass-600/15 bg-carbon-950/50 absolute inset-x-0 top-0 z-20 flex h-9 cursor-grab touch-none items-center justify-center border-b active:cursor-grabbing"
       >
-        <GripHorizontal className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
+        <GripHorizontal className="text-silver-400 h-4 w-4" />
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col pt-9">
+        <div className="flex min-h-0 flex-1">
+          <div className={cn('min-h-0 flex-1 overflow-y-auto', className)}>{children}</div>
+          <div
+            role="presentation"
+            aria-label={`Resize ${panel} panel width`}
+            title="Resize width"
+            onMouseDown={startInteraction('resize-e')}
+            className="hover:bg-brass-500/10 w-4 shrink-0 cursor-ew-resize touch-none transition-colors"
+          />
+        </div>
+        <div
+          role="presentation"
+          aria-label={`Resize ${panel} panel height`}
+          title="Resize height"
+          onMouseDown={startInteraction('resize-s')}
+          className="border-brass-600/15 hover:bg-brass-500/10 h-4 shrink-0 cursor-ns-resize touch-none border-t transition-colors"
+        />
+      </div>
+
+      <div
+        role="presentation"
         aria-label={`Resize ${panel} panel`}
         title="Resize panel"
-        onMouseDown={startInteraction('resize')}
-        className="border-brass-600/20 bg-carbon-950/70 text-silver-400 hover:text-brass-400 hover:border-brass-500/40 absolute top-2 right-12 z-20 flex h-6 w-6 cursor-nwse-resize touch-none items-center justify-center rounded-full border shadow-lg"
-      >
-        <Maximize2 className="h-3.5 w-3.5" />
-      </button>
-      {children}
-      <button
-        type="button"
-        aria-label={`Resize ${panel} panel from corner`}
-        title="Resize panel"
-        onMouseDown={startInteraction('resize')}
-        className="border-brass-500/30 absolute right-1.5 bottom-1.5 z-20 h-5 w-5 cursor-nwse-resize touch-none rounded-br-xl border-r-2 border-b-2 opacity-70 transition-opacity hover:opacity-100"
+        onMouseDown={startInteraction('resize-se')}
+        className="border-brass-500/40 absolute right-0 bottom-0 z-30 h-5 w-5 cursor-nwse-resize touch-none rounded-br-2xl border-r-2 border-b-2"
       />
-    </motion.div>
+    </div>
   )
 }
 
 export function LauncherDashboard() {
   const dashboardRef = useRef<HTMLDivElement>(null)
-  const layoutsInitializedRef = useRef(false)
-  const [panelLayouts, setPanelLayouts] = useState<PanelLayouts>(() => getDefaultPanelLayouts())
+  const isInteractingRef = useRef(false)
+  const lastContainerSizeRef = useRef({ width: 0, height: 0 })
+  const storedPanelLayouts = useAppStore((s) => s.launcherSession.panelLayouts)
+  const patchLauncherSession = useAppStore((s) => s.patchLauncherSession)
+  const panelLayouts = storedPanelLayouts ?? getDefaultPanelLayouts()
 
   // Load symbols from localStorage or use defaults
   const [symbols, setSymbols] = useState<string[]>(() => {
@@ -281,11 +382,10 @@ export function LauncherDashboard() {
   const searchResultsQuery = useSearchSymbols(searchQuery)
   const searchResults = useMemo(() => searchResultsQuery.data ?? [], [searchResultsQuery.data])
 
-  const updatePanelLayout = (panel: PanelKey, layout: PanelLayout) => {
-    setPanelLayouts((current) => {
-      const next = { ...current, [panel]: layout }
-      localStorage.setItem(PANEL_LAYOUT_STORAGE_KEY, JSON.stringify(next))
-      return next
+  const updatePanelLayout = (panel: PanelKey, layout: LauncherPanelLayout) => {
+    const current = useAppStore.getState().launcherSession.panelLayouts ?? getDefaultPanelLayouts()
+    patchLauncherSession({
+      panelLayouts: { ...current, [panel]: layout },
     })
   }
 
@@ -294,30 +394,40 @@ export function LauncherDashboard() {
     if (!node) return
 
     const syncLayoutsToContainer = () => {
-      const containerRect = node.getBoundingClientRect()
-      setPanelLayouts((current) => {
-        const defaults = getDefaultPanelLayouts(containerRect.width)
-        const source = layoutsInitializedRef.current
-          ? current
-          : {
-              market: { ...defaults.market, ...readStoredPanelLayouts().market },
-              system: { ...defaults.system, ...readStoredPanelLayouts().system },
-            }
-        layoutsInitializedRef.current = true
-        const next = {
-          market: clampPanelLayout(source.market, containerRect),
-          system: clampPanelLayout(source.system, containerRect),
-        }
-        localStorage.setItem(PANEL_LAYOUT_STORAGE_KEY, JSON.stringify(next))
-        return next
-      })
+      if (isInteractingRef.current) return
+
+      const containerRect = readContainerRect(node)
+      if (!containerRect) return
+
+      const sizeUnchanged =
+        containerRect.width === lastContainerSizeRef.current.width &&
+        containerRect.height === lastContainerSizeRef.current.height
+      const current = useAppStore.getState().launcherSession.panelLayouts
+
+      if (sizeUnchanged && current) return
+
+      lastContainerSizeRef.current = containerRect
+      const defaults = getDefaultPanelLayouts(containerRect.width, containerRect.height)
+      const legacyLayouts = current ? {} : readLegacyPanelLayouts()
+      const source = current ?? {
+        market: { ...defaults.market, ...legacyLayouts.market },
+        system: { ...defaults.system, ...legacyLayouts.system },
+      }
+      const next = {
+        market: normalizePanelLayout(source.market, containerRect, defaults.market),
+        system: normalizePanelLayout(source.system, containerRect, defaults.system),
+      }
+
+      if (current && layoutsAreEqual(current, next)) return
+
+      patchLauncherSession({ panelLayouts: next })
     }
 
     syncLayoutsToContainer()
     const observer = new ResizeObserver(syncLayoutsToContainer)
     observer.observe(node)
     return () => observer.disconnect()
-  }, [])
+  }, [patchLauncherSession])
 
   // Filter out instruments already in the watchlist
   const availableDefaultInstruments = useMemo(() => {
@@ -420,14 +530,12 @@ export function LauncherDashboard() {
   }
 
   return (
-    <div
-      ref={dashboardRef}
-      className="relative h-[min(790px,calc(100vh-220px))] w-full overflow-hidden"
-    >
+    <div ref={dashboardRef} className="relative min-h-0 w-full flex-1">
       {/* Left Sidebar - Market Tickers & Recent Simulations */}
       <FloatingLauncherPanel
         className="gap-4 p-4"
         containerRef={dashboardRef}
+        interactionRef={isInteractingRef}
         layout={panelLayouts.market}
         panel="market"
         setLayout={updatePanelLayout}
@@ -459,7 +567,7 @@ export function LauncherDashboard() {
         </div>
 
         {/* Tracked Symbols List */}
-        <div className="flex max-h-[260px] flex-col gap-3 overflow-y-auto pr-1">
+        <div className="flex flex-col gap-3">
           {symbols.length > 0 ? (
             symbols.map((symbol) => {
               const snapshot = snapshots[symbol]
@@ -634,7 +742,7 @@ export function LauncherDashboard() {
         <hr className="border-carbon-800/80" />
 
         {/* Recent Simulations */}
-        <div className="flex flex-1 flex-col gap-2.5 overflow-hidden">
+        <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <h3 className="text-silver-400 font-mono text-[10px] font-bold tracking-wider uppercase">
               Recent Simulations
@@ -647,7 +755,7 @@ export function LauncherDashboard() {
             </Link>
           </div>
 
-          <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
+          <div className="flex flex-col gap-2">
             {historyQuery.isLoading ? (
               <div className="flex flex-1 items-center justify-center py-4">
                 <span className="text-silver-500 font-mono text-[10px]">Loading history…</span>
@@ -711,6 +819,7 @@ export function LauncherDashboard() {
       <FloatingLauncherPanel
         className="gap-4 p-4"
         containerRef={dashboardRef}
+        interactionRef={isInteractingRef}
         layout={panelLayouts.system}
         panel="system"
         setLayout={updatePanelLayout}
@@ -868,7 +977,7 @@ export function LauncherDashboard() {
         )}
 
         {/* Market News Feed */}
-        <div className="flex flex-1 flex-col gap-2.5 overflow-hidden">
+        <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <h3 className="text-silver-400 font-mono text-[10px] font-bold tracking-wider uppercase">
               Market News Feed
@@ -876,7 +985,7 @@ export function LauncherDashboard() {
             <Newspaper className="text-brass-400 h-3.5 w-3.5" />
           </div>
 
-          <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
+          <div className="flex flex-col gap-2">
             {mockArticles.map((article) => (
               <button
                 key={article.id}
