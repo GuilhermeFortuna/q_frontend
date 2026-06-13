@@ -10,10 +10,16 @@ import {
 } from '@/components/backtests/StrategyIndicatorLayer'
 import { TradeHoverCard } from '@/components/backtests/TradeHoverCard'
 import { TradeMarkersLayer } from '@/components/backtests/TradeMarkersLayer'
-import { processBars } from '@/components/charts/hooks/useChartScales'
+import {
+  processBars,
+  applyPriceAxisTransform,
+  computePriceDomain,
+  usePriceAxis,
+} from '@/components/charts/hooks/useChartScales'
 import { useChartViewport } from '@/components/charts/hooks/useChartViewport'
 import { CandlestickLayer } from '@/components/charts/layers/CandlestickLayer'
 import { ChartAxes } from '@/components/charts/layers/ChartAxes'
+import { ChartAxisDragHandles } from '@/components/charts/layers/ChartAxisDragHandles'
 import { GridLayer } from '@/components/charts/layers/GridLayer'
 import { VolumeLayer } from '@/components/charts/layers/VolumeLayer'
 import { CHART_MARGINS } from '@/components/charts/types/chart'
@@ -83,7 +89,12 @@ function ChartInner({
     () => computeBacktestLayout(width, height, hasOscillator),
     [width, height, hasOscillator],
   )
-  const { viewport, resetViewport, fitAll, zoomAt, panBy } = useChartViewport(processed.length)
+  const { viewport, resetViewport, fitAll, zoomAt, panBy, stretchXByPixels } = useChartViewport(
+    processed.length,
+  )
+  const { pricePanOffset, priceScaleFactor, resetPriceAxis, stretchPriceByPixels } = usePriceAxis(
+    String(processed.length),
+  )
   const visibleBars = useMemo(
     () => processed.slice(viewport.startIndex, viewport.endIndex + 1),
     [processed, viewport],
@@ -101,12 +112,10 @@ function ChartInner({
       padding: 0.25,
     })
 
-    const priceMin = Math.min(...visibleBars.map((b) => b.low))
-    const priceMax = Math.max(...visibleBars.map((b) => b.high))
-    const pricePad = (priceMax - priceMin) * 0.08 || 1
+    const priceDomain = computePriceDomain(visibleBars, 0.08)
 
     const priceScale = scaleLinear<number>({
-      domain: [priceMin - pricePad, priceMax + pricePad],
+      domain: applyPriceAxisTransform(priceDomain, pricePanOffset, priceScaleFactor),
       range: [layout.priceTop + layout.priceHeight, layout.priceTop],
       nice: true,
     })
@@ -141,7 +150,7 @@ function ChartInner({
     }
 
     return { xScale, priceScale, volumeScale, oscillatorScale }
-  }, [visibleBars, layout, indicators])
+  }, [visibleBars, layout, indicators, pricePanOffset, priceScaleFactor])
 
   const isPanning = useRef(false)
   const panStart = useRef<{ x: number; startIndex: number } | null>(null)
@@ -199,7 +208,20 @@ function ChartInner({
 
   const handleDoubleClick = useCallback(() => {
     fitAll()
-  }, [fitAll])
+    resetPriceAxis()
+  }, [fitAll, resetPriceAxis])
+
+  const handleResetView = useCallback(() => {
+    resetViewport()
+    resetPriceAxis()
+  }, [resetViewport, resetPriceAxis])
+
+  const handleStretchX = useCallback(
+    (deltaX: number) => {
+      stretchXByPixels(deltaX, layout.innerWidth)
+    },
+    [stretchXByPixels, layout.innerWidth],
+  )
 
   const handleTradeHover = useCallback((trade: Trade | null, event?: React.MouseEvent) => {
     setHoveredTrade(trade)
@@ -227,7 +249,7 @@ function ChartInner({
       </div>
       <button
         type="button"
-        onClick={resetViewport}
+        onClick={handleResetView}
         className="border-carbon-700 bg-carbon-900/80 text-silver-400 hover:border-brass-500 hover:text-brass-400 absolute top-2 right-3 z-10 rounded border px-2 py-0.5 font-mono text-[9px] uppercase"
         aria-label="Reset chart view"
       >
@@ -355,11 +377,20 @@ function ChartInner({
           height={height}
         />
 
-        <rect
-          x={0}
-          y={0}
+        <ChartAxisDragHandles
           width={width}
           height={height}
+          margins={CHART_MARGINS}
+          layout={layout}
+          onStretchX={handleStretchX}
+          onStretchY={stretchPriceByPixels}
+        />
+
+        <rect
+          x={CHART_MARGINS.left}
+          y={CHART_MARGINS.top}
+          width={layout.innerWidth}
+          height={layout.innerHeight}
           fill="transparent"
           style={{ cursor: isPanning.current ? 'grabbing' : 'crosshair' }}
           onMouseMove={handleMouseMove}
@@ -432,7 +463,7 @@ function ChartLegend({ indicators }: { indicators: ChartIndicatorSeries[] }) {
         Losing trade
       </span>
       <span className="text-silver-500">
-        Scroll to zoom · drag to pan · double-click to fit all
+        Scroll to zoom · drag plot to pan · drag axes to stretch · double-click to fit all
       </span>
     </div>
   )

@@ -8,7 +8,13 @@ import type {
   ProcessedBar,
 } from '@/components/charts/types/chart'
 import type { OhlcvBar } from '@/types/api'
-import { BULL_COLOR, BEAR_COLOR } from '@/components/charts/types/chart'
+import {
+  BULL_COLOR,
+  BEAR_COLOR,
+  MAX_PRICE_SCALE_FACTOR,
+  MIN_PRICE_SCALE_FACTOR,
+  PRICE_AXIS_STRETCH_SENSITIVITY,
+} from '@/components/charts/types/chart'
 
 export function computePriceDomain(bars: ProcessedBar[], paddingRatio = 0.06) {
   if (bars.length === 0) {
@@ -22,15 +28,28 @@ export function computePriceDomain(bars: ProcessedBar[], paddingRatio = 0.06) {
   return { min, max, span: max - min }
 }
 
-export function usePricePan(resetKey: string) {
+export function applyPriceAxisTransform(
+  domain: { min: number; max: number; span: number },
+  panOffset: number,
+  scaleFactor: number,
+): [number, number] {
+  const center = (domain.min + domain.max) / 2 + panOffset
+  const halfSpan = (domain.span / 2) * scaleFactor
+  return [center - halfSpan, center + halfSpan]
+}
+
+export function usePriceAxis(resetKey: string) {
   const [offset, setOffset] = useState(0)
+  const [scaleFactor, setScaleFactor] = useState(1)
 
   useEffect(() => {
     setOffset(0)
+    setScaleFactor(1)
   }, [resetKey])
 
-  const resetPricePan = useCallback(() => {
+  const resetPriceAxis = useCallback(() => {
     setOffset(0)
+    setScaleFactor(1)
   }, [])
 
   const panPriceByPixels = useCallback(
@@ -42,7 +61,31 @@ export function usePricePan(resetKey: string) {
     [],
   )
 
-  return { pricePanOffset: offset, resetPricePan, panPriceByPixels }
+  const stretchPriceByPixels = useCallback((deltaY: number) => {
+    if (deltaY === 0) return
+    const factor = Math.exp(deltaY * PRICE_AXIS_STRETCH_SENSITIVITY)
+    setScaleFactor((prev) =>
+      Math.max(MIN_PRICE_SCALE_FACTOR, Math.min(MAX_PRICE_SCALE_FACTOR, prev * factor)),
+    )
+  }, [])
+
+  return {
+    pricePanOffset: offset,
+    priceScaleFactor: scaleFactor,
+    resetPriceAxis,
+    panPriceByPixels,
+    stretchPriceByPixels,
+  }
+}
+
+/** @deprecated Use usePriceAxis instead. */
+export function usePricePan(resetKey: string) {
+  const axis = usePriceAxis(resetKey)
+  return {
+    pricePanOffset: axis.pricePanOffset,
+    resetPricePan: axis.resetPriceAxis,
+    panPriceByPixels: axis.panPriceByPixels,
+  }
 }
 
 const VOLUME_RATIO = 0.18
@@ -119,6 +162,7 @@ export function useChartScales(
   layout: PaneLayout,
   margins: { left: number },
   pricePanOffset = 0,
+  priceScaleFactor = 1,
 ) {
   return useMemo(() => {
     const barsInView = slots.flatMap((slot) => (slot.bar ? [slot.bar] : []))
@@ -129,10 +173,10 @@ export function useChartScales(
       padding: 0.25,
     })
 
-    const { min: priceMin, max: priceMax } = computePriceDomain(barsInView)
+    const priceDomain = computePriceDomain(barsInView)
 
     const priceScale = scaleLinear<number>({
-      domain: [priceMin + pricePanOffset, priceMax + pricePanOffset],
+      domain: applyPriceAxisTransform(priceDomain, pricePanOffset, priceScaleFactor),
       range: [layout.priceTop + layout.priceHeight, layout.priceTop],
       nice: true,
     })
@@ -163,7 +207,7 @@ export function useChartScales(
       macdScale,
       marginLeft: margins.left,
     }
-  }, [slots, layout, margins.left, pricePanOffset])
+  }, [slots, layout, margins.left, pricePanOffset, priceScaleFactor])
 }
 
 export function barCenterX(

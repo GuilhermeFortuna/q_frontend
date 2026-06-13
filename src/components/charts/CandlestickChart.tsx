@@ -30,13 +30,14 @@ import {
   processBars,
   timestampAtX,
   useChartScales,
-  usePricePan,
+  usePriceAxis,
 } from '@/components/charts/hooks/useChartScales'
 import { useChartViewport } from '@/components/charts/hooks/useChartViewport'
 import { CandlestickLayer } from '@/components/charts/layers/CandlestickLayer'
 import { VolumeLayer } from '@/components/charts/layers/VolumeLayer'
 import { GridLayer } from '@/components/charts/layers/GridLayer'
 import { ChartAxes } from '@/components/charts/layers/ChartAxes'
+import { ChartAxisDragHandles } from '@/components/charts/layers/ChartAxisDragHandles'
 import { IndicatorLayer } from '@/components/charts/layers/IndicatorLayer'
 import { OscillatorPane } from '@/components/charts/layers/OscillatorPane'
 import { CrosshairLayer } from '@/components/charts/layers/CrosshairLayer'
@@ -103,11 +104,15 @@ const ChartInner = forwardRef<
 
   const processed = useMemo(() => processBars(data), [data])
   const viewportResetKey = resetKey ?? `${symbol}:${timeframe}`
-  const { viewport, scrollToEnd, fitAll, zoomAt, panBy, shiftViewport } = useChartViewport(
-    processed.length,
-    viewportResetKey,
-  )
-  const { pricePanOffset, resetPricePan, panPriceByPixels } = usePricePan(viewportResetKey)
+  const { viewport, scrollToEnd, fitAll, zoomAt, panBy, shiftViewport, stretchXByPixels } =
+    useChartViewport(processed.length, viewportResetKey)
+  const {
+    pricePanOffset,
+    priceScaleFactor,
+    resetPriceAxis,
+    panPriceByPixels,
+    stretchPriceByPixels,
+  } = usePriceAxis(viewportResetKey)
 
   const viewportSlots = useMemo(
     () => buildViewportSlots(processed, viewport),
@@ -130,7 +135,13 @@ const ChartInner = forwardRef<
     [width, height, indicators],
   )
 
-  const scales = useChartScales(viewportSlots, layout, CHART_MARGINS, pricePanOffset)
+  const scales = useChartScales(
+    viewportSlots,
+    layout,
+    CHART_MARGINS,
+    pricePanOffset,
+    priceScaleFactor,
+  )
 
   const macdValues = useMemo(() => {
     const macdInd = indicators.find((i) => i.type === 'macd' && i.enabled)
@@ -302,13 +313,20 @@ const ChartInner = forwardRef<
 
   const handleGoToLatest = useCallback(() => {
     scrollToEnd()
-    resetPricePan()
-  }, [scrollToEnd, resetPricePan])
+    resetPriceAxis()
+  }, [scrollToEnd, resetPriceAxis])
 
   const handleDoubleClick = useCallback(() => {
     fitAll()
-    resetPricePan()
-  }, [fitAll, resetPricePan])
+    resetPriceAxis()
+  }, [fitAll, resetPriceAxis])
+
+  const handleStretchX = useCallback(
+    (deltaX: number) => {
+      stretchXByPixels(deltaX, layout.innerWidth)
+    },
+    [stretchXByPixels, layout.innerWidth],
+  )
 
   const rsiInd = indicators.find((i) => i.type === 'rsi')
   const macdInd = indicators.find((i) => i.type === 'macd')
@@ -554,11 +572,21 @@ const ChartInner = forwardRef<
           height={height}
         />
 
-        <rect
-          x={0}
-          y={0}
+        <ChartAxisDragHandles
           width={width}
           height={height}
+          margins={CHART_MARGINS}
+          layout={layout}
+          onStretchX={handleStretchX}
+          onStretchY={stretchPriceByPixels}
+          disabled={activeDrawingTool !== 'cursor'}
+        />
+
+        <rect
+          x={CHART_MARGINS.left}
+          y={CHART_MARGINS.top}
+          width={layout.innerWidth}
+          height={layout.innerHeight}
           fill="transparent"
           style={{ cursor: cursorStyle }}
           onMouseMove={handleMouseMove}

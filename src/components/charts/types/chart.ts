@@ -127,6 +127,10 @@ export const GRID_COLOR = 'rgba(111, 119, 133, 0.12)'
 
 export const DEFAULT_VISIBLE_BARS = 120
 export const MIN_VISIBLE_BARS = 20
+export const MAX_PRICE_SCALE_FACTOR = 20
+export const MIN_PRICE_SCALE_FACTOR = 0.05
+export const PRICE_AXIS_STRETCH_SENSITIVITY = 0.008
+export const TIME_AXIS_STRETCH_SENSITIVITY = 1
 
 export const DEFAULT_INDICATORS: IndicatorConfig[] = [
   {

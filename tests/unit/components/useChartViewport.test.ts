@@ -85,4 +85,24 @@ describe('useChartViewport', () => {
     expect(result.current.viewport.endIndex).toBeGreaterThan(barCount - 1)
     expect(result.current.viewport.endIndex).toBeLessThanOrEqual(barCount - 1 + count)
   })
+
+  it('stretchXByPixels expands and compresses the visible bar window', () => {
+    const { result } = renderHook(() => useChartViewport(200, 'PETR4:1H'))
+    const initialCount = result.current.viewport.endIndex - result.current.viewport.startIndex + 1
+
+    act(() => {
+      result.current.stretchXByPixels(120, 600)
+    })
+
+    const expandedCount = result.current.viewport.endIndex - result.current.viewport.startIndex + 1
+    expect(expandedCount).toBeGreaterThan(initialCount)
+
+    act(() => {
+      result.current.stretchXByPixels(-240, 600)
+    })
+
+    const compressedCount =
+      result.current.viewport.endIndex - result.current.viewport.startIndex + 1
+    expect(compressedCount).toBeLessThan(expandedCount)
+  })
 })

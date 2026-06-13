@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import type { ChartViewport } from '@/components/charts/types/chart'
-import { DEFAULT_VISIBLE_BARS, MIN_VISIBLE_BARS } from '@/components/charts/types/chart'
+import {
+  DEFAULT_VISIBLE_BARS,
+  MIN_VISIBLE_BARS,
+  TIME_AXIS_STRETCH_SENSITIVITY,
+} from '@/components/charts/types/chart'
 
 export function useChartViewport(barCount: number, resetKey = '') {
   const [viewport, setViewport] = useState<ChartViewport>({ startIndex: 0, endIndex: 0 })
@@ -112,6 +116,39 @@ export function useChartViewport(barCount: number, resetKey = '') {
     [barCount],
   )
 
+  const stretchXByPixels = useCallback(
+    (deltaX: number, innerWidth: number) => {
+      if (barCount === 0 || innerWidth <= 0 || deltaX === 0) return
+
+      setViewport((prev) => {
+        const currentCount = prev.endIndex - prev.startIndex + 1
+        const barsPerPixel = (currentCount / innerWidth) * TIME_AXIS_STRETCH_SENSITIVITY
+        const barChange = Math.round(deltaX * barsPerPixel)
+        if (barChange === 0) return prev
+
+        let nextCount = currentCount + barChange
+        nextCount = Math.max(MIN_VISIBLE_BARS, Math.min(barCount, nextCount))
+
+        const anchorRatio = 0.5
+        const anchor = prev.startIndex + currentCount * anchorRatio
+        let start = Math.round(anchor - nextCount * anchorRatio)
+        let end = start + nextCount - 1
+
+        if (start < 0) {
+          start = 0
+          end = Math.min(barCount - 1, nextCount - 1)
+        }
+        if (end > barCount - 1) {
+          end = barCount - 1
+          start = Math.max(0, end - nextCount + 1)
+        }
+
+        return { startIndex: start, endIndex: end }
+      })
+    },
+    [barCount],
+  )
+
   return {
     viewport,
     setViewport,
@@ -120,6 +157,7 @@ export function useChartViewport(barCount: number, resetKey = '') {
     fitAll,
     zoomAt,
     panBy,
+    stretchXByPixels,
     shiftViewport,
   }
 }
