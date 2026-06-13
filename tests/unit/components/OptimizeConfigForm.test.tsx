@@ -47,6 +47,8 @@ describe('OptimizeConfigForm', () => {
     await user.click(screen.getByRole('button', { name: 'Run Optimization' }))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
+    const study = onSubmit.mock.calls[0][0].study
+    expect(study).not.toHaveProperty('max_workers')
     const backtest = onSubmit.mock.calls[0][0].backtest
     expect(backtest.timeframe).toBe('D1')
     expect(backtest.engine).toBeUndefined()
@@ -189,5 +191,22 @@ describe('OptimizeConfigForm', () => {
     expect(hydrated.engine).toBe('tick')
     expect(hydrated.displayTimeframe).toBe('H1')
     expect(hydrated.tickFlags).toBe('trade')
+  })
+
+  it('submits max_workers when worker processes is set in advanced settings', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderForm(onSubmit)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Strategy')).toHaveValue('MACrossover')
+    })
+
+    await user.click(screen.getByRole('button', { name: /Advanced Settings/i }))
+    await user.type(screen.getByLabelText('Worker processes'), '4')
+    await user.click(screen.getByRole('button', { name: 'Run Optimization' }))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit.mock.calls[0][0].study.max_workers).toBe(4)
   })
 })

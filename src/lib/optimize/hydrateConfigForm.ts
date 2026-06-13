@@ -5,6 +5,7 @@ import {
   hydrateTransactionCostFields,
   type TransactionCostFields,
 } from '@/lib/backtesting/transactionCosts'
+import { formatMaxWorkersForInput } from '@/lib/optimize/studyConfig'
 import {
   defaultSearchSpaceFromSpecs,
   hydrateSearchSpaceFromPayload,
@@ -35,6 +36,7 @@ export type OptimizeFormHydration = {
   seed: number
   pruner: 'none' | 'median' | 'hyperband'
   continueOnTrialError: boolean
+  maxWorkersInput: string
   strategy: string
   strategySearchSpace: Record<string, SearchSpaceFieldState>
   riskMode: RiskMode
@@ -136,6 +138,7 @@ export function hydrateOptimizeFormFromConfig(
     seed: config.study.seed ?? 42,
     pruner: config.study.pruner ?? 'none',
     continueOnTrialError: config.study.continue_on_trial_error ?? false,
+    maxWorkersInput: formatMaxWorkersForInput(config.study.max_workers),
     strategy: strategyName,
     strategySearchSpace:
       Object.keys(strategySearchSpace).length > 0

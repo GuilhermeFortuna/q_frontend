@@ -9,6 +9,8 @@ type OptimizeAdvancedSectionProps = {
   setPruner: (v: 'none' | 'median' | 'hyperband') => void
   continueOnTrialError: boolean
   setContinueOnTrialError: (v: boolean) => void
+  maxWorkersInput?: string
+  onMaxWorkersInputChange?: (v: string) => void
 }
 
 export function OptimizeAdvancedSection({
@@ -20,11 +22,15 @@ export function OptimizeAdvancedSection({
   setPruner,
   continueOnTrialError,
   setContinueOnTrialError,
+  maxWorkersInput,
+  onMaxWorkersInputChange,
 }: OptimizeAdvancedSectionProps) {
+  const showWorkerProcesses = maxWorkersInput != null && onMaxWorkersInputChange != null
+
   return (
     <FormSection title="Advanced Settings" open={open} onToggle={onToggle}>
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+        <div className={`grid gap-3 ${showWorkerProcesses ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <div className="space-y-1">
             <label className="text-silver-300 text-xs font-semibold">Seed</label>
             <input
@@ -49,6 +55,30 @@ export function OptimizeAdvancedSection({
               ))}
             </select>
           </div>
+
+          {showWorkerProcesses ? (
+            <div className="space-y-1">
+              <label
+                htmlFor="optimize-max-workers"
+                className="text-silver-300 text-xs font-semibold"
+              >
+                Worker processes
+              </label>
+              <input
+                id="optimize-max-workers"
+                type="number"
+                min={1}
+                step={1}
+                placeholder="Auto"
+                value={maxWorkersInput}
+                onChange={(e) => onMaxWorkersInputChange(e.target.value)}
+                className={inputClass}
+              />
+              <p className="text-silver-400 text-[11px] leading-normal">
+                Candle studies only. Empty uses all CPU cores.
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="pt-1">
@@ -63,12 +93,16 @@ export function OptimizeAdvancedSection({
           </label>
         </div>
 
-        <div className="border-carbon-600/30 bg-carbon-950/20 space-y-1 rounded-lg border border-dashed p-3 opacity-60">
-          <p className="text-silver-300 text-xs font-bold tracking-wider uppercase">Coming soon</p>
-          <p className="text-silver-400 text-xs leading-normal">
-            Storage backend, parallel execution, and custom constraints.
-          </p>
-        </div>
+        {!showWorkerProcesses ? (
+          <div className="border-carbon-600/30 bg-carbon-950/20 space-y-1 rounded-lg border border-dashed p-3 opacity-60">
+            <p className="text-silver-300 text-xs font-bold tracking-wider uppercase">
+              Coming soon
+            </p>
+            <p className="text-silver-400 text-xs leading-normal">
+              Storage backend and custom constraints.
+            </p>
+          </div>
+        ) : null}
       </div>
     </FormSection>
   )

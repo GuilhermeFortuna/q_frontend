@@ -32,6 +32,8 @@ export type StudyConfig = {
   sampler?: Sampler | null
   pruner?: 'none' | 'median' | 'hyperband'
   continue_on_trial_error?: boolean
+  /** Omit or null => auto (one worker per CPU, capped by n_trials). */
+  max_workers?: number | null
 }
 
 export type ObjectiveConfig = { mode: ObjectiveMode }
@@ -78,6 +80,8 @@ export type OptimizationStatus = {
   best_value: number | null
   best_params: Record<string, unknown>
   error: string | null
+  /** Resolved parallel process count for candle studies (omit or 1 => sequential UI). */
+  workers?: number
   /** Present when the backend can resolve the study's original backtest window. */
   backtest_config?: OptimizationBacktestConfig
   /** Full optimization config for rehydrating the optimizer form. */

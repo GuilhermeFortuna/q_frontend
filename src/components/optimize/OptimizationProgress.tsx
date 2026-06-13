@@ -19,12 +19,19 @@ export function OptimizationProgress({
     status.n_trials > 0
       ? Math.min(100, Math.round((status.completed_trials / status.n_trials) * 100))
       : 0
+  const isParallel = (status.workers ?? 1) > 1
+  const headerLabel = isParallel
+    ? `Running ${status.n_trials} trials · ${status.workers} in parallel`
+    : null
 
   return (
     <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-4">
       <div className="quant-panel relative w-full max-w-md overflow-hidden rounded-2xl px-6 py-8 shadow-xl">
         <ActiveOutline />
         <div className="relative z-20">
+          {headerLabel ? (
+            <p className="text-silver-200 mb-3 text-center text-sm font-medium">{headerLabel}</p>
+          ) : null}
           <div className="text-silver-300 mb-2.5 flex justify-between font-mono text-xs font-bold tracking-wide uppercase">
             <span>
               Progress: {status.completed_trials} / {status.n_trials} Trials

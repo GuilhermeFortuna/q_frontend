@@ -9,6 +9,7 @@ import { OptimizeStudySection } from '@/components/optimize/OptimizeStudySection
 import { Button } from '@/components/ui/button'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
+import { isMaxWorkersInputInvalid, withMaxWorkers } from '@/lib/optimize/studyConfig'
 import {
   buildCostsPayload,
   defaultTransactionCostFields,
@@ -67,6 +68,7 @@ export function OptimizeConfigForm({
   const [seed, setSeed] = useState(42)
   const [pruner, setPruner] = useState<'none' | 'median' | 'hyperband'>('none')
   const [continueOnTrialError, setContinueOnTrialError] = useState(false)
+  const [maxWorkersInput, setMaxWorkersInput] = useState('')
 
   const [strategy, setStrategy] = useState('MACrossover')
   const [strategySearchSpace, setStrategySearchSpace] = useState<
@@ -132,6 +134,7 @@ export function OptimizeConfigForm({
     setSeed(hydrated.seed)
     setPruner(hydrated.pruner)
     setContinueOnTrialError(hydrated.continueOnTrialError)
+    setMaxWorkersInput(hydrated.maxWorkersInput)
     setStrategy(hydrated.strategy)
     setStrategySearchSpace(hydrated.strategySearchSpace)
     setRiskMode(hydrated.riskMode)
@@ -193,7 +196,12 @@ export function OptimizeConfigForm({
         ? marginLow > marginHigh || minContractsLow > minContractsHigh
         : targetVolLow > targetVolHigh || inverseMinContractsLow > inverseMinContractsHigh) ||
     !validateSearchSpace(strategySearchSpace)
-  const formInvalid = dateRangeInvalid || rangesInvalid || nTrials < 1 || !costValidation.valid
+  const formInvalid =
+    dateRangeInvalid ||
+    rangesInvalid ||
+    nTrials < 1 ||
+    !costValidation.valid ||
+    isMaxWorkersInputInvalid(maxWorkersInput)
 
   const isMultiObjective = objective === 'multi_objective_return_drawdown'
 
@@ -237,14 +245,17 @@ export function OptimizeConfigForm({
     const costs = buildCostsPayload(costFields)
 
     onSubmit({
-      study: {
-        name: `${symbol}_${objective}_${Date.now()}`,
-        n_trials: nTrials,
-        seed,
-        pruner,
-        continue_on_trial_error: continueOnTrialError,
-        sampler: isMultiObjective ? 'nsgaii' : sampler,
-      },
+      study: withMaxWorkers(
+        {
+          name: `${symbol}_${objective}_${Date.now()}`,
+          n_trials: nTrials,
+          seed,
+          pruner,
+          continue_on_trial_error: continueOnTrialError,
+          sampler: isMultiObjective ? 'nsgaii' : sampler,
+        },
+        maxWorkersInput,
+      ),
       objective: { mode: objective },
       backtest: {
         symbol,
@@ -380,6 +391,8 @@ export function OptimizeConfigForm({
             setPruner={setPruner}
             continueOnTrialError={continueOnTrialError}
             setContinueOnTrialError={setContinueOnTrialError}
+            maxWorkersInput={maxWorkersInput}
+            onMaxWorkersInputChange={setMaxWorkersInput}
           />
         </div>
 
