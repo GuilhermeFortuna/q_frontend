@@ -98,7 +98,7 @@ describe('BacktestSetupPanel — hydration from pending config', () => {
     renderWithQueryClient(<SetupPanelHarness />)
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Position Sizing')).toHaveValue('inverse_volatility')
+      expect(screen.getByLabelText('Sizing Mode')).toHaveValue('inverse_volatility')
     })
 
     expect(screen.getByDisplayValue('8')).toBeInTheDocument()

@@ -5,6 +5,7 @@ export type WorkspaceId =
   | 'backtests'
   | 'optimize'
   | 'validate'
+  | 'discover'
   | 'system'
 
 export type SystemHealth = {

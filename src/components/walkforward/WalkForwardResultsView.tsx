@@ -13,12 +13,17 @@ type WalkForwardResultsViewProps = {
   results: WalkForwardResults
   backtest: OptimizationBacktestConfig
   statusLabel?: string
+  /** Hide per-window table and use a single aggregated IS/OOS bar pair. */
+  compact?: boolean
+  aggregatedIsMetrics?: Record<string, number> | null
 }
 
 export function WalkForwardResultsView({
   results,
   backtest,
   statusLabel,
+  compact = false,
+  aggregatedIsMetrics = null,
 }: WalkForwardResultsViewProps) {
   const objectiveMode = results.optimization_config?.objective.mode ?? 'maximize_return_drawdown'
   const equityPoints = walkForwardEquityToChartPoints(results.equity_curve)
@@ -76,12 +81,22 @@ export function WalkForwardResultsView({
         fillHeight
       />
 
-      <IsOosComparisonChart windows={results.windows} objectiveMode={objectiveMode} />
+      <IsOosComparisonChart
+        windows={compact ? [] : results.windows}
+        objectiveMode={objectiveMode}
+        aggregatedSummary={
+          compact
+            ? { is_metrics: aggregatedIsMetrics, oos_metrics: results.oos_metrics }
+            : undefined
+        }
+      />
 
-      <div>
-        <h4 className="text-silver-200 mb-2 text-sm font-medium">Per-window breakdown</h4>
-        <WalkForwardWindowsTable windows={results.windows} objectiveMode={objectiveMode} />
-      </div>
+      {!compact ? (
+        <div>
+          <h4 className="text-silver-200 mb-2 text-sm font-medium">Per-window breakdown</h4>
+          <WalkForwardWindowsTable windows={results.windows} objectiveMode={objectiveMode} />
+        </div>
+      ) : null}
     </div>
   )
 }

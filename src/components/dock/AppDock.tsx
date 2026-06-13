@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import {
   Activity,
   BarChart3,
+  Compass,
   FlaskConical,
   Home,
   Settings,
@@ -28,6 +29,7 @@ const dockItems: DockItem[] = [
   { id: 'backtests', label: 'Backtests', to: '/backtests', icon: Activity, enabled: true },
   { id: 'optimize', label: 'Optimize', to: '/optimize', icon: SlidersHorizontal, enabled: true },
   { id: 'validate', label: 'Validate', to: '/validate', icon: ShieldCheck, enabled: true },
+  { id: 'discover', label: 'Discover', to: '/discover', icon: Compass, enabled: true },
   { id: 'system', label: 'System', to: '/system', icon: Settings, enabled: true },
 ]
 

@@ -19,22 +19,42 @@ import {
 import type { ObjectiveMode } from '@/types/optimization'
 import type { WalkForwardWindowResult } from '@/types/walkforward'
 
+type AggregatedIsOosMetrics = {
+  is_metrics: Record<string, number> | null
+  oos_metrics: Record<string, number> | null
+}
+
 type IsOosComparisonChartProps = {
   windows: WalkForwardWindowResult[]
   objectiveMode: ObjectiveMode
+  /** Single aggregated IS vs OOS bar pair (e.g. strategy-search candidate summary). */
+  aggregatedSummary?: AggregatedIsOosMetrics
 }
 
-export function IsOosComparisonChart({ windows, objectiveMode }: IsOosComparisonChartProps) {
-  const chartData = useMemo(
-    () =>
-      windows.map((window) => ({
-        label: `W${window.index + 1}`,
-        is: objectiveMetricValue(window.is_metrics, objectiveMode),
-        oos: objectiveMetricValue(window.oos_metrics, objectiveMode),
-        status: window.status,
-      })),
-    [windows, objectiveMode],
-  )
+export function IsOosComparisonChart({
+  windows,
+  objectiveMode,
+  aggregatedSummary,
+}: IsOosComparisonChartProps) {
+  const chartData = useMemo(() => {
+    if (aggregatedSummary) {
+      return [
+        {
+          label: 'Summary',
+          is: objectiveMetricValue(aggregatedSummary.is_metrics, objectiveMode),
+          oos: objectiveMetricValue(aggregatedSummary.oos_metrics, objectiveMode),
+          status: 'completed' as const,
+        },
+      ]
+    }
+
+    return windows.map((window) => ({
+      label: `W${window.index + 1}`,
+      is: objectiveMetricValue(window.is_metrics, objectiveMode),
+      oos: objectiveMetricValue(window.oos_metrics, objectiveMode),
+      status: window.status,
+    }))
+  }, [aggregatedSummary, windows, objectiveMode])
 
   if (chartData.length === 0) {
     return null

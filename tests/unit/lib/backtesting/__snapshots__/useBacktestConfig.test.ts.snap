@@ -6,14 +6,14 @@ exports[`buildBacktestRequest > matches candle engine snapshot with fixed_quanti
   "day_trade_close_time": "17:00",
   "day_trade_end_time": "16:00",
   "day_trade_start_time": "09:00",
-  "end": "2026-06-12T02:59:59.999Z",
+  "end": "2026-06-14T02:59:59.999Z",
   "initial_capital": 100000,
   "point_value": 1,
   "position_sizing": {
     "quantity": 1,
     "type": "fixed_quantity",
   },
-  "start": "2025-06-11T03:00:00.000Z",
+  "start": "2025-06-13T03:00:00.000Z",
   "strategy": "MACrossover",
   "strategy_params": {
     "long_ma_type": "sma",
@@ -37,7 +37,7 @@ exports[`buildBacktestRequest > matches candle snapshot with safety margin sizin
   "day_trade_close_time": "17:00",
   "day_trade_end_time": "16:00",
   "day_trade_start_time": "09:00",
-  "end": "2026-06-12T02:59:59.999Z",
+  "end": "2026-06-14T02:59:59.999Z",
   "initial_capital": 100000,
   "point_value": 1,
   "position_sizing": {
@@ -46,7 +46,7 @@ exports[`buildBacktestRequest > matches candle snapshot with safety margin sizin
     "safety_margin_per_contract": 5000,
     "type": "fixed_safety_margin",
   },
-  "start": "2025-06-11T03:00:00.000Z",
+  "start": "2025-06-13T03:00:00.000Z",
   "strategy": "MACrossover",
   "strategy_params": {
     "long_ma_type": "sma",
@@ -67,7 +67,7 @@ exports[`buildBacktestRequest > matches tick engine snapshot with inverse volati
   "day_trade_end_time": "15:00",
   "day_trade_start_time": "10:00",
   "display_timeframe": "M5",
-  "end": "2026-06-12T02:59:59.999Z",
+  "end": "2026-06-14T02:59:59.999Z",
   "engine": "tick",
   "initial_capital": 100000,
   "point_value": 1,
@@ -77,7 +77,7 @@ exports[`buildBacktestRequest > matches tick engine snapshot with inverse volati
     "target_volatility_pct": 8,
     "type": "inverse_volatility",
   },
-  "start": "2025-06-11T03:00:00.000Z",
+  "start": "2025-06-13T03:00:00.000Z",
   "strategy": "TickMaBreakout",
   "strategy_params": {
     "long_period": 200,

@@ -48,7 +48,7 @@ describe('BacktestSetupPanel', () => {
     renderSetup()
     await waitForMaCrossoverSelected()
 
-    expect(screen.getByLabelText('Position Sizing')).toHaveValue('fixed_quantity')
+    expect(screen.getByLabelText('Sizing Mode')).toHaveValue('fixed_quantity')
     expect(screen.getByText('Quantity')).toBeInTheDocument()
     expect(screen.queryByText('Safety Margin per Contract')).not.toBeInTheDocument()
   })
@@ -115,7 +115,7 @@ describe('BacktestSetupPanel', () => {
     expect(
       screen.queryByRole('button', { name: /MA Crossover/i, pressed: true }),
     ).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Display Timeframe')).toHaveValue('M1')
+    expect(screen.getByLabelText('Display TF')).toHaveValue('M1')
     expect(screen.getByLabelText('Tick Source')).toHaveValue('all')
     expect(screen.queryByText('Timeframe')).not.toBeInTheDocument()
 

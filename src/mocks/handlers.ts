@@ -27,6 +27,18 @@ import {
   walkForwardResultsFromJob,
   walkForwardStatusFromJob,
 } from '@/mocks/walkforward'
+import {
+  deletedStrategySearchRunIds,
+  getMockCandidateEquityPoints,
+  getMockStrategySearchResults,
+  getMockStrategySearchStatus,
+  getUpdatedStrategySearchJob,
+  mockStrategySearchJobs,
+  mockStrategySearchRunSummaries,
+  resetMockStrategySearchState,
+  strategySearchResultsFromJob,
+  strategySearchStatusFromJob,
+} from '@/mocks/strategySearch'
 import type { BacktestRequest } from '@/types/backtesting'
 import type { OptimizationTrial } from '@/types/optimization'
 
@@ -45,6 +57,10 @@ export function resetMockOptimizationDeletes() {
 
 export function resetMockWalkForwardDeletes() {
   resetMockWalkForwardState()
+}
+
+export function resetMockStrategySearchDeletes() {
+  resetMockStrategySearchState()
 }
 
 export const handlers = [
@@ -591,6 +607,141 @@ export const handlers = [
     }
     deletedWalkForwardRunIds.add(runId)
     mockWalkForwardJobs.delete(runId)
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('*/api/v1/strategy-searches', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = parseInt(url.searchParams.get('limit') ?? '50', 10)
+    const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
+
+    const items = mockStrategySearchRunSummaries.filter(
+      (run) => !deletedStrategySearchRunIds.has(run.run_id),
+    )
+
+    return HttpResponse.json({
+      items: items.slice(offset, offset + limit),
+      total: items.length,
+      limit,
+      offset,
+    })
+  }),
+
+  http.post('*/api/v1/strategy-search', async ({ request }) => {
+    const body = await request.json()
+    const runId = `ss_${Math.random().toString(36).substring(2, 11)}`
+    const config = body as { strategies?: string[] | null }
+    const totalCandidates =
+      config.strategies?.length ??
+      (mockStrategies.strategies.filter((s) => (s.engine ?? 'candle') === 'candle').length || 3)
+
+    mockStrategySearchJobs.set(runId, {
+      run_id: runId,
+      status: 'pending',
+      total_candidates: totalCandidates,
+      start_time: Date.now(),
+      request_body: body,
+    })
+
+    return HttpResponse.json({ run_id: runId, status: 'pending' })
+  }),
+
+  http.get('*/api/v1/strategy-search/:runId', ({ params }) => {
+    const runId = String(params.runId)
+    if (deletedStrategySearchRunIds.has(runId)) {
+      return HttpResponse.json(
+        { detail: `Strategy search run '${runId}' not found.` },
+        { status: 404 },
+      )
+    }
+
+    const job = getUpdatedStrategySearchJob(runId)
+    if (job) {
+      return HttpResponse.json(strategySearchStatusFromJob(job))
+    }
+
+    const staticStatus = getMockStrategySearchStatus(runId)
+    if (staticStatus) {
+      return HttpResponse.json(staticStatus)
+    }
+
+    return HttpResponse.json(
+      { detail: `Strategy search run '${runId}' not found.` },
+      { status: 404 },
+    )
+  }),
+
+  http.get('*/api/v1/strategy-search/:runId/results', ({ params }) => {
+    const runId = String(params.runId)
+    if (deletedStrategySearchRunIds.has(runId)) {
+      return HttpResponse.json(
+        { detail: `Strategy search run '${runId}' not found.` },
+        { status: 404 },
+      )
+    }
+
+    const job = getUpdatedStrategySearchJob(runId)
+    if (job && (job.status === 'completed' || job.status === 'cancelled')) {
+      return HttpResponse.json(strategySearchResultsFromJob(job))
+    }
+
+    const staticResults = getMockStrategySearchResults(runId)
+    if (staticResults) {
+      return HttpResponse.json(staticResults)
+    }
+
+    return HttpResponse.json(
+      { detail: `Strategy search run '${runId}' not found.` },
+      { status: 404 },
+    )
+  }),
+
+  http.get(
+    '*/api/v1/strategy-search/:runId/candidates/:candidateId/artifacts/equity',
+    ({ params }) => {
+      const runId = String(params.runId)
+      const candidateId = String(params.candidateId)
+      const points = getMockCandidateEquityPoints(runId, candidateId)
+
+      if (points.length === 0) {
+        return HttpResponse.json(
+          {
+            detail: `Equity artifact not found for candidate '${candidateId}' in run '${runId}'.`,
+          },
+          { status: 404 },
+        )
+      }
+
+      return HttpResponse.json({ run_id: runId, candidate_id: candidateId, points })
+    },
+  ),
+
+  http.post('*/api/v1/strategy-search/:runId/cancel', ({ params }) => {
+    const runId = String(params.runId)
+    const job = mockStrategySearchJobs.get(runId)
+    if (!job) {
+      return HttpResponse.json(
+        { detail: `Strategy search run '${runId}' not found.` },
+        { status: 404 },
+      )
+    }
+    job.status = 'cancelled'
+    return HttpResponse.json(strategySearchStatusFromJob(job))
+  }),
+
+  http.delete('*/api/v1/strategy-searches/:runId', ({ params }) => {
+    const runId = String(params.runId)
+    const exists =
+      mockStrategySearchRunSummaries.some((run) => run.run_id === runId) ||
+      mockStrategySearchJobs.has(runId)
+    if (!exists || deletedStrategySearchRunIds.has(runId)) {
+      return HttpResponse.json(
+        { detail: `Strategy search run '${runId}' not found.` },
+        { status: 404 },
+      )
+    }
+    deletedStrategySearchRunIds.add(runId)
+    mockStrategySearchJobs.delete(runId)
     return new HttpResponse(null, { status: 204 })
   }),
 ]

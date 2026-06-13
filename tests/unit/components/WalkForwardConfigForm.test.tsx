@@ -30,12 +30,12 @@ describe('WalkForwardConfigForm', () => {
       expect(screen.getByLabelText('Strategy')).toHaveValue('MACrossover')
     })
 
-    await user.clear(screen.getByLabelText('Train days'))
-    await user.type(screen.getByLabelText('Train days'), '300')
-    await user.clear(screen.getByLabelText('Test days'))
-    await user.type(screen.getByLabelText('Test days'), '120')
-    await user.clear(screen.getByLabelText('Minimum windows'))
-    await user.type(screen.getByLabelText('Minimum windows'), '4')
+    await user.clear(screen.getByLabelText(/Train days/i))
+    await user.type(screen.getByLabelText(/Train days/i), '300')
+    await user.clear(screen.getByLabelText(/Test days/i))
+    await user.type(screen.getByLabelText(/Test days/i), '120')
+    await user.clear(screen.getByLabelText(/Minimum windows/i))
+    await user.type(screen.getByLabelText(/Minimum windows/i), '4')
 
     expect(screen.getByText(/Implied windows for this range/i)).toBeInTheDocument()
     expect(screen.getByText(/Fewer windows than minimum/i)).toBeInTheDocument()
