@@ -82,18 +82,39 @@
   }
 }
 
+/* Animatable spotlight intensity — registered so it can transition (fades the
+   pointer highlight in/out instead of snapping). */
+@property --spot-o {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
 @layer utilities {
   .quant-panel {
-    background: linear-gradient(135deg, rgba(26, 16, 8, 0.88), rgba(17, 19, 21, 0.92));
+    /* Pointer-reactive lighting: a single root listener writes --spot-x/--spot-y
+       (panel-local px) and toggles .is-lit. Defaults keep the highlight invisible
+       and centered until the cursor enters a panel. */
+    --spot-x: 50%;
+    --spot-y: 50%;
+    background:
+      radial-gradient(
+        circle 340px at var(--spot-x) var(--spot-y),
+        rgb(240 180 41 / calc(0.16 * var(--spot-o))),
+        transparent 72%
+      ),
+      linear-gradient(135deg, rgba(26, 16, 8, 0.88), rgba(17, 19, 21, 0.92));
     border: 1px solid rgba(168, 139, 82, 0.18);
     box-shadow:
       0 1px 0 rgba(212, 176, 106, 0.08) inset,
-      0 8px 32px -8px rgba(0, 0, 0, 0.6);
+      0 8px 32px -8px rgba(0, 0, 0, 0.6),
+      0 0 38px -6px rgb(240 180 41 / calc(0.22 * var(--spot-o)));
     backdrop-filter: blur(12px);
     transition:
       border-color 250ms ease,
       box-shadow 250ms ease,
-      background-color 250ms ease;
+      background-color 250ms ease,
+      --spot-o 350ms ease;
   }
 
   .quant-panel:hover {
@@ -101,7 +122,22 @@
     box-shadow:
       0 1px 0 rgba(212, 176, 106, 0.12) inset,
       0 12px 38px -6px rgba(0, 0, 0, 0.7),
-      0 0 12px rgba(168, 139, 82, 0.03);
+      0 0 12px rgba(168, 139, 82, 0.03),
+      0 0 38px -6px rgb(240 180 41 / calc(0.22 * var(--spot-o)));
+  }
+
+  /* Cursor is inside this panel — light it up. Placed after :hover so the brass
+     edge wins (equal specificity, later source order). */
+  .quant-panel.is-lit {
+    --spot-o: 1;
+    border-color: rgba(217, 158, 34, 0.45);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quant-panel,
+    .quant-panel.is-lit {
+      --spot-o: 0;
+    }
   }
 
   @keyframes price-flash-up {
@@ -298,6 +334,75 @@
         0 12px 38px -6px rgba(0, 0, 0, 0.65),
         0 0 24px 0px rgba(217, 158, 34, 0.12);
       border-color: rgba(217, 158, 34, 0.4) !important;
+    }
+  }
+
+  /* Configure View Transition Names */
+  .vt-header {
+    view-transition-name: app-header;
+  }
+  .vt-content {
+    view-transition-name: main-content;
+  }
+  .vt-dock {
+    view-transition-name: app-dock;
+  }
+
+  /* Custom fade + slide transition for the main workspace content */
+  ::view-transition-old(main-content) {
+    animation: workspace-fade-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  ::view-transition-new(main-content) {
+    animation: workspace-fade-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @keyframes workspace-fade-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes workspace-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Animated border chase for running tasks */
+  .quant-panel--active-run {
+    position: relative;
+  }
+
+  .quant-panel--active-run::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(90deg, #ffca47, #b8831c, transparent, #ffca47);
+    background-size: 200% auto;
+    animation: border-chase 2.5s linear infinite;
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  @keyframes border-chase {
+    to {
+      background-position: 200% center;
     }
   }
 }
