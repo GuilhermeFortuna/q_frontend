@@ -9,13 +9,7 @@ import {
 } from '@/api/queries/market-data'
 import { useProgressiveOhlcv } from '@/api/queries/useProgressiveOhlcv'
 import { useDrawings } from '@/components/charts/hooks/useDrawings'
-import {
-  DEFAULT_INDICATORS,
-  type DrawingTool,
-  type IndicatorConfig,
-  type ChartSettings,
-  DEFAULT_SETTINGS,
-} from '@/components/charts/types/chart'
+
 import { ChartPanel } from '@/components/market/ChartPanel'
 import { ChartToolbar } from '@/components/market/ChartToolbar'
 import { DetailZone } from '@/components/market/DetailZone'
@@ -35,14 +29,18 @@ export function MarketDataWorkspace() {
   const selectedSymbol = useAppStore((s) => s.selectedSymbol)
   const setSelectedSymbol = useAppStore((s) => s.setSelectedSymbol)
 
-  const [selectedTimeframe, setSelectedTimeframe] = useState('1D')
-  const [chartType, setChartType] = useState<'candles' | 'line' | 'area'>('candles')
-  const [indicators, setIndicators] = useState<IndicatorConfig[]>(DEFAULT_INDICATORS)
-  const [showGrid, setShowGrid] = useState(true)
-  const [chartSettings, setChartSettings] = useState<ChartSettings>(DEFAULT_SETTINGS)
-  const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingTool>('cursor')
+  const {
+    selectedTimeframe,
+    chartType,
+    indicators,
+    showGrid,
+    chartSettings,
+    activeDrawingTool,
+    sidebarCollapsed,
+  } = useAppStore((s) => s.marketDataSession)
+  const patchMarketDataSession = useAppStore((s) => s.patchMarketDataSession)
+
   const [hoveredBar, setHoveredBar] = useState<OhlcvBar | null>(null)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [chartSearchQuery, setChartSearchQuery] = useState('')
 
   const leftPanelRef = usePanelRef()
@@ -110,10 +108,8 @@ export function MarketDataWorkspace() {
     if (!panel) return
     if (panel.isCollapsed()) {
       panel.expand()
-      setSidebarCollapsed(false)
     } else {
       panel.collapse()
-      setSidebarCollapsed(true)
     }
   }
 
@@ -156,6 +152,12 @@ export function MarketDataWorkspace() {
           collapsible
           collapsedSize={0}
           className="min-w-0"
+          onResize={(size) => {
+            const isCollapsed = size.asPercentage === 0
+            if (isCollapsed !== sidebarCollapsed) {
+              patchMarketDataSession({ sidebarCollapsed: isCollapsed })
+            }
+          }}
         >
           <MarketWatchPanel
             watchlist={watchlist}
@@ -177,15 +179,15 @@ export function MarketDataWorkspace() {
             <div className="quant-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg">
               <ChartToolbar
                 selectedTimeframe={selectedTimeframe}
-                onTimeframeChange={setSelectedTimeframe}
+                onTimeframeChange={(val) => patchMarketDataSession({ selectedTimeframe: val })}
                 chartType={chartType}
-                onChartTypeChange={setChartType}
+                onChartTypeChange={(val) => patchMarketDataSession({ chartType: val })}
                 indicators={indicators}
-                onIndicatorsChange={setIndicators}
+                onIndicatorsChange={(val) => patchMarketDataSession({ indicators: val })}
                 showGrid={showGrid}
-                onShowGridChange={setShowGrid}
+                onShowGridChange={(val) => patchMarketDataSession({ showGrid: val })}
                 chartSettings={chartSettings}
-                onChartSettingsChange={setChartSettings}
+                onChartSettingsChange={(val) => patchMarketDataSession({ chartSettings: val })}
               />
               <ChartPanel
                 symbol={selectedSymbol}
@@ -210,7 +212,9 @@ export function MarketDataWorkspace() {
             </div>
             <DrawingRail
               activeDrawingTool={activeDrawingTool}
-              onActiveDrawingToolChange={setActiveDrawingTool}
+              onActiveDrawingToolChange={(val) =>
+                patchMarketDataSession({ activeDrawingTool: val })
+              }
               onClearDrawings={clearDrawings}
             />
           </div>
@@ -234,7 +238,7 @@ export function MarketDataWorkspace() {
         onSelectSymbol={handleSelectSymbol}
         onAddToWatchlist={addToWatchlist}
         onRemoveFromWatchlist={removeFromWatchlist}
-        onSelectTimeframe={setSelectedTimeframe}
+        onSelectTimeframe={(val) => patchMarketDataSession({ selectedTimeframe: val })}
         onQueryChange={setChartSearchQuery}
         recentInstruments={recentInstruments}
       />

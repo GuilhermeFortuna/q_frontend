@@ -1,18 +1,16 @@
 import axios from 'axios'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { useBacktestJob } from '@/api/queries/backtests'
-import {
-  BacktestFocusWorkbench,
-  type BacktestWorkbenchFocus,
-} from '@/components/backtests/focus/BacktestFocusWorkbench'
+import { BacktestFocusWorkbench } from '@/components/backtests/focus/BacktestFocusWorkbench'
 import { BacktestHistoryPanel } from '@/components/backtests/BacktestHistoryPanel'
 import { RunComparisonView } from '@/components/backtests/RunComparisonView'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/performance'
 import { cn } from '@/lib/utils'
-import type { BacktestRequest, BacktestRunSummary } from '@/types/backtesting'
+import { useAppStore } from '@/store/useAppStore'
+import type { BacktestRequest } from '@/types/backtesting'
 
 type RightPanelTab = 'results' | 'history'
 
@@ -25,12 +23,10 @@ export function BacktestsWorkspace() {
   const runBacktest = useBacktestJob()
   const backtestConfig = useBacktestConfig()
   const reducedMotion = usePrefersReducedMotion()
-  const [lastCapital, setLastCapital] = useState(100000)
-  const [lastRequest, setLastRequest] = useState<BacktestRequest | null>(null)
-  const [focus, setFocus] = useState<BacktestWorkbenchFocus>('setup')
-  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('results')
-  const [selectedHistoryRunId, setSelectedHistoryRunId] = useState<string | null>(null)
-  const [comparisonRuns, setComparisonRuns] = useState<BacktestRunSummary[] | null>(null)
+
+  const { lastCapital, lastRequest, focus, rightPanelTab, selectedHistoryRunId, comparisonRuns } =
+    useAppStore((s) => s.backtestSession)
+  const patchSession = useAppStore((s) => s.patchBacktestSession)
 
   const equityCurve = useMemo(() => {
     if (!runBacktest.data) return []
@@ -43,10 +39,12 @@ export function BacktestsWorkspace() {
   }, [runBacktest.data])
 
   const handleSubmit = (request: BacktestRequest) => {
-    setLastCapital(request.initial_capital ?? 100000)
-    setLastRequest(request)
-    setFocus('results')
-    setRightPanelTab('results')
+    patchSession({
+      lastCapital: request.initial_capital ?? 100000,
+      lastRequest: request,
+      focus: 'results',
+      rightPanelTab: 'results',
+    })
     runBacktest.mutate(request)
   }
 
@@ -67,7 +65,7 @@ export function BacktestsWorkspace() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setRightPanelTab(tab.id)}
+              onClick={() => patchSession({ rightPanelTab: tab.id })}
               className={cn(
                 '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
                 rightPanelTab === tab.id
@@ -82,20 +80,23 @@ export function BacktestsWorkspace() {
 
         {rightPanelTab === 'history' ? (
           comparisonRuns ? (
-            <RunComparisonView runs={comparisonRuns} onClose={() => setComparisonRuns(null)} />
+            <RunComparisonView
+              runs={comparisonRuns}
+              onClose={() => patchSession({ comparisonRuns: null })}
+            />
           ) : (
             <BacktestHistoryPanel
               selectedRunId={selectedHistoryRunId}
-              onSelectRun={setSelectedHistoryRunId}
+              onSelectRun={(id) => patchSession({ selectedHistoryRunId: id })}
               onReRun={handleSubmit}
-              onCompare={setComparisonRuns}
+              onCompare={(runs) => patchSession({ comparisonRuns: runs })}
             />
           )
         ) : (
           <BacktestFocusWorkbench
             focus={focus}
-            onFocusChange={setFocus}
-            onOpenHistory={() => setRightPanelTab('history')}
+            onFocusChange={(f) => patchSession({ focus: f })}
+            onOpenHistory={() => patchSession({ rightPanelTab: 'history' })}
             reducedMotion={reducedMotion}
             config={backtestConfig}
             loading={runBacktest.isPending}

@@ -16,9 +16,17 @@ const server = setupServer(...handlers)
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  // Backtests now persist the active run id across navigation; clear it so a
-  // submitted run in one test doesn't leak completed results into the next.
-  useAppStore.getState().patchBacktestSession({ runId: null })
+  // Backtests now persist the active run id across navigation; clear it and other session
+  // state so they don't leak from one test to the next.
+  useAppStore.getState().patchBacktestSession({
+    runId: null,
+    lastCapital: 100000,
+    lastRequest: null,
+    focus: 'setup',
+    rightPanelTab: 'results',
+    selectedHistoryRunId: null,
+    comparisonRuns: null,
+  })
 })
 afterAll(() => server.close())
 

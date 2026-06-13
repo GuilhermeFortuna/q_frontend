@@ -18,7 +18,10 @@ import { WalkForwardWorkspace } from '@/workspaces/walkforward/WalkForwardWorksp
 import { useAppStore } from '@/store/useAppStore'
 import type { WorkspaceId } from '@/types/api'
 
+let initialRedirectDone = false
+
 function syncWorkspace(workspace: WorkspaceId) {
+  initialRedirectDone = true
   useAppStore.getState().setActiveWorkspace(workspace)
 }
 
@@ -33,7 +36,16 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  beforeLoad: () => syncWorkspace('launcher'),
+  beforeLoad: () => {
+    if (!initialRedirectDone) {
+      initialRedirectDone = true
+      const active = useAppStore.getState().activeWorkspace
+      if (active && active !== 'launcher') {
+        throw redirect({ to: active === 'validate' ? '/validate' : `/${active}` })
+      }
+    }
+    syncWorkspace('launcher')
+  },
   component: LauncherWorkspace,
 })
 

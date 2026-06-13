@@ -10,6 +10,7 @@ import type {
   IndicatorConfig,
   ChartSettings,
 } from '@/components/charts/types/chart'
+import { DEFAULT_SETTINGS } from '@/components/charts/types/chart'
 import type { OhlcvBar } from '@/types/api'
 
 export type ChartPanelProps = {
@@ -53,6 +54,16 @@ export function ChartPanel({
   onViewportChange,
   chartSettings,
 }: ChartPanelProps) {
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    ...chartSettings,
+  }
+
+  const bgStyle =
+    settings.backgroundType === 'gradient'
+      ? { background: settings.backgroundColor }
+      : { backgroundColor: settings.backgroundColor }
+
   return (
     <div className="relative min-h-0 flex-1 p-3">
       {(isBackfilling || isProbingRange) && bars.length > 0 && (
@@ -61,7 +72,10 @@ export function ChartPanel({
         </div>
       )}
       {isInitialLoading ? (
-        <div className="border-carbon-700 bg-carbon-900/40 text-silver-400 flex h-full w-full flex-col items-center justify-center gap-3 rounded-lg border">
+        <div
+          className="border-carbon-700 text-silver-400 flex h-full w-full flex-col items-center justify-center gap-3 rounded-lg border"
+          style={bgStyle}
+        >
           <Activity className="text-brass-500 h-8 w-8 animate-pulse" />
           <span className="font-mono text-sm">Loading market candles…</span>
         </div>
@@ -80,10 +94,13 @@ export function ChartPanel({
           onDrawingsChange={onDrawingsChange}
           onHoverBar={onHoverBar}
           onViewportChange={onViewportChange}
-          chartSettings={chartSettings}
+          chartSettings={settings}
         />
       ) : (
-        <div className="border-carbon-700 bg-carbon-900/40 flex h-full w-full items-center justify-center rounded-lg border text-rose-300">
+        <div
+          className="border-carbon-700 flex h-full w-full items-center justify-center rounded-lg border text-rose-300"
+          style={bgStyle}
+        >
           {error ? error.message : `Failed to load historical data for ${symbol}.`}
         </div>
       )}

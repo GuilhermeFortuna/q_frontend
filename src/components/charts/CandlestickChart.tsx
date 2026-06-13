@@ -92,6 +92,15 @@ const ChartInner = forwardRef<
   },
   ref,
 ) {
+  const settings = useMemo(
+    () => ({
+      ...DEFAULT_SETTINGS,
+      ...chartSettings,
+    }),
+    [chartSettings],
+  )
+  void settings
+
   const processed = useMemo(() => processBars(data), [data])
   const viewportResetKey = resetKey ?? `${symbol}:${timeframe}`
   const { viewport, scrollToEnd, fitAll, zoomAt, panBy, shiftViewport } = useChartViewport(
@@ -331,10 +340,8 @@ const ChartInner = forwardRef<
       ref={chartContainerRef}
       className="border-carbon-700 relative h-full w-full overflow-hidden overscroll-contain rounded-lg border shadow-2xl select-none"
       style={{
-        background:
-          chartSettings.backgroundType === 'gradient' ? chartSettings.backgroundColor : undefined,
-        backgroundColor:
-          chartSettings.backgroundType === 'solid' ? chartSettings.backgroundColor : undefined,
+        background: settings.backgroundType === 'gradient' ? settings.backgroundColor : undefined,
+        backgroundColor: settings.backgroundType === 'solid' ? settings.backgroundColor : undefined,
       }}
     >
       {/* HUD Info Panel */}
@@ -412,7 +419,7 @@ const ChartInner = forwardRef<
         </defs>
 
         {/* Background Watermark */}
-        {chartSettings.showWatermark && layout.innerWidth > 100 && (
+        {settings.showWatermark && layout.innerWidth > 100 && (
           <g
             pointerEvents="none"
             opacity={0.045}
@@ -462,7 +469,7 @@ const ChartInner = forwardRef<
           yScale={scales.volumeScale}
           left={CHART_MARGINS.left}
           indicators={indicators}
-          volumeOpacity={chartSettings.volumeOpacity}
+          volumeOpacity={settings.volumeOpacity}
         />
 
         <CandlestickLayer
@@ -472,7 +479,7 @@ const ChartInner = forwardRef<
           chartType={chartType}
           left={CHART_MARGINS.left}
           hoveredTimestamp={hoveredBar?.timestamp}
-          candleOpacity={chartSettings.candleOpacity}
+          candleOpacity={settings.candleOpacity}
         />
 
         <IndicatorLayer
@@ -569,9 +576,22 @@ export const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickCh
   function CandlestickChart(props, ref) {
     const lastSize = useRef({ width: 0, height: 0 })
 
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      ...props.chartSettings,
+    }
+
+    const bgStyle =
+      settings.backgroundType === 'gradient'
+        ? { background: settings.backgroundColor }
+        : { backgroundColor: settings.backgroundColor }
+
     if (!props.data || props.data.length === 0) {
       return (
-        <div className="border-carbon-700 bg-carbon-900 text-silver-400 flex h-64 w-full items-center justify-center rounded-lg border">
+        <div
+          className="border-carbon-700 text-silver-400 flex h-64 w-full items-center justify-center rounded-lg border"
+          style={bgStyle}
+        >
           No chart data available.
         </div>
       )
@@ -587,7 +607,15 @@ export const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickCh
           const stableHeight = lastSize.current.height || height
           if (stableWidth <= 0 || stableHeight <= 0) return null
 
-          return <ChartInner ref={ref} {...props} width={stableWidth} height={stableHeight} />
+          return (
+            <ChartInner
+              ref={ref}
+              {...props}
+              chartSettings={settings}
+              width={stableWidth}
+              height={stableHeight}
+            />
+          )
         }}
       </ParentSize>
     )

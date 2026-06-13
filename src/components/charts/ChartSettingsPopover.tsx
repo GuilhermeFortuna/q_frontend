@@ -59,8 +59,11 @@ export function ChartSettingsPopover({ settings, onChange }: ChartSettingsPopove
                   key={bg.name}
                   type="button"
                   onClick={() => {
-                    updateField('backgroundType', bg.type)
-                    updateField('backgroundColor', bg.value)
+                    onChange({
+                      ...settings,
+                      backgroundType: bg.type,
+                      backgroundColor: bg.value,
+                    })
                   }}
                   className={`cursor-pointer rounded border p-1.5 text-center font-mono text-[9px] font-bold transition-all duration-150 active:scale-95 ${
                     settings.backgroundColor === bg.value
