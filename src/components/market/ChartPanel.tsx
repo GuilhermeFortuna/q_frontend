@@ -1,4 +1,4 @@
-import type { RefObject } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { Activity, Plus, X } from 'lucide-react'
 import { CandlestickChart } from '@/components/charts/CandlestickChart'
 import { formatDisplayTimeSeconds } from '@/lib/formatDate'
@@ -38,6 +38,7 @@ export type ChartPanelProps = {
   onSelectProfile?: (id: string) => void
   onAddProfile?: () => void
   onDeleteProfile?: (id: string, e: React.MouseEvent | React.KeyboardEvent) => void
+  onRenameProfile?: (id: string, name: string) => void
 }
 
 export function ChartPanel({
@@ -64,7 +65,42 @@ export function ChartPanel({
   onSelectProfile,
   onAddProfile,
   onDeleteProfile,
+  onRenameProfile,
 }: ChartPanelProps) {
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+  const editInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!editingProfileId) return
+    editInputRef.current?.focus()
+    editInputRef.current?.select()
+  }, [editingProfileId])
+
+  const startEditingProfile = (profile: ChartProfile, event: React.MouseEvent) => {
+    event.stopPropagation()
+    event.preventDefault()
+    setEditingProfileId(profile.id)
+    setEditingName(profile.name)
+  }
+
+  const commitProfileRename = () => {
+    if (!editingProfileId || !onRenameProfile) {
+      setEditingProfileId(null)
+      return
+    }
+
+    const trimmed = editingName.trim()
+    if (trimmed) {
+      onRenameProfile(editingProfileId, trimmed)
+    }
+    setEditingProfileId(null)
+  }
+
+  const cancelProfileRename = () => {
+    setEditingProfileId(null)
+  }
+
   const settings = {
     ...DEFAULT_SETTINGS,
     ...chartSettings,
@@ -116,51 +152,82 @@ export function ChartPanel({
         </div>
       )}
       {/* Profiles tabs overlay */}
-      {profiles.length > 0 && onSelectProfile && onAddProfile && onDeleteProfile && (
-        <div className="border-brass-600/15 bg-carbon-950/60 absolute bottom-3 left-6 z-15 flex items-center gap-1.5 rounded-lg border p-0.5 shadow-lg backdrop-blur-md">
-          {profiles.map((profile) => {
-            const isActive = profile.id === activeProfileId
-            return (
-              <button
-                key={profile.id}
-                type="button"
-                onClick={() => onSelectProfile(profile.id)}
-                className={`group flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[9px] font-bold tracking-wide transition-all duration-150 active:scale-95 ${
-                  isActive
-                    ? 'border-brass-500/30 bg-brass-500/10 text-brass-400'
-                    : 'text-silver-400 hover:bg-carbon-800/40 hover:text-silver-200 border-transparent'
-                }`}
-              >
-                <span>{profile.name}</span>
-                {profiles.length > 1 && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => onDeleteProfile(profile.id, e)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        onDeleteProfile(profile.id, e)
-                      }
-                    }}
-                    className="text-silver-500 ml-0.5 rounded-full p-0.5 opacity-60 transition-all group-hover:opacity-100 hover:bg-rose-500/20 hover:text-rose-400"
-                    title="Delete profile"
-                  >
-                    <X className="h-2 w-2" />
-                  </span>
-                )}
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            onClick={onAddProfile}
-            className="border-brass-500/10 hover:bg-carbon-800/40 text-brass-400 hover:text-brass-300 flex items-center gap-1 rounded border border-dashed px-2 py-0.5 font-mono text-[9px] font-bold transition-all active:scale-95"
-            title="Create new profile"
-          >
-            <Plus className="h-2 w-2" />
-          </button>
-        </div>
-      )}
+      {profiles.length > 0 &&
+        onSelectProfile &&
+        onAddProfile &&
+        onDeleteProfile &&
+        onRenameProfile && (
+          <div className="border-brass-600/15 bg-carbon-950/60 absolute bottom-3 left-6 z-15 flex items-center gap-1.5 rounded-lg border p-0.5 shadow-lg backdrop-blur-md">
+            {profiles.map((profile) => {
+              const isActive = profile.id === activeProfileId
+              return (
+                <button
+                  key={profile.id}
+                  type="button"
+                  onClick={() => onSelectProfile(profile.id)}
+                  className={`group flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[9px] font-bold tracking-wide transition-all duration-150 active:scale-95 ${
+                    isActive
+                      ? 'border-brass-500/30 bg-brass-500/10 text-brass-400'
+                      : 'text-silver-400 hover:bg-carbon-800/40 hover:text-silver-200 border-transparent'
+                  }`}
+                >
+                  {editingProfileId === profile.id ? (
+                    <input
+                      ref={editInputRef}
+                      type="text"
+                      value={editingName}
+                      onChange={(event) => setEditingName(event.target.value)}
+                      onClick={(event) => event.stopPropagation()}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => {
+                        event.stopPropagation()
+                        if (event.key === 'Enter') {
+                          commitProfileRename()
+                        } else if (event.key === 'Escape') {
+                          cancelProfileRename()
+                        }
+                      }}
+                      onBlur={commitProfileRename}
+                      className="text-silver-100 w-[5.5rem] min-w-0 bg-transparent font-mono text-[9px] font-bold tracking-wide outline-none"
+                      aria-label="Rename profile"
+                    />
+                  ) : (
+                    <span
+                      onDoubleClick={(event) => startEditingProfile(profile, event)}
+                      title="Double-click to rename"
+                    >
+                      {profile.name}
+                    </span>
+                  )}
+                  {profiles.length > 1 && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => onDeleteProfile(profile.id, e)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          onDeleteProfile(profile.id, e)
+                        }
+                      }}
+                      className="text-silver-500 ml-0.5 rounded-full p-0.5 opacity-60 transition-all group-hover:opacity-100 hover:bg-rose-500/20 hover:text-rose-400"
+                      title="Delete profile"
+                    >
+                      <X className="h-2 w-2" />
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              onClick={onAddProfile}
+              className="border-brass-500/10 hover:bg-carbon-800/40 text-brass-400 hover:text-brass-300 flex items-center gap-1 rounded border border-dashed px-2 py-0.5 font-mono text-[9px] font-bold transition-all active:scale-95"
+              title="Create new profile"
+            >
+              <Plus className="h-2 w-2" />
+            </button>
+          </div>
+        )}
 
       {tickTime ? (
         <div className="text-silver-500 pointer-events-none absolute right-5 bottom-3 font-mono text-[9px] tracking-wide uppercase">

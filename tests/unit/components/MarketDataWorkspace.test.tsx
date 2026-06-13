@@ -44,6 +44,8 @@ afterAll(() => server.close())
 
 describe('MarketDataWorkspace', () => {
   beforeEach(() => {
+    localStorage.removeItem('quant:chart-profiles')
+    localStorage.removeItem('quant:active-chart-profile-id')
     localStorage.setItem(
       'quant_watchlist',
       JSON.stringify([
@@ -112,5 +114,26 @@ describe('MarketDataWorkspace', () => {
 
     promptMock.mockRestore()
     alertMock.mockRestore()
+  })
+
+  it('supports renaming chart profiles', async () => {
+    renderWithQueryClient(<MarketDataWorkspace />)
+
+    const profileTab = await screen.findByText('MA Crossover')
+    fireEvent.doubleClick(profileTab)
+
+    const renameInput = screen.getByLabelText('Rename profile')
+    fireEvent.change(renameInput, { target: { value: 'Trend Setup' } })
+    fireEvent.keyDown(renameInput, { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(screen.getByText('Trend Setup')).toBeInTheDocument()
+      expect(screen.queryByText('MA Crossover')).not.toBeInTheDocument()
+    })
+
+    const stored = JSON.parse(localStorage.getItem('quant:chart-profiles') ?? '[]') as Array<{
+      name: string
+    }>
+    expect(stored.some((profile) => profile.name === 'Trend Setup')).toBe(true)
   })
 })

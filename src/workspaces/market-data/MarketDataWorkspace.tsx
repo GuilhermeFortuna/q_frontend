@@ -198,6 +198,19 @@ export function MarketDataWorkspace() {
     [profiles, activeProfileId, handleSelectProfile],
   )
 
+  const handleRenameProfile = useCallback((id: string, name: string) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+
+    setProfiles((prev) => {
+      const next = prev.map((profile) =>
+        profile.id === id ? { ...profile, name: trimmed } : profile,
+      )
+      localStorage.setItem('quant:chart-profiles', JSON.stringify(next))
+      return next
+    })
+  }, [])
+
   const [hoveredBar, setHoveredBar] = useState<OhlcvBar | null>(null)
   const [chartSearchQuery, setChartSearchQuery] = useState('')
 
@@ -396,6 +409,7 @@ export function MarketDataWorkspace() {
                 onSelectProfile={handleSelectProfile}
                 onAddProfile={handleAddProfile}
                 onDeleteProfile={handleDeleteProfile}
+                onRenameProfile={handleRenameProfile}
               />
             </div>
             <DrawingRail
