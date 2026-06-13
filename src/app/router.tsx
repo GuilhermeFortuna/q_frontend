@@ -7,9 +7,14 @@ import {
 } from '@tanstack/react-router'
 
 import { AppShell } from '@/components/layout/AppShell'
+import { BacktestsWorkspace } from '@/workspaces/backtests/BacktestsWorkspace'
+import { DiscoverWorkspace } from '@/workspaces/discover/DiscoverWorkspace'
 import { LauncherWorkspace } from '@/workspaces/launcher/LauncherWorkspace'
 import { MarketDataWorkspace } from '@/workspaces/market-data/MarketDataWorkspace'
+import { NewsReaderWorkspace } from '@/workspaces/news/NewsReaderWorkspace'
+import { OptimizeWorkspace } from '@/workspaces/optimize/OptimizeWorkspace'
 import { SystemWorkspace } from '@/workspaces/system/SystemWorkspace'
+import { WalkForwardWorkspace } from '@/workspaces/walkforward/WalkForwardWorkspace'
 import { useAppStore } from '@/store/useAppStore'
 import type { WorkspaceId } from '@/types/api'
 
@@ -55,11 +60,6 @@ const researchRoute = createRoute({
   },
 })
 
-import { BacktestsWorkspace } from '@/workspaces/backtests/BacktestsWorkspace'
-import { OptimizeWorkspace } from '@/workspaces/optimize/OptimizeWorkspace'
-import { WalkForwardWorkspace } from '@/workspaces/walkforward/WalkForwardWorkspace'
-import { DiscoverWorkspace } from '@/workspaces/discover/DiscoverWorkspace'
-
 const backtestsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/backtests',
@@ -88,6 +88,22 @@ const discoverRoute = createRoute({
   component: DiscoverWorkspace,
 })
 
+type NewsReaderSearch = {
+  id?: string
+}
+
+const newsReaderRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/news-reader',
+  validateSearch: (search: Record<string, unknown>): NewsReaderSearch => ({
+    id: search.id as string | undefined,
+  }),
+  component: () => {
+    const search = newsReaderRoute.useSearch()
+    return <NewsReaderWorkspace id={search.id} showInlineClose={false} />
+  },
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   marketDataRoute,
@@ -97,6 +113,7 @@ const routeTree = rootRoute.addChildren([
   optimizeRoute,
   validateRoute,
   discoverRoute,
+  newsReaderRoute,
 ])
 
 export const router = createRouter({

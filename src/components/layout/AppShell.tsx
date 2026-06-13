@@ -5,9 +5,12 @@ import { QuantEmblem } from '@/components/brand/QuantEmblem'
 import { AppDock } from '@/components/dock/AppDock'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
 import { DigitalClock } from '@/components/layout/DigitalClock'
+import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'
 import { WindowControls } from '@/components/layout/WindowControls'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
+
+import { useLocation } from '@tanstack/react-router'
 
 type AppShellProps = {
   children: ReactNode
@@ -15,7 +18,13 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const activeWorkspace = useAppStore((s) => s.activeWorkspace)
+  const location = useLocation()
   const isLauncher = activeWorkspace === 'launcher'
+  const isReader = location.pathname === '/news-reader'
+
+  if (isReader) {
+    return <ReaderWindowShell>{children}</ReaderWindowShell>
+  }
 
   return (
     <div className="relative flex min-h-full flex-col">

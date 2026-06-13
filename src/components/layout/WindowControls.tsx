@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Minus, Square, Copy, X } from 'lucide-react'
-import { getCurrentWindow, type WebviewWindow } from '@tauri-apps/api/window'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
-let appWindow: WebviewWindow | null = null
+let appWindow: ReturnType<typeof getCurrentWindow> | null = null
 try {
   appWindow = getCurrentWindow()
 } catch {
