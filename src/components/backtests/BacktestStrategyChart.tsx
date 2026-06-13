@@ -235,6 +235,62 @@ function ChartInner({
       </button>
 
       <svg width={width} height={height}>
+        <defs>
+          <linearGradient id="bull-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#26a69a" />
+            <stop offset="100%" stopColor="#1b7a70" />
+          </linearGradient>
+          <linearGradient id="bear-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ef5350" />
+            <stop offset="100%" stopColor="#b73a37" />
+          </linearGradient>
+          <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(201, 162, 39, 0.22)" />
+            <stop offset="100%" stopColor="rgba(201, 162, 39, 0.0)" />
+          </linearGradient>
+          <linearGradient id="volume-bull-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#26a69a" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#26a69a" stopOpacity="0.15" />
+          </linearGradient>
+          <linearGradient id="volume-bear-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ef5350" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#ef5350" stopOpacity="0.15" />
+          </linearGradient>
+        </defs>
+
+        {/* Background Watermark */}
+        {layout.innerWidth > 100 && (
+          <g
+            pointerEvents="none"
+            opacity={0.045}
+            transform={`translate(${CHART_MARGINS.left + layout.innerWidth / 2}, ${layout.priceTop + layout.priceHeight / 2})`}
+          >
+            <text
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#ffffff"
+              fontSize={Math.min(layout.innerWidth * 0.12, 64)}
+              fontFamily="system-ui, -apple-system, sans-serif"
+              fontWeight="900"
+              letterSpacing="0.05em"
+            >
+              {symbol}
+            </text>
+            <text
+              y={Math.min(layout.innerWidth * 0.08, 40) + 12}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#ffffff"
+              fontSize={Math.min(layout.innerWidth * 0.045, 20)}
+              fontFamily="monospace"
+              fontWeight="bold"
+              letterSpacing="0.1em"
+            >
+              {timeframe}
+            </text>
+          </g>
+        )}
+
         <GridLayer
           xScale={scales.xScale}
           yScale={scales.priceScale}

@@ -11,21 +11,33 @@ type VolumeLayerProps = {
 
 export function VolumeLayer({ bars, xScale, yScale, left }: VolumeLayerProps) {
   const bandwidth = xScale.bandwidth()
+  const isNarrow = bandwidth < 4
 
   return (
-    <g transform={`translate(${left}, 0)`} opacity={0.35}>
+    <g transform={`translate(${left}, 0)`} opacity={0.4}>
       {bars.map((bar) => {
         const x = xScale(bar.timestamp) ?? 0
-        const y = yScale(bar.volume)
-        const h = yScale(0) - y
+        const cx = Math.round(x + bandwidth / 2)
+        const y = Math.round(yScale(bar.volume))
+        const yZero = Math.round(yScale(0))
+        const h = Math.max(yZero - y, 0)
+
+        const width = isNarrow
+          ? Math.max(Math.floor(bandwidth), 1)
+          : Math.max(Math.round(bandwidth * 0.7), 1)
+        const rectX = isNarrow ? Math.floor(cx - width / 2) : Math.floor(cx - width / 2)
+
         return (
           <rect
             key={`vol-${bar.timestamp}`}
-            x={x + bandwidth * 0.15}
+            x={rectX}
             y={y}
-            width={bandwidth * 0.7}
-            height={Math.max(h, 0)}
-            fill={bar.color}
+            width={width}
+            height={h}
+            fill={bar.isBullish ? 'url(#volume-bull-gradient)' : 'url(#volume-bear-gradient)'}
+            rx={1.5}
+            ry={1.5}
+            shapeRendering="geometricPrecision"
           />
         )
       })}

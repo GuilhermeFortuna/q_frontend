@@ -42,6 +42,43 @@ function linePath(
   return parts.join(' ')
 }
 
+function bandsAreaPath(
+  upper: (number | null)[],
+  lower: (number | null)[],
+  allBars: OhlcvBar[],
+  visibleTimestamps: Set<string>,
+  xScale: BandScale,
+  yScale: LinearScale,
+): string {
+  const bw = xScale.bandwidth()
+  const upperPoints: string[] = []
+  const lowerPoints: string[] = []
+
+  for (let i = 0; i < allBars.length; i++) {
+    const ts = allBars[i].timestamp
+    if (!visibleTimestamps.has(ts)) continue
+    const uVal = upper[i]
+    const lVal = lower[i]
+    if (uVal === null || lVal === null) continue
+
+    const x = (xScale(ts) ?? 0) + bw / 2
+    const yUpper = yScale(uVal)
+    const yLower = yScale(lVal)
+
+    upperPoints.push(`${x},${yUpper}`)
+    lowerPoints.unshift(`${x},${yLower}`)
+  }
+
+  if (upperPoints.length === 0) return ''
+  return `M ${upperPoints[0].replace(',', ' ')} ${upperPoints
+    .slice(1)
+    .map((p) => `L ${p.replace(',', ' ')}`)
+    .join(' ')} L ${lowerPoints[0].replace(',', ' ')} ${lowerPoints
+    .slice(1)
+    .map((p) => `L ${p.replace(',', ' ')}`)
+    .join(' ')} Z`
+}
+
 export function IndicatorLayer({
   allBars,
   visibleBars,
@@ -89,22 +126,27 @@ export function IndicatorLayer({
           return (
             <g key="bollinger">
               <path
+                d={bandsAreaPath(bands.upper, bands.lower, allBars, visibleSet, xScale, yScale)}
+                fill="rgba(201, 162, 39, 0.05)"
+                stroke="none"
+              />
+              <path
                 d={linePath(bands.upper, allBars, visibleSet, xScale, yScale)}
                 fill="none"
-                stroke="rgba(201, 162, 39, 0.5)"
+                stroke="rgba(201, 162, 39, 0.45)"
                 strokeWidth={1}
               />
               <path
                 d={linePath(bands.middle, allBars, visibleSet, xScale, yScale)}
                 fill="none"
-                stroke="rgba(201, 162, 39, 0.35)"
+                stroke="rgba(201, 162, 39, 0.3)"
                 strokeWidth={1}
                 strokeDasharray="3 2"
               />
               <path
                 d={linePath(bands.lower, allBars, visibleSet, xScale, yScale)}
                 fill="none"
-                stroke="rgba(201, 162, 39, 0.5)"
+                stroke="rgba(201, 162, 39, 0.45)"
                 strokeWidth={1}
               />
             </g>

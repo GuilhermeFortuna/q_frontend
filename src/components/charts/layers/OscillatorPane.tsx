@@ -68,22 +68,33 @@ export function OscillatorPane({
           height={height}
           fill="rgba(7, 16, 28, 0.35)"
           stroke="rgba(111, 119, 133, 0.15)"
+          shapeRendering="crispEdges"
+        />
+        <rect
+          x={0}
+          y={Math.round(yScale(70))}
+          width={xScale.range()[1]}
+          height={Math.max(Math.round(yScale(30) - yScale(70)), 1)}
+          fill="rgba(167, 139, 250, 0.04)"
+          stroke="none"
         />
         <line
           x1={0}
           x2={xScale.range()[1]}
-          y1={yScale(70)}
-          y2={yScale(70)}
-          stroke="rgba(255, 59, 48, 0.25)"
-          strokeDasharray="2 2"
+          y1={Math.round(yScale(70))}
+          y2={Math.round(yScale(70))}
+          stroke="rgba(239, 83, 80, 0.35)"
+          strokeDasharray="3 2"
+          shapeRendering="crispEdges"
         />
         <line
           x1={0}
           x2={xScale.range()[1]}
-          y1={yScale(30)}
-          y2={yScale(30)}
-          stroke="rgba(0, 192, 118, 0.25)"
-          strokeDasharray="2 2"
+          y1={Math.round(yScale(30))}
+          y2={Math.round(yScale(30))}
+          stroke="rgba(38, 166, 154, 0.35)"
+          strokeDasharray="3 2"
+          shapeRendering="crispEdges"
         />
         <path
           d={seriesPath(values, allBars, visibleSet, xScale, yScale)}
@@ -105,18 +116,27 @@ export function OscillatorPane({
       histogram,
     } = macd(allBars, config.fast, config.slow, config.signal)
     const bw = xScale.bandwidth()
+    const isNarrow = bw < 4
     const histBars = visibleBars.map((bar) => {
       const idx = allBars.findIndex((b) => b.timestamp === bar.timestamp)
       const val = idx >= 0 ? histogram[idx] : null
       if (val === null) return null
       const x = xScale(bar.timestamp) ?? 0
-      const y0 = yScale(0)
-      const y1 = yScale(val)
+      const cx = Math.round(x + bw / 2)
+      const y0 = Math.round(yScale(0))
+      const y1 = Math.round(yScale(val))
+      const rectY = Math.min(y0, y1)
+      const rectH = Math.max(Math.abs(y1 - y0), 1)
+
+      const width = isNarrow ? Math.max(Math.floor(bw), 1) : Math.max(Math.round(bw * 0.6), 1)
+      const rectX = Math.floor(cx - width / 2)
+
       return {
-        x,
-        y: Math.min(y0, y1),
-        h: Math.abs(y1 - y0),
-        color: val >= 0 ? '#00c076' : '#ff3b30',
+        x: rectX,
+        y: rectY,
+        w: width,
+        h: rectH,
+        color: val >= 0 ? '#26a69a' : '#ef5350',
       }
     })
 
@@ -129,18 +149,29 @@ export function OscillatorPane({
           height={height}
           fill="rgba(7, 16, 28, 0.35)"
           stroke="rgba(111, 119, 133, 0.15)"
+          shapeRendering="crispEdges"
+        />
+        <line
+          x1={0}
+          x2={xScale.range()[1]}
+          y1={Math.round(yScale(0))}
+          y2={Math.round(yScale(0))}
+          stroke="rgba(111, 119, 133, 0.2)"
+          strokeDasharray="2 2"
+          shapeRendering="crispEdges"
         />
         {histBars.map(
           (h, i) =>
             h && (
               <rect
                 key={i}
-                x={h.x + bw * 0.2}
+                x={h.x}
                 y={h.y}
-                width={bw * 0.6}
-                height={Math.max(h.h, 1)}
+                width={h.w}
+                height={h.h}
                 fill={h.color}
-                opacity={0.6}
+                fillOpacity={0.7}
+                shapeRendering="crispEdges"
               />
             ),
         )}

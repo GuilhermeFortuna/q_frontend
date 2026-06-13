@@ -300,17 +300,72 @@ const ChartInner = forwardRef<
   const rsiInd = indicators.find((i) => i.type === 'rsi')
   const macdInd = indicators.find((i) => i.type === 'macd')
 
+  const hudBar = hoveredBar ?? visibleBars[visibleBars.length - 1] ?? null
+  const hudInfo = useMemo(() => {
+    if (!hudBar) return null
+    const change = hudBar.close - hudBar.open
+    const pctChange = hudBar.open !== 0 ? (change / hudBar.open) * 100 : 0
+    const isPositive = change >= 0
+    const colorClass = isPositive ? 'text-emerald-400' : 'text-rose-400'
+    return {
+      open: hudBar.open.toFixed(2),
+      high: hudBar.high.toFixed(2),
+      low: hudBar.low.toFixed(2),
+      close: hudBar.close.toFixed(2),
+      volume: hudBar.volume.toLocaleString(),
+      change: (isPositive ? '+' : '') + change.toFixed(2),
+      pctChange: (isPositive ? '+' : '') + pctChange.toFixed(2) + '%',
+      colorClass,
+    }
+  }, [hudBar])
+
   const cursorStyle =
     activeDrawingTool === 'cursor' ? (isPanning.current ? 'grabbing' : 'crosshair') : 'crosshair'
 
   return (
     <div
       ref={chartContainerRef}
-      className="border-carbon-700 relative h-full w-full overflow-hidden overscroll-contain rounded-lg border shadow-2xl"
+      className="border-carbon-700 relative h-full w-full overflow-hidden overscroll-contain rounded-lg border shadow-2xl select-none"
       style={{
         background: 'radial-gradient(circle at 50% 30%, #16273f 0%, #07101c 100%)',
       }}
     >
+      {/* HUD Info Panel */}
+      {hudInfo && (
+        <div className="text-silver-400 bg-carbon-950/45 border-carbon-800/40 pointer-events-none absolute top-3 left-4 z-10 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border px-3 py-1.5 font-mono text-[11px] shadow-xl backdrop-blur-[4px]">
+          <span className="text-silver-100 mr-1 font-sans text-xs font-bold tracking-wider uppercase">
+            {symbol}
+          </span>
+          <span className="bg-brass-500/15 text-brass-400 border-brass-500/10 mr-2 rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase">
+            {timeframe}
+          </span>
+          <div>
+            <span className="text-silver-500 mr-1">O</span>
+            <span className="text-silver-200">{hudInfo.open}</span>
+          </div>
+          <div>
+            <span className="text-silver-500 mr-1">H</span>
+            <span className="text-silver-200">{hudInfo.high}</span>
+          </div>
+          <div>
+            <span className="text-silver-500 mr-1">L</span>
+            <span className="text-silver-200">{hudInfo.low}</span>
+          </div>
+          <div>
+            <span className="text-silver-500 mr-1">C</span>
+            <span className={hudInfo.colorClass}>{hudInfo.close}</span>
+          </div>
+          <div className={`${hudInfo.colorClass} font-bold`}>
+            <span>{hudInfo.change}</span>
+            <span className="ml-1 text-[10px]">({hudInfo.pctChange})</span>
+          </div>
+          <div className="hidden md:inline">
+            <span className="text-silver-500 mr-1">V</span>
+            <span className="text-silver-200">{hudInfo.volume}</span>
+          </div>
+        </div>
+      )}
+
       {!isAtLatestCandle && (
         <div className="absolute top-2 right-3 z-10">
           <button
@@ -326,6 +381,62 @@ const ChartInner = forwardRef<
       )}
 
       <svg width={width} height={height}>
+        <defs>
+          <linearGradient id="bull-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#26a69a" />
+            <stop offset="100%" stopColor="#1b7a70" />
+          </linearGradient>
+          <linearGradient id="bear-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ef5350" />
+            <stop offset="100%" stopColor="#b73a37" />
+          </linearGradient>
+          <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(201, 162, 39, 0.22)" />
+            <stop offset="100%" stopColor="rgba(201, 162, 39, 0.0)" />
+          </linearGradient>
+          <linearGradient id="volume-bull-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#26a69a" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#26a69a" stopOpacity="0.15" />
+          </linearGradient>
+          <linearGradient id="volume-bear-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ef5350" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#ef5350" stopOpacity="0.15" />
+          </linearGradient>
+        </defs>
+
+        {/* Background Watermark */}
+        {layout.innerWidth > 100 && (
+          <g
+            pointerEvents="none"
+            opacity={0.045}
+            transform={`translate(${CHART_MARGINS.left + layout.innerWidth / 2}, ${layout.priceTop + layout.priceHeight / 2})`}
+          >
+            <text
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#ffffff"
+              fontSize={Math.min(layout.innerWidth * 0.12, 64)}
+              fontFamily="system-ui, -apple-system, sans-serif"
+              fontWeight="900"
+              letterSpacing="0.05em"
+            >
+              {symbol}
+            </text>
+            <text
+              y={Math.min(layout.innerWidth * 0.08, 40) + 12}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#ffffff"
+              fontSize={Math.min(layout.innerWidth * 0.045, 20)}
+              fontFamily="monospace"
+              fontWeight="bold"
+              letterSpacing="0.1em"
+            >
+              {timeframe}
+            </text>
+          </g>
+        )}
+
         {showGrid && (
           <GridLayer
             xScale={scales.xScale}
@@ -350,6 +461,7 @@ const ChartInner = forwardRef<
           yScale={scales.priceScale}
           chartType={chartType}
           left={CHART_MARGINS.left}
+          hoveredTimestamp={hoveredBar?.timestamp}
         />
 
         <IndicatorLayer
