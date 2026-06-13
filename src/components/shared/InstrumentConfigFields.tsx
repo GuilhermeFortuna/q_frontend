@@ -57,29 +57,23 @@ type InstrumentConfigFieldsProps = {
  * both the Backtest and Optimize config forms. Owns the date-preset + "All
  * available data" UX internally; the parent owns the underlying field state.
  */
-export function InstrumentConfigFields({
-  symbol,
-  setSymbol,
-  timeframe,
-  setTimeframe,
+export type DateRangePresetsFieldsProps = {
+  startDate: Date
+  setStartDate: (value: Date) => void
+  endDate: Date
+  setEndDate: (value: Date) => void
+  symbol: string
+  timeframe: string
+}
+
+export function DateRangePresetsFields({
   startDate,
   setStartDate,
   endDate,
   setEndDate,
-  capital,
-  setCapital,
-  pointValue,
-  setPointValue,
-  dayTrade = false,
-  setDayTrade,
-  dayTradeStartTime = '09:00',
-  setDayTradeStartTime,
-  dayTradeEndTime = '16:00',
-  setDayTradeEndTime,
-  dayTradeCloseTime = '17:00',
-  setDayTradeCloseTime,
-  showTimeframe = true,
-}: InstrumentConfigFieldsProps) {
+  symbol,
+  timeframe,
+}: DateRangePresetsFieldsProps) {
   const [activeDatePreset, setActiveDatePreset] = useState<DatePreset | 'ALL' | null>(null)
   const [allDataLoading, setAllDataLoading] = useState(false)
   const [allDataError, setAllDataError] = useState<string | null>(null)
@@ -116,6 +110,105 @@ export function InstrumentConfigFields({
   }
 
   return (
+    <div className="space-y-2">
+      <label className="text-silver-200 text-sm font-medium">Date Range</label>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label htmlFor="config-start-date" className="text-silver-400 text-xs">
+            Start
+          </label>
+          <input
+            id="config-start-date"
+            type="date"
+            value={format(startDate, 'yyyy-MM-dd')}
+            onChange={(e) => {
+              setStartDate(startOfDay(new Date(e.target.value + 'T00:00:00')))
+              setActiveDatePreset(null)
+              setAllDataError(null)
+            }}
+            className={inputClass}
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="config-end-date" className="text-silver-400 text-xs">
+            End
+          </label>
+          <input
+            id="config-end-date"
+            type="date"
+            value={format(endDate, 'yyyy-MM-dd')}
+            onChange={(e) => {
+              setEndDate(endOfDay(new Date(e.target.value + 'T00:00:00')))
+              setActiveDatePreset(null)
+              setAllDataError(null)
+            }}
+            className={inputClass}
+            required
+          />
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5 pt-1">
+        {DATE_PRESETS.map(({ label, title }) => (
+          <button
+            key={label}
+            type="button"
+            title={title}
+            onClick={() => applyPreset(label)}
+            className={activeDatePreset === label ? presetButtonActiveClass : presetButtonClass}
+          >
+            {label}
+          </button>
+        ))}
+        <button
+          type="button"
+          title="Use all OHLCV data available in MetaTrader 5"
+          onClick={() => void applyAllAvailableData()}
+          disabled={allDataLoading || !symbol.trim()}
+          className={
+            activeDatePreset === 'ALL'
+              ? presetButtonActiveClass
+              : `${presetButtonClass} disabled:cursor-not-allowed disabled:opacity-50`
+          }
+        >
+          {allDataLoading ? '...' : 'All'}
+        </button>
+      </div>
+      {allDataError && <p className={fieldErrorClass}>{allDataError}</p>}
+      {dateRangeInvalid && <p className={fieldErrorClass}>Start date must be before end date.</p>}
+    </div>
+  )
+}
+
+/**
+ * Shared symbol / timeframe / date-range / capital / point-value block used by
+ * both the Backtest and Optimize config forms. Owns the date-preset + "All
+ * available data" UX internally; the parent owns the underlying field state.
+ */
+export function InstrumentConfigFields({
+  symbol,
+  setSymbol,
+  timeframe,
+  setTimeframe,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  capital,
+  setCapital,
+  pointValue,
+  setPointValue,
+  dayTrade = false,
+  setDayTrade,
+  dayTradeStartTime = '09:00',
+  setDayTradeStartTime,
+  dayTradeEndTime = '16:00',
+  setDayTradeEndTime,
+  dayTradeCloseTime = '17:00',
+  setDayTradeCloseTime,
+  showTimeframe = true,
+}: InstrumentConfigFieldsProps) {
+  return (
     <>
       <div className="space-y-2">
         <label className="text-silver-200 text-sm font-medium">Symbol</label>
@@ -146,73 +239,14 @@ export function InstrumentConfigFields({
         </div>
       ) : null}
 
-      <div className="space-y-2">
-        <label className="text-silver-200 text-sm font-medium">Date Range</label>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label htmlFor="config-start-date" className="text-silver-400 text-xs">
-              Start
-            </label>
-            <input
-              id="config-start-date"
-              type="date"
-              value={format(startDate, 'yyyy-MM-dd')}
-              onChange={(e) => {
-                setStartDate(startOfDay(new Date(e.target.value + 'T00:00:00')))
-                setActiveDatePreset(null)
-                setAllDataError(null)
-              }}
-              className={inputClass}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="config-end-date" className="text-silver-400 text-xs">
-              End
-            </label>
-            <input
-              id="config-end-date"
-              type="date"
-              value={format(endDate, 'yyyy-MM-dd')}
-              onChange={(e) => {
-                setEndDate(endOfDay(new Date(e.target.value + 'T00:00:00')))
-                setActiveDatePreset(null)
-                setAllDataError(null)
-              }}
-              className={inputClass}
-              required
-            />
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          {DATE_PRESETS.map(({ label, title }) => (
-            <button
-              key={label}
-              type="button"
-              title={title}
-              onClick={() => applyPreset(label)}
-              className={activeDatePreset === label ? presetButtonActiveClass : presetButtonClass}
-            >
-              {label}
-            </button>
-          ))}
-          <button
-            type="button"
-            title="Use all OHLCV data available in MetaTrader 5"
-            onClick={() => void applyAllAvailableData()}
-            disabled={allDataLoading || !symbol.trim()}
-            className={
-              activeDatePreset === 'ALL'
-                ? presetButtonActiveClass
-                : `${presetButtonClass} disabled:cursor-not-allowed disabled:opacity-50`
-            }
-          >
-            {allDataLoading ? '...' : 'All'}
-          </button>
-        </div>
-        {allDataError && <p className={fieldErrorClass}>{allDataError}</p>}
-        {dateRangeInvalid && <p className={fieldErrorClass}>Start date must be before end date.</p>}
-      </div>
+      <DateRangePresetsFields
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+        symbol={symbol}
+        timeframe={timeframe}
+      />
 
       <div className="space-y-2">
         <label className="text-silver-200 text-sm font-medium">Initial Capital</label>

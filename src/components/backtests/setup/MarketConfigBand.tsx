@@ -1,6 +1,5 @@
-import { inputClass, InstrumentConfigFields } from '@/components/shared/InstrumentConfigFields'
+import { inputClass, DateRangePresetsFields } from '@/components/shared/InstrumentConfigFields'
 import { PositionSizingModeFields } from '@/components/shared/PositionSizingModeFields'
-import { TransactionCostFields } from '@/components/shared/TransactionCostFields'
 import type { PositionSizingMode } from '@/lib/backtesting/positionSizing'
 import {
   DISPLAY_TIMEFRAME_OPTIONS,
@@ -28,7 +27,7 @@ function Fieldset({
   return (
     <fieldset
       className={cn(
-        'border-carbon-600/40 bg-carbon-950/30 space-y-2 rounded-lg border px-3 py-2.5',
+        'border-carbon-600/40 bg-carbon-950/20 flex flex-col gap-3 rounded-lg border px-3.5 py-3',
         className,
       )}
     >
@@ -44,103 +43,221 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
   const { sizingErrors, costErrors } = validation
 
   return (
-    <div className="border-carbon-600/50 bg-carbon-900/20 shrink-0 space-y-3 rounded-xl border p-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <Fieldset legend="Engine" className="min-w-[7rem] flex-1">
-          <select
-            id="backtest-engine"
-            aria-label="Engine"
-            value={fields.engine}
-            onChange={(e) => setters.handleEngineChange(e.target.value as 'candle' | 'tick')}
-            className={inputClass}
-          >
-            <option value="candle">Candle</option>
-            <option value="tick">Tick</option>
-          </select>
-        </Fieldset>
+    <div className="border-carbon-600/50 bg-carbon-900/20 shrink-0 space-y-3 rounded-xl border p-4 shadow-lg backdrop-blur-sm">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* COLUMN 1: INSTRUMENT & MODELING */}
+        <Fieldset legend="Instrument & Modeling">
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label htmlFor="backtest-engine" className="text-silver-300 text-xs font-medium">
+                Engine
+              </label>
+              <select
+                id="backtest-engine"
+                value={fields.engine}
+                onChange={(e) => setters.handleEngineChange(e.target.value as 'candle' | 'tick')}
+                className={inputClass}
+              >
+                <option value="candle">Candle</option>
+                <option value="tick">Tick</option>
+              </select>
+            </div>
 
-        <Fieldset legend="Instrument" className="min-w-[12rem] flex-[2]">
-          <InstrumentConfigFields
-            symbol={fields.symbol}
-            setSymbol={setters.setSymbol}
-            timeframe={fields.timeframe}
-            setTimeframe={setters.setTimeframe}
-            startDate={fields.startDate}
-            setStartDate={setters.setStartDate}
-            endDate={fields.endDate}
-            setEndDate={setters.setEndDate}
-            capital={fields.capital}
-            setCapital={setters.setCapital}
-            pointValue={fields.pointValue}
-            setPointValue={setters.setPointValue}
-            dayTrade={fields.dayTrade}
-            setDayTrade={setters.setDayTrade}
-            dayTradeStartTime={fields.dayTradeStartTime}
-            setDayTradeStartTime={setters.setDayTradeStartTime}
-            dayTradeEndTime={fields.dayTradeEndTime}
-            setDayTradeEndTime={setters.setDayTradeEndTime}
-            dayTradeCloseTime={fields.dayTradeCloseTime}
-            setDayTradeCloseTime={setters.setDayTradeCloseTime}
-            showTimeframe={fields.engine === 'candle'}
-          />
-        </Fieldset>
+            <div className="space-y-1">
+              <label htmlFor="backtest-symbol" className="text-silver-300 text-xs font-medium">
+                Symbol
+              </label>
+              <input
+                id="backtest-symbol"
+                type="text"
+                value={fields.symbol}
+                onChange={(e) => setters.setSymbol(e.target.value.toUpperCase())}
+                className={inputClass}
+                placeholder="e.g. PETR4"
+                required
+              />
+            </div>
 
-        {fields.engine === 'tick' ? (
-          <Fieldset legend="Tick chart" className="min-w-[10rem] flex-1">
-            <div className="grid gap-2 sm:grid-cols-2">
+            {fields.engine === 'candle' ? (
               <div className="space-y-1">
-                <label htmlFor="display-timeframe" className="text-silver-400 text-xs">
-                  Display TF
+                <label htmlFor="backtest-timeframe" className="text-silver-300 text-xs font-medium">
+                  Timeframe
                 </label>
                 <select
-                  id="display-timeframe"
-                  aria-label="Display Timeframe"
-                  value={fields.displayTimeframe}
-                  onChange={(e) => setters.setDisplayTimeframe(e.target.value)}
+                  id="backtest-timeframe"
+                  value={fields.timeframe}
+                  onChange={(e) => setters.setTimeframe(e.target.value)}
                   className={inputClass}
                 >
-                  {DISPLAY_TIMEFRAME_OPTIONS.map((tf) => (
-                    <option key={tf} value={tf}>
-                      {tf}
-                    </option>
-                  ))}
+                  <option value="M1">1 Minute</option>
+                  <option value="M5">5 Minutes</option>
+                  <option value="M15">15 Minutes</option>
+                  <option value="H1">1 Hour</option>
+                  <option value="D1">1 Day</option>
                 </select>
               </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label
+                    htmlFor="display-timeframe"
+                    className="text-silver-400 text-[10px] font-bold tracking-wider uppercase"
+                  >
+                    Display TF
+                  </label>
+                  <select
+                    id="display-timeframe"
+                    value={fields.displayTimeframe}
+                    onChange={(e) => setters.setDisplayTimeframe(e.target.value)}
+                    className={inputClass}
+                  >
+                    {DISPLAY_TIMEFRAME_OPTIONS.map((tf) => (
+                      <option key={tf} value={tf}>
+                        {tf}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label
+                    htmlFor="tick-source"
+                    className="text-silver-400 text-[10px] font-bold tracking-wider uppercase"
+                  >
+                    Tick Source
+                  </label>
+                  <select
+                    id="tick-source"
+                    value={fields.tickFlags}
+                    onChange={(e) => setters.setTickFlags(e.target.value as 'all' | 'trade')}
+                    className={inputClass}
+                  >
+                    <option value="all">All ticks</option>
+                    <option value="trade">Trades only</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        </Fieldset>
+
+        {/* COLUMN 2: DATE RANGE & SCHEDULE */}
+        <Fieldset legend="Date Range & Schedule">
+          <div className="space-y-3">
+            <DateRangePresetsFields
+              startDate={fields.startDate}
+              setStartDate={setters.setStartDate}
+              endDate={fields.endDate}
+              setEndDate={setters.setEndDate}
+              symbol={fields.symbol}
+              timeframe={fields.timeframe}
+            />
+
+            <div className="border-carbon-600/20 border-t pt-2.5">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={fields.dayTrade}
+                  onChange={(e) => setters.setDayTrade(e.target.checked)}
+                  className="accent-brass-500 border-carbon-600 bg-carbon-900 text-brass-500 h-4 w-4 rounded"
+                />
+                <span className="text-silver-200 text-sm font-medium">Day Trading Mode</span>
+              </label>
+
+              {fields.dayTrade ? (
+                <div className="bg-carbon-950/40 border-carbon-600/35 mt-2 space-y-2 rounded-lg border p-2">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div className="space-y-1 text-center">
+                      <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
+                        Start
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="09:00"
+                        value={fields.dayTradeStartTime}
+                        onChange={(e) => setters.setDayTradeStartTime(e.target.value)}
+                        className="bg-carbon-950/80 border-brass-600/15 text-silver-100 focus:ring-brass-500/50 w-full rounded border py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
+                        End
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="16:00"
+                        value={fields.dayTradeEndTime}
+                        onChange={(e) => setters.setDayTradeEndTime(e.target.value)}
+                        className="bg-carbon-950/80 border-brass-600/15 text-silver-100 focus:ring-brass-500/50 w-full rounded border py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
+                        Close
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="17:00"
+                        value={fields.dayTradeCloseTime}
+                        onChange={(e) => setters.setDayTradeCloseTime(e.target.value)}
+                        className="bg-carbon-950/80 border-brass-600/15 text-silver-100 focus:ring-brass-500/50 w-full rounded border py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-silver-500 mt-1 pl-6 text-[11px] leading-normal">
+                  Trades carry over to the next trading day.
+                </p>
+              )}
+            </div>
+          </div>
+        </Fieldset>
+
+        {/* COLUMN 3: CAPITAL & SIZING */}
+        <Fieldset legend="Capital & Sizing">
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label htmlFor="tick-source" className="text-silver-400 text-xs">
-                  Tick source
-                </label>
-                <select
-                  id="tick-source"
-                  aria-label="Tick Source"
-                  value={fields.tickFlags}
-                  onChange={(e) => setters.setTickFlags(e.target.value as 'all' | 'trade')}
+                <label className="text-silver-300 text-xs font-medium">Capital</label>
+                <input
+                  type="number"
+                  value={fields.capital}
+                  onChange={(e) => setters.setCapital(Number(e.target.value))}
                   className={inputClass}
-                >
-                  <option value="all">All ticks</option>
-                  <option value="trade">Trades only</option>
-                </select>
+                  min="1000"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-silver-300 text-xs font-medium">Val/Point</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={fields.pointValue}
+                  onChange={(e) => setters.setPointValue(Number(e.target.value))}
+                  className={inputClass}
+                  min="0.01"
+                  required
+                />
               </div>
             </div>
-          </Fieldset>
-        ) : null}
 
-        <Fieldset legend="Sizing" className="min-w-[12rem] flex-[2]">
-          <div className="space-y-2">
-            <label htmlFor="position-sizing" className="text-silver-400 text-xs">
-              Mode
-            </label>
-            <select
-              id="position-sizing"
-              aria-label="Position Sizing"
-              value={fields.sizingMode}
-              onChange={(e) => setters.setSizingMode(e.target.value as PositionSizingMode)}
-              className={inputClass}
-            >
-              <option value="fixed_quantity">Fixed Quantity</option>
-              <option value="fixed_safety_margin">Fixed Safety Margin</option>
-              <option value="inverse_volatility">Inverse volatility (vol targeting)</option>
-            </select>
+            <div className="space-y-1">
+              <label htmlFor="position-sizing" className="text-silver-300 text-xs font-medium">
+                Sizing Mode
+              </label>
+              <select
+                id="position-sizing"
+                value={fields.sizingMode}
+                onChange={(e) => setters.setSizingMode(e.target.value as PositionSizingMode)}
+                className={inputClass}
+              >
+                <option value="fixed_quantity">Fixed Quantity</option>
+                <option value="fixed_safety_margin">Fixed Safety Margin</option>
+                <option value="inverse_volatility">Vol Targeting</option>
+              </select>
+            </div>
+
             <PositionSizingModeFields
               mode={fields.sizingMode}
               fields={fields.positionSizingFields}
@@ -164,24 +281,70 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
           </div>
         </Fieldset>
 
-        <Fieldset legend="Costs" className="min-w-[10rem] flex-1">
-          <TransactionCostFields
-            costPerContract={fields.costFields.costPerContract}
-            setCostPerContract={(value) =>
-              setters.setCostFields((current) => ({ ...current, costPerContract: value }))
-            }
-            costBps={fields.costFields.costBps}
-            setCostBps={(value) =>
-              setters.setCostFields((current) => ({ ...current, costBps: value }))
-            }
-            errors={costErrors}
-          />
+        {/* COLUMN 4: COSTS */}
+        <Fieldset legend="Costs">
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label htmlFor="cost-per-contract" className="text-silver-300 text-xs font-medium">
+                Cost per contract (per side)
+              </label>
+              <input
+                id="cost-per-contract"
+                type="number"
+                step="0.01"
+                min="0"
+                value={fields.costFields.costPerContract}
+                onChange={(e) =>
+                  setters.setCostFields((current) => ({
+                    ...current,
+                    costPerContract: e.target.value ? Number(e.target.value) : 0,
+                  }))
+                }
+                className={inputClass}
+              />
+              {costErrors.costPerContract && (
+                <p className="mt-1 text-xs font-medium text-rose-400">
+                  {costErrors.costPerContract}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="cost-bps" className="text-silver-300 text-xs font-medium">
+                Cost (bps of notional, per side)
+              </label>
+              <input
+                id="cost-bps"
+                type="number"
+                step="0.01"
+                min="0"
+                value={fields.costFields.costBps}
+                onChange={(e) =>
+                  setters.setCostFields((current) => ({
+                    ...current,
+                    costBps: e.target.value ? Number(e.target.value) : 0,
+                  }))
+                }
+                className={inputClass}
+              />
+              {costErrors.costBps && (
+                <p className="mt-1 text-xs font-medium text-rose-400">{costErrors.costBps}</p>
+              )}
+            </div>
+
+            <div className="border-carbon-600/20 text-silver-400 border-t pt-2 text-[11px] leading-normal">
+              Costs apply per side (entry and exit paid once). Leave at 0 for gross-of-costs
+              backtests.
+            </div>
+          </div>
         </Fieldset>
       </div>
 
-      {validation.dateRangeInvalid ? (
-        <p className="text-xs font-medium text-rose-400">Start date must be before end date.</p>
-      ) : null}
+      {validation.dateRangeInvalid && (
+        <p className="mt-1 text-xs font-medium text-rose-400">
+          Start date must be before end date.
+        </p>
+      )}
     </div>
   )
 }
