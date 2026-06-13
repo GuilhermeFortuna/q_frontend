@@ -5,9 +5,19 @@ import * as THREE from 'three'
 
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
+import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
 
-const BRANDED_BG = '/Quant_Background.jpeg'
-const CLEAN_BG = '/Quant_Background_clean.png'
+const BRANDED_BG_MAP = {
+  high: '/high_brightness/Quant_Background_High_Brightness.jpeg',
+  mid: '/mid_brightness/Quant_Background_Mid_Brightness.jpeg',
+  low: '/mid_brightness/Quant_Background_Mid_Brightness.jpeg', // Fallback to Mid for now
+}
+
+const CLEAN_BG_MAP = {
+  high: '/high_brightness/Quant_Background_Clean_High_Brightness.png',
+  mid: '/mid_brightness/Quant_Background_Clean_Mid_Brightness.jpeg',
+  low: '/mid_brightness/Quant_Background_Clean_Mid_Brightness.jpeg', // Fallback to Mid for now
+}
 
 function ParticleStars() {
   const pointsRef = useRef<THREE.Points>(null)
@@ -67,7 +77,11 @@ function ParticleStars() {
 
 export function QuantBackground() {
   const activeWorkspace = useAppStore((s) => s.activeWorkspace)
+  const resolvedBrightness = useResolvedBrightness()
   const isLauncher = activeWorkspace === 'launcher'
+
+  const brandedBg = BRANDED_BG_MAP[resolvedBrightness]
+  const cleanBg = CLEAN_BG_MAP[resolvedBrightness]
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -77,7 +91,7 @@ export function QuantBackground() {
           'absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700',
           isLauncher ? 'opacity-100' : 'opacity-0',
         )}
-        style={{ backgroundImage: `url('${BRANDED_BG}')` }}
+        style={{ backgroundImage: `url('${brandedBg}')` }}
       />
       {/* Cleaner background image in other workspaces */}
       <div
@@ -85,7 +99,7 @@ export function QuantBackground() {
           'absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700',
           isLauncher ? 'opacity-0' : 'opacity-100',
         )}
-        style={{ backgroundImage: `url('${CLEAN_BG}')` }}
+        style={{ backgroundImage: `url('${cleanBg}')` }}
       />
 
       {/* GPU-Accelerated 3D Parallax Starfield overlay */}

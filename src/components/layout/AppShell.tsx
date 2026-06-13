@@ -4,6 +4,7 @@ import { QuantBackground } from '@/components/background/QuantBackground'
 import { QuantEmblem } from '@/components/brand/QuantEmblem'
 import { AppDock } from '@/components/dock/AppDock'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
+import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
 import { DigitalClock } from '@/components/layout/DigitalClock'
 import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'
 import { WindowControls } from '@/components/layout/WindowControls'
@@ -50,6 +51,7 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         <div className="flex h-full items-center gap-6">
+          <BrightnessToggle />
           <div className="border-brass-600/30 bg-brass-600/10 text-brass-400 flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase shadow-[0_0_10px_rgba(196,165,116,0.05)]">
             <span className="bg-brass-400 h-1 w-1 animate-pulse rounded-full" />
             Phase 1 · Foundation

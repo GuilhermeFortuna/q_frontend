@@ -3,17 +3,28 @@ import type { ReactNode } from 'react'
 import { QuantEmblem } from '@/components/brand/QuantEmblem'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
 import { WindowControls } from '@/components/layout/WindowControls'
+import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
+import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
 
 type ReaderWindowShellProps = {
   children: ReactNode
 }
 
+const BLACK_BG_MAP = {
+  high: '/high_brightness/Quant_Background_Black_High_Brightness.jpeg',
+  mid: '/mid_brightness/Quant_Background_Black_Mid_Brightness.jpeg',
+  low: '/mid_brightness/Quant_Background_Black_Mid_Brightness.jpeg', // Fallback to Mid for now
+}
+
 export function ReaderWindowShell({ children }: ReaderWindowShellProps) {
+  const resolvedBrightness = useResolvedBrightness()
+  const bgImage = BLACK_BG_MAP[resolvedBrightness]
+
   return (
     <div className="bg-carbon-950 relative flex min-h-full flex-col overflow-hidden">
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-90"
-        style={{ backgroundImage: "url('/Quant_Background_Black.jpeg')" }}
+        className="absolute inset-0 bg-cover bg-center opacity-90 transition-all duration-700"
+        style={{ backgroundImage: `url('${bgImage}')` }}
       />
       <div className="bg-carbon-950/35 absolute inset-0" />
       <PointerSpotlight />
@@ -34,6 +45,7 @@ export function ReaderWindowShell({ children }: ReaderWindowShellProps) {
           </span>
         </div>
         <div className="flex h-full items-center gap-6">
+          <BrightnessToggle />
           <div className="border-brass-600/30 bg-brass-600/10 text-brass-400 flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase shadow-[0_0_10px_rgba(196,165,116,0.05)]">
             <span className="bg-brass-400 h-1 w-1 animate-pulse rounded-full" />
             Market News

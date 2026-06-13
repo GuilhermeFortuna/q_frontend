@@ -53,7 +53,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
       className={cn(
         'vt-dock fixed left-1/2 z-20 flex -translate-x-1/2 items-end backdrop-blur-xl transition-all duration-300 ease-in-out',
         isLauncher
-          ? 'border-brass-500/20 from-espresso-950/80 to-carbon-950/90 bottom-[18%] w-[min(980px,95vw)] justify-evenly gap-2.5 rounded-3xl border bg-gradient-to-b px-6 py-4 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),_0_0_40px_rgba(196,165,116,0.08)]'
+          ? 'border-brass-500/20 from-espresso-950/80 to-carbon-950/90 bottom-[12%] w-[min(980px,95vw)] justify-evenly gap-2.5 rounded-3xl border bg-gradient-to-b px-6 py-4 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),_0_0_40px_rgba(196,165,116,0.08)]'
           : 'border-brass-500/20 from-espresso-950/85 to-carbon-950/92 bottom-8 gap-1.5 rounded-2xl border bg-gradient-to-b px-3.5 py-2.5 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8),_0_0_30px_rgba(196,165,116,0.06)]',
       )}
     >

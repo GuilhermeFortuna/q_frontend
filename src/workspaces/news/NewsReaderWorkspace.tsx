@@ -3,12 +3,19 @@ import { Newspaper, X } from 'lucide-react'
 
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { mockArticles } from '@/mocks/news'
+import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
 
 let appWindow: ReturnType<typeof getCurrentWindow> | null = null
 try {
   appWindow = getCurrentWindow()
 } catch {
   // Fallback for non-Tauri / standard web environments
+}
+
+const POSTER_MAP = {
+  high: '/high_brightness/Quant_Background_Clean_High_Brightness.png',
+  mid: '/mid_brightness/Quant_Background_Clean_Mid_Brightness.jpeg',
+  low: '/mid_brightness/Quant_Background_Clean_Mid_Brightness.jpeg', // Fallback
 }
 
 export function NewsReaderWorkspace({
@@ -18,6 +25,8 @@ export function NewsReaderWorkspace({
   id?: string
   showInlineClose?: boolean
 }) {
+  const resolvedBrightness = useResolvedBrightness()
+  const posterPath = POSTER_MAP[resolvedBrightness]
   const article = useMemo(() => {
     return mockArticles.find((a) => a.id === id)
   }, [id])
@@ -94,7 +103,7 @@ export function NewsReaderWorkspace({
             controls
             preload="metadata"
             className="aspect-video w-full object-contain"
-            poster="/Quant_Background_clean.png"
+            poster={posterPath}
           />
         </div>
       )}
