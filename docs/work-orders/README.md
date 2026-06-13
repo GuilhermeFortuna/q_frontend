@@ -334,6 +334,63 @@ entire frontend against that message. WO34 is a paper that can run any time afte
 8. Is multi-objective rejected (422 / `ValueError`) since ranking needs a scalar?
 9. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
 
+## Phase: Parallel Optimization (next batch)
+
+Makes the Optimize tab use the whole machine. Today an Optuna study runs trials **strictly one
+at a time** on a single core — the inner backtest is a pure-Python, GIL-bound bar loop, so
+Optuna's thread-based `n_jobs` buys nothing, and a 50–200-trial study leaves a 16-core/32-thread
+box ~97% idle. This batch parallelizes trials across **processes** using Optuna **ask/tell**:
+the main process owns the study, sampler, progress, and persistence; worker processes run only
+the backtests, sharing one in-memory OHLCV frame via a pool initializer. It is the direct
+follow-on to the walk-forward window parallelization already shipped, and reuses that batch's
+proven plumbing (`resolve_worker_count`, `DefaultBacktestRunner.load_sliced_frame` /
+`from_frame_sliced`, the pool-initializer frame, the persist-before-flip finish ordering). The
+one genuinely new design point is sampler quality under batched sampling (TPE `constant_liar`),
+so — unlike walk-forward — parallel results are _comparable_, not byte-identical, to sequential.
+
+| #   | File                                                                                     | Repo       | Depends on    |
+| --- | ---------------------------------------------------------------------------------------- | ---------- | ------------- |
+| 35  | [WO35-backend-parallel-optimization-core.md](WO35-backend-parallel-optimization-core.md) | q_backend  | —             |
+| 36  | [WO36-backend-parallel-optimization-api.md](WO36-backend-parallel-optimization-api.md)   | q_backend  | WO35 contract |
+| 37  | [WO37-frontend-parallel-optimization-ux.md](WO37-frontend-parallel-optimization-ux.md)   | q_frontend | WO36 contract |
+
+### Dispatch order
+
+```
+WO35  ──►  WO36  ──►  WO37
+```
+
+Strictly sequential. WO35 builds the compute core and **must paste the changed
+`OptimizationRunner` signature, the worker return contract, and where `resolve_worker_count`
+now lives** — WO36 wires the job layer against it. WO36 **must paste the request body (with
+`study.max_workers`) and the status payload (with `workers`)** — WO37 builds the UI against
+that message. WO37 is frontend-only and must degrade cleanly against a pre-WO36 backend.
+
+### Batch-specific review checklist
+
+1. Is the **sequential path the byte-for-byte default** when no frame is supplied (no
+   `max_workers`, or `=1`, or an injected runner, or the tick engine)? Existing optimization
+   tests green and unmodified?
+2. Does the parallel path **load market data once** per study (`load_sliced_frame` on the
+   request thread, call-count spy), reusing the frame across every trial?
+3. Is the worker the **only** thing that runs the backtest, with param suggestion (`ask` +
+   `suggest_params`) and `tell` kept in the main process so the sampler advances correctly?
+4. Is `TPESampler(constant_liar=True)` used in the parallel path, and is it documented that
+   parallel results are **comparable, not identical** (tests assert best ≥ sequential − ε,
+   never byte-equality)?
+5. Do parallel best trials carry the **same `user_attrs` contract**
+   (`strategy_params`/`risk_params`/`metrics`) that walk-forward and results serialization
+   read?
+6. Is the engine's inner `parallel_mode` forced **SEQUENTIAL** in workers (no nested
+   `ProcessPoolExecutor`)? Is the **tick engine** kept sequential (no tick arrays shipped
+   across processes)?
+7. Was the **finish race fixed** in `optimization_jobs._run_job` (persist with terminal
+   status, _then_ flip `job.status`), matching the walk-forward fix, with a restart-rebuild
+   test that catches it?
+8. Does the study **complete with Postgres stopped** (best-effort persistence), and does
+   cancel end the run cleanly with no further trials asked?
+9. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
+
 ## Review checklist (apply to every returned PR)
 
 1. Does the compute path still work with Postgres **stopped**? (stop the container, run a backtest / a study)
