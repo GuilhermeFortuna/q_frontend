@@ -64,33 +64,59 @@ async function waitForPostgres(retries = 30) {
   throw new Error('Postgres did not become ready in time.')
 }
 
+async function assertDockerRunning() {
+  // Every step needs the Docker engine — fail fast with a clear message instead of
+  // letting each compose call emit a cryptic daemon/pipe error.
+  const code = await runCapture('docker', ['info'])
+  if (code !== 0) {
+    throw new Error(
+      'Docker engine is not reachable. Start Docker Desktop (wait until it says "running"), then re-run.',
+    )
+  }
+}
+
 async function main() {
   if (!fs.existsSync(composeFile)) {
     throw new Error(`Expected docker compose file at ${composeFile}`)
   }
 
+  await assertDockerRunning()
+
+  // Finalize any backend/worker containers left over from a previous run so a stale
+  // baked-in image can never serve old code after the next start. Named volumes
+  // (postgres_data, backend_data) are preserved, so data persists.
+  console.log('Finalizing leftover backend/worker containers from previous runs...')
+  await runCapture('docker', [
+    'compose',
+    '-f',
+    composeFile,
+    '--profile',
+    'containerized',
+    'rm',
+    '-fs',
+    'backend',
+    'worker',
+  ])
+
   if (containerized) {
     console.log('Starting full containerized stack (no live MetaTrader5)...')
-    const composeArgs = ['compose', '-f', composeFile, '--profile', 'containerized', 'up', '-d']
-    if (rebuild) {
-      composeArgs.push('--build')
-    }
-    await run('docker', composeArgs, { cwd: monorepoRoot })
-  } else {
-    console.log('Stopping containerized backend/worker (if any)...')
-    await runCapture('docker', [
+    const composeArgs = [
       'compose',
       '-f',
       composeFile,
       '--profile',
       'containerized',
-      'stop',
-      'backend',
-      'worker',
-    ])
-
+      'up',
+      '-d',
+      '--remove-orphans',
+    ]
+    if (rebuild) {
+      composeArgs.push('--build')
+    }
+    await run('docker', composeArgs, { cwd: monorepoRoot })
+  } else {
     console.log('Starting Postgres and Redis in Docker...')
-    await run('docker', ['compose', '-f', composeFile, 'up', '-d', 'postgres', 'redis'], {
+    await run('docker', ['compose', '-f', composeFile, 'up', '-d', '--remove-orphans', 'postgres', 'redis'], {
       cwd: monorepoRoot,
     })
     await waitForPostgres()
