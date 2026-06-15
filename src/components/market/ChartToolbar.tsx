@@ -2,6 +2,7 @@ import { IndicatorsPopover } from '@/components/charts/IndicatorsPopover'
 import { ChartSettingsPopover } from '@/components/charts/ChartSettingsPopover'
 import type { IndicatorConfig, ChartSettings } from '@/components/charts/types/chart'
 import { CHART_TIMEFRAMES } from '@/lib/market/timeframes'
+import type { OhlcvBar } from '@/types/api'
 
 export type ChartToolbarProps = {
   selectedTimeframe: string
@@ -10,6 +11,7 @@ export type ChartToolbarProps = {
   onChartTypeChange: (chartType: 'candles' | 'line' | 'area') => void
   indicators: IndicatorConfig[]
   onIndicatorsChange: (indicators: IndicatorConfig[]) => void
+  bars: OhlcvBar[]
   showGrid: boolean
   onShowGridChange: (showGrid: boolean) => void
   chartSettings?: ChartSettings
@@ -23,6 +25,7 @@ export function ChartToolbar({
   onChartTypeChange,
   indicators,
   onIndicatorsChange,
+  bars,
   showGrid,
   onShowGridChange,
   chartSettings,
@@ -62,7 +65,7 @@ export function ChartToolbar({
           </select>
         </div>
 
-        <IndicatorsPopover indicators={indicators} onChange={onIndicatorsChange} />
+        <IndicatorsPopover indicators={indicators} onChange={onIndicatorsChange} bars={bars} />
 
         {chartSettings && onChartSettingsChange ? (
           <ChartSettingsPopover settings={chartSettings} onChange={onChartSettingsChange} />

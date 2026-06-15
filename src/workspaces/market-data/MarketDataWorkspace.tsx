@@ -374,6 +374,7 @@ export function MarketDataWorkspace() {
                   patchMarketDataSession({ indicators: val })
                   updateActiveProfile({ indicators: val })
                 }}
+                bars={ohlcv.bars}
                 showGrid={showGrid}
                 onShowGridChange={(val) => {
                   patchMarketDataSession({ showGrid: val })

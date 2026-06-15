@@ -66,6 +66,38 @@ export type IndicatorConfig =
       strokeWidth?: number
       lineStyle?: 'solid' | 'dashed' | 'dotted'
     }
+  | {
+      type: 'wma'
+      enabled: boolean
+      period: number
+      color?: string
+      strokeWidth?: number
+      lineStyle?: 'solid' | 'dashed' | 'dotted'
+    }
+  | {
+      type: 'hma'
+      enabled: boolean
+      period: number
+      color?: string
+      strokeWidth?: number
+      lineStyle?: 'solid' | 'dashed' | 'dotted'
+    }
+  | {
+      type: 'smma'
+      enabled: boolean
+      period: number
+      color?: string
+      strokeWidth?: number
+      lineStyle?: 'solid' | 'dashed' | 'dotted'
+    }
+  | {
+      type: 'donchian'
+      enabled: boolean
+      period: number
+      color?: string
+      strokeWidth?: number
+      showCloud?: boolean
+    }
 
 export type ChartSettings = {
   backgroundType: 'gradient' | 'solid'
@@ -175,6 +207,38 @@ export const DEFAULT_INDICATORS: IndicatorConfig[] = [
     color: '#a78bfa',
     strokeWidth: 1.2,
     lineStyle: 'solid',
+  },
+  {
+    type: 'wma',
+    enabled: false,
+    period: 20,
+    color: '#f97316',
+    strokeWidth: 1.2,
+    lineStyle: 'solid',
+  },
+  {
+    type: 'hma',
+    enabled: false,
+    period: 20,
+    color: '#26a69a',
+    strokeWidth: 1.2,
+    lineStyle: 'solid',
+  },
+  {
+    type: 'smma',
+    enabled: false,
+    period: 20,
+    color: '#ef5350',
+    strokeWidth: 1.2,
+    lineStyle: 'solid',
+  },
+  {
+    type: 'donchian',
+    enabled: false,
+    period: 20,
+    color: '#6eb5ff',
+    strokeWidth: 1.0,
+    showCloud: true,
   },
 ]
 

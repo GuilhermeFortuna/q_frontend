@@ -141,7 +141,9 @@ describe('DiscoverConfigForm', () => {
     expect(body.strategies).toBeNull()
     expect(body.genetic).toBeUndefined()
     expect(body.lockbox).toBeUndefined()
-    expect(body.include_risk_search).toBe(true)
+    // Discovery always holds sizing at a fixed 1 contract (no risk-model search)
+    // so candidates are comparable on signal quality alone.
+    expect(body.include_risk_search).toBe(false)
     expect(body.objective).toEqual({ mode: 'maximize_return_drawdown' })
     expect(body.walkforward).toEqual({
       train_days: 180,

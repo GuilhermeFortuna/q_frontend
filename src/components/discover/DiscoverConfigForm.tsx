@@ -181,7 +181,11 @@ export function DiscoverConfigForm({
         sampler: isMultiObjective ? 'nsgaii' : sampler,
       },
       strategies: isGenetic ? null : strategyList,
-      include_risk_search: true,
+      // Discovery compares strategies on signal quality alone, so position sizing is
+      // held constant at a fixed 1 contract (no risk-model search). Searching capital
+      // sizing here would make candidates incomparable. See build_position_sizer:
+      // an empty risk space yields FixedQuantitySizer(quantity=1).
+      include_risk_search: false,
       gates,
     }
 

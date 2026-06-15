@@ -17,8 +17,12 @@ function phaseLabel(phase: StrategySearchStatus['phase']): string {
 
 export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgressProps) {
   const total = Math.max(status.total_candidates, 1)
-  const current = status.current_candidate
-  const pct = Math.min(100, Math.round((current / total) * 100))
+  // Genetic discovery reports fractional candidates (completed windows / windows per
+  // candidate) so the bar moves every window; floor for the count, keep the raw value
+  // for a smooth percentage.
+  const currentRaw = status.current_candidate
+  const current = Math.floor(currentRaw)
+  const pct = Math.min(100, Math.round((currentRaw / total) * 100))
   const hasGenerationProgress =
     status.total_generations != null && status.total_generations > 0 && status.generation != null
   const generationPct = hasGenerationProgress

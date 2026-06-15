@@ -63,11 +63,13 @@ export function useActiveJobs(): ActiveJobsMap {
 
   if (isActive(discover?.status) && discover) {
     const phase = discover.phase ? ` · ${discover.phase}` : ''
+    // current_candidate can be fractional (genetic reports completed windows); the
+    // percentage stays smooth, but the caption shows a whole candidate count.
     map.discover = {
       pct: pctOf(discover.current_candidate, discover.total_candidates),
       detail:
         discover.total_candidates > 0
-          ? `Candidate ${discover.current_candidate} / ${discover.total_candidates}${phase}`
+          ? `Candidate ${Math.floor(discover.current_candidate)} / ${discover.total_candidates}${phase}`
           : 'Preparing…',
     }
   }

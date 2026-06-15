@@ -18,6 +18,7 @@ describe('ChartToolbar', () => {
         onChartTypeChange={onChartTypeChange}
         indicators={DEFAULT_INDICATORS}
         onIndicatorsChange={vi.fn()}
+        bars={[]}
         showGrid
         onShowGridChange={vi.fn()}
         chartSettings={DEFAULT_SETTINGS}

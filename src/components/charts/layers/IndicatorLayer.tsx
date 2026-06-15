@@ -2,7 +2,7 @@ import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
 import type { IndicatorConfig, ProcessedBar } from '@/components/charts/types/chart'
 import { BRASS_COLOR } from '@/components/charts/types/chart'
-import { bollingerBands, ema, sma } from '@/lib/indicators'
+import { bollingerBands, ema, sma, wma, hma, smma, donchianChannels } from '@/lib/indicators'
 import type { OhlcvBar } from '@/types/api'
 
 type IndicatorLayerProps = {
@@ -173,6 +173,97 @@ export function IndicatorLayer({
                 strokeWidth={strokeWidth}
                 strokeDasharray="3 2"
                 opacity={0.5}
+              />
+              <path
+                d={linePath(bands.lower, allBars, visibleSet, xScale, yScale)}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                opacity={0.8}
+              />
+            </g>
+          )
+        }
+
+        if (ind.type === 'wma') {
+          const values = wma(allBars, ind.period)
+          const color = ind.color ?? '#f97316'
+          const strokeWidth = ind.strokeWidth ?? 1.2
+          const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
+          return (
+            <path
+              key="wma"
+              d={linePath(values, allBars, visibleSet, xScale, yScale)}
+              fill="none"
+              stroke={color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={dash}
+            />
+          )
+        }
+
+        if (ind.type === 'hma') {
+          const values = hma(allBars, ind.period)
+          const color = ind.color ?? '#26a69a'
+          const strokeWidth = ind.strokeWidth ?? 1.2
+          const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
+          return (
+            <path
+              key="hma"
+              d={linePath(values, allBars, visibleSet, xScale, yScale)}
+              fill="none"
+              stroke={color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={dash}
+            />
+          )
+        }
+
+        if (ind.type === 'smma') {
+          const values = smma(allBars, ind.period)
+          const color = ind.color ?? '#ef5350'
+          const strokeWidth = ind.strokeWidth ?? 1.2
+          const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
+          return (
+            <path
+              key="smma"
+              d={linePath(values, allBars, visibleSet, xScale, yScale)}
+              fill="none"
+              stroke={color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={dash}
+            />
+          )
+        }
+
+        if (ind.type === 'donchian') {
+          const bands = donchianChannels(allBars, ind.period)
+          const color = ind.color ?? '#6eb5ff'
+          const strokeWidth = ind.strokeWidth ?? 1.0
+          const showCloud = ind.showCloud ?? true
+          return (
+            <g key="donchian">
+              {showCloud && (
+                <path
+                  d={bandsAreaPath(bands.upper, bands.lower, allBars, visibleSet, xScale, yScale)}
+                  fill={getCloudFill(color)}
+                  stroke="none"
+                />
+              )}
+              <path
+                d={linePath(bands.upper, allBars, visibleSet, xScale, yScale)}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                opacity={0.8}
+              />
+              <path
+                d={linePath(bands.middle, allBars, visibleSet, xScale, yScale)}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeDasharray="2 2"
+                opacity={0.4}
               />
               <path
                 d={linePath(bands.lower, allBars, visibleSet, xScale, yScale)}
