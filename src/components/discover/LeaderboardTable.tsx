@@ -1,8 +1,9 @@
 import { useNavigate } from '@tanstack/react-router'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 
 import { CandidateDetailPanel } from '@/components/discover/CandidateDetailPanel'
+import { ComplexityLine } from '@/components/discover/GenomeViewer'
 import { Button } from '@/components/ui/button'
 import { gateFlagsLabel } from '@/lib/discover/candidateMetrics'
 import {
@@ -18,6 +19,11 @@ import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 import type { ObjectiveMode, OptimizationBacktestConfig } from '@/types/optimization'
 import type { CandidateResult, StrategySearchConfig } from '@/types/strategySearch'
+import {
+  isGeneticCandidate,
+  isGeneticSearchConfig,
+  maxCandidateGeneration,
+} from '@/types/strategySearch'
 
 type SortKey = 'rank' | 'strategy' | 'objective' | 'efficiency' | 'trades'
 
@@ -28,6 +34,8 @@ type LeaderboardTableProps = {
   backtest: OptimizationBacktestConfig
   searchConfig: StrategySearchConfig | undefined
 }
+
+const ALL_GENERATIONS = 'all'
 
 function candidateTrades(candidate: CandidateResult): number | null {
   return candidate.oos_metrics?.total_trades ?? null
@@ -77,9 +85,36 @@ export function LeaderboardTable({
   const [sortKey, setSortKey] = useState<SortKey>('rank')
   const [sortAsc, setSortAsc] = useState(true)
 
+  const isGenetic = isGeneticSearchConfig(searchConfig)
+  const championGeneration = maxCandidateGeneration(candidates)
+
+  const generationOptions = useMemo(() => {
+    const gens = new Set<number>()
+    for (const c of candidates) {
+      if (c.generation != null) gens.add(c.generation)
+    }
+    return Array.from(gens).sort((a, b) => a - b)
+  }, [candidates])
+
+  const [generationFilter, setGenerationFilter] = useState<string>(() =>
+    championGeneration != null ? String(championGeneration) : ALL_GENERATIONS,
+  )
+
+  useEffect(() => {
+    if (championGeneration != null) {
+      setGenerationFilter(String(championGeneration))
+    }
+  }, [championGeneration, runId])
+
+  const filteredCandidates = useMemo(() => {
+    if (!isGenetic || generationFilter === ALL_GENERATIONS) return candidates
+    const gen = Number(generationFilter)
+    return candidates.filter((c) => c.generation === gen)
+  }, [candidates, generationFilter, isGenetic])
+
   const sortedCandidates = useMemo(() => {
-    const passing = candidates.filter((c) => c.passed_gates && c.rank != null)
-    const trailing = candidates.filter((c) => !c.passed_gates || c.rank == null)
+    const passing = filteredCandidates.filter((c) => c.passed_gates && c.rank != null)
+    const trailing = filteredCandidates.filter((c) => !c.passed_gates || c.rank == null)
 
     const sortFn = (list: CandidateResult[]) => {
       const sorted = [...list]
@@ -112,7 +147,7 @@ export function LeaderboardTable({
     }
 
     return [...sortFn(passing), ...sortFn(trailing)]
-  }, [candidates, sortKey, sortAsc])
+  }, [filteredCandidates, sortKey, sortAsc])
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc((value) => !value)
@@ -134,123 +169,166 @@ export function LeaderboardTable({
   }
 
   const objectiveHeader = `OOS ${objectiveMetricLabel(objectiveMode)} (out-of-sample)`
+  const showGenerationFilter = isGenetic && generationOptions.length > 0
 
   return (
-    <div className="border-carbon-600/40 overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-[720px] text-left text-sm">
-        <thead className="bg-carbon-950/60 text-silver-400 text-xs tracking-wide uppercase">
-          <tr>
-            {(
-              [
-                ['rank', 'Rank'],
-                ['strategy', 'Strategy'],
-                ['objective', objectiveHeader],
-                ['efficiency', 'Efficiency'],
-                ['trades', 'OOS trades'],
-              ] as const
-            ).map(([key, label]) => (
-              <th key={key} className="px-3 py-2 font-semibold">
-                <button
-                  type="button"
-                  className="hover:text-brass-400 transition-colors"
-                  onClick={() => toggleSort(key)}
-                >
-                  {label}
-                  {sortKey === key ? (sortAsc ? ' ↑' : ' ↓') : ''}
-                </button>
-              </th>
+    <div className="space-y-3">
+      {showGenerationFilter ? (
+        <div className="flex items-center justify-end gap-2">
+          <label className="text-silver-500 text-xs" htmlFor="generation-filter">
+            Generation
+          </label>
+          <select
+            id="generation-filter"
+            value={generationFilter}
+            onChange={(event) => setGenerationFilter(event.target.value)}
+            className="border-brass-600/20 bg-carbon-950/50 text-silver-200 h-8 rounded-md border px-2 text-xs"
+          >
+            <option value={ALL_GENERATIONS}>All generations</option>
+            {generationOptions.map((g) => (
+              <option key={g} value={String(g)}>
+                Generation {g}
+              </option>
             ))}
-            <th className="px-3 py-2 font-semibold">Gate</th>
-            <th className="px-3 py-2 font-semibold">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedCandidates.map((candidate) => {
-            const expanded = expandedId === candidate.candidate_id
-            const dimmed = isDeemphasized(candidate)
-            const canPromote = candidate.status === 'completed' && candidate.best_params != null
+          </select>
+        </div>
+      ) : null}
 
-            return (
-              <Fragment key={candidate.candidate_id}>
-                <tr
-                  key={candidate.candidate_id}
-                  className={cn(
-                    'border-carbon-600/30 border-t',
-                    dimmed ? 'text-silver-500 opacity-70' : 'text-silver-100',
-                  )}
-                >
-                  <td className="px-3 py-2 font-mono tabular-nums">{candidate.rank ?? '—'}</td>
-                  <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      className="hover:text-brass-400 flex items-center gap-1 font-medium transition-colors"
-                      onClick={() => setExpandedId(expanded ? null : candidate.candidate_id)}
-                    >
-                      {expanded ? (
-                        <ChevronDown className="h-4 w-4 shrink-0" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 shrink-0" />
-                      )}
-                      {candidate.strategy}
-                    </button>
-                  </td>
-                  <td className="px-3 py-2 font-mono tabular-nums">
-                    {formatObjectiveMetricValue(candidate.objective_value, objectiveMode)}
-                  </td>
-                  <td className="px-3 py-2 font-mono tabular-nums">
-                    {formatEfficiencyRatio(candidate.efficiency)}
-                  </td>
-                  <td className="px-3 py-2 font-mono tabular-nums">
-                    {candidateTrades(candidate) ?? '—'}
-                  </td>
-                  <td className="px-3 py-2">
-                    <GateBadge candidate={candidate} />
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-1">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs"
-                        disabled={!canPromote}
-                        onClick={() => handlePromoteBacktest(candidate)}
-                      >
-                        Send to Backtest
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs"
-                        disabled={!canPromote || !searchConfig}
-                        onClick={() => handlePromoteOptimize(candidate)}
-                      >
-                        Send to Optimizer
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-                {expanded ? (
-                  <tr
-                    key={`${candidate.candidate_id}-detail`}
-                    className="border-carbon-600/30 border-t"
+      <div className="border-carbon-600/40 overflow-x-auto rounded-lg border">
+        <table className="w-full min-w-[720px] text-left text-sm">
+          <thead className="bg-carbon-950/60 text-silver-400 text-xs tracking-wide uppercase">
+            <tr>
+              {(
+                [
+                  ['rank', 'Rank'],
+                  ['strategy', 'Strategy'],
+                  ['objective', objectiveHeader],
+                  ['efficiency', 'Efficiency'],
+                  ['trades', 'OOS trades'],
+                ] as const
+              ).map(([key, label]) => (
+                <th key={key} className="px-3 py-2 font-semibold">
+                  <button
+                    type="button"
+                    className="hover:text-brass-400 transition-colors"
+                    onClick={() => toggleSort(key)}
                   >
-                    <td colSpan={7} className="bg-carbon-950/40 px-4 py-4">
-                      <CandidateDetailPanel
-                        runId={runId}
-                        candidate={candidate}
-                        backtest={backtest}
-                        objectiveMode={objectiveMode}
-                      />
+                    {label}
+                    {sortKey === key ? (sortAsc ? ' ↑' : ' ↓') : ''}
+                  </button>
+                </th>
+              ))}
+              {showGenerationFilter ? <th className="px-3 py-2 font-semibold">Gen</th> : null}
+              <th className="px-3 py-2 font-semibold">Gate</th>
+              <th className="px-3 py-2 font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedCandidates.map((candidate) => {
+              const expanded = expandedId === candidate.candidate_id
+              const dimmed = isDeemphasized(candidate)
+              const canPromote = candidate.status === 'completed' && candidate.best_params != null
+
+              return (
+                <Fragment key={candidate.candidate_id}>
+                  <tr
+                    className={cn(
+                      'border-carbon-600/30 border-t',
+                      dimmed ? 'text-silver-500 opacity-70' : 'text-silver-100',
+                    )}
+                  >
+                    <td className="px-3 py-2 font-mono tabular-nums">{candidate.rank ?? '—'}</td>
+                    <td className="px-3 py-2">
+                      <button
+                        type="button"
+                        className="hover:text-brass-400 flex items-start gap-1 text-left font-medium transition-colors"
+                        onClick={() => setExpandedId(expanded ? null : candidate.candidate_id)}
+                      >
+                        {expanded ? (
+                          <ChevronDown className="mt-0.5 h-4 w-4 shrink-0" />
+                        ) : (
+                          <ChevronRight className="mt-0.5 h-4 w-4 shrink-0" />
+                        )}
+                        <span>
+                          <span className="flex flex-wrap items-center gap-1.5">
+                            {candidate.strategy}
+                            {isGeneticCandidate(candidate) ? (
+                              <span className="border-brass-500/30 text-brass-400 rounded-full border px-1.5 py-0 text-[9px] font-semibold tracking-wide uppercase">
+                                Evolved
+                              </span>
+                            ) : null}
+                          </span>
+                          <ComplexityLine
+                            genomeNodeCount={candidate.genome_node_count}
+                            genome={candidate.genome}
+                          />
+                        </span>
+                      </button>
+                    </td>
+                    <td className="px-3 py-2 font-mono tabular-nums">
+                      {formatObjectiveMetricValue(candidate.objective_value, objectiveMode)}
+                    </td>
+                    <td className="px-3 py-2 font-mono tabular-nums">
+                      {formatEfficiencyRatio(candidate.efficiency)}
+                    </td>
+                    <td className="px-3 py-2 font-mono tabular-nums">
+                      {candidateTrades(candidate) ?? '—'}
+                    </td>
+                    {showGenerationFilter ? (
+                      <td className="text-silver-400 px-3 py-2 font-mono text-xs tabular-nums">
+                        {candidate.generation ?? '—'}
+                      </td>
+                    ) : null}
+                    <td className="px-3 py-2">
+                      <GateBadge candidate={candidate} />
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs"
+                          disabled={!canPromote}
+                          onClick={() => handlePromoteBacktest(candidate)}
+                        >
+                          Send to Backtest
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs"
+                          disabled={!canPromote || !searchConfig}
+                          onClick={() => handlePromoteOptimize(candidate)}
+                        >
+                          Send to Optimizer
+                        </Button>
+                      </div>
                     </td>
                   </tr>
-                ) : null}
-              </Fragment>
-            )
-          })}
-        </tbody>
-      </table>
+                  {expanded ? (
+                    <tr className="border-carbon-600/30 border-t">
+                      <td
+                        colSpan={showGenerationFilter ? 8 : 7}
+                        className="bg-carbon-950/40 px-4 py-4"
+                      >
+                        <CandidateDetailPanel
+                          runId={runId}
+                          candidate={candidate}
+                          backtest={backtest}
+                          objectiveMode={objectiveMode}
+                          searchConfig={searchConfig}
+                        />
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

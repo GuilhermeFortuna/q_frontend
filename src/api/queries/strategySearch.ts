@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
 import type {
   StrategySearchCandidateEquityArtifact,
+  StrategySearchCandidateGenomeArtifact,
   StrategySearchConfig,
   StrategySearchResults,
   StrategySearchRunListResponse,
@@ -27,6 +28,8 @@ export const strategySearchKeys = {
   results: (runId: string) => [...strategySearchKeys.all, 'results', runId] as const,
   candidateEquity: (runId: string, candidateId: string) =>
     [...strategySearchKeys.all, 'artifacts', 'equity', runId, candidateId] as const,
+  candidateGenome: (runId: string, candidateId: string) =>
+    [...strategySearchKeys.all, 'artifacts', 'genome', runId, candidateId] as const,
 }
 
 export async function startStrategySearch(
@@ -57,6 +60,16 @@ async function fetchStrategySearchCandidateEquity(
 ): Promise<StrategySearchCandidateEquityArtifact> {
   const { data } = await apiClient.get<StrategySearchCandidateEquityArtifact>(
     `/api/v1/strategy-search/${runId}/candidates/${candidateId}/artifacts/equity`,
+  )
+  return data
+}
+
+async function fetchStrategySearchCandidateGenome(
+  runId: string,
+  candidateId: string,
+): Promise<StrategySearchCandidateGenomeArtifact> {
+  const { data } = await apiClient.get<StrategySearchCandidateGenomeArtifact>(
+    `/api/v1/strategy-search/${runId}/candidates/${candidateId}/genome`,
   )
   return data
 }
@@ -156,6 +169,19 @@ export function useStrategySearchCandidateEquity(
   return useQuery({
     queryKey: strategySearchKeys.candidateEquity(runId ?? '', candidateId ?? ''),
     queryFn: () => fetchStrategySearchCandidateEquity(runId as string, candidateId as string),
+    enabled: !!runId && !!candidateId && enabled,
+    staleTime: Infinity,
+  })
+}
+
+export function useStrategySearchCandidateGenome(
+  runId: string | null,
+  candidateId: string | null,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: strategySearchKeys.candidateGenome(runId ?? '', candidateId ?? ''),
+    queryFn: () => fetchStrategySearchCandidateGenome(runId as string, candidateId as string),
     enabled: !!runId && !!candidateId && enabled,
     staleTime: Infinity,
   })

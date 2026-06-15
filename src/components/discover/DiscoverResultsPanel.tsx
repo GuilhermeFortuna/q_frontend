@@ -7,9 +7,11 @@ import {
 import type { OptimizationBacktestConfig } from '@/types/optimization'
 import type { StrategySearchResults, StrategySearchStatus } from '@/types/strategySearch'
 
+import { GeneticVerdictPanel } from '@/components/discover/GeneticVerdictPanel'
 import { DiscoverProgress } from '@/components/discover/DiscoverProgress'
 import { LeaderboardTable } from '@/components/discover/LeaderboardTable'
 import { Button } from '@/components/ui/button'
+import { hasGeneticSummary, isGeneticSearchConfig } from '@/types/strategySearch'
 
 type DiscoverResultsPanelProps = {
   runId: string | null
@@ -55,12 +57,16 @@ export function DiscoverResultsPanel({
     const objectiveMode = results.objective_mode
     const statusLabel =
       status?.status === 'cancelled' ? 'Search cancelled — showing partial leaderboard' : undefined
+    const showGeneticVerdict =
+      hasGeneticSummary(results.summary) || isGeneticSearchConfig(results.search_config)
 
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
         {statusLabel ? (
           <p className="text-silver-400 shrink-0 text-sm italic">{statusLabel}</p>
         ) : null}
+
+        {showGeneticVerdict ? <GeneticVerdictPanel summary={results.summary} best={best} /> : null}
 
         {best && best.status === 'completed' ? (
           <div className="border-brass-500/30 bg-brass-500/5 shrink-0 rounded-xl border p-4">

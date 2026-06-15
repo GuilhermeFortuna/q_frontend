@@ -87,4 +87,75 @@ describe('DiscoverConfigForm', () => {
       expect(screen.getByText(/candle only/i)).toBeInTheDocument()
     })
   })
+
+  it('reveals genetic fields when toggling to Genetic synthesis', async () => {
+    const user = userEvent.setup()
+    renderWithQueryClient(<DiscoverConfigForm loading={false} error={null} onSubmit={vi.fn()} />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Will run/i)).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Genetic synthesis' }))
+
+    expect(screen.getByText(/Genetic algorithm/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Population size/i)).toBeInTheDocument()
+    expect(screen.getByText(/Advanced › Lock-box/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Will run/i)).not.toBeInTheDocument()
+  })
+
+  it('submits genetic config with genetic and lockbox blocks', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderWithQueryClient(<DiscoverConfigForm loading={false} error={null} onSubmit={onSubmit} />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Will run/i)).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Genetic synthesis' }))
+    await user.click(screen.getByRole('button', { name: 'Run Strategy Search' }))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    const body = onSubmit.mock.calls[0][0]
+    expect(body.strategies).toBeNull()
+    expect(body.backtest.strategy).toBe('CompositeStrategy')
+    expect(body.genetic).toMatchObject({ population_size: 40, generations: 10 })
+    expect(body.lockbox?.enabled).toBe(true)
+  })
+
+  it('registry submit omits genetic and lockbox (byte-identical shape)', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderWithQueryClient(<DiscoverConfigForm loading={false} error={null} onSubmit={onSubmit} />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Will run/i)).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Run Strategy Search' }))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    const body = onSubmit.mock.calls[0][0]
+    expect(body.strategies).toBeNull()
+    expect(body.genetic).toBeUndefined()
+    expect(body.lockbox).toBeUndefined()
+    expect(body.include_risk_search).toBe(true)
+    expect(body.objective).toEqual({ mode: 'maximize_return_drawdown' })
+    expect(body.walkforward).toEqual({
+      train_days: 180,
+      test_days: 30,
+      mode: 'rolling',
+      min_windows: 2,
+    })
+    expect(body.gates).toEqual({
+      min_completed_windows: 2,
+      min_oos_trades: 10,
+      efficiency_low: 0.3,
+      efficiency_high: 1.5,
+    })
+    expect(body.study.name).toBe('PETR4_discover_1700000000000')
+    vi.restoreAllMocks()
+  })
 })

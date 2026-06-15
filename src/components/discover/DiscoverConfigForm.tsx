@@ -3,6 +3,11 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useStrategies } from '@/api/queries/strategies'
 import { DiscoverGatesSection } from '@/components/discover/DiscoverGatesSection'
+import {
+  DiscoverGeneticSection,
+  SearchModeToggle,
+  type SearchMode,
+} from '@/components/discover/DiscoverGeneticSection'
 import { OptimizeAdvancedSection } from '@/components/optimize/OptimizeAdvancedSection'
 import { OptimizeStudySection } from '@/components/optimize/OptimizeStudySection'
 import { FormSection } from '@/components/optimize/optimizeFormShared'
@@ -11,11 +16,16 @@ import { WalkForwardWindowsSection } from '@/components/walkforward/WalkForwardW
 import { Button } from '@/components/ui/button'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import { estimateWalkForwardWindowCount } from '@/lib/walkforward/windowCount'
+import { validateGeneticConfig, validateLockboxConfig } from '@/lib/discover/geneticConfigSchema'
 import type { ObjectiveMode, Sampler } from '@/types/optimization'
 import type { StrategyInfo } from '@/types/strategies'
 import {
   DEFAULT_GATE_CONFIG,
+  DEFAULT_GENETIC_CONFIG,
+  DEFAULT_LOCKBOX_CONFIG,
   type GateConfig,
+  type GeneticSearchConfig,
+  type LockboxConfig,
   type StrategySearchConfig,
 } from '@/types/strategySearch'
 import type { WalkForwardMode } from '@/types/walkforward'
@@ -62,9 +72,14 @@ export function DiscoverConfigForm({
 
   const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set())
   const [gates, setGates] = useState<GateConfig>(DEFAULT_GATE_CONFIG)
+  const [searchMode, setSearchMode] = useState<SearchMode>('registry')
+  const [genetic, setGenetic] = useState<GeneticSearchConfig>(DEFAULT_GENETIC_CONFIG)
+  const [lockbox, setLockbox] = useState<LockboxConfig>(DEFAULT_LOCKBOX_CONFIG)
 
   const [instrumentOpen, setInstrumentOpen] = useState(true)
   const [strategiesOpen, setStrategiesOpen] = useState(true)
+  const [geneticOpen, setGeneticOpen] = useState(true)
+  const [lockboxOpen, setLockboxOpen] = useState(false)
   const [windowsOpen, setWindowsOpen] = useState(true)
   const [studyOpen, setStudyOpen] = useState(true)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -109,6 +124,9 @@ export function DiscoverConfigForm({
   ).length
 
   const isMultiObjective = objective === 'multi_objective_return_drawdown'
+  const isGenetic = searchMode === 'genetic'
+  const geneticError = isGenetic ? validateGeneticConfig(genetic) : null
+  const lockboxError = isGenetic && lockbox.enabled ? validateLockboxConfig(lockbox) : null
 
   const formInvalid =
     dateRangeInvalid ||
@@ -117,8 +135,10 @@ export function DiscoverConfigForm({
     testDays < 1 ||
     minWindows < 1 ||
     windowsTooFew ||
-    selectedCandleCount < 1 ||
-    isMultiObjective
+    (!isGenetic && selectedCandleCount < 1) ||
+    isMultiObjective ||
+    geneticError != null ||
+    lockboxError != null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,7 +151,7 @@ export function DiscoverConfigForm({
           .filter((entry) => selectedStrategies.has(entry.name))
           .map((entry) => entry.name)
 
-    onSubmit({
+    const body: StrategySearchConfig = {
       backtest: {
         symbol,
         timeframe,
@@ -139,7 +159,7 @@ export function DiscoverConfigForm({
         end: endOfDay(endDate).toISOString(),
         initial_capital: capital,
         point_value: pointValue,
-        strategy: candleStrategies[0]?.name ?? 'MACrossover',
+        strategy: isGenetic ? 'CompositeStrategy' : (candleStrategies[0]?.name ?? 'MACrossover'),
         day_trade: dayTrade,
         day_trade_start_time: dayTradeStartTime,
         day_trade_end_time: dayTradeEndTime,
@@ -160,10 +180,19 @@ export function DiscoverConfigForm({
         continue_on_trial_error: continueOnTrialError,
         sampler: isMultiObjective ? 'nsgaii' : sampler,
       },
-      strategies: strategyList,
+      strategies: isGenetic ? null : strategyList,
       include_risk_search: true,
       gates,
-    })
+    }
+
+    if (isGenetic) {
+      body.genetic = genetic
+      if (lockbox.enabled) {
+        body.lockbox = lockbox
+      }
+    }
+
+    onSubmit(body)
   }
 
   return (
@@ -171,13 +200,15 @@ export function DiscoverConfigForm({
       <div className="mb-4 shrink-0">
         <h2 className="text-brass-400 text-xl font-bold">Discover</h2>
         <p className="text-silver-400 mt-1 text-xs">
-          Automatic strategy search — sweep registered strategies, rank on out-of-sample
-          performance.
+          Automatic strategy search — sweep registered strategies or evolve novel genomes, ranked on
+          out-of-sample performance.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-3" noValidate>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+          <SearchModeToggle mode={searchMode} onChange={setSearchMode} />
+
           <FormSection
             title="Instrument & Range"
             open={instrumentOpen}
@@ -207,64 +238,91 @@ export function DiscoverConfigForm({
             />
           </FormSection>
 
-          <FormSection
-            title="Strategies"
-            open={strategiesOpen}
-            onToggle={() => setStrategiesOpen((v) => !v)}
-          >
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-silver-400 text-xs">
-                {selectedCandleCount} candle strateg{selectedCandleCount === 1 ? 'y' : 'ies'}{' '}
-                selected
+          {isGenetic ? (
+            <DiscoverGeneticSection
+              geneticOpen={geneticOpen}
+              onToggleGenetic={() => setGeneticOpen((value) => !value)}
+              lockboxOpen={lockboxOpen}
+              onToggleLockbox={() => setLockboxOpen((value) => !value)}
+              genetic={genetic}
+              setGenetic={setGenetic}
+              lockbox={lockbox}
+              setLockbox={setLockbox}
+              geneticError={geneticError}
+              lockboxError={lockboxError}
+            />
+          ) : (
+            <FormSection
+              title="Strategies"
+              open={strategiesOpen}
+              onToggle={() => setStrategiesOpen((v) => !v)}
+            >
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-silver-400 text-xs">
+                  {selectedCandleCount} candle strateg{selectedCandleCount === 1 ? 'y' : 'ies'}{' '}
+                  selected
+                </p>
+                <button
+                  type="button"
+                  className="text-brass-400 text-xs font-semibold hover:underline"
+                  onClick={selectAllCandle}
+                >
+                  Select all candle
+                </button>
+              </div>
+              <div className="border-carbon-600/40 max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
+                {strategiesLoading ? (
+                  <p className="text-silver-400 px-2 py-3 text-xs">Loading strategies…</p>
+                ) : (
+                  strategies.map((entry) => {
+                    const isTick = (entry.engine ?? 'candle') === 'tick'
+                    const checked = selectedStrategies.has(entry.name)
+                    return (
+                      <label
+                        key={entry.name}
+                        className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm ${
+                          isTick
+                            ? 'text-silver-500 cursor-not-allowed opacity-60'
+                            : 'text-silver-200'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={isTick}
+                          onChange={() => toggleStrategy(entry.name)}
+                          className="accent-brass-500 h-4 w-4 rounded"
+                        />
+                        <span className="min-w-0 flex-1 truncate">{entry.label || entry.name}</span>
+                        {isTick ? (
+                          <span className="text-silver-500 shrink-0 text-[10px] uppercase">
+                            candle only
+                          </span>
+                        ) : null}
+                      </label>
+                    )
+                  })
+                )}
+              </div>
+              <p className="text-silver-400 mt-2 text-[11px] leading-normal">
+                Will run{' '}
+                <span className="text-brass-400 font-mono font-bold">{selectedCandleCount}</span>{' '}
+                strateg{selectedCandleCount === 1 ? 'y' : 'ies'} ×{' '}
+                <span className="text-brass-400 font-mono font-bold">{impliedWindows}</span> windows
+                each.
               </p>
-              <button
-                type="button"
-                className="text-brass-400 text-xs font-semibold hover:underline"
-                onClick={selectAllCandle}
-              >
-                Select all candle
-              </button>
-            </div>
-            <div className="border-carbon-600/40 max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
-              {strategiesLoading ? (
-                <p className="text-silver-400 px-2 py-3 text-xs">Loading strategies…</p>
-              ) : (
-                strategies.map((entry) => {
-                  const isTick = (entry.engine ?? 'candle') === 'tick'
-                  const checked = selectedStrategies.has(entry.name)
-                  return (
-                    <label
-                      key={entry.name}
-                      className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm ${
-                        isTick ? 'text-silver-500 cursor-not-allowed opacity-60' : 'text-silver-200'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={isTick}
-                        onChange={() => toggleStrategy(entry.name)}
-                        className="accent-brass-500 h-4 w-4 rounded"
-                      />
-                      <span className="min-w-0 flex-1 truncate">{entry.label || entry.name}</span>
-                      {isTick ? (
-                        <span className="text-silver-500 shrink-0 text-[10px] uppercase">
-                          candle only
-                        </span>
-                      ) : null}
-                    </label>
-                  )
-                })
-              )}
-            </div>
-            <p className="text-silver-400 mt-2 text-[11px] leading-normal">
-              Will run{' '}
-              <span className="text-brass-400 font-mono font-bold">{selectedCandleCount}</span>{' '}
-              strateg{selectedCandleCount === 1 ? 'y' : 'ies'} ×{' '}
-              <span className="text-brass-400 font-mono font-bold">{impliedWindows}</span> windows
-              each.
+            </FormSection>
+          )}
+
+          {isGenetic ? (
+            <p className="text-silver-400 px-1 text-[11px] leading-normal">
+              Genetic mode evolves{' '}
+              <span className="text-brass-400 font-mono">{genetic.population_size}</span> genomes ×{' '}
+              <span className="text-brass-400 font-mono">{genetic.generations}</span> generations
+              over <span className="text-brass-400 font-mono font-bold">{impliedWindows}</span>{' '}
+              walk-forward windows each.
             </p>
-          </FormSection>
+          ) : null}
 
           <WalkForwardWindowsSection
             open={windowsOpen}

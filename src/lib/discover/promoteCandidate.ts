@@ -1,7 +1,12 @@
 import { buildPositionSizingFromRiskParams } from '@/lib/optimization/bridge'
 import type { BacktestRequest } from '@/types/backtesting'
-import type { OptimizationBacktestConfig, OptimizationConfig } from '@/types/optimization'
+import type {
+  OptimizationBacktestConfig,
+  OptimizationConfig,
+  SearchSpaceConfig,
+} from '@/types/optimization'
 import type { CandidateResult, StrategySearchConfig } from '@/types/strategySearch'
+import { isGeneticCandidate } from '@/types/strategySearch'
 
 const RISK_PARAM_KEYS = new Set([
   'type',
@@ -13,6 +18,31 @@ const RISK_PARAM_KEYS = new Set([
 ])
 
 function splitBestParams(params: Record<string, unknown>) {
+  const nestedStrategy = params.strategy_params
+  const nestedRisk = params.risk_params
+  if (nestedStrategy && typeof nestedStrategy === 'object' && !Array.isArray(nestedStrategy)) {
+    const strategyParams = { ...(nestedStrategy as Record<string, unknown>) }
+    const riskParams =
+      nestedRisk && typeof nestedRisk === 'object' && !Array.isArray(nestedRisk)
+        ? { ...(nestedRisk as Record<string, unknown>) }
+        : {}
+
+    for (const [key, value] of Object.entries(params)) {
+      if (key === 'strategy_params' || key === 'risk_params') continue
+      if (RISK_PARAM_KEYS.has(key)) {
+        riskParams[key] = value
+      } else {
+        strategyParams[key] = value
+      }
+    }
+
+    if (!riskParams.type && riskParams.quantity != null) {
+      riskParams.type = 'fixed_quantity'
+    }
+
+    return { strategyParams, riskParams }
+  }
+
   const strategyParams: Record<string, unknown> = {}
   const riskParams: Record<string, unknown> = {}
 
@@ -31,12 +61,20 @@ function splitBestParams(params: Record<string, unknown>) {
   return { strategyParams, riskParams }
 }
 
+function strategyForCandidate(candidate: CandidateResult): string {
+  return isGeneticCandidate(candidate) ? 'CompositeStrategy' : candidate.strategy
+}
+
 export function buildBacktestRequestFromCandidate(
   candidate: CandidateResult,
   backtest: OptimizationBacktestConfig,
 ): BacktestRequest {
   const params = candidate.best_params ?? {}
   const { strategyParams, riskParams } = splitBestParams(params)
+
+  if (candidate.genome) {
+    strategyParams.genome = candidate.genome
+  }
 
   return {
     symbol: backtest.symbol,
@@ -45,7 +83,7 @@ export function buildBacktestRequestFromCandidate(
     end: backtest.end,
     initial_capital: backtest.initial_capital,
     point_value: backtest.point_value,
-    strategy: candidate.strategy,
+    strategy: strategyForCandidate(candidate),
     strategy_params: strategyParams,
     position_sizing: buildPositionSizingFromRiskParams(riskParams),
     ...(backtest.costs ? { costs: backtest.costs } : {}),
@@ -60,19 +98,25 @@ export function buildOptimizationConfigFromCandidate(
   candidate: CandidateResult,
   searchConfig: StrategySearchConfig,
 ): OptimizationConfig {
+  const params = candidate.best_params ?? {}
+  const { strategyParams, riskParams } = splitBestParams(params)
+  if (candidate.genome) {
+    strategyParams.genome = candidate.genome
+  }
+
   return {
     study: {
       ...searchConfig.study,
-      name: `${searchConfig.backtest.symbol}_${candidate.strategy}_${Date.now()}`,
+      name: `${searchConfig.backtest.symbol}_${candidate.candidate_id}_${Date.now()}`,
     },
     objective: searchConfig.objective,
     backtest: {
       ...searchConfig.backtest,
-      strategy: candidate.strategy,
+      strategy: strategyForCandidate(candidate),
     },
     search_space: {
-      strategy_params: {},
-      risk_params: {},
+      strategy_params: strategyParams as SearchSpaceConfig['strategy_params'],
+      risk_params: riskParams as SearchSpaceConfig['risk_params'],
     },
   }
 }

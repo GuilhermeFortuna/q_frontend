@@ -52,3 +52,30 @@ export function bestStrategyGloss(efficiency: number | null): string {
   }
   return 'Leads on OOS objective with weak efficiency — review before promoting to Backtest or Optimize.'
 }
+
+export function dsrGloss(dsr: number | null, nTrials: number | null | undefined): string {
+  if (dsr == null) return 'Deflated Sharpe not computed for this run.'
+  const trials =
+    nTrials != null ? `~${nTrials.toLocaleString()} genomes tried` : 'many genomes tried'
+  if (dsr >= 0.95) {
+    return `DSR ${(dsr * 100).toFixed(0)}% — adjusted for ${trials}; screening signal only, not proof of live edge.`
+  }
+  if (dsr >= 0.5) {
+    return `DSR ${(dsr * 100).toFixed(0)}% after ${trials} — moderate multiple-testing adjustment.`
+  }
+  return `DSR ${(dsr * 100).toFixed(0)}% after ${trials} — weak after deflation; treat as exploratory.`
+}
+
+export const GENETIC_SKEPTIC_COPY =
+  'High DSR still does not guarantee live performance; lock-box is a single holdout — treat as screening, not proof.'
+
+export function lockboxDiverged(
+  oosSharpe: number | null | undefined,
+  lockboxSharpe: number | null | undefined,
+  lockboxPassed: boolean | null | undefined,
+): boolean {
+  if (lockboxPassed === false) return true
+  if (oosSharpe == null || lockboxSharpe == null) return false
+  if (lockboxSharpe <= 0 && oosSharpe > 0.3) return true
+  return oosSharpe > 0 && lockboxSharpe < oosSharpe * 0.5
+}

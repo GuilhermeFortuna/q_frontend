@@ -30,6 +30,7 @@ import {
 import {
   deletedStrategySearchRunIds,
   getMockCandidateEquityPoints,
+  getMockCandidateGenome,
   getMockStrategySearchResults,
   getMockStrategySearchStatus,
   getUpdatedStrategySearchJob,
@@ -657,17 +658,24 @@ export const handlers = [
   http.post('*/api/v1/strategy-search', async ({ request }) => {
     const body = await request.json()
     const runId = `ss_${Math.random().toString(36).substring(2, 11)}`
-    const config = body as { strategies?: string[] | null }
-    const totalCandidates =
-      config.strategies?.length ??
-      (mockStrategies.strategies.filter((s) => (s.engine ?? 'candle') === 'candle').length || 3)
+    const config = body as {
+      strategies?: string[] | null
+      genetic?: { population_size: number; generations: number }
+    }
+    const isGenetic = config.genetic != null
+    const totalCandidates = isGenetic
+      ? config.genetic!.population_size * config.genetic!.generations
+      : (config.strategies?.length ??
+        (mockStrategies.strategies.filter((s) => (s.engine ?? 'candle') === 'candle').length || 3))
 
     mockStrategySearchJobs.set(runId, {
       run_id: runId,
       status: 'pending',
       total_candidates: totalCandidates,
+      total_generations: isGenetic ? config.genetic!.generations : undefined,
       start_time: Date.now(),
       request_body: body,
+      is_genetic: isGenetic,
     })
 
     return HttpResponse.json({ run_id: runId, status: 'pending' })
@@ -742,6 +750,23 @@ export const handlers = [
       return HttpResponse.json({ run_id: runId, candidate_id: candidateId, points })
     },
   ),
+
+  http.get('*/api/v1/strategy-search/:runId/candidates/:candidateId/genome', ({ params }) => {
+    const runId = String(params.runId)
+    const candidateId = String(params.candidateId)
+    const genome = getMockCandidateGenome(runId, candidateId)
+
+    if (!genome) {
+      return HttpResponse.json(
+        {
+          detail: `Genome not found for candidate '${candidateId}' in run '${runId}'.`,
+        },
+        { status: 404 },
+      )
+    }
+
+    return HttpResponse.json({ run_id: runId, candidate_id: candidateId, genome })
+  }),
 
   http.post('*/api/v1/strategy-search/:runId/cancel', ({ params }) => {
     const runId = String(params.runId)
