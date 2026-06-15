@@ -216,15 +216,18 @@
     animation: fade-in-up 450ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
+  .focus-workbench,
   .backtest-workbench {
     grid-template-rows: minmax(0, 1fr) auto;
     transition: grid-template-rows 300ms ease;
   }
 
+  .focus-workbench[data-focus='results'],
   .backtest-workbench[data-focus='results'] {
     grid-template-rows: auto minmax(0, 1fr);
   }
 
+  .focus-workbench--reduce-motion,
   .backtest-workbench--reduce-motion {
     transition: none;
   }

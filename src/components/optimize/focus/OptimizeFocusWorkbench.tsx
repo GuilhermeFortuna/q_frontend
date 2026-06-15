@@ -1,43 +1,46 @@
 import { useCallback, useRef, useState } from 'react'
 
-import { CollapsedResultsTeaser } from '@/components/backtests/focus/CollapsedResultsTeaser'
-import { CollapsedSetupTeaser } from '@/components/backtests/focus/CollapsedSetupTeaser'
-import { BacktestSetupPanel } from '@/components/backtests/setup/BacktestSetupPanel'
-import { BacktestResultsTabs } from '@/components/backtests/BacktestResultsTabs'
-import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
+import { CollapsedOptimizeResultsTeaser } from '@/components/optimize/focus/CollapsedOptimizeResultsTeaser'
+import { CollapsedOptimizeSetupTeaser } from '@/components/optimize/focus/CollapsedOptimizeSetupTeaser'
+import { OptimizationProgress } from '@/components/optimize/OptimizationProgress'
+import { OptimizationResultsTabs } from '@/components/optimize/OptimizationResultsTabs'
+import { OptimizeSetupPanel } from '@/components/optimize/setup/OptimizeSetupPanel'
+import type { useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
 import { cn } from '@/lib/utils'
+import type { BacktestWorkbenchFocus } from '@/store/slices/jobSessionsSlice'
 import type {
-  BacktestRequest,
-  BacktestResponse,
-  EquityPoint,
-  MonthlyStats,
-} from '@/types/backtesting'
+  OptimizationBacktestConfig,
+  OptimizationConfig,
+  OptimizationResults,
+  OptimizationStatus,
+} from '@/types/optimization'
 
-export type BacktestWorkbenchFocus = 'setup' | 'results'
+type OptimizeConfig = ReturnType<typeof useOptimizeConfig>
 
-type BacktestConfig = ReturnType<typeof useBacktestConfig>
-
-type BacktestFocusWorkbenchProps = {
+type OptimizeFocusWorkbenchProps = {
   focus: BacktestWorkbenchFocus
   onFocusChange: (focus: BacktestWorkbenchFocus) => void
   onOpenHistory: () => void
   reducedMotion: boolean
-  config: BacktestConfig
+  config: OptimizeConfig
   loading: boolean
   error: string | null
-  onSubmit: (request: BacktestRequest) => void
-  results: BacktestResponse | undefined
-  lastRequest: BacktestRequest | null
-  initialCapital: number
-  equityCurve: EquityPoint[]
-  monthlyStats: MonthlyStats[]
+  disabled: boolean
+  onSubmit: (config: OptimizationConfig) => void
+  isRunning: boolean
+  status: OptimizationStatus | undefined
+  results: OptimizationResults | undefined
+  backtest: OptimizationBacktestConfig | null
+  onCancel: () => void
+  cancelling: boolean
+  cancelError: string | null
 }
 
 /**
  * Focus invariant: exactly one pane is visually expanded; setup and results stay
- * mounted at all times so form state, mutation data, and in-pane scroll survive swaps.
+ * mounted at all times so form state, polling data, and in-pane scroll survive swaps.
  */
-export function BacktestFocusWorkbench({
+export function OptimizeFocusWorkbench({
   focus,
   onFocusChange,
   onOpenHistory,
@@ -45,13 +48,16 @@ export function BacktestFocusWorkbench({
   config,
   loading,
   error,
+  disabled,
   onSubmit,
+  isRunning,
+  status,
   results,
-  lastRequest,
-  initialCapital,
-  equityCurve,
-  monthlyStats,
-}: BacktestFocusWorkbenchProps) {
+  backtest,
+  onCancel,
+  cancelling,
+  cancelError,
+}: OptimizeFocusWorkbenchProps) {
   const workbenchRef = useRef<HTMLDivElement>(null)
   const [chartsReady, setChartsReady] = useState(true)
 
@@ -74,14 +80,17 @@ export function BacktestFocusWorkbench({
   )
 
   const handleRunFromTeaser = useCallback(() => {
-    if (config.validation.formInvalid || config.strategiesLoading || loading) return
-    onSubmit(config.buildRequest())
-  }, [config, loading, onSubmit])
+    if (config.validation.formInvalid || config.strategiesLoading || loading || disabled) return
+    if (!config.selectedStrategy) return
+    onSubmit(config.buildOptimizationConfig())
+  }, [config, disabled, loading, onSubmit])
 
   const setupExpanded = focus === 'setup'
   const resultsExpanded = focus === 'results'
-  const hasResults = Boolean(results)
-  const showResultsContent = hasResults && lastRequest
+  const hasResults = Boolean(results && backtest)
+
+  const statusLabel =
+    status?.status === 'cancelled' ? 'Study cancelled — showing partial results' : undefined
 
   return (
     <div
@@ -101,15 +110,22 @@ export function BacktestFocusWorkbench({
           )}
           aria-hidden={!setupExpanded}
         >
-          <BacktestSetupPanel config={config} loading={loading} error={error} onSubmit={onSubmit} />
+          <OptimizeSetupPanel
+            config={config}
+            loading={loading}
+            error={error}
+            disabled={disabled}
+            onSubmit={onSubmit}
+          />
         </div>
         {!setupExpanded ? (
-          <CollapsedSetupTeaser
+          <CollapsedOptimizeSetupTeaser
             fields={config.fields}
             strategyInfo={config.selectedStrategy}
             loading={loading}
             formInvalid={config.validation.formInvalid}
             strategiesLoading={config.strategiesLoading}
+            disabled={disabled}
             onExpand={() => handleFocusChange('setup')}
             onRun={handleRunFromTeaser}
           />
@@ -127,43 +143,47 @@ export function BacktestFocusWorkbench({
           )}
           aria-hidden={!resultsExpanded}
         >
-          {loading ? (
+          {isRunning && status ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <OptimizationProgress
+                status={status}
+                onCancel={onCancel}
+                cancelling={cancelling}
+                cancelError={cancelError}
+              />
+            </div>
+          ) : status?.status === 'error' ? (
             <div className="flex flex-1 items-center justify-center">
-              <div className="flex animate-pulse flex-col items-center">
-                <div className="border-brass-500 mb-4 h-12 w-12 animate-spin rounded-full border-4 border-t-transparent" />
-                <p className="text-silver-400">Simulating strategy over historical data...</p>
+              <div className="max-w-md rounded-md border border-rose-500/20 bg-rose-500/10 p-4 text-sm break-words text-rose-400">
+                Optimization failed: {status.error ?? 'unknown error'}
               </div>
             </div>
-          ) : showResultsContent ? (
+          ) : hasResults ? (
             <div
               className={cn(
                 'flex min-h-0 flex-1 flex-col overflow-hidden',
                 !chartsReady && 'invisible',
               )}
             >
-              <BacktestResultsTabs
+              <OptimizationResultsTabs
                 results={results!}
-                request={lastRequest}
-                initialCapital={initialCapital}
-                equityCurve={equityCurve}
-                monthlyStats={monthlyStats}
-                symbol={lastRequest.symbol ?? results!.trades[0]?.symbol ?? '—'}
-                timeframe={lastRequest.timeframe ?? 'D1'}
+                backtest={backtest!}
+                statusLabel={statusLabel}
               />
             </div>
           ) : (
             <div className="border-carbon-600/60 flex flex-1 items-center justify-center rounded-xl border-2 border-dashed">
-              <p className="text-silver-400 text-sm">Run a simulation to see results here.</p>
+              <p className="text-silver-400 text-sm">Run an optimization to see results here.</p>
             </div>
           )}
         </div>
 
         {!resultsExpanded ? (
-          <CollapsedResultsTeaser
-            isPending={loading}
+          <CollapsedOptimizeResultsTeaser
+            isRunning={isRunning}
             hasResults={hasResults}
-            metrics={results?.metrics}
-            equityCurve={equityCurve}
+            status={status}
+            results={results}
             onExpand={() => handleFocusChange('results')}
             onOpenHistory={onOpenHistory}
           />

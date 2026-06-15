@@ -25,7 +25,7 @@ export type OptimizeSession = {
   /** Configs keyed by study id, so each study renders against the params it ran with. */
   studyBacktestConfigs: Record<string, OptimizationBacktestConfig>
   submittedConfig: OptimizationConfig | null
-  workbenchOpen: boolean
+  focus: BacktestWorkbenchFocus
   rightPanelTab: JobPanelTab
   selectedHistoryStudyId: string | null
 }
@@ -110,7 +110,7 @@ const initialOptimizeSession: OptimizeSession = {
   studyId: null,
   studyBacktestConfigs: {},
   submittedConfig: null,
-  workbenchOpen: true,
+  focus: 'setup',
   rightPanelTab: 'results',
   selectedHistoryStudyId: null,
 }

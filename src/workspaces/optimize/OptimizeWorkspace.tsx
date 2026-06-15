@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { useEffect } from 'react'
 
 import {
   useCancelOptimization,
@@ -7,10 +6,10 @@ import {
   useOptimizationStatus,
   useStartOptimization,
 } from '@/api/queries/optimize'
+import { OptimizeFocusWorkbench } from '@/components/optimize/focus/OptimizeFocusWorkbench'
 import { OptimizationHistoryPanel } from '@/components/optimize/OptimizationHistoryPanel'
-import { OptimizationResultsPanel } from '@/components/optimize/OptimizationResultsPanel'
-import { OptimizationWorkbench } from '@/components/optimize/OptimizationWorkbench'
-import { OptimizeConfigForm } from '@/components/optimize/OptimizeConfigForm'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 import type { JobPanelTab } from '@/store/slices/jobSessionsSlice'
@@ -22,11 +21,14 @@ const RIGHT_PANEL_TABS: { id: JobPanelTab; label: string }[] = [
 ]
 
 export function OptimizeWorkspace() {
+  const optimizeConfig = useOptimizeConfig()
+  const reducedMotion = usePrefersReducedMotion()
+
   const {
     studyId,
     submittedConfig,
     studyBacktestConfigs,
-    workbenchOpen,
+    focus,
     rightPanelTab,
     selectedHistoryStudyId,
   } = useAppStore((s) => s.optimizeSession)
@@ -43,14 +45,12 @@ export function OptimizeWorkspace() {
   const isRunning =
     startOptimization.isPending || status?.status === 'pending' || status?.status === 'running'
 
-  useEffect(() => {
-    if (isRunning || hasTerminalResults) {
-      patchSession({ workbenchOpen: false })
-    }
-  }, [isRunning, hasTerminalResults, patchSession])
-
   const handleSubmit = (config: OptimizationConfig) => {
-    patchSession({ submittedConfig: config, rightPanelTab: 'results' })
+    patchSession({
+      submittedConfig: config,
+      focus: 'results',
+      rightPanelTab: 'results',
+    })
     startOptimization.mutate(config, {
       onSuccess: (res) => {
         patchSession({
@@ -59,7 +59,6 @@ export function OptimizeWorkspace() {
             ...studyBacktestConfigs,
             [res.study_id]: config.backtest,
           },
-          workbenchOpen: false,
         })
       },
     })
@@ -72,20 +71,20 @@ export function OptimizeWorkspace() {
   const handleContinueStudy = (
     historyStudyId: string,
     config: OptimizationConfig,
-    status: JobStatus,
+    studyStatus: JobStatus,
   ) => {
     const studyBacktestConfigsNext = {
       ...studyBacktestConfigs,
       [historyStudyId]: config.backtest,
     }
 
-    if (status === 'pending' || status === 'running') {
+    if (studyStatus === 'pending' || studyStatus === 'running') {
       patchSession({
         submittedConfig: config,
         studyBacktestConfigs: studyBacktestConfigsNext,
         studyId: historyStudyId,
+        focus: 'results',
         rightPanelTab: 'results',
-        workbenchOpen: false,
       })
       return
     }
@@ -93,7 +92,7 @@ export function OptimizeWorkspace() {
     patchSession({
       submittedConfig: config,
       studyBacktestConfigs: studyBacktestConfigsNext,
-      workbenchOpen: true,
+      focus: 'setup',
       rightPanelTab: 'results',
     })
   }
@@ -112,20 +111,8 @@ export function OptimizeWorkspace() {
     : null
 
   return (
-    <div className="text-silver-100 flex h-[calc(100dvh-4.5rem-7rem)] w-full overflow-hidden">
-      <OptimizationWorkbench
-        open={workbenchOpen}
-        onOpenChange={(open) => patchSession({ workbenchOpen: open })}
-      >
-        <OptimizeConfigForm
-          loading={startOptimization.isPending}
-          error={startError}
-          disabled={isRunning}
-          onSubmit={handleSubmit}
-        />
-      </OptimizationWorkbench>
-
-      <div className="quant-panel flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6">
+    <div className="text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col overflow-hidden">
+      <div className="quant-panel flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
         <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
           {RIGHT_PANEL_TABS.map((tab) => (
             <button
@@ -152,7 +139,16 @@ export function OptimizeWorkspace() {
             onContinueStudy={handleContinueStudy}
           />
         ) : (
-          <OptimizationResultsPanel
+          <OptimizeFocusWorkbench
+            focus={focus}
+            onFocusChange={(next) => patchSession({ focus: next })}
+            onOpenHistory={() => patchSession({ rightPanelTab: 'history' })}
+            reducedMotion={reducedMotion}
+            config={optimizeConfig}
+            loading={startOptimization.isPending}
+            error={startError}
+            disabled={isRunning}
+            onSubmit={handleSubmit}
             isRunning={isRunning}
             status={status}
             results={resultsQuery.data}
@@ -160,7 +156,6 @@ export function OptimizeWorkspace() {
             onCancel={handleCancel}
             cancelling={cancelOptimization.isPending}
             cancelError={cancelError}
-            onOpenWorkbench={() => patchSession({ workbenchOpen: true })}
           />
         )}
       </div>

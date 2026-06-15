@@ -1,39 +1,12 @@
-import { endOfDay, startOfDay } from 'date-fns'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useState } from 'react'
 
-import { useStrategies } from '@/api/queries/strategies'
 import { OptimizeAdvancedSection } from '@/components/optimize/OptimizeAdvancedSection'
 import { OptimizeRiskSection } from '@/components/optimize/OptimizeRiskSection'
 import { OptimizeStrategySection } from '@/components/optimize/OptimizeStrategySection'
 import { OptimizeStudySection } from '@/components/optimize/OptimizeStudySection'
 import { Button } from '@/components/ui/button'
-import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
-import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
-import { isMaxWorkersInputInvalid, withMaxWorkers } from '@/lib/optimize/studyConfig'
-import {
-  buildCostsPayload,
-  defaultTransactionCostFields,
-  validateTransactionCosts,
-} from '@/lib/backtesting/transactionCosts'
-import {
-  defaultSearchSpaceFromSpecs,
-  searchSpaceToPayload,
-  validateSearchSpace,
-  type SearchSpaceFieldState,
-} from '@/lib/strategies/strategyParams'
-import { useAppStore } from '@/store/useAppStore'
-import type { ObjectiveMode, OptimizationConfig, Sampler, SearchParam } from '@/types/optimization'
-import type { StrategyInfo } from '@/types/strategies'
-
-import type { RiskMode } from '@/components/optimize/optimizeFormShared'
-
-type OptimizeEngine = 'candle' | 'tick'
-
-const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M15', 'H1'] as const
-
-function strategyEngine(info: StrategyInfo): OptimizeEngine {
-  return info.engine ?? 'candle'
-}
+import { DISPLAY_TIMEFRAME_OPTIONS, useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
+import type { OptimizationConfig } from '@/types/optimization'
 
 type OptimizeConfigFormProps = {
   loading: boolean
@@ -42,247 +15,29 @@ type OptimizeConfigFormProps = {
   onSubmit: (config: OptimizationConfig) => void
 }
 
+/**
+ * Legacy accordion form used by Walk Forward / Discover workbench drawers.
+ * The Optimize workspace uses OptimizeSetupPanel instead.
+ */
 export function OptimizeConfigForm({
   loading,
   error,
   disabled = false,
   onSubmit,
 }: OptimizeConfigFormProps) {
-  const [symbol, setSymbol] = useState('PETR4')
-  const [timeframe, setTimeframe] = useState('D1')
-  const [startDate, setStartDate] = useState(defaultBacktestStart)
-  const [endDate, setEndDate] = useState(defaultBacktestEnd)
-  const [capital, setCapital] = useState(100000)
-  const [pointValue, setPointValue] = useState(1.0)
-  const [dayTrade, setDayTrade] = useState(false)
-  const [dayTradeStartTime, setDayTradeStartTime] = useState('09:00')
-  const [dayTradeEndTime, setDayTradeEndTime] = useState('16:00')
-  const [dayTradeCloseTime, setDayTradeCloseTime] = useState('17:00')
-  const [engine, setEngine] = useState<OptimizeEngine>('candle')
-  const [displayTimeframe, setDisplayTimeframe] = useState('M1')
-  const [tickFlags, setTickFlags] = useState<'all' | 'trade'>('all')
-
-  const [objective, setObjective] = useState<ObjectiveMode>('maximize_return_drawdown')
-  const [sampler, setSampler] = useState<Sampler>('tpe')
-  const [nTrials, setNTrials] = useState(30)
-  const [seed, setSeed] = useState(42)
-  const [pruner, setPruner] = useState<'none' | 'median' | 'hyperband'>('none')
-  const [continueOnTrialError, setContinueOnTrialError] = useState(false)
-  const [maxWorkersInput, setMaxWorkersInput] = useState('')
-
-  const [strategy, setStrategy] = useState('MACrossover')
-  const [strategySearchSpace, setStrategySearchSpace] = useState<
-    Record<string, SearchSpaceFieldState>
-  >({})
-
-  const [riskMode, setRiskMode] = useState<RiskMode>('fixed_quantity')
-  const [qtyLow, setQtyLow] = useState(1)
-  const [qtyHigh, setQtyHigh] = useState(3)
-  const [marginLow, setMarginLow] = useState(1000)
-  const [marginHigh, setMarginHigh] = useState(10000)
-  const [minContractsLow, setMinContractsLow] = useState(1)
-  const [minContractsHigh, setMinContractsHigh] = useState(3)
-  const [targetVolLow, setTargetVolLow] = useState(5)
-  const [targetVolHigh, setTargetVolHigh] = useState(15)
-  const [inverseMinContractsLow, setInverseMinContractsLow] = useState(0)
-  const [inverseMinContractsHigh, setInverseMinContractsHigh] = useState(2)
-  const [inverseMaxContractsInput, setInverseMaxContractsInput] = useState('')
-  const [costFields, setCostFields] = useState(defaultTransactionCostFields)
+  const config = useOptimizeConfig()
 
   const [strategyOpen, setStrategyOpen] = useState(true)
   const [riskOpen, setRiskOpen] = useState(true)
   const [studyOpen, setStudyOpen] = useState(true)
   const [advancedOpen, setAdvancedOpen] = useState(false)
 
-  const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
-  const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
-  const filteredStrategies = useMemo(
-    () => strategies.filter((entry) => strategyEngine(entry) === engine),
-    [strategies, engine],
-  )
-  const selectedStrategy = filteredStrategies.find((entry) => entry.name === strategy)
-  const searchSpaceInitialized = useRef(false)
-
-  const pendingOptimizationConfig = useAppStore((s) => s.pendingOptimizationConfig)
-  const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
-
-  useEffect(() => {
-    if (strategies.length === 0 || searchSpaceInitialized.current) return
-    const pool = strategies.filter((entry) => strategyEngine(entry) === engine)
-    const info = pool.find((entry) => entry.name === strategy) ?? pool[0]
-    if (!info) return
-    if (!pool.some((entry) => entry.name === strategy)) {
-      setStrategy(info.name)
-    }
-    setStrategySearchSpace(defaultSearchSpaceFromSpecs(info.params))
-    searchSpaceInitialized.current = true
-  }, [strategies, strategy, engine])
-
-  useEffect(() => {
-    if (!pendingOptimizationConfig) return
-    const hydrated = hydrateOptimizeFormFromConfig(pendingOptimizationConfig, strategies)
-
-    setSymbol(hydrated.symbol)
-    setTimeframe(hydrated.timeframe)
-    setStartDate(hydrated.startDate)
-    setEndDate(hydrated.endDate)
-    setCapital(hydrated.capital)
-    setPointValue(hydrated.pointValue)
-    setObjective(hydrated.objective)
-    setSampler(hydrated.sampler)
-    setNTrials(hydrated.nTrials)
-    setSeed(hydrated.seed)
-    setPruner(hydrated.pruner)
-    setContinueOnTrialError(hydrated.continueOnTrialError)
-    setMaxWorkersInput(hydrated.maxWorkersInput)
-    setStrategy(hydrated.strategy)
-    setStrategySearchSpace(hydrated.strategySearchSpace)
-    setRiskMode(hydrated.riskMode)
-    setQtyLow(hydrated.qtyLow)
-    setQtyHigh(hydrated.qtyHigh)
-    setMarginLow(hydrated.marginLow)
-    setMarginHigh(hydrated.marginHigh)
-    setMinContractsLow(hydrated.minContractsLow)
-    setMinContractsHigh(hydrated.minContractsHigh)
-    setTargetVolLow(hydrated.targetVolLow)
-    setTargetVolHigh(hydrated.targetVolHigh)
-    setInverseMinContractsLow(hydrated.inverseMinContractsLow)
-    setInverseMinContractsHigh(hydrated.inverseMinContractsHigh)
-    setInverseMaxContractsInput(hydrated.inverseMaxContractsInput)
-    setCostFields(hydrated.costFields)
-    setDayTrade(hydrated.dayTrade)
-    setDayTradeStartTime(hydrated.dayTradeStartTime)
-    setDayTradeEndTime(hydrated.dayTradeEndTime)
-    setDayTradeCloseTime(hydrated.dayTradeCloseTime)
-    setEngine(hydrated.engine)
-    setDisplayTimeframe(hydrated.displayTimeframe)
-    setTickFlags(hydrated.tickFlags)
-    searchSpaceInitialized.current = true
-
-    setPendingOptimizationConfig(null)
-  }, [pendingOptimizationConfig, setPendingOptimizationConfig, strategies])
-
-  const handleEngineChange = (nextEngine: OptimizeEngine) => {
-    setEngine(nextEngine)
-    const pool = strategies.filter((entry) => strategyEngine(entry) === nextEngine)
-    if (pool.length === 0) return
-    const currentValid = pool.some((entry) => entry.name === strategy)
-    if (!currentValid) {
-      const next = pool[0]
-      setStrategy(next.name)
-      setStrategySearchSpace(defaultSearchSpaceFromSpecs(next.params))
-    }
-  }
-
-  const handleStrategyChange = (nextStrategy: string) => {
-    setStrategy(nextStrategy)
-    const info = strategies.find((entry) => entry.name === nextStrategy)
-    if (info) {
-      setStrategySearchSpace(defaultSearchSpaceFromSpecs(info.params))
-    }
-  }
-
-  const handleSearchSpaceChange = (name: string, field: SearchSpaceFieldState) => {
-    setStrategySearchSpace((current) => ({ ...current, [name]: field }))
-  }
-
-  const dateRangeInvalid = startDate >= endDate
-  const costValidation = useMemo(() => validateTransactionCosts(costFields), [costFields])
-
-  const rangesInvalid =
-    (riskMode === 'fixed_quantity'
-      ? qtyLow > qtyHigh
-      : riskMode === 'fixed_safety_margin'
-        ? marginLow > marginHigh || minContractsLow > minContractsHigh
-        : targetVolLow > targetVolHigh || inverseMinContractsLow > inverseMinContractsHigh) ||
-    !validateSearchSpace(strategySearchSpace)
-  const formInvalid =
-    dateRangeInvalid ||
-    rangesInvalid ||
-    nTrials < 1 ||
-    !costValidation.valid ||
-    isMaxWorkersInputInvalid(maxWorkersInput)
-
-  const isMultiObjective = objective === 'multi_objective_return_drawdown'
+  const { fields, setters, validation } = config
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (formInvalid || disabled || !selectedStrategy) return
-
-    const strategyParams = searchSpaceToPayload(strategySearchSpace, selectedStrategy.params)
-
-    const riskParams: Record<string, SearchParam> =
-      riskMode === 'fixed_quantity'
-        ? {
-            type: { type: 'categorical', choices: ['fixed_quantity'] },
-            quantity: { type: 'float', low: qtyLow, high: qtyHigh },
-          }
-        : riskMode === 'fixed_safety_margin'
-          ? {
-              type: { type: 'categorical', choices: ['fixed_safety_margin'] },
-              safety_margin_per_contract: { type: 'log-float', low: marginLow, high: marginHigh },
-              min_contracts: { type: 'int', low: minContractsLow, high: minContractsHigh },
-            }
-          : {
-              type: { type: 'categorical', choices: ['inverse_volatility'] },
-              target_volatility_pct: { type: 'float', low: targetVolLow, high: targetVolHigh },
-              min_contracts: {
-                type: 'int',
-                low: inverseMinContractsLow,
-                high: inverseMinContractsHigh,
-              },
-              ...(inverseMaxContractsInput.trim() !== ''
-                ? {
-                    max_contracts: {
-                      type: 'int',
-                      low: Number(inverseMaxContractsInput),
-                      high: Number(inverseMaxContractsInput),
-                    },
-                  }
-                : {}),
-            }
-
-    const costs = buildCostsPayload(costFields)
-
-    onSubmit({
-      study: withMaxWorkers(
-        {
-          name: `${symbol}_${objective}_${Date.now()}`,
-          n_trials: nTrials,
-          seed,
-          pruner,
-          continue_on_trial_error: continueOnTrialError,
-          sampler: isMultiObjective ? 'nsgaii' : sampler,
-        },
-        maxWorkersInput,
-      ),
-      objective: { mode: objective },
-      backtest: {
-        symbol,
-        ...(engine === 'candle' ? { timeframe } : {}),
-        start: startOfDay(startDate).toISOString(),
-        end: endOfDay(endDate).toISOString(),
-        initial_capital: capital,
-        point_value: pointValue,
-        strategy,
-        ...(costs ? { costs } : {}),
-        day_trade: dayTrade,
-        day_trade_start_time: dayTradeStartTime,
-        day_trade_end_time: dayTradeEndTime,
-        day_trade_close_time: dayTradeCloseTime,
-        ...(engine === 'tick'
-          ? {
-              engine: 'tick' as const,
-              display_timeframe: displayTimeframe,
-              tick_flags: tickFlags,
-            }
-          : {}),
-      },
-      search_space: {
-        strategy_params: strategyParams,
-        risk_params: riskParams,
-      },
-    })
+    if (validation.formInvalid || disabled || !config.selectedStrategy) return
+    onSubmit(config.buildOptimizationConfig())
   }
 
   return (
@@ -299,107 +54,109 @@ export function OptimizeConfigForm({
           <OptimizeStrategySection
             open={strategyOpen}
             onToggle={() => setStrategyOpen((v) => !v)}
-            strategies={filteredStrategies}
-            strategiesLoading={strategiesLoading}
-            strategy={strategy}
-            onStrategyChange={handleStrategyChange}
-            engine={engine}
-            onEngineChange={handleEngineChange}
-            displayTimeframe={displayTimeframe}
-            onDisplayTimeframeChange={setDisplayTimeframe}
-            tickFlags={tickFlags}
-            onTickFlagsChange={setTickFlags}
+            strategies={config.filteredStrategies}
+            strategiesLoading={config.strategiesLoading}
+            strategy={fields.strategy}
+            onStrategyChange={setters.handleStrategyChange}
+            engine={fields.engine}
+            onEngineChange={setters.handleEngineChange}
+            displayTimeframe={fields.displayTimeframe}
+            onDisplayTimeframeChange={setters.setDisplayTimeframe}
+            tickFlags={fields.tickFlags}
+            onTickFlagsChange={setters.setTickFlags}
             displayTimeframeOptions={DISPLAY_TIMEFRAME_OPTIONS}
-            searchSpace={strategySearchSpace}
-            onSearchSpaceChange={handleSearchSpaceChange}
-            symbol={symbol}
-            setSymbol={setSymbol}
-            timeframe={timeframe}
-            setTimeframe={setTimeframe}
-            startDate={startDate}
-            setStartDate={setStartDate}
-            endDate={endDate}
-            setEndDate={setEndDate}
-            capital={capital}
-            setCapital={setCapital}
-            pointValue={pointValue}
-            setPointValue={setPointValue}
-            dayTrade={dayTrade}
-            setDayTrade={setDayTrade}
-            dayTradeStartTime={dayTradeStartTime}
-            setDayTradeStartTime={setDayTradeStartTime}
-            dayTradeEndTime={dayTradeEndTime}
-            setDayTradeEndTime={setDayTradeEndTime}
-            dayTradeCloseTime={dayTradeCloseTime}
-            setDayTradeCloseTime={setDayTradeCloseTime}
+            searchSpace={fields.strategySearchSpace}
+            onSearchSpaceChange={setters.handleSearchSpaceChange}
+            symbol={fields.symbol}
+            setSymbol={setters.setSymbol}
+            timeframe={fields.timeframe}
+            setTimeframe={setters.setTimeframe}
+            startDate={fields.startDate}
+            setStartDate={setters.setStartDate}
+            endDate={fields.endDate}
+            setEndDate={setters.setEndDate}
+            capital={fields.capital}
+            setCapital={setters.setCapital}
+            pointValue={fields.pointValue}
+            setPointValue={setters.setPointValue}
+            dayTrade={fields.dayTrade}
+            setDayTrade={setters.setDayTrade}
+            dayTradeStartTime={fields.dayTradeStartTime}
+            setDayTradeStartTime={setters.setDayTradeStartTime}
+            dayTradeEndTime={fields.dayTradeEndTime}
+            setDayTradeEndTime={setters.setDayTradeEndTime}
+            dayTradeCloseTime={fields.dayTradeCloseTime}
+            setDayTradeCloseTime={setters.setDayTradeCloseTime}
           />
 
           <OptimizeRiskSection
             open={riskOpen}
             onToggle={() => setRiskOpen((v) => !v)}
-            riskMode={riskMode}
-            setRiskMode={setRiskMode}
-            qtyLow={qtyLow}
-            qtyHigh={qtyHigh}
-            setQtyLow={setQtyLow}
-            setQtyHigh={setQtyHigh}
-            marginLow={marginLow}
-            marginHigh={marginHigh}
-            setMarginLow={setMarginLow}
-            setMarginHigh={setMarginHigh}
-            minContractsLow={minContractsLow}
-            minContractsHigh={minContractsHigh}
-            setMinContractsLow={setMinContractsLow}
-            setMinContractsHigh={setMinContractsHigh}
-            targetVolLow={targetVolLow}
-            targetVolHigh={targetVolHigh}
-            setTargetVolLow={setTargetVolLow}
-            setTargetVolHigh={setTargetVolHigh}
-            inverseMinContractsLow={inverseMinContractsLow}
-            inverseMinContractsHigh={inverseMinContractsHigh}
-            setInverseMinContractsLow={setInverseMinContractsLow}
-            setInverseMinContractsHigh={setInverseMinContractsHigh}
-            inverseMaxContractsInput={inverseMaxContractsInput}
-            setInverseMaxContractsInput={setInverseMaxContractsInput}
-            costPerContract={costFields.costPerContract}
+            riskMode={fields.riskMode}
+            setRiskMode={setters.setRiskMode}
+            qtyLow={fields.qtyLow}
+            qtyHigh={fields.qtyHigh}
+            setQtyLow={setters.setQtyLow}
+            setQtyHigh={setters.setQtyHigh}
+            marginLow={fields.marginLow}
+            marginHigh={fields.marginHigh}
+            setMarginLow={setters.setMarginLow}
+            setMarginHigh={setters.setMarginHigh}
+            minContractsLow={fields.minContractsLow}
+            minContractsHigh={fields.minContractsHigh}
+            setMinContractsLow={setters.setMinContractsLow}
+            setMinContractsHigh={setters.setMinContractsHigh}
+            targetVolLow={fields.targetVolLow}
+            targetVolHigh={fields.targetVolHigh}
+            setTargetVolLow={setters.setTargetVolLow}
+            setTargetVolHigh={setters.setTargetVolHigh}
+            inverseMinContractsLow={fields.inverseMinContractsLow}
+            inverseMinContractsHigh={fields.inverseMinContractsHigh}
+            setInverseMinContractsLow={setters.setInverseMinContractsLow}
+            setInverseMinContractsHigh={setters.setInverseMinContractsHigh}
+            inverseMaxContractsInput={fields.inverseMaxContractsInput}
+            setInverseMaxContractsInput={setters.setInverseMaxContractsInput}
+            costPerContract={fields.costFields.costPerContract}
             setCostPerContract={(value) =>
-              setCostFields((current) => ({ ...current, costPerContract: value }))
+              setters.setCostFields((current) => ({ ...current, costPerContract: value }))
             }
-            costBps={costFields.costBps}
-            setCostBps={(value) => setCostFields((current) => ({ ...current, costBps: value }))}
-            costErrors={costValidation.errors}
+            costBps={fields.costFields.costBps}
+            setCostBps={(value) =>
+              setters.setCostFields((current) => ({ ...current, costBps: value }))
+            }
+            costErrors={validation.costErrors}
           />
 
           <OptimizeStudySection
             open={studyOpen}
             onToggle={() => setStudyOpen((v) => !v)}
-            objective={objective}
-            setObjective={setObjective}
-            sampler={sampler}
-            setSampler={setSampler}
-            nTrials={nTrials}
-            setNTrials={setNTrials}
-            isMultiObjective={isMultiObjective}
+            objective={fields.objective}
+            setObjective={setters.setObjective}
+            sampler={fields.sampler}
+            setSampler={setters.setSampler}
+            nTrials={fields.nTrials}
+            setNTrials={setters.setNTrials}
+            isMultiObjective={validation.isMultiObjective}
           />
 
           <OptimizeAdvancedSection
             open={advancedOpen}
             onToggle={() => setAdvancedOpen((v) => !v)}
-            seed={seed}
-            setSeed={setSeed}
-            pruner={pruner}
-            setPruner={setPruner}
-            continueOnTrialError={continueOnTrialError}
-            setContinueOnTrialError={setContinueOnTrialError}
-            maxWorkersInput={maxWorkersInput}
-            onMaxWorkersInputChange={setMaxWorkersInput}
+            seed={fields.seed}
+            setSeed={setters.setSeed}
+            pruner={fields.pruner}
+            setPruner={setters.setPruner}
+            continueOnTrialError={fields.continueOnTrialError}
+            setContinueOnTrialError={setters.setContinueOnTrialError}
+            maxWorkersInput={fields.maxWorkersInput}
+            onMaxWorkersInputChange={setters.setMaxWorkersInput}
           />
         </div>
 
         <div className="shrink-0 pt-2">
           <Button
             type="submit"
-            disabled={loading || formInvalid || disabled || strategiesLoading}
+            disabled={loading || validation.formInvalid || disabled || config.strategiesLoading}
             variant="brass"
             className="w-full"
           >
