@@ -6,7 +6,11 @@ export function resolveMt5ConnectionStatus(
   snapshotData: unknown,
   snapshotError: unknown,
   snapshotsError: unknown,
+  isHistoricalOnly = false,
 ): Mt5ConnectionStatus {
+  if (isHistoricalOnly) {
+    return 'offline'
+  }
   if (snapshotLoading && !snapshotData) {
     return 'connecting'
   }

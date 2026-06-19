@@ -280,7 +280,7 @@ export function SymbolCommandPalette({
           ) : query.trim() !== '' && searchResultsQuery.isLoading && dropdownItems.length === 0 ? (
             <div className="text-silver-400 flex h-32 flex-col items-center justify-center gap-2 font-mono text-xs">
               <Activity className="text-brass-500 h-6 w-6 animate-pulse" />
-              <span>Searching MetaTrader terminal…</span>
+              <span>Searching symbols…</span>
             </div>
           ) : dropdownItems.length > 0 ? (
             <div className="flex flex-col gap-0.5">

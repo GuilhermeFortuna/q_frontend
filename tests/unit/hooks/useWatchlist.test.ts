@@ -27,6 +27,19 @@ describe('useWatchlist', () => {
     expect(JSON.parse(localStorage.getItem('quant_watchlist') || '[]')).toEqual(seedInstruments)
   })
 
+  it('adds stored instruments missing from an existing watchlist', () => {
+    localStorage.setItem('quant_watchlist', JSON.stringify([seedInstruments[0]]))
+
+    const instrumentsWithStored: Instrument[] = [
+      ...seedInstruments,
+      { symbol: 'BBAS3', name: 'BBAS3', exchange: 'LOCAL', assetClass: 'equity' },
+    ]
+
+    const { result } = renderHook(() => useWatchlist(instrumentsWithStored))
+
+    expect(result.current.watchlist.map((item) => item.symbol)).toEqual(['PETR4', 'BBAS3'])
+  })
+
   it('adds and removes instruments while persisting to localStorage', () => {
     localStorage.setItem('quant_watchlist', JSON.stringify([seedInstruments[0]]))
 

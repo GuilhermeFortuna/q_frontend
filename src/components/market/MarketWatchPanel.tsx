@@ -467,7 +467,7 @@ export function MarketWatchPanel({
             {searchQuery.trim().length > 1 && (
               <div className="border-carbon-700/60 mt-2 border-t pt-2">
                 <p className="text-brass-400 mb-1.5 px-2.5 text-[10px] font-bold tracking-wider uppercase">
-                  MetaTrader Search
+                  Add Symbol
                 </p>
                 {mt5SearchLoading ? (
                   <div className="flex flex-col gap-2 px-2.5 py-2">
@@ -498,7 +498,7 @@ export function MarketWatchPanel({
                     ))
                 ) : (
                   <div className="text-silver-500 px-2.5 py-2 font-mono text-xs">
-                    No matches in MT5.
+                    No matches found.
                   </div>
                 )}
               </div>

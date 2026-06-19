@@ -218,7 +218,6 @@ export function MarketDataWorkspace() {
   const instrumentsQuery = useInstruments()
   const { watchlist, addToWatchlist, removeFromWatchlist } = useWatchlist(instrumentsQuery.data)
   const { recentSymbols, recordSymbol } = useRecentSymbols()
-  const watchlistSymbols = useMemo(() => watchlist.map((item) => item.symbol), [watchlist])
 
   useEffect(() => {
     if (selectedSymbol) {
@@ -246,9 +245,16 @@ export function MarketDataWorkspace() {
       .filter((item): item is Instrument => item !== undefined)
   }, [instrumentsQuery.data, recentSymbols, watchlist])
 
-  const snapshotQuery = useMarketSnapshot(selectedSymbol)
+  const selectedInstrument = instrumentsQuery.data?.find((item) => item.symbol === selectedSymbol)
+  const isHistoricalOnly = selectedInstrument?.exchange === 'LOCAL'
+
+  const snapshotQuery = useMarketSnapshot(selectedSymbol, !isHistoricalOnly)
   const snapshot = snapshotQuery.data
-  const snapshotsQuery = useMarketSnapshots(watchlistSymbols)
+  const liveWatchlistSymbols = useMemo(
+    () => watchlist.filter((item) => item.exchange !== 'LOCAL').map((item) => item.symbol),
+    [watchlist],
+  )
+  const snapshotsQuery = useMarketSnapshots(liveWatchlistSymbols)
   const snapshotsBySymbol = snapshotsQuery.data ?? {}
   const priceDigits = snapshot?.digits ?? 2
   const mt5Status = resolveMt5ConnectionStatus(
@@ -256,12 +262,12 @@ export function MarketDataWorkspace() {
     snapshotQuery.data,
     snapshotQuery.error,
     snapshotsQuery.error,
+    isHistoricalOnly,
   )
 
   const ohlcv = useProgressiveOhlcv(selectedSymbol, selectedTimeframe)
   const { drawings, setDrawings, clearDrawings } = useDrawings(selectedSymbol, selectedTimeframe)
 
-  const selectedInstrument = instrumentsQuery.data?.find((item) => item.symbol === selectedSymbol)
   const latestBar = useMemo(() => {
     if (ohlcv.bars.length === 0) return null
     return ohlcv.bars[ohlcv.bars.length - 1]

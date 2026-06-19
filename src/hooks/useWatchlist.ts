@@ -11,11 +11,27 @@ export function useWatchlist(instruments: Instrument[] | undefined) {
   })
 
   useEffect(() => {
+    if (!instruments) return
+
     const saved = localStorage.getItem(WATCHLIST_STORAGE_KEY)
-    if (!saved && instruments) {
+    if (!saved) {
       setWatchlist(instruments)
       localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(instruments))
+      return
     }
+
+    const current = JSON.parse(saved) as Instrument[]
+    const currentSymbols = new Set(current.map((item) => item.symbol))
+    const storedOnly = instruments.filter(
+      (item) => item.exchange === 'LOCAL' && !currentSymbols.has(item.symbol),
+    )
+    if (storedOnly.length === 0) {
+      return
+    }
+
+    const next = [...current, ...storedOnly]
+    setWatchlist(next)
+    localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(next))
   }, [instruments])
 
   const addToWatchlist = useCallback((inst: Instrument) => {

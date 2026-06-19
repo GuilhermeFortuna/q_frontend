@@ -80,13 +80,13 @@ export function useInstruments() {
   })
 }
 
-export function useMarketSnapshot(symbol: string) {
+export function useMarketSnapshot(symbol: string, enabled = true) {
   return useQuery({
     queryKey: marketDataKeys.snapshot(symbol),
     queryFn: () => fetchMarketSnapshot(symbol),
-    enabled: symbol.length > 0,
+    enabled: enabled && symbol.length > 0,
     staleTime: 2_000,
-    refetchInterval: 2_000,
+    refetchInterval: enabled ? 2_000 : false,
     placeholderData: keepPreviousData,
   })
 }

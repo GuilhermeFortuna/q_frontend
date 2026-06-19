@@ -84,9 +84,17 @@ export function QuoteRibbon({
               </span>
             )}
             {connectionStatus === 'offline' && (
-              <span className="flex items-center gap-1 font-mono text-[10px] font-semibold tracking-wider text-rose-400 uppercase">
-                <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
-                MT5 Offline
+              <span
+                className={`flex items-center gap-1 font-mono text-[10px] font-semibold tracking-wider uppercase ${
+                  instrument?.exchange === 'LOCAL' ? 'text-silver-400' : 'text-rose-400'
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    instrument?.exchange === 'LOCAL' ? 'bg-silver-400' : 'bg-rose-400'
+                  }`}
+                />
+                {instrument?.exchange === 'LOCAL' ? 'Historical' : 'MT5 Offline'}
               </span>
             )}
             {connectionStatus === 'connecting' && (
