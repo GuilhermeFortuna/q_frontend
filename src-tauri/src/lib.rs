@@ -1,3 +1,4 @@
+mod backend;
 mod report;
 
 use tauri::{
@@ -8,11 +9,23 @@ use tauri::{
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .manage(backend::BackendState::default())
         .invoke_handler(tauri::generate_handler![report::generate_backtest_report])
         .setup(|app| {
+            let handle = app.handle().clone();
+            if let Err(err_msg) = backend::start_backend_services(&handle) {
+                use tauri_plugin_dialog::DialogExt;
+                let _ = handle.dialog()
+                    .message(format!("Failed to start backend services:\n\n{}\n\nPlease ensure Podman or Docker is running and 'uv' is installed, then try again.", err_msg))
+                    .title("Quant - Setup Failure")
+                    .kind(tauri_plugin_dialog::MessageDialogKind::Error)
+                    .blocking_show();
+                handle.exit(1);
+            }
+
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
@@ -61,8 +74,16 @@ pub fn run() {
                 api.prevent_close();
                 let _ = window.hide();
             }
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        });
+
+    let app = builder
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(move |app_handle, event| {
+        if let tauri::RunEvent::Exit = event {
+            backend::stop_backend_services(app_handle);
+        }
+    });
 }
 
