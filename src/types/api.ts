@@ -95,3 +95,14 @@ export type InstrumentInfo = {
   volumeStep: number
   spreadFloating: boolean
 }
+
+export type NewsArticle = {
+  id: string
+  title: string
+  source: string
+  publishedAt: string
+  summary: string
+  content: string
+  videoUrl?: string
+  imageUrl?: string
+}

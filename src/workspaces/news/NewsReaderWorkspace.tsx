@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
-import { Newspaper, X } from 'lucide-react'
+import { Newspaper, X, RefreshCw } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
 
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { mockArticles } from '@/mocks/news'
+import { useNewsDetail } from '@/api/queries/news'
 import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
 
 let appWindow: ReturnType<typeof getCurrentWindow> | null = null
@@ -27,9 +27,7 @@ export function NewsReaderWorkspace({
 }) {
   const resolvedBrightness = useResolvedBrightness()
   const posterPath = POSTER_MAP[resolvedBrightness]
-  const article = useMemo(() => {
-    return mockArticles.find((a) => a.id === id)
-  }, [id])
+  const { data: article, isPending } = useNewsDetail(id ?? '')
 
   const handleClose = async () => {
     try {
@@ -43,6 +41,27 @@ export function NewsReaderWorkspace({
       // Browser fallback if window.close() is blocked
       window.history.back()
     }
+  }
+
+  const formatPublishedAt = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) return dateStr
+      return formatDistanceToNow(date, { addSuffix: true })
+    } catch {
+      return dateStr
+    }
+  }
+
+  if (isPending) {
+    return (
+      <div className="bg-carbon-950/20 border-carbon-800/80 flex min-h-[300px] flex-col items-center justify-center rounded-xl border p-6 text-center">
+        <RefreshCw className="text-brass-400 h-8 w-8 animate-spin opacity-85" />
+        <span className="text-silver-300 mt-4 animate-pulse font-mono text-[10px] tracking-wider uppercase">
+          Fetching Article Content...
+        </span>
+      </div>
+    )
   }
 
   if (!article) {
@@ -72,7 +91,7 @@ export function NewsReaderWorkspace({
         <div className="text-silver-400 flex items-center gap-2 font-mono text-[11px] tracking-wider uppercase">
           <span>{article.source}</span>
           <span>·</span>
-          <span>{article.publishedAt}</span>
+          <span>{formatPublishedAt(article.publishedAt)}</span>
         </div>
         {showInlineClose && (
           <button
@@ -95,8 +114,8 @@ export function NewsReaderWorkspace({
         </p>
       </div>
 
-      {/* Video Player */}
-      {article.videoUrl && (
+      {/* Video or Image Player */}
+      {article.videoUrl ? (
         <div className="quant-panel border-brass-600/15 overflow-hidden rounded-xl border bg-black shadow-2xl">
           <video
             src={article.videoUrl}
@@ -106,7 +125,15 @@ export function NewsReaderWorkspace({
             poster={posterPath}
           />
         </div>
-      )}
+      ) : article.imageUrl ? (
+        <div className="quant-panel border-brass-600/15 bg-carbon-900 flex max-h-[360px] items-center justify-center overflow-hidden rounded-xl border shadow-2xl">
+          <img
+            src={article.imageUrl}
+            alt={article.title}
+            className="max-h-[360px] max-w-full rounded-xl object-cover"
+          />
+        </div>
+      ) : null}
 
       {/* Content Text */}
       <div className="text-silver-200 space-y-4 font-sans text-sm leading-relaxed whitespace-pre-wrap md:text-base">

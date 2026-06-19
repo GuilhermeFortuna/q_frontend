@@ -30,7 +30,8 @@ import { FlashOnChange } from '@/components/shared/FlashOnChange'
 import { closesToPath, sparklineStrokeColor } from '@/lib/market/sparkline'
 import { isTauri } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { mockArticles } from '@/mocks/news'
+import { useNewsList } from '@/api/queries/news'
+import { formatDistanceToNow } from 'date-fns'
 import { env } from '@/lib/env'
 import { cn } from '@/lib/utils'
 import type { LauncherPanelLayout, LauncherPanelLayouts } from '@/store/slices/jobSessionsSlice'
@@ -46,7 +47,7 @@ const PANEL_DEFAULT_HEIGHT_RATIO = 0.72
 
 type PanelKey = 'market' | 'system'
 
-type ResizeMode = 'resize-se' | 'resize-e' | 'resize-s'
+type ResizeMode = 'resize-se' | 'resize-e' | 'resize-s' | 'resize-w'
 
 function getDefaultPanelHeight(containerHeight: number): number {
   if (containerHeight <= 0) return PANEL_MIN_HEIGHT
@@ -245,6 +246,16 @@ function FloatingLauncherPanel({
           width: start.layout.width + deltaX,
         }
         break
+      case 'resize-w': {
+        const maxDeltaX = start.layout.width - PANEL_MIN_WIDTH
+        const clampedDeltaX = Math.min(deltaX, maxDeltaX)
+        next = {
+          ...start.layout,
+          x: start.layout.x + clampedDeltaX,
+          width: start.layout.width - clampedDeltaX,
+        }
+        break
+      }
       case 'resize-s':
         next = {
           ...start.layout,
@@ -316,6 +327,13 @@ function FloatingLauncherPanel({
 
       <div className="flex min-h-0 flex-1 flex-col pt-9">
         <div className="flex min-h-0 flex-1">
+          <div
+            role="presentation"
+            aria-label={`Resize ${panel} panel width from left`}
+            title="Resize width"
+            onMouseDown={startInteraction('resize-w')}
+            className="hover:bg-brass-500/10 w-4 shrink-0 cursor-ew-resize touch-none transition-colors"
+          />
           <div className={cn('min-h-0 flex-1 overflow-y-auto', className)}>{children}</div>
           <div
             role="presentation"
@@ -370,6 +388,12 @@ export function LauncherDashboard() {
   const sparklines = useSparklines(symbols)
   const { data: health } = useSystemHealth()
   const activeJobs = useActiveJobs()
+  const {
+    data: articles = [],
+    isPending: isNewsPending,
+    refetch: refetchNews,
+    isRefetching: isNewsRefetching,
+  } = useNewsList()
 
   // For adding new symbols
   const instrumentsQuery = useInstruments()
@@ -982,28 +1006,66 @@ export function LauncherDashboard() {
             <h3 className="text-silver-400 font-mono text-[10px] font-bold tracking-wider uppercase">
               Market News Feed
             </h3>
-            <Newspaper className="text-brass-400 h-3.5 w-3.5" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => void refetchNews()}
+                disabled={isNewsPending || isNewsRefetching}
+                className="text-silver-500 hover:text-brass-400 cursor-pointer rounded p-0.5 transition-colors disabled:opacity-50"
+                title="Refresh news feed"
+              >
+                <RefreshCw className={cn('h-3 w-3', isNewsRefetching && 'animate-spin')} />
+              </button>
+              <Newspaper className="text-brass-400 h-3.5 w-3.5" />
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            {mockArticles.map((article) => (
-              <button
-                key={article.id}
-                onClick={() => handleOpenArticle(article.id)}
-                className="bg-carbon-900/35 border-carbon-800/60 hover:border-brass-600/20 group flex cursor-pointer flex-col gap-1 rounded-xl border p-2.5 text-left transition-colors duration-200"
-              >
-                <div className="text-silver-500 flex w-full items-center justify-between font-mono text-[9px]">
-                  <span>{article.source}</span>
-                  <span>{article.publishedAt}</span>
-                </div>
-                <span className="text-silver-100 group-hover:text-brass-400 mt-0.5 line-clamp-1 font-sans text-[11px] leading-snug font-semibold transition-colors">
-                  {article.title}
+            {isNewsPending ? (
+              <div className="border-carbon-800/40 flex flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center">
+                <RefreshCw className="text-brass-400 h-4 w-4 animate-spin opacity-60" />
+                <span className="text-silver-500 mt-2 font-mono text-[9px] tracking-wider uppercase">
+                  Loading Feed...
                 </span>
-                <span className="text-silver-400 mt-0.5 line-clamp-2 text-[9px] leading-normal">
-                  {article.summary}
+              </div>
+            ) : articles.length === 0 ? (
+              <div className="border-carbon-800/40 flex flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center">
+                <Newspaper className="text-silver-600 mb-1 h-4 w-4 opacity-40" />
+                <span className="text-silver-500 font-mono text-[9px] tracking-wider uppercase">
+                  No articles available
                 </span>
-              </button>
-            ))}
+              </div>
+            ) : (
+              articles.map((article) => {
+                const formatPublishedAt = (dateStr: string) => {
+                  try {
+                    const date = new Date(dateStr)
+                    if (isNaN(date.getTime())) return dateStr
+                    return formatDistanceToNow(date, { addSuffix: true })
+                  } catch {
+                    return dateStr
+                  }
+                }
+
+                return (
+                  <button
+                    key={article.id}
+                    onClick={() => handleOpenArticle(article.id)}
+                    className="bg-carbon-900/35 border-carbon-800/60 hover:border-brass-600/20 group flex cursor-pointer flex-col gap-1 rounded-xl border p-2.5 text-left transition-colors duration-200"
+                  >
+                    <div className="text-silver-500 flex w-full items-center justify-between font-mono text-[9px]">
+                      <span>{article.source}</span>
+                      <span>{formatPublishedAt(article.publishedAt)}</span>
+                    </div>
+                    <span className="text-silver-100 group-hover:text-brass-400 mt-0.5 line-clamp-1 font-sans text-[11px] leading-snug font-semibold transition-colors">
+                      {article.title}
+                    </span>
+                    <span className="text-silver-400 mt-0.5 line-clamp-2 text-[9px] leading-normal">
+                      {article.summary}
+                    </span>
+                  </button>
+                )
+              })
+            )}
           </div>
         </div>
       </FloatingLauncherPanel>
