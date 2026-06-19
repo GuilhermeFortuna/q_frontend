@@ -19,7 +19,28 @@ import {
 import { formatBytes } from '@/lib/formatBytes'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
-import { isIngestTerminalStatus, STORAGE_TIMEFRAME_OPTIONS, type IngestKind } from '@/types/storage'
+import {
+  inventoryItemKey,
+  isIngestTerminalStatus,
+  resolveInventoryKind,
+  STORAGE_TIMEFRAME_OPTIONS,
+  type IngestKind,
+  type StorageKind,
+} from '@/types/storage'
+
+function KindBadge({ kind }: { kind: StorageKind }) {
+  const isTicks = kind === 'ticks'
+  return (
+    <span
+      className={cn(
+        'rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
+        isTicks ? 'bg-violet-500/10 text-violet-300' : 'bg-brass-500/10 text-brass-300',
+      )}
+    >
+      {isTicks ? 'Ticks' : 'Bars'}
+    </span>
+  )
+}
 
 export function StorageWorkspace() {
   const { data: inventory, isLoading: inventoryLoading } = useStorageInventory()
@@ -34,7 +55,7 @@ export function StorageWorkspace() {
     formatISO(subMonths(new Date(), 6), { representation: 'date' }),
   )
   const [endDate, setEndDate] = useState(() => formatISO(new Date(), { representation: 'date' }))
-  const dataKind: IngestKind = 'bars'
+  const [dataKind, setDataKind] = useState<IngestKind>('bars')
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
 
   const searchQuery = symbolQuery.trim().length >= 1 ? symbolQuery : symbol
@@ -44,10 +65,12 @@ export function StorageWorkspace() {
   const ingestStatus = useIngestStatus(activeJobId)
   const ingestJob = ingestStatus.data
   const mt5Available = dataSource?.mt5_available ?? false
+  const isTicksKind = dataKind === 'ticks'
   const downloadDisabled =
     !mt5Available ||
     startIngest.isPending ||
     (!!activeJobId && !isIngestTerminalStatus(ingestJob?.status))
+  const canDownload = symbol.trim().length > 0 && (isTicksKind || selectedTimeframes.length > 0)
 
   useEffect(() => {
     if (ingestJob && isIngestTerminalStatus(ingestJob.status)) {
@@ -64,13 +87,13 @@ export function StorageWorkspace() {
   }
 
   const handleDownload = () => {
-    if (selectedTimeframes.length === 0) return
+    if (!canDownload) return
     const start = startOfDay(new Date(startDate))
     const end = endOfDay(new Date(endDate))
     startIngest.mutate(
       {
         symbol: symbol.trim().toUpperCase(),
-        timeframes: selectedTimeframes,
+        timeframes: isTicksKind ? [] : selectedTimeframes,
         start: start.toISOString(),
         end: end.toISOString(),
         kind: dataKind,
@@ -95,8 +118,8 @@ export function StorageWorkspace() {
       <div>
         <h1 className="text-silver-100 text-xl font-medium">Storage</h1>
         <p className="text-silver-400 text-sm">
-          Download OHLCV bars from MetaTrader 5 into the local parquet store, then serve them in
-          Local data-source mode on Linux.
+          Download OHLCV bars or tick data from MetaTrader 5 into the local parquet store, then
+          serve them in Local data-source mode on Linux.
         </p>
       </div>
 
@@ -158,39 +181,49 @@ export function StorageWorkspace() {
             <div className="space-y-1">
               <span className="text-silver-300 text-sm font-medium">Data kind</span>
               <div className="flex gap-2">
-                <button type="button" className={presetButtonActiveClass} disabled>
+                <button
+                  type="button"
+                  className={dataKind === 'bars' ? presetButtonActiveClass : presetButtonClass}
+                  onClick={() => setDataKind('bars')}
+                >
                   Bars
                 </button>
                 <button
                   type="button"
-                  className={cn(presetButtonClass, 'cursor-not-allowed opacity-40')}
-                  disabled
-                  title="Tick storage arrives in a later release"
+                  className={dataKind === 'ticks' ? presetButtonActiveClass : presetButtonClass}
+                  onClick={() => setDataKind('ticks')}
                 >
-                  Ticks (soon)
+                  Ticks
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <span className="text-silver-300 text-sm font-medium">Timeframes</span>
-            <div className="flex flex-wrap gap-2">
-              {STORAGE_TIMEFRAME_OPTIONS.map((tf) => {
-                const active = selectedTimeframes.includes(tf)
-                return (
-                  <button
-                    key={tf}
-                    type="button"
-                    onClick={() => toggleTimeframe(tf)}
-                    className={active ? presetButtonActiveClass : presetButtonClass}
-                  >
-                    {tf}
-                  </button>
-                )
-              })}
+          {isTicksKind ? (
+            <p className="text-silver-300 rounded-lg border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-sm">
+              Tick ranges are very large and ingest slowly (progress advances per month). Start with
+              a narrow date range — a few days or one week — before pulling longer history.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <span className="text-silver-300 text-sm font-medium">Timeframes</span>
+              <div className="flex flex-wrap gap-2">
+                {STORAGE_TIMEFRAME_OPTIONS.map((tf) => {
+                  const active = selectedTimeframes.includes(tf)
+                  return (
+                    <button
+                      key={tf}
+                      type="button"
+                      onClick={() => toggleTimeframe(tf)}
+                      className={active ? presetButtonActiveClass : presetButtonClass}
+                    >
+                      {tf}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
@@ -223,7 +256,7 @@ export function StorageWorkspace() {
             <button
               type="button"
               onClick={handleDownload}
-              disabled={downloadDisabled || selectedTimeframes.length === 0 || !symbol.trim()}
+              disabled={downloadDisabled || !canDownload}
               className={cn(
                 presetButtonActiveClass,
                 'px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50',
@@ -265,7 +298,7 @@ export function StorageWorkspace() {
       <Card>
         <CardHeader>
           <CardTitle>Inventory</CardTitle>
-          <CardDescription>Stored OHLCV series in the local parquet catalog</CardDescription>
+          <CardDescription>Stored bars and ticks in the local parquet catalog</CardDescription>
         </CardHeader>
         <CardContent>
           {inventoryLoading ? (
@@ -273,14 +306,15 @@ export function StorageWorkspace() {
           ) : !inventory?.items.length ? (
             <p className="text-silver-400 text-sm">
               The store is empty. On Windows with MT5 connected, use Download above to ingest bars
-              for a symbol and timeframe.
+              or ticks for a symbol.
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-[720px] text-left text-sm">
                 <thead>
                   <tr className="text-silver-400 border-carbon-700 border-b text-xs tracking-wide uppercase">
                     <th className="px-2 py-2 font-medium">Symbol</th>
+                    <th className="px-2 py-2 font-medium">Kind</th>
                     <th className="px-2 py-2 font-medium">Timeframe</th>
                     <th className="px-2 py-2 font-medium">Range</th>
                     <th className="px-2 py-2 font-medium">Rows</th>
@@ -290,42 +324,50 @@ export function StorageWorkspace() {
                   </tr>
                 </thead>
                 <tbody>
-                  {inventory.items.map((item) => (
-                    <tr
-                      key={`${item.symbol}-${item.timeframe}`}
-                      className="border-carbon-800/80 border-b"
-                    >
-                      <td className="text-silver-100 px-2 py-2 font-mono">{item.symbol}</td>
-                      <td className="text-silver-200 px-2 py-2 font-mono">{item.timeframe}</td>
-                      <td className="text-silver-300 px-2 py-2 font-mono text-xs">
-                        {formatDisplayDateTime(item.start)} → {formatDisplayDateTime(item.end)}
-                      </td>
-                      <td className="text-silver-200 px-2 py-2 tabular-nums">{item.rows}</td>
-                      <td className="text-silver-300 px-2 py-2">{formatBytes(item.bytes)}</td>
-                      <td className="text-silver-400 px-2 py-2 text-xs">
-                        {formatDisplayDateTime(item.updated_at)}
-                      </td>
-                      <td className="px-2 py-2 text-right">
-                        <button
-                          type="button"
-                          className="text-xs font-semibold text-rose-300 hover:text-rose-200"
-                          disabled={deleteStorage.isPending}
-                          onClick={() => {
-                            if (
-                              window.confirm(`Delete stored ${item.symbol} ${item.timeframe} data?`)
-                            ) {
-                              deleteStorage.mutate({
-                                symbol: item.symbol,
-                                timeframe: item.timeframe,
-                              })
-                            }
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {inventory.items.map((item) => {
+                    const kind = resolveInventoryKind(item)
+                    const isTicks = kind === 'ticks'
+                    return (
+                      <tr key={inventoryItemKey(item)} className="border-carbon-800/80 border-b">
+                        <td className="text-silver-100 px-2 py-2 font-mono">{item.symbol}</td>
+                        <td className="px-2 py-2">
+                          <KindBadge kind={kind} />
+                        </td>
+                        <td className="text-silver-200 px-2 py-2 font-mono">
+                          {isTicks ? '—' : (item.timeframe ?? '—')}
+                        </td>
+                        <td className="text-silver-300 px-2 py-2 font-mono text-xs">
+                          {formatDisplayDateTime(item.start)} → {formatDisplayDateTime(item.end)}
+                        </td>
+                        <td className="text-silver-200 px-2 py-2 tabular-nums">{item.rows}</td>
+                        <td className="text-silver-300 px-2 py-2">{formatBytes(item.bytes)}</td>
+                        <td className="text-silver-400 px-2 py-2 text-xs">
+                          {formatDisplayDateTime(item.updated_at)}
+                        </td>
+                        <td className="px-2 py-2 text-right">
+                          <button
+                            type="button"
+                            className="text-xs font-semibold text-rose-300 hover:text-rose-200"
+                            disabled={deleteStorage.isPending}
+                            onClick={() => {
+                              const label = isTicks
+                                ? `Delete stored ${item.symbol} tick data?`
+                                : `Delete stored ${item.symbol} ${item.timeframe} bar data?`
+                              if (window.confirm(label)) {
+                                deleteStorage.mutate({
+                                  symbol: item.symbol,
+                                  kind,
+                                  timeframe: item.timeframe,
+                                })
+                              }
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

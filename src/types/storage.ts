@@ -6,9 +6,12 @@ export type DataSourceSettings = {
   active_provider: 'mt5' | 'local'
 }
 
+export type StorageKind = 'bars' | 'ticks'
+
 export type StorageInventoryItem = {
   symbol: string
-  timeframe: string
+  kind?: StorageKind
+  timeframe?: string
   start: string
   end: string
   rows: number
@@ -21,7 +24,7 @@ export type StorageInventoryResponse = {
   items: StorageInventoryItem[]
 }
 
-export type IngestKind = 'bars'
+export type IngestKind = StorageKind
 
 export type IngestRequest = {
   symbol: string
@@ -58,6 +61,18 @@ export type IngestJob = {
 
 export function isIngestTerminalStatus(status: IngestJobStatus | undefined): boolean {
   return status === 'completed' || status === 'failed'
+}
+
+export function resolveInventoryKind(item: StorageInventoryItem): StorageKind {
+  if (item.kind === 'ticks' || item.kind === 'bars') {
+    return item.kind
+  }
+  return item.timeframe ? 'bars' : 'ticks'
+}
+
+export function inventoryItemKey(item: StorageInventoryItem): string {
+  const kind = resolveInventoryKind(item)
+  return kind === 'ticks' ? `${item.symbol}-ticks` : `${item.symbol}-${item.timeframe}`
 }
 
 /** All OHLCV timeframe names accepted by q_backend (WO47 metatrader TIMEFRAME_NAMES). */

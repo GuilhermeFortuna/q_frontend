@@ -6,6 +6,7 @@ import type {
   IngestRequest,
   IngestStartResponse,
   StorageInventoryResponse,
+  StorageKind,
 } from '@/types/storage'
 import { isIngestTerminalStatus } from '@/types/storage'
 
@@ -30,8 +31,13 @@ async function fetchIngestStatus(jobId: string): Promise<IngestJob> {
   return data
 }
 
-async function deleteStorageSeries(symbol: string, timeframe: string): Promise<void> {
-  await apiClient.delete(`/api/v1/storage/${encodeURIComponent(symbol)}/${timeframe}`)
+async function deleteStorageSeries(
+  symbol: string,
+  kind: StorageKind,
+  timeframe?: string,
+): Promise<void> {
+  const segment = kind === 'ticks' ? 'ticks' : encodeURIComponent((timeframe ?? '').toUpperCase())
+  await apiClient.delete(`/api/v1/storage/${encodeURIComponent(symbol)}/${segment}`)
 }
 
 export function useStorageInventory() {
@@ -73,12 +79,18 @@ export function useIngestStatus(jobId: string | null) {
   })
 }
 
+export type DeleteStorageInput = {
+  symbol: string
+  kind: StorageKind
+  timeframe?: string
+}
+
 export function useDeleteStorage() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ symbol, timeframe }: { symbol: string; timeframe: string }) =>
-      deleteStorageSeries(symbol, timeframe),
+    mutationFn: ({ symbol, kind, timeframe }: DeleteStorageInput) =>
+      deleteStorageSeries(symbol, kind, timeframe),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: storageKeys.inventory() })
     },

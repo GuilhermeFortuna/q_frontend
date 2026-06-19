@@ -121,6 +121,7 @@ export const handlers = [
       timeframes: string[]
       start: string
       end: string
+      kind?: 'bars' | 'ticks'
     }
     const job = createMockIngestJob(body)
     return HttpResponse.json({ job_id: job.job_id, status: 'queued' })
@@ -147,13 +148,27 @@ export const handlers = [
 
   http.delete('*/api/v1/storage/:symbol/:timeframe', ({ params }) => {
     const symbol = String(params.symbol).toUpperCase()
-    const timeframe = String(params.timeframe).toUpperCase()
-    const kept = mockStorageInventory.filter(
-      (item) => !(item.symbol === symbol && item.timeframe === timeframe),
-    )
+    const segment = String(params.timeframe).toUpperCase()
+    const kept =
+      segment === 'TICKS'
+        ? mockStorageInventory.filter(
+            (item) => !(item.symbol === symbol && (item.kind ?? 'bars') === 'ticks'),
+          )
+        : mockStorageInventory.filter(
+            (item) =>
+              !(
+                item.symbol === symbol &&
+                (item.kind ?? 'bars') === 'bars' &&
+                item.timeframe === segment
+              ),
+          )
     mockStorageInventory.splice(0, mockStorageInventory.length, ...kept)
     mockSystemHealth.market_data_inventory_count = mockStorageInventory.length
-    return HttpResponse.json({ deleted: true, symbol, timeframe })
+    return HttpResponse.json({
+      deleted: true,
+      symbol,
+      timeframe: segment === 'TICKS' ? 'ticks' : segment,
+    })
   }),
 
   http.get('*/api/v1/strategies', () => HttpResponse.json(mockStrategies)),
