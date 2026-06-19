@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { ActiveOutline } from '@/components/ui/ActiveOutline'
 import type { StrategySearchStatus } from '@/types/strategySearch'
@@ -13,6 +14,20 @@ function phaseLabel(phase: StrategySearchStatus['phase']): string {
   if (phase === 'testing') return 'testing'
   if (phase === 'done') return 'done'
   return 'working'
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 0) return '0s'
+  const totalSeconds = Math.round(ms / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  const parts = []
+  if (hours > 0) parts.push(`${hours}h`)
+  if (minutes > 0 || hours > 0) parts.push(`${minutes}m`)
+  parts.push(`${seconds}s`)
+  return parts.join(' ')
 }
 
 export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgressProps) {
@@ -43,6 +58,39 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
             status.strategy ? ` — ${status.strategy}` : ''
           }`
       : 'Preparing search…'
+
+  const [elapsed, setElapsed] = useState(0)
+  const [remaining, setRemaining] = useState(0)
+
+  useEffect(() => {
+    if (!status.run_id) return
+
+    const key = `discover:start-time:${status.run_id}`
+    let startTimeStr = localStorage.getItem(key)
+    if (!startTimeStr) {
+      startTimeStr = String(Date.now())
+      localStorage.setItem(key, startTimeStr)
+    }
+    const startTime = Number(startTimeStr)
+
+    const updateTimes = () => {
+      const now = Date.now()
+      const elapsedMs = now - startTime
+      setElapsed(elapsedMs)
+
+      if (currentRaw > 0) {
+        const progress = currentRaw / total
+        const remainingMs = elapsedMs / progress - elapsedMs
+        setRemaining(remainingMs)
+      } else {
+        setRemaining(0)
+      }
+    }
+
+    updateTimes()
+    const timer = setInterval(updateTimes, 1000)
+    return () => clearInterval(timer)
+  }, [status.run_id, currentRaw, total])
 
   return (
     <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-4">
@@ -90,6 +138,30 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
               {phaseLabel(status.phase)}
             </div>
           ) : null}
+
+          {status.run_id && (
+            <div className="border-brass-600/10 bg-carbon-950/20 text-silver-400 mt-4 rounded-xl border p-3 text-xs shadow-inner">
+              <div className="grid grid-cols-2 gap-2 font-mono">
+                <div className="flex flex-col">
+                  <span className="text-silver-500 text-[10px] font-bold tracking-wider uppercase">
+                    Elapsed Time
+                  </span>
+                  <span className="text-silver-200 mt-0.5 font-semibold">
+                    {formatDuration(elapsed)}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-silver-500 text-[10px] font-bold tracking-wider uppercase">
+                    Remaining (Est)
+                  </span>
+                  <span className="text-brass-400 mt-0.5 font-semibold">
+                    {currentRaw / total > 0.02 ? formatDuration(remaining) : 'Estimating...'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="mt-6 flex justify-center">
             <Button
               type="button"

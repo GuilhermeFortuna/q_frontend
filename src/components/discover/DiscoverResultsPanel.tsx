@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { bestStrategyGloss } from '@/lib/discover/candidateMetrics'
 import {
   formatEfficiencyRatio,
@@ -11,8 +12,10 @@ import { GeneticVerdictPanel } from '@/components/discover/GeneticVerdictPanel'
 import { DiscoverProgress } from '@/components/discover/DiscoverProgress'
 import { DiscoverLogs } from '@/components/discover/DiscoverLogs'
 import { LeaderboardTable } from '@/components/discover/LeaderboardTable'
+import { LiveSwarmVisualizer3D } from '@/components/discover/LiveSwarmVisualizer3D'
 import { Button } from '@/components/ui/button'
 import { hasGeneticSummary, isGeneticSearchConfig } from '@/types/strategySearch'
+import { cn } from '@/lib/utils'
 
 type DiscoverResultsPanelProps = {
   runId: string | null
@@ -35,18 +38,84 @@ export function DiscoverResultsPanel({
   cancelling,
   onOpenWorkbench,
 }: DiscoverResultsPanelProps) {
+  const [runningTab, setRunningTab] = useState<'progress' | 'swarm'>('progress')
+  const [completedTab, setCompletedTab] = useState<'leaderboard' | 'swarm'>('leaderboard')
+  const [selectedTrialId, setSelectedTrialId] = useState<string | null>(null)
+
+  const isGenetic = status
+    ? isGeneticSearchConfig(status.search_config)
+    : results
+      ? isGeneticSearchConfig(results.search_config)
+      : false
+
   if (isRunning && status) {
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden pr-1">
-        <div className="flex shrink-0 justify-center">
-          <DiscoverProgress status={status} onCancel={onCancel} cancelling={cancelling} />
-        </div>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <h4 className="text-silver-300 mb-2 shrink-0 text-xs font-bold tracking-wider uppercase">
-            Live Trial Progress & Logs
-          </h4>
-          <DiscoverLogs logs={status.logs} />
-        </div>
+        {isGenetic && (
+          <div className="border-carbon-600/60 mb-2 flex shrink-0 gap-1 border-b">
+            <button
+              type="button"
+              onClick={() => setRunningTab('progress')}
+              className={cn(
+                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                runningTab === 'progress'
+                  ? 'border-brass-400 text-brass-400 font-semibold'
+                  : 'text-silver-400 hover:text-silver-200 border-transparent',
+              )}
+            >
+              Progress & Logs
+            </button>
+            <button
+              type="button"
+              onClick={() => setRunningTab('swarm')}
+              className={cn(
+                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                runningTab === 'swarm'
+                  ? 'border-brass-400 text-brass-400 font-semibold'
+                  : 'text-silver-400 hover:text-silver-200 border-transparent',
+              )}
+            >
+              3D Live Swarm
+            </button>
+          </div>
+        )}
+
+        {runningTab === 'progress' || !isGenetic ? (
+          <>
+            <div className="flex shrink-0 justify-center">
+              <DiscoverProgress status={status} onCancel={onCancel} cancelling={cancelling} />
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <h4 className="text-silver-300 mb-2 shrink-0 text-xs font-bold tracking-wider uppercase">
+                Live Trial Progress & Logs
+              </h4>
+              <DiscoverLogs logs={status.logs} />
+            </div>
+          </>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+            <LiveSwarmVisualizer3D status={status} results={undefined} isRunning={true} />
+            <div className="border-carbon-800 bg-carbon-950/40 flex items-center justify-between rounded-xl border p-4 shadow-sm">
+              <div className="flex flex-col">
+                <span className="text-silver-100 text-xs font-semibold">
+                  Generation {status.generation ?? 0} / {status.total_generations ?? 0}
+                </span>
+                <span className="text-silver-500 mt-0.5 font-mono text-[10px]">
+                  Evaluated: {Math.floor(status.current_candidate)} / {status.total_candidates}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-silver-400 text-xs font-bold tracking-wider uppercase hover:text-red-400"
+                onClick={onCancel}
+                disabled={cancelling}
+              >
+                {cancelling ? 'Cancelling...' : 'Cancel Search'}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -104,13 +173,52 @@ export function DiscoverResultsPanel({
           </div>
         ) : null}
 
-        <LeaderboardTable
-          runId={runId}
-          candidates={results.candidates}
-          objectiveMode={objectiveMode}
-          backtest={backtest}
-          searchConfig={results.search_config}
-        />
+        {isGenetic && (
+          <div className="border-carbon-600/60 mb-2 flex shrink-0 gap-1 border-b">
+            <button
+              type="button"
+              onClick={() => setCompletedTab('leaderboard')}
+              className={cn(
+                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                completedTab === 'leaderboard'
+                  ? 'border-brass-400 text-brass-400 font-semibold'
+                  : 'text-silver-400 hover:text-silver-200 border-transparent',
+              )}
+            >
+              Leaderboard Table
+            </button>
+            <button
+              type="button"
+              onClick={() => setCompletedTab('swarm')}
+              className={cn(
+                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                completedTab === 'swarm'
+                  ? 'border-brass-400 text-brass-400 font-semibold'
+                  : 'text-silver-400 hover:text-silver-200 border-transparent',
+              )}
+            >
+              Swarm Analysis (3D)
+            </button>
+          </div>
+        )}
+
+        {completedTab === 'leaderboard' || !isGenetic ? (
+          <LeaderboardTable
+            runId={runId}
+            candidates={results.candidates}
+            objectiveMode={objectiveMode}
+            backtest={backtest}
+            searchConfig={results.search_config}
+          />
+        ) : (
+          <LiveSwarmVisualizer3D
+            status={status}
+            results={results}
+            isRunning={false}
+            selectedTrialId={selectedTrialId}
+            onSelectTrialId={setSelectedTrialId}
+          />
+        )}
       </div>
     )
   }
