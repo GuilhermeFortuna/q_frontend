@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Group, Panel, Separator, useDefaultLayout, usePanelRef } from 'react-resizable-panels'
 
-import {
-  useInstruments,
-  useMarketSnapshot,
-  useMarketSnapshots,
-  useSearchSymbols,
-} from '@/api/queries/market-data'
+import { useInstruments, useMarketSnapshot, useMarketSnapshots } from '@/api/queries/market-data'
 import { useProgressiveOhlcv } from '@/api/queries/useProgressiveOhlcv'
 import { useDrawings } from '@/components/charts/hooks/useDrawings'
 import { DEFAULT_SETTINGS, type ChartProfile } from '@/components/charts/types/chart'
@@ -212,7 +207,6 @@ export function MarketDataWorkspace() {
   }, [])
 
   const [hoveredBar, setHoveredBar] = useState<OhlcvBar | null>(null)
-  const [chartSearchQuery, setChartSearchQuery] = useState('')
 
   const leftPanelRef = usePanelRef()
   const rightPanelRef = usePanelRef()
@@ -264,7 +258,6 @@ export function MarketDataWorkspace() {
     snapshotsQuery.error,
   )
 
-  const chartSearchResultsQuery = useSearchSymbols(chartSearchQuery)
   const ohlcv = useProgressiveOhlcv(selectedSymbol, selectedTimeframe)
   const { drawings, setDrawings, clearDrawings } = useDrawings(selectedSymbol, selectedTimeframe)
 
@@ -348,8 +341,6 @@ export function MarketDataWorkspace() {
             snapshotsBySymbol={snapshotsBySymbol}
             selectedSymbol={selectedSymbol}
             isLoadingInstruments={instrumentsQuery.isLoading}
-            mt5SearchResults={chartSearchResultsQuery.data || []}
-            mt5SearchLoading={chartSearchResultsQuery.isLoading}
             onSelectSymbol={setSelectedSymbol}
             onAddInstrument={addToWatchlist}
             onRemoveInstrument={removeFromWatchlist}
@@ -449,7 +440,6 @@ export function MarketDataWorkspace() {
         onAddToWatchlist={addToWatchlist}
         onRemoveFromWatchlist={removeFromWatchlist}
         onSelectTimeframe={(val) => patchMarketDataSession({ selectedTimeframe: val })}
-        onQueryChange={setChartSearchQuery}
         recentInstruments={recentInstruments}
       />
     </div>

@@ -1,6 +1,6 @@
 import { endOfDay, startOfDay } from 'date-fns'
 import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -16,14 +16,30 @@ import {
   type PositionSizingMode,
 } from '@/lib/backtesting/positionSizing'
 import { defaultTransactionCostFields } from '@/lib/backtesting/transactionCosts'
+import { useAppStore } from '@/store/useAppStore'
 import { handlers } from '@/mocks/handlers'
 import { createTestQueryClient } from '../../testUtils'
 
 const server = setupServer(...handlers)
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
+vi.mock('@/lib/backtesting/dateRange', () => ({
+  defaultBacktestStart: new Date('2025-06-13T03:00:00.000Z'),
+  defaultBacktestEnd: new Date('2026-06-14T02:59:59.999Z'),
+}))
+
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'error' })
+})
+afterEach(() => {
+  server.resetHandlers()
+  useAppStore.setState({
+    pendingBacktestConfig: null,
+    pendingOptimizationConfig: null,
+  })
+})
+afterAll(() => {
+  server.close()
+})
 
 function wrapper({ children }: { children: ReactNode }) {
   const queryClient = createTestQueryClient()

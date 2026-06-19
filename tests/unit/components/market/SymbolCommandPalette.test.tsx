@@ -50,6 +50,11 @@ describe('SymbolCommandPalette', () => {
       expect(screen.getByText(/Add PETR4 to watchlist/i)).toBeInTheDocument()
     })
 
+    // Wait for the 200ms debounce and mock query to resolve
+    await waitFor(() => {
+      expect(screen.getByText(/PETROBRAS PN N2/i)).toBeInTheDocument()
+    })
+
     await user.keyboard('{Enter}')
 
     await waitFor(() => {

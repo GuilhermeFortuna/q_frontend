@@ -46,8 +46,6 @@ describe('MarketWatchPanel', () => {
         snapshotsBySymbol={{ PETR4: snapshot }}
         selectedSymbol="VALE3"
         isLoadingInstruments={false}
-        mt5SearchResults={[]}
-        mt5SearchLoading={false}
         onSelectSymbol={onSelectSymbol}
         onAddInstrument={vi.fn()}
         onRemoveInstrument={vi.fn()}
@@ -78,8 +76,6 @@ describe('MarketWatchPanel', () => {
         }}
         selectedSymbol="PETR4"
         isLoadingInstruments={false}
-        mt5SearchResults={[]}
-        mt5SearchLoading={false}
         onSelectSymbol={vi.fn()}
         onAddInstrument={vi.fn()}
         onRemoveInstrument={vi.fn()}
@@ -125,8 +121,6 @@ describe('MarketWatchPanel', () => {
         }}
         selectedSymbol="PETR4"
         isLoadingInstruments={false}
-        mt5SearchResults={[]}
-        mt5SearchLoading={false}
         onSelectSymbol={onSelectSymbol}
         onAddInstrument={vi.fn()}
         onRemoveInstrument={onRemoveInstrument}
@@ -158,8 +152,6 @@ describe('MarketWatchPanel', () => {
         }}
         selectedSymbol="PETR4"
         isLoadingInstruments={false}
-        mt5SearchResults={[]}
-        mt5SearchLoading={false}
         onSelectSymbol={vi.fn()}
         onAddInstrument={vi.fn()}
         onRemoveInstrument={vi.fn()}
@@ -181,8 +173,6 @@ describe('MarketWatchPanel', () => {
         }}
         selectedSymbol="PETR4"
         isLoadingInstruments={false}
-        mt5SearchResults={[]}
-        mt5SearchLoading={false}
         onSelectSymbol={vi.fn()}
         onAddInstrument={vi.fn()}
         onRemoveInstrument={vi.fn()}
@@ -200,8 +190,6 @@ describe('MarketWatchPanel', () => {
         snapshotsBySymbol={{}}
         selectedSymbol="PETR4"
         isLoadingInstruments
-        mt5SearchResults={[]}
-        mt5SearchLoading={false}
         onSelectSymbol={vi.fn()}
         onAddInstrument={vi.fn()}
         onRemoveInstrument={vi.fn()}

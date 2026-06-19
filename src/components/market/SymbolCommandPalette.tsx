@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, Search } from 'lucide-react'
 
 import { useSearchSymbols } from '@/api/queries/market-data'
+import { useDebounce } from '@/hooks/useDebounce'
 import {
   commandActionLabel,
   commandSearchQuery,
@@ -37,7 +38,6 @@ export type SymbolCommandPaletteProps = {
   onAddToWatchlist: (instrument: Instrument) => void
   onRemoveFromWatchlist: (symbol: string) => void
   onSelectTimeframe: (timeframe: string) => void
-  onQueryChange?: (query: string) => void
   recentInstruments: Instrument[]
 }
 
@@ -52,7 +52,6 @@ export function SymbolCommandPalette({
   onAddToWatchlist,
   onRemoveFromWatchlist,
   onSelectTimeframe,
-  onQueryChange,
   recentInstruments,
 }: SymbolCommandPaletteProps) {
   const [open, setOpen] = useState(false)
@@ -63,10 +62,11 @@ export function SymbolCommandPalette({
   const overlayRef = useRef<HTMLDivElement>(null)
 
   const parsedCommand = useMemo(() => parseCommand(query), [query])
-  const effectiveSearchQuery = useMemo(
+  const liveEffectiveSearchQuery = useMemo(
     () => commandSearchQuery(query, parsedCommand),
     [parsedCommand, query],
   )
+  const debouncedSearchQuery = useDebounce(liveEffectiveSearchQuery, 200)
   const parsedTimeframe = useMemo(() => {
     if (parsedCommand?.kind === 'symbol-timeframe') {
       return null
@@ -74,7 +74,7 @@ export function SymbolCommandPalette({
     return parseTimeframeInput(query)
   }, [parsedCommand, query])
 
-  const searchResultsQuery = useSearchSymbols(effectiveSearchQuery)
+  const searchResultsQuery = useSearchSymbols(debouncedSearchQuery)
   const searchResults = useMemo(() => searchResultsQuery.data ?? [], [searchResultsQuery.data])
 
   const dropdownItems = useMemo(() => {
@@ -125,7 +125,6 @@ export function SymbolCommandPalette({
         const nextQuery = e.key === ' ' ? '' : e.key
         setOpen(true)
         setQuery(nextQuery)
-        onQueryChange?.(nextQuery)
         setSelectedIndex(0)
         e.preventDefault()
       }
@@ -133,7 +132,7 @@ export function SymbolCommandPalette({
 
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [onQueryChange])
+  }, [])
 
   useEffect(() => {
     if (open && searchInputRef.current) {
@@ -149,17 +148,15 @@ export function SymbolCommandPalette({
       if (open && overlayRef.current && !overlayRef.current.contains(e.target as Node)) {
         setOpen(false)
         setQuery('')
-        onQueryChange?.('')
       }
     }
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
-  }, [onQueryChange, open])
+  }, [open])
 
   const closePalette = () => {
     setOpen(false)
     setQuery('')
-    onQueryChange?.('')
   }
 
   const resolveInstrument = (): Instrument | undefined => {
@@ -265,7 +262,6 @@ export function SymbolCommandPalette({
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
-              onQueryChange?.(e.target.value)
               setSelectedIndex(0)
             }}
             onKeyDown={handleSearchInputKeyDown}
@@ -356,7 +352,7 @@ export function SymbolCommandPalette({
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-silver-100 text-sm font-bold">
-                        {highlightMatch(inst.symbol, effectiveSearchQuery)}
+                        {highlightMatch(inst.symbol, liveEffectiveSearchQuery)}
                       </span>
                       <span className="text-silver-400 line-clamp-1 max-w-[300px] text-[10px]">
                         {inst.name}

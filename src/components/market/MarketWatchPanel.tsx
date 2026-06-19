@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 
 import { FlashOnChange } from '@/components/shared/FlashOnChange'
 import { useSparklines } from '@/hooks/useSparklines'
+import { useDebounce } from '@/hooks/useDebounce'
+import { useSearchSymbols } from '@/api/queries/market-data'
 import { formatPrice } from '@/lib/market/format'
 import { closesToPath, sparklineStrokeColor } from '@/lib/market/sparkline'
 import type { Instrument, MarketSnapshot } from '@/types/api'
@@ -15,8 +17,6 @@ export type MarketWatchPanelProps = {
   snapshotsBySymbol: Record<string, MarketSnapshot>
   selectedSymbol: string
   isLoadingInstruments: boolean
-  mt5SearchResults: Instrument[]
-  mt5SearchLoading: boolean
   onSelectSymbol: (symbol: string) => void
   onAddInstrument: (instrument: Instrument) => void
   onRemoveInstrument: (symbol: string) => void
@@ -100,13 +100,15 @@ export function MarketWatchPanel({
   snapshotsBySymbol,
   selectedSymbol,
   isLoadingInstruments,
-  mt5SearchResults,
-  mt5SearchLoading,
   onSelectSymbol,
   onAddInstrument,
   onRemoveInstrument,
 }: MarketWatchPanelProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebounce(searchQuery, 200)
+  const chartSearchResultsQuery = useSearchSymbols(debouncedSearchQuery)
+  const mt5SearchResults = chartSearchResultsQuery.data || []
+  const mt5SearchLoading = chartSearchResultsQuery.isLoading
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
