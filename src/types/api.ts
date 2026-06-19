@@ -2,7 +2,6 @@ export type WorkspaceId =
   | 'launcher'
   | 'market-data'
   | 'storage'
-  | 'research'
   | 'backtests'
   | 'optimize'
   | 'validate'

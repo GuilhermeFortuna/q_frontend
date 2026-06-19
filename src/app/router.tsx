@@ -40,7 +40,11 @@ const indexRoute = createRoute({
   beforeLoad: () => {
     if (!initialRedirectDone) {
       initialRedirectDone = true
-      const active = useAppStore.getState().activeWorkspace
+      let active = useAppStore.getState().activeWorkspace
+      if ((active as string) === 'research') {
+        useAppStore.getState().setActiveWorkspace('launcher')
+        active = 'launcher'
+      }
       if (active && active !== 'launcher') {
         throw redirect({ to: active === 'validate' ? '/validate' : `/${active}` })
       }
@@ -69,15 +73,6 @@ const systemRoute = createRoute({
   path: '/system',
   beforeLoad: () => syncWorkspace('system'),
   component: SystemWorkspace,
-})
-
-const researchRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/research',
-  beforeLoad: () => {
-    syncWorkspace('research')
-    throw redirect({ to: '/' })
-  },
 })
 
 const backtestsRoute = createRoute({
@@ -129,7 +124,6 @@ const routeTree = rootRoute.addChildren([
   marketDataRoute,
   storageRoute,
   systemRoute,
-  researchRoute,
   backtestsRoute,
   optimizeRoute,
   validateRoute,
