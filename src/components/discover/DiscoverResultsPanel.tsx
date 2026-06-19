@@ -9,6 +9,7 @@ import type { StrategySearchResults, StrategySearchStatus } from '@/types/strate
 
 import { GeneticVerdictPanel } from '@/components/discover/GeneticVerdictPanel'
 import { DiscoverProgress } from '@/components/discover/DiscoverProgress'
+import { DiscoverLogs } from '@/components/discover/DiscoverLogs'
 import { LeaderboardTable } from '@/components/discover/LeaderboardTable'
 import { Button } from '@/components/ui/button'
 import { hasGeneticSummary, isGeneticSearchConfig } from '@/types/strategySearch'
@@ -36,8 +37,16 @@ export function DiscoverResultsPanel({
 }: DiscoverResultsPanelProps) {
   if (isRunning && status) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <DiscoverProgress status={status} onCancel={onCancel} cancelling={cancelling} />
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-1">
+        <div className="flex shrink-0 justify-center">
+          <DiscoverProgress status={status} onCancel={onCancel} cancelling={cancelling} />
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col">
+          <h4 className="text-silver-300 mb-2 text-xs font-bold tracking-wider uppercase">
+            Live Trial Progress & Logs
+          </h4>
+          <DiscoverLogs logs={status.logs} />
+        </div>
       </div>
     )
   }

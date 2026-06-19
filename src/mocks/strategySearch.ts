@@ -526,6 +526,21 @@ export function strategySearchStatusFromJob(job: MockStrategySearchJob): Strateg
 
   const body = job.request_body as { backtest?: StrategySearchStatus['backtest_config'] }
 
+  const logs: string[] = []
+  if (job.status === 'running' || job.status === 'completed') {
+    const numLogs = job.status === 'completed' ? job.total_candidates : current_candidate
+    for (let i = 1; i <= numLogs; i++) {
+      const dateStr = new Date(job.start_time + i * 500).toISOString()
+      const datePart = dateStr.slice(0, 10)
+      const timePart = dateStr.slice(11, 23).replace('.', ',')
+      const ts = `${datePart} ${timePart}`
+      const cId = job.is_genetic ? `gen${Math.ceil(i / 24)}-rand-${i}` : `candidate-${i}`
+      logs.push(
+        `[I ${ts}] Candidate ${cId} - Window 0 - Trial ${i} finished with value: ${(5 + Math.sin(i) * 2).toFixed(4)} and parameters: {'period': ${10 + i * 2}, 'threshold': ${(50 + i * 0.5).toFixed(2)}}. Best is trial 0 with value: 6.4410.`,
+      )
+    }
+  }
+
   return {
     run_id: job.run_id,
     status: job.status,
@@ -541,6 +556,7 @@ export function strategySearchStatusFromJob(job: MockStrategySearchJob): Strateg
     error: null,
     search_config: job.request_body as StrategySearchStatus['search_config'],
     backtest_config: body?.backtest,
+    logs,
   }
 }
 

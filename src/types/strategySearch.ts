@@ -98,6 +98,7 @@ export type StrategySearchStatus = {
   error: string | null
   search_config?: StrategySearchConfig
   backtest_config?: OptimizationBacktestConfig
+  logs?: string[]
 }
 
 export type CandidateStatus = 'completed' | 'no_result' | 'unsupported' | 'error'
