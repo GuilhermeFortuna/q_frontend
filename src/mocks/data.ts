@@ -24,10 +24,14 @@ import type {
 import type { StrategiesResponse } from '@/types/strategies'
 
 export const mockSystemHealth: SystemHealth = {
-  status: 'healthy',
+  status: 'degraded',
   backendVersion: '0.1.0-mock',
-  dataLakeStatus: 'online',
+  dataLakeStatus: 'offline',
   lastSyncAt: new Date().toISOString(),
+  mt5_available: false,
+  active_provider: 'local',
+  market_data_root: '/mock/data/market',
+  market_data_inventory_count: 2,
 }
 
 export const mockInstruments: Instrument[] = [

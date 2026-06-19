@@ -1,6 +1,7 @@
 export type WorkspaceId =
   | 'launcher'
   | 'market-data'
+  | 'storage'
   | 'research'
   | 'backtests'
   | 'optimize'
@@ -13,6 +14,10 @@ export type SystemHealth = {
   backendVersion: string
   dataLakeStatus: 'online' | 'syncing' | 'offline'
   lastSyncAt: string
+  mt5_available?: boolean
+  active_provider?: 'mt5' | 'local'
+  market_data_root?: string
+  market_data_inventory_count?: number
 }
 
 export type Instrument = {

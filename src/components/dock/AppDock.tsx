@@ -3,6 +3,7 @@ import {
   Activity,
   BarChart3,
   Compass,
+  Database,
   FlaskConical,
   Home,
   Settings,
@@ -26,6 +27,7 @@ type DockItem = {
 const dockItems: DockItem[] = [
   { id: 'launcher', label: 'Launcher', to: '/', icon: Home, enabled: true },
   { id: 'market-data', label: 'Market', to: '/market-data', icon: BarChart3, enabled: true },
+  { id: 'storage', label: 'Storage', to: '/storage', icon: Database, enabled: true },
   { id: 'research', label: 'Research', to: '/research', icon: FlaskConical, enabled: false },
   { id: 'backtests', label: 'Backtests', to: '/backtests', icon: Activity, enabled: true },
   { id: 'optimize', label: 'Optimize', to: '/optimize', icon: SlidersHorizontal, enabled: true },

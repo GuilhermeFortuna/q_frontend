@@ -13,6 +13,7 @@ import { LauncherWorkspace } from '@/workspaces/launcher/LauncherWorkspace'
 import { MarketDataWorkspace } from '@/workspaces/market-data/MarketDataWorkspace'
 import { NewsReaderWorkspace } from '@/workspaces/news/NewsReaderWorkspace'
 import { OptimizeWorkspace } from '@/workspaces/optimize/OptimizeWorkspace'
+import { StorageWorkspace } from '@/workspaces/storage/StorageWorkspace'
 import { SystemWorkspace } from '@/workspaces/system/SystemWorkspace'
 import { WalkForwardWorkspace } from '@/workspaces/walkforward/WalkForwardWorkspace'
 import { useAppStore } from '@/store/useAppStore'
@@ -54,6 +55,13 @@ const marketDataRoute = createRoute({
   path: '/market-data',
   beforeLoad: () => syncWorkspace('market-data'),
   component: MarketDataWorkspace,
+})
+
+const storageRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/storage',
+  beforeLoad: () => syncWorkspace('storage'),
+  component: StorageWorkspace,
 })
 
 const systemRoute = createRoute({
@@ -119,6 +127,7 @@ const newsReaderRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   marketDataRoute,
+  storageRoute,
   systemRoute,
   researchRoute,
   backtestsRoute,

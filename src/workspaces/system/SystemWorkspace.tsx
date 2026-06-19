@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useSystemHealth } from '@/api/queries/system'
+import { useDataSource, useSetDataSource, useSystemHealth } from '@/api/queries/system'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { env } from '@/lib/env'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { useAppStore } from '@/store/useAppStore'
 import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
+import type { DataSourceMode } from '@/types/storage'
 import { Sun, SunDim, SunMoon } from 'lucide-react'
 
 const presetButtonClass =
@@ -18,6 +19,8 @@ const inputClass =
 
 export function SystemWorkspace() {
   const { data: health, isLoading, isError, refetch, isFetching } = useSystemHealth()
+  const { data: dataSource, isLoading: dataSourceLoading } = useDataSource()
+  const setDataSource = useSetDataSource()
 
   const brightnessMode = useAppStore((s) => s.brightnessMode)
   const setBrightnessMode = useAppStore((s) => s.setBrightnessMode)
@@ -181,6 +184,59 @@ export function SystemWorkspace() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Data Source</CardTitle>
+          <CardDescription>
+            Choose where market data comes from. Auto uses MetaTrader 5 when available, otherwise
+            the local parquet store.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {dataSourceLoading && !dataSource ? (
+            <p className="text-silver-400 text-sm">Loading data source…</p>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {(['auto', 'mt5', 'local'] as DataSourceMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    disabled={setDataSource.isPending}
+                    onClick={() => setDataSource.mutate(mode)}
+                    className={
+                      dataSource?.source === mode ? presetButtonActiveClass : presetButtonClass
+                    }
+                  >
+                    {mode === 'auto' ? 'Auto' : mode === 'mt5' ? 'MT5' : 'Local'}
+                  </button>
+                ))}
+              </div>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-silver-400">MT5 available</dt>
+                  <dd className="text-silver-100 font-mono">
+                    {dataSource?.mt5_available ? 'yes' : 'no'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-silver-400">Active provider</dt>
+                  <dd className="text-silver-100 font-mono capitalize">
+                    {dataSource?.active_provider ?? '—'}
+                  </dd>
+                </div>
+              </dl>
+              {dataSource?.source === 'local' && !dataSource.mt5_available ? (
+                <p className="text-silver-400 text-xs">
+                  Local mode without MT5 is expected on Linux — candle backtests read the parquet
+                  store configured under Storage.
+                </p>
+              ) : null}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Environment</CardTitle>
           <CardDescription>Frontend runtime targets</CardDescription>
         </CardHeader>
@@ -249,6 +305,17 @@ export function SystemWorkspace() {
                   {formatDisplayDateTime(health.lastSyncAt)}
                 </dd>
               </div>
+              {health.market_data_root ? (
+                <div className="sm:col-span-2">
+                  <dt className="text-silver-400">Market data root</dt>
+                  <dd className="text-silver-100 font-mono text-xs break-all">
+                    {health.market_data_root}
+                    {health.market_data_inventory_count != null
+                      ? ` · ${health.market_data_inventory_count} series`
+                      : ''}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
           )}
         </CardContent>

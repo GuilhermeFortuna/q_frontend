@@ -28,6 +28,15 @@ import {
   walkForwardStatusFromJob,
 } from '@/mocks/walkforward'
 import {
+  createMockIngestJob,
+  getMockIngestJob,
+  getUpdatedMockIngestJob,
+  ingestStatusPayload,
+  mockDataSource,
+  mockStorageInventory,
+  resetMockStorageState,
+} from '@/mocks/storage'
+import {
   deletedStrategySearchRunIds,
   getMockCandidateEquityPoints,
   getMockCandidateGenome,
@@ -66,8 +75,86 @@ export function resetMockStrategySearchDeletes() {
   resetMockStrategySearchState()
 }
 
+export function resetMockStorageDeletes() {
+  resetMockStorageState()
+}
+
 export const handlers = [
   http.get('*/api/v1/system/health', () => HttpResponse.json(mockSystemHealth)),
+
+  http.get('*/api/v1/system/data-source', () => HttpResponse.json(mockDataSource)),
+
+  http.put('*/api/v1/system/data-source', async ({ request }) => {
+    const body = (await request.json()) as { source?: string }
+    if (body.source === 'auto' || body.source === 'mt5' || body.source === 'local') {
+      Object.assign(mockDataSource, {
+        source: body.source,
+        active_provider:
+          body.source === 'local'
+            ? 'local'
+            : body.source === 'mt5' && mockDataSource.mt5_available
+              ? 'mt5'
+              : mockDataSource.mt5_available
+                ? 'mt5'
+                : 'local',
+      })
+    }
+    return HttpResponse.json(mockDataSource)
+  }),
+
+  http.get('*/api/v1/storage/inventory', () =>
+    HttpResponse.json({
+      root: mockSystemHealth.market_data_root ?? '/mock/data/market',
+      items: mockStorageInventory,
+    }),
+  ),
+
+  http.post('*/api/v1/storage/ingest', async ({ request }) => {
+    if (!mockDataSource.mt5_available) {
+      return HttpResponse.json(
+        { detail: 'Ingestion requires MetaTrader 5 as the source.' },
+        { status: 503 },
+      )
+    }
+    const body = (await request.json()) as {
+      symbol: string
+      timeframes: string[]
+      start: string
+      end: string
+    }
+    const job = createMockIngestJob(body)
+    return HttpResponse.json({ job_id: job.job_id, status: 'queued' })
+  }),
+
+  http.get('*/api/v1/storage/ingest/:jobId', ({ params }) => {
+    const jobId = String(params.jobId)
+    const existing = getMockIngestJob(jobId)
+    if (!existing) {
+      return HttpResponse.json(
+        { detail: `Storage ingest job '${jobId}' not found.` },
+        { status: 404 },
+      )
+    }
+    const job = getUpdatedMockIngestJob(jobId)
+    if (!job) {
+      return HttpResponse.json(
+        { detail: `Storage ingest job '${jobId}' not found.` },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(ingestStatusPayload(job))
+  }),
+
+  http.delete('*/api/v1/storage/:symbol/:timeframe', ({ params }) => {
+    const symbol = String(params.symbol).toUpperCase()
+    const timeframe = String(params.timeframe).toUpperCase()
+    const kept = mockStorageInventory.filter(
+      (item) => !(item.symbol === symbol && item.timeframe === timeframe),
+    )
+    mockStorageInventory.splice(0, mockStorageInventory.length, ...kept)
+    mockSystemHealth.market_data_inventory_count = mockStorageInventory.length
+    return HttpResponse.json({ deleted: true, symbol, timeframe })
+  }),
 
   http.get('*/api/v1/strategies', () => HttpResponse.json(mockStrategies)),
 
