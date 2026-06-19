@@ -117,7 +117,7 @@ export function DiscoverLogs({ logs = [] }: DiscoverLogsProps) {
   }, [logs, activeTab, autoScroll])
 
   return (
-    <div className="border-carbon-600/40 bg-carbon-950/45 flex h-[400px] w-full flex-col overflow-hidden rounded-xl border backdrop-blur-md">
+    <div className="border-carbon-600/40 bg-carbon-950/45 flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-xl border backdrop-blur-md">
       {/* Header bar */}
       <div className="border-carbon-600/40 bg-carbon-900/60 flex shrink-0 items-center justify-between border-b px-4 py-2">
         <div className="flex gap-2">

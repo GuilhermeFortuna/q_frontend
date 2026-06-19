@@ -37,12 +37,12 @@ export function DiscoverResultsPanel({
 }: DiscoverResultsPanelProps) {
   if (isRunning && status) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-1">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden pr-1">
         <div className="flex shrink-0 justify-center">
           <DiscoverProgress status={status} onCancel={onCancel} cancelling={cancelling} />
         </div>
-        <div className="flex min-h-0 flex-1 flex-col">
-          <h4 className="text-silver-300 mb-2 text-xs font-bold tracking-wider uppercase">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <h4 className="text-silver-300 mb-2 shrink-0 text-xs font-bold tracking-wider uppercase">
             Live Trial Progress & Logs
           </h4>
           <DiscoverLogs logs={status.logs} />
