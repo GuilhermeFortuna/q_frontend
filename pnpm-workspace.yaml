@@ -7,3 +7,4 @@ allowBuilds:
 
 overrides:
   vite: ^6.0.5
+  react-is: $react
