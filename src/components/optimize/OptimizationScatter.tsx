@@ -1,19 +1,13 @@
-import {
-  CartesianGrid,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-  ZAxis,
-} from 'recharts'
+import { useLayoutEffect, useRef, useState, type ReactElement } from 'react'
+import { CartesianGrid, Cell, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'recharts'
 
 import { CHART_COLORS } from '@/components/backtests/chartUtils'
 import { cn } from '@/lib/utils'
 import type { OptimizationResults } from '@/types/optimization'
 
-type ScatterPoint = { x: number; y: number; n: number }
+type ScatterPoint = { x: number; y: number; n: number; fill: string }
+
+const CHART_MIN_HEIGHT_PX = 280
 
 type OptimizationScatterProps = {
   results: OptimizationResults
@@ -38,30 +32,101 @@ export function OptimizationScatter({
   const highlightNumber = selectedTrialNumber ?? bestNumber
 
   if (results.is_multi_objective) {
-    // Pareto view: return (x) vs drawdown (y).
     const paretoNumbers = new Set(results.pareto_trials.map((t) => t.number))
-    const dominated = completed
-      .filter((t) => !paretoNumbers.has(t.number))
-      .map((t) => toPoint(t.values![0], t.values![1], t.number))
-    const pareto = results.pareto_trials
-      .filter((t) => t.values && t.values.length >= 2)
-      .map((t) => toPoint(t.values![0], t.values![1], t.number))
-
-    const dominatedSplit = partitionPoints(dominated, highlightNumber, bestNumber)
-    const paretoSplit = partitionPoints(pareto, highlightNumber, bestNumber)
+    const points = completed.map((trial) => {
+      const onPareto = paretoNumbers.has(trial.number)
+      const fill =
+        trial.number === highlightNumber
+          ? '#ffd700'
+          : trial.number === bestNumber
+            ? CHART_COLORS.equity
+            : onPareto
+              ? CHART_COLORS.equity
+              : CHART_COLORS.reference
+      return toPoint(trial.values![0], trial.values![1], trial.number, fill)
+    })
 
     return (
       <ChartFrame
         title="Pareto Front — Return vs Drawdown"
         interactive={Boolean(onSelectTrial)}
         className={className}
-      >
-        <ScatterChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+        renderChart={(size) => (
+          <ScatterChart
+            width={size.width}
+            height={size.height}
+            margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+          >
+            <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
+            <XAxis
+              type="number"
+              dataKey="x"
+              name="Return"
+              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
+              tickLine={false}
+              axisLine={{ stroke: CHART_COLORS.grid }}
+            />
+            <YAxis
+              type="number"
+              dataKey="y"
+              name="Drawdown"
+              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+              width={56}
+            />
+            <Tooltip {...tooltipProps} />
+            <Scatter
+              data={points}
+              fill={CHART_COLORS.reference}
+              shape="circle"
+              cursor={onSelectTrial ? 'pointer' : undefined}
+              onClick={
+                onSelectTrial
+                  ? (entry) => {
+                      const trialNumber = readTrialNumber(entry)
+                      if (trialNumber == null) return
+                      onSelectTrial(trialNumber === selectedTrialNumber ? null : trialNumber)
+                    }
+                  : undefined
+              }
+            >
+              {points.map((point) => (
+                <Cell key={point.n} fill={point.fill} />
+              ))}
+            </Scatter>
+          </ScatterChart>
+        )}
+      />
+    )
+  }
+
+  const points = completed.map((trial) => {
+    const fill =
+      trial.number === highlightNumber
+        ? '#ffd700'
+        : trial.number === bestNumber
+          ? CHART_COLORS.equity
+          : CHART_COLORS.reference
+    return toPoint(trial.number, trial.values![0], trial.number, fill)
+  })
+
+  return (
+    <ChartFrame
+      title="Optimization History"
+      interactive={Boolean(onSelectTrial)}
+      className={className}
+      renderChart={(size) => (
+        <ScatterChart
+          width={size.width}
+          height={size.height}
+          margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+        >
           <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
           <XAxis
             type="number"
             dataKey="x"
-            name="Return"
+            name="Trial"
             tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
             tickLine={false}
             axisLine={{ stroke: CHART_COLORS.grid }}
@@ -69,166 +134,40 @@ export function OptimizationScatter({
           <YAxis
             type="number"
             dataKey="y"
-            name="Drawdown"
+            name="Objective"
             tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
             tickLine={false}
             axisLine={false}
+            width={72}
           />
-          <ZAxis range={[50, 50]} />
           <Tooltip {...tooltipProps} />
-          <SelectableScatter
-            name="Dominated"
-            data={dominatedSplit.rest}
+          <Scatter
+            data={points}
             fill={CHART_COLORS.reference}
-            onSelectTrial={onSelectTrial}
-            selectedTrialNumber={selectedTrialNumber}
-          />
-          <SelectableScatter
-            name="Pareto"
-            data={paretoSplit.rest}
-            fill={CHART_COLORS.equity}
-            onSelectTrial={onSelectTrial}
-            selectedTrialNumber={selectedTrialNumber}
-          />
-          <SelectableScatter
-            name="Best"
-            data={[...dominatedSplit.best, ...paretoSplit.best]}
-            fill={CHART_COLORS.equity}
-            onSelectTrial={onSelectTrial}
-            selectedTrialNumber={selectedTrialNumber}
-          />
-          <SelectableScatter
-            name="Selected"
-            data={[...dominatedSplit.selected, ...paretoSplit.selected]}
-            fill="#ffd700"
-            onSelectTrial={onSelectTrial}
-            selectedTrialNumber={selectedTrialNumber}
-          />
-        </ScatterChart>
-      </ChartFrame>
-    )
-  }
-
-  // Single-objective history: trial number (x) vs objective value (y).
-  const points = completed.map((t) => toPoint(t.number, t.values![0], t.number))
-  const { rest, best, selected } = partitionPoints(points, highlightNumber, bestNumber)
-
-  return (
-    <ChartFrame
-      title="Optimization History"
-      interactive={Boolean(onSelectTrial)}
-      className={className}
-    >
-      <ScatterChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
-        <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-        <XAxis
-          type="number"
-          dataKey="x"
-          name="Trial"
-          tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-          tickLine={false}
-          axisLine={{ stroke: CHART_COLORS.grid }}
-        />
-        <YAxis
-          type="number"
-          dataKey="y"
-          name="Objective"
-          tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-          tickLine={false}
-          axisLine={false}
-        />
-        <ZAxis range={[50, 50]} />
-        <Tooltip {...tooltipProps} />
-        <SelectableScatter
-          name="Trial"
-          data={rest}
-          fill={CHART_COLORS.reference}
-          onSelectTrial={onSelectTrial}
-          selectedTrialNumber={selectedTrialNumber}
-        />
-        {best.length > 0 && (
-          <SelectableScatter
-            name="Best"
-            data={best}
-            fill={CHART_COLORS.equity}
-            onSelectTrial={onSelectTrial}
-            selectedTrialNumber={selectedTrialNumber}
-          />
-        )}
-        {selected.length > 0 && (
-          <SelectableScatter
-            name="Selected"
-            data={selected}
-            fill="#ffd700"
-            onSelectTrial={onSelectTrial}
-            selectedTrialNumber={selectedTrialNumber}
-          />
-        )}
-      </ScatterChart>
-    </ChartFrame>
-  )
-}
-
-function toPoint(x: number, y: number, trialNumber: number): ScatterPoint {
-  return { x, y, n: trialNumber }
-}
-
-function partitionPoints(
-  points: ScatterPoint[],
-  highlightNumber: number | undefined,
-  bestNumber: number | undefined,
-) {
-  const selected: ScatterPoint[] = []
-  const best: ScatterPoint[] = []
-  const rest: ScatterPoint[] = []
-
-  for (const point of points) {
-    if (point.n === highlightNumber) {
-      selected.push(point)
-    } else if (point.n === bestNumber) {
-      best.push(point)
-    } else {
-      rest.push(point)
-    }
-  }
-
-  return { selected, best, rest }
-}
-
-type SelectableScatterProps = {
-  name: string
-  data: ScatterPoint[]
-  fill: string
-  onSelectTrial?: (trialNumber: number | null) => void
-  selectedTrialNumber?: number | null
-}
-
-function SelectableScatter({
-  name,
-  data,
-  fill,
-  onSelectTrial,
-  selectedTrialNumber,
-}: SelectableScatterProps) {
-  if (data.length === 0) return null
-
-  return (
-    <Scatter
-      name={name}
-      data={data}
-      fill={fill}
-      cursor={onSelectTrial ? 'pointer' : undefined}
-      onClick={
-        onSelectTrial
-          ? (entry) => {
-              const trialNumber = readTrialNumber(entry)
-              if (trialNumber == null) return
-              onSelectTrial(trialNumber === selectedTrialNumber ? null : trialNumber)
+            shape="circle"
+            cursor={onSelectTrial ? 'pointer' : undefined}
+            onClick={
+              onSelectTrial
+                ? (entry) => {
+                    const trialNumber = readTrialNumber(entry)
+                    if (trialNumber == null) return
+                    onSelectTrial(trialNumber === selectedTrialNumber ? null : trialNumber)
+                  }
+                : undefined
             }
-          : undefined
-      }
+          >
+            {points.map((point) => (
+              <Cell key={point.n} fill={point.fill} />
+            ))}
+          </Scatter>
+        </ScatterChart>
+      )}
     />
   )
+}
+
+function toPoint(x: number, y: number, trialNumber: number, fill: string): ScatterPoint {
+  return { x, y, n: trialNumber, fill }
 }
 
 function readTrialNumber(entry: unknown): number | undefined {
@@ -255,12 +194,12 @@ const tooltipProps = {
 
 function ChartFrame({
   title,
-  children,
+  renderChart,
   interactive = false,
   className,
 }: {
   title: string
-  children: React.ReactElement
+  renderChart: (size: { width: number; height: number }) => ReactElement
   interactive?: boolean
   className?: string
 }) {
@@ -279,11 +218,51 @@ function ChartFrame({
           </p>
         ) : null}
       </div>
-      <div className="min-h-0 w-full flex-1">
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
-      </div>
+      <MeasuredScatterChart className="min-h-[280px] w-full flex-1" renderChart={renderChart} />
+    </div>
+  )
+}
+
+function MeasuredScatterChart({
+  renderChart,
+  className,
+}: {
+  renderChart: (size: { width: number; height: number }) => ReactElement
+  className?: string
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState({ width: 0, height: 0 })
+
+  useLayoutEffect(() => {
+    const element = containerRef.current
+    if (!element) return
+
+    const updateSize = () => {
+      const rect = element.getBoundingClientRect()
+      const measuredWidth = rect.width > 0 ? rect.width : element.clientWidth
+      const measuredHeight = rect.height > 0 ? rect.height : element.clientHeight
+      const parentWidth = element.parentElement?.clientWidth ?? 0
+      const width = Math.floor(measuredWidth > 0 ? measuredWidth : parentWidth)
+      const height = Math.floor(Math.max(measuredHeight, CHART_MIN_HEIGHT_PX))
+
+      if (width > 0) {
+        setSize({ width, height })
+      }
+    }
+
+    updateSize()
+    const observer = new ResizeObserver(updateSize)
+    observer.observe(element)
+    window.addEventListener('resize', updateSize)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateSize)
+    }
+  }, [])
+
+  return (
+    <div ref={containerRef} className={className} style={{ minHeight: CHART_MIN_HEIGHT_PX }}>
+      {size.width > 0 && size.height > 0 ? renderChart(size) : null}
     </div>
   )
 }
