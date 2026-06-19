@@ -1,5 +1,14 @@
-import { useLayoutEffect, useRef, useState, type ReactElement } from 'react'
-import { CartesianGrid, Cell, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'recharts'
+import { type ReactElement } from 'react'
+import {
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Scatter,
+  ScatterChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 import { CHART_COLORS } from '@/components/backtests/chartUtils'
 import { cn } from '@/lib/utils'
@@ -51,12 +60,8 @@ export function OptimizationScatter({
         title="Pareto Front — Return vs Drawdown"
         interactive={Boolean(onSelectTrial)}
         className={className}
-        renderChart={(size) => (
-          <ScatterChart
-            width={size.width}
-            height={size.height}
-            margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
-          >
+        renderChart={() => (
+          <ScatterChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
             <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
             <XAxis
               type="number"
@@ -116,12 +121,8 @@ export function OptimizationScatter({
       title="Optimization History"
       interactive={Boolean(onSelectTrial)}
       className={className}
-      renderChart={(size) => (
-        <ScatterChart
-          width={size.width}
-          height={size.height}
-          margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
-        >
+      renderChart={() => (
+        <ScatterChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
           <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
           <XAxis
             type="number"
@@ -199,7 +200,7 @@ function ChartFrame({
   className,
 }: {
   title: string
-  renderChart: (size: { width: number; height: number }) => ReactElement
+  renderChart: () => ReactElement
   interactive?: boolean
   className?: string
 }) {
@@ -218,51 +219,14 @@ function ChartFrame({
           </p>
         ) : null}
       </div>
-      <MeasuredScatterChart className="min-h-[280px] w-full flex-1" renderChart={renderChart} />
-    </div>
-  )
-}
-
-function MeasuredScatterChart({
-  renderChart,
-  className,
-}: {
-  renderChart: (size: { width: number; height: number }) => ReactElement
-  className?: string
-}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [size, setSize] = useState({ width: 0, height: 0 })
-
-  useLayoutEffect(() => {
-    const element = containerRef.current
-    if (!element) return
-
-    const updateSize = () => {
-      const rect = element.getBoundingClientRect()
-      const measuredWidth = rect.width > 0 ? rect.width : element.clientWidth
-      const measuredHeight = rect.height > 0 ? rect.height : element.clientHeight
-      const parentWidth = element.parentElement?.clientWidth ?? 0
-      const width = Math.floor(measuredWidth > 0 ? measuredWidth : parentWidth)
-      const height = Math.floor(Math.max(measuredHeight, CHART_MIN_HEIGHT_PX))
-
-      if (width > 0) {
-        setSize({ width, height })
-      }
-    }
-
-    updateSize()
-    const observer = new ResizeObserver(updateSize)
-    observer.observe(element)
-    window.addEventListener('resize', updateSize)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', updateSize)
-    }
-  }, [])
-
-  return (
-    <div ref={containerRef} className={className} style={{ minHeight: CHART_MIN_HEIGHT_PX }}>
-      {size.width > 0 && size.height > 0 ? renderChart(size) : null}
+      <div
+        className="min-h-0 w-full flex-1 overflow-hidden"
+        style={{ minHeight: CHART_MIN_HEIGHT_PX }}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          {renderChart()}
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 }
