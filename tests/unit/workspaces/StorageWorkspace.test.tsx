@@ -105,6 +105,60 @@ describe('StorageWorkspace', () => {
     })
   })
 
+  it('navigates symbol suggestions with arrow keys and selects with Enter', async () => {
+    const user = userEvent.setup()
+    renderWithQueryClient(<StorageWorkspace />)
+
+    const symbolInput = screen.getByLabelText('Symbol')
+    await user.clear(symbolInput)
+    await user.type(symbolInput, 'PET')
+
+    await waitFor(() => {
+      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      expect(screen.getAllByRole('option')).toHaveLength(2)
+    })
+
+    await user.keyboard('{ArrowDown}{Enter}')
+
+    await waitFor(() => {
+      expect(symbolInput).toHaveValue('PETR3')
+    })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('shows MT5 available range and applies full range to date inputs', async () => {
+    mockDataSource.mt5_available = true
+    const end = new Date('2026-06-07T12:00:00')
+    const start = new Date('2020-01-01T12:00:00')
+
+    server.use(
+      http.get('*/api/v1/market/ohlcv/:symbol/available-range', () =>
+        HttpResponse.json({
+          symbol: 'PETR4',
+          timeframe: 'D1',
+          start: start.toISOString(),
+          end: end.toISOString(),
+          bar_count: 1500,
+        }),
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderWithQueryClient(<StorageWorkspace />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Available in MT5 for/i)).toBeInTheDocument()
+      expect(screen.getByText(/1,500 bars/i)).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Use full range' }))
+
+    const startInput = screen.getByLabelText('Start') as HTMLInputElement
+    const endInput = screen.getByLabelText('End') as HTMLInputElement
+    expect(startInput.value).toBe('2020-01-01')
+    expect(endInput.value).toBe('2026-06-07')
+  })
+
   it('deletes a bar inventory row', async () => {
     const user = userEvent.setup()
     vi.stubGlobal(

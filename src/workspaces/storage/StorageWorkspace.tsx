@@ -1,6 +1,7 @@
 import { endOfDay, formatISO, startOfDay, subMonths } from 'date-fns'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import axios from 'axios'
+import { useQueries } from '@tanstack/react-query'
 
 import { useDataSource } from '@/api/queries/system'
 import {
@@ -9,7 +10,11 @@ import {
   useDeleteStorage,
   useStorageInventory,
 } from '@/api/queries/storage'
-import { useSearchSymbols } from '@/api/queries/market-data'
+import {
+  fetchOhlcvAvailableRange,
+  marketDataKeys,
+  useSearchSymbols,
+} from '@/api/queries/market-data'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   inputClass,
@@ -18,7 +23,9 @@ import {
 } from '@/components/shared/InstrumentConfigFields'
 import { formatBytes } from '@/lib/formatBytes'
 import { formatDisplayDateTime } from '@/lib/formatDate'
+import { combineOhlcvAvailableRanges, toStorageDateInputs } from '@/lib/backtesting/dateRange'
 import { cn } from '@/lib/utils'
+import type { Instrument } from '@/types/api'
 import {
   inventoryItemKey,
   isIngestTerminalStatus,
@@ -27,6 +34,11 @@ import {
   type IngestKind,
   type StorageKind,
 } from '@/types/storage'
+
+const SYMBOL_SUGGESTION_LIMIT = 6
+
+const symbolSuggestionItemClass =
+  'w-full rounded-md border px-3 py-2 text-left transition-all duration-150'
 
 function KindBadge({ kind }: { kind: StorageKind }) {
   const isTicks = kind === 'ticks'
@@ -57,15 +69,85 @@ export function StorageWorkspace() {
   const [endDate, setEndDate] = useState(() => formatISO(new Date(), { representation: 'date' }))
   const [dataKind, setDataKind] = useState<IngestKind>('bars')
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
+  const [useFullRangeActive, setUseFullRangeActive] = useState(false)
+
+  const trimmedSymbol = symbol.trim().toUpperCase()
 
   const searchQuery = symbolQuery.trim().length >= 1 ? symbolQuery : symbol
   const symbolSearch = useSearchSymbols(searchQuery)
   const suggestions = useMemo(() => symbolSearch.data ?? [], [symbolSearch.data])
+  const visibleSuggestions = useMemo(
+    () => suggestions.slice(0, SYMBOL_SUGGESTION_LIMIT),
+    [suggestions],
+  )
+  const suggestionsOpen = showSuggestions && visibleSuggestions.length > 0
+
+  useEffect(() => {
+    setSelectedSuggestionIndex(0)
+  }, [visibleSuggestions])
 
   const ingestStatus = useIngestStatus(activeJobId)
   const ingestJob = ingestStatus.data
   const mt5Available = dataSource?.mt5_available ?? false
   const isTicksKind = dataKind === 'ticks'
+  const canProbeAvailableRange =
+    mt5Available && !isTicksKind && trimmedSymbol.length > 0 && selectedTimeframes.length > 0
+
+  const availableRangeQueries = useQueries({
+    queries: canProbeAvailableRange
+      ? selectedTimeframes.map((timeframe) => ({
+          queryKey: marketDataKeys.availableRange(trimmedSymbol, timeframe),
+          queryFn: () => fetchOhlcvAvailableRange(trimmedSymbol, timeframe),
+          staleTime: 60_000,
+        }))
+      : [],
+  })
+
+  const availableRanges = useMemo(
+    () =>
+      availableRangeQueries
+        .map((query) => query.data)
+        .filter((range): range is NonNullable<typeof range> => range != null),
+    [availableRangeQueries],
+  )
+
+  const combinedAvailableRange = useMemo(
+    () => combineOhlcvAvailableRanges(availableRanges),
+    [availableRanges],
+  )
+
+  const availableRangeLoading =
+    canProbeAvailableRange && availableRangeQueries.some((query) => query.isLoading)
+  const availableRangeError = availableRangeQueries.find((query) => query.isError)?.error
+  const availableRangeErrorMessage = availableRangeError
+    ? axios.isAxiosError(availableRangeError)
+      ? ((availableRangeError.response?.data as { detail?: string })?.detail ??
+        availableRangeError.message)
+      : 'Failed to load available data range'
+    : null
+  const allRangesLoaded =
+    canProbeAvailableRange &&
+    availableRangeQueries.length > 0 &&
+    availableRangeQueries.every((query) => query.isSuccess || query.isError) &&
+    availableRanges.length === selectedTimeframes.length
+  const someRangesMissing =
+    canProbeAvailableRange &&
+    availableRangeQueries.every((query) => !query.isLoading) &&
+    availableRanges.length > 0 &&
+    availableRanges.length < selectedTimeframes.length
+
+  const applyFullAvailableRange = () => {
+    if (!combinedAvailableRange) return
+    const { start, end } = toStorageDateInputs(
+      combinedAvailableRange.start,
+      combinedAvailableRange.end,
+    )
+    setStartDate(start)
+    setEndDate(end)
+    setUseFullRangeActive(true)
+  }
   const downloadDisabled =
     !mt5Available ||
     startIngest.isPending ||
@@ -84,6 +166,34 @@ export function StorageWorkspace() {
     setSelectedTimeframes((current) =>
       current.includes(tf) ? current.filter((item) => item !== tf) : [...current, tf],
     )
+  }
+
+  const selectSuggestion = (item: Instrument) => {
+    setSymbol(item.symbol)
+    setSymbolQuery(item.symbol)
+    setShowSuggestions(false)
+    setSelectedSuggestionIndex(0)
+  }
+
+  const handleSymbolKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!suggestionsOpen) return
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setSelectedSuggestionIndex((current) => Math.min(current + 1, visibleSuggestions.length - 1))
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setSelectedSuggestionIndex((current) => Math.max(current - 1, 0))
+    } else if (event.key === 'Enter') {
+      const selected = visibleSuggestions[selectedSuggestionIndex]
+      if (selected) {
+        event.preventDefault()
+        selectSuggestion(selected)
+      }
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      setShowSuggestions(false)
+    }
   }
 
   const handleDownload = () => {
@@ -147,33 +257,72 @@ export function StorageWorkspace() {
                 id="storage-symbol"
                 type="text"
                 value={symbol}
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={suggestionsOpen}
+                aria-controls="storage-symbol-suggestions"
+                aria-activedescendant={
+                  suggestionsOpen
+                    ? `storage-symbol-option-${visibleSuggestions[selectedSuggestionIndex]?.symbol ?? selectedSuggestionIndex}`
+                    : undefined
+                }
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase()
                   setSymbol(value)
                   setSymbolQuery(value)
+                  setShowSuggestions(true)
                 }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setShowSuggestions(false)}
+                onKeyDown={handleSymbolKeyDown}
                 className={inputClass}
                 placeholder="e.g. PETR4"
+                autoComplete="off"
               />
-              {suggestions.length > 0 ? (
-                <ul className="border-carbon-700 bg-carbon-950/90 max-h-32 overflow-y-auto rounded-lg border text-xs">
-                  {suggestions.slice(0, 6).map((item) => (
-                    <li key={item.symbol}>
-                      <button
-                        type="button"
-                        className="hover:bg-carbon-800/70 text-silver-200 w-full px-3 py-2 text-left"
-                        onClick={() => {
-                          setSymbol(item.symbol)
-                          setSymbolQuery(item.symbol)
-                        }}
+              {suggestionsOpen ? (
+                <ul
+                  id="storage-symbol-suggestions"
+                  role="listbox"
+                  className="border-carbon-700 bg-carbon-950/90 max-h-32 overflow-y-auto rounded-lg border p-1 text-xs"
+                >
+                  {visibleSuggestions.map((item, index) => {
+                    const isActive = index === selectedSuggestionIndex
+                    return (
+                      <li
+                        key={item.symbol}
+                        id={`storage-symbol-option-${item.symbol}`}
+                        role="option"
+                        aria-selected={isActive}
                       >
-                        <span className="text-brass-400 font-mono font-semibold">
-                          {item.symbol}
-                        </span>
-                        <span className="text-silver-500 ml-2">{item.name}</span>
-                      </button>
-                    </li>
-                  ))}
+                        <button
+                          type="button"
+                          className={cn(
+                            symbolSuggestionItemClass,
+                            isActive
+                              ? 'border-brass-500/30 bg-brass-500/10 text-brass-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_0_8px_rgba(196,165,116,0.1)]'
+                              : 'text-silver-200 hover:bg-carbon-800/70 border-transparent',
+                          )}
+                          // Keep the input focused so onBlur doesn't close the list
+                          // before this click registers.
+                          onMouseDown={(e) => e.preventDefault()}
+                          onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                          onClick={() => selectSuggestion(item)}
+                        >
+                          <span className="text-brass-400 font-mono font-semibold">
+                            {item.symbol}
+                          </span>
+                          <span
+                            className={cn(
+                              'ml-2',
+                              isActive ? 'text-brass-200/80' : 'text-silver-500',
+                            )}
+                          >
+                            {item.name}
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
                 </ul>
               ) : null}
             </div>
@@ -234,7 +383,10 @@ export function StorageWorkspace() {
                 id="storage-start"
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value)
+                  setUseFullRangeActive(false)
+                }}
                 className={inputClass}
               />
             </div>
@@ -246,11 +398,77 @@ export function StorageWorkspace() {
                 id="storage-end"
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value)
+                  setUseFullRangeActive(false)
+                }}
                 className={inputClass}
               />
             </div>
           </div>
+
+          {canProbeAvailableRange ? (
+            <div className="border-brass-600/15 bg-carbon-900/30 space-y-2 rounded-lg border px-3 py-2.5">
+              {availableRangeLoading ? (
+                <p className="text-silver-400 text-sm">Checking MT5 history…</p>
+              ) : availableRangeErrorMessage ? (
+                <p className="text-sm text-rose-300">{availableRangeErrorMessage}</p>
+              ) : allRangesLoaded && combinedAvailableRange ? (
+                <>
+                  <div className="space-y-1">
+                    {availableRanges.length === 1 ? (
+                      <p className="text-silver-300 text-sm">
+                        Available in MT5 for{' '}
+                        <span className="text-brass-400 font-mono">{trimmedSymbol}</span>{' '}
+                        <span className="text-brass-400 font-mono">
+                          {availableRanges[0].timeframe}
+                        </span>
+                        : {formatDisplayDateTime(availableRanges[0].start)} →{' '}
+                        {formatDisplayDateTime(availableRanges[0].end)}
+                        <span className="text-silver-500">
+                          {' '}
+                          · {availableRanges[0].bar_count.toLocaleString()} bars
+                        </span>
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-silver-300 text-sm">
+                          Combined range across {selectedTimeframes.length} timeframes:{' '}
+                          {formatDisplayDateTime(combinedAvailableRange.start)} →{' '}
+                          {formatDisplayDateTime(combinedAvailableRange.end)}
+                        </p>
+                        <ul className="text-silver-500 space-y-0.5 font-mono text-xs">
+                          {availableRanges.map((range) => (
+                            <li key={range.timeframe}>
+                              {range.timeframe}: {formatDisplayDateTime(range.start)} →{' '}
+                              {formatDisplayDateTime(range.end)} ·{' '}
+                              {range.bar_count.toLocaleString()} bars
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    title="Set start and end to the full range available in MetaTrader 5"
+                    onClick={applyFullAvailableRange}
+                    className={useFullRangeActive ? presetButtonActiveClass : presetButtonClass}
+                  >
+                    Use full range
+                  </button>
+                </>
+              ) : someRangesMissing ? (
+                <p className="text-silver-400 text-sm">
+                  No MT5 history found for one or more selected timeframes.
+                </p>
+              ) : (
+                <p className="text-silver-400 text-sm">
+                  No MT5 history found for this symbol and timeframe selection.
+                </p>
+              )}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap items-center gap-3">
             <button

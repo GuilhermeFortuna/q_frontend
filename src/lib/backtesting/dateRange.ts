@@ -1,4 +1,6 @@
-import { endOfDay, startOfDay, startOfYear, subMonths } from 'date-fns'
+import { endOfDay, formatISO, startOfDay, startOfYear, subMonths } from 'date-fns'
+
+import type { OhlcvAvailableRange } from '@/types/api'
 
 export type DatePreset = '1M' | '3M' | '6M' | '1Y' | 'YTD'
 
@@ -36,5 +38,31 @@ export function getAllAvailableDateRange(earliestAvailable: string | Date): {
   return {
     start: startOfDay(new Date(earliestAvailable)),
     end: endOfDay(new Date()),
+  }
+}
+
+/** Merge multiple MT5 available-range probes into one download window. */
+export function combineOhlcvAvailableRanges(
+  ranges: OhlcvAvailableRange[],
+): Pick<OhlcvAvailableRange, 'start' | 'end'> | null {
+  if (ranges.length === 0) return null
+
+  let start = ranges[0].start
+  let end = ranges[0].end
+  for (const range of ranges.slice(1)) {
+    if (new Date(range.start) < new Date(start)) start = range.start
+    if (new Date(range.end) > new Date(end)) end = range.end
+  }
+  return { start, end }
+}
+
+/** Map MT5 ISO timestamps to `<input type="date">` values for the Storage workspace. */
+export function toStorageDateInputs(
+  isoStart: string,
+  isoEnd: string,
+): { start: string; end: string } {
+  return {
+    start: formatISO(startOfDay(new Date(isoStart)), { representation: 'date' }),
+    end: formatISO(endOfDay(new Date(isoEnd)), { representation: 'date' }),
   }
 }
