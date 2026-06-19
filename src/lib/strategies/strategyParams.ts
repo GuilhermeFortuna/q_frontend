@@ -47,6 +47,16 @@ export function mergeParamValues(
   return merged
 }
 
+/** Hydrate form params from a staged backtest config. Spec-less strategies (e.g. CompositeStrategy) pass through as-is so genome JSON is preserved. */
+export function hydrateStrategyParamsFromPending(
+  specs: StrategyParamSpec[],
+  values: Record<string, unknown> | undefined,
+): Record<string, StrategyParamValue> {
+  if (!values) return defaultParamsFromSpecs(specs)
+  if (specs.length === 0) return values as Record<string, StrategyParamValue>
+  return mergeParamValues(specs, values)
+}
+
 export function defaultSearchSpaceFromSpecs(
   specs: StrategyParamSpec[],
 ): Record<string, SearchSpaceFieldState> {

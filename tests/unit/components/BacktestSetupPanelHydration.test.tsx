@@ -4,7 +4,9 @@ import { screen, waitFor } from '@testing-library/react'
 
 import { BacktestSetupPanel } from '@/components/backtests/setup/BacktestSetupPanel'
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
+import { buildBacktestRequestFromCandidate } from '@/lib/discover/promoteCandidate'
 import { handlers } from '@/mocks/handlers'
+import { mockSampleGenome } from '@/mocks/strategySearch'
 import { useAppStore } from '@/store/useAppStore'
 import { renderWithQueryClient } from '../testUtils'
 
@@ -104,5 +106,66 @@ describe('BacktestSetupPanel — hydration from pending config', () => {
     expect(screen.getByDisplayValue('8')).toBeInTheDocument()
     expect(screen.getByDisplayValue('3')).toBeInTheDocument()
     expect(screen.getByDisplayValue('1.5')).toBeInTheDocument()
+  })
+
+  it('preserves evolved genome when promoting a genetic candidate to backtest', async () => {
+    const pending = buildBacktestRequestFromCandidate(
+      {
+        candidate_id: 'genome-champion-001',
+        strategy: 'CompositeStrategy',
+        status: 'completed',
+        rank: 1,
+        objective_value: 1.28,
+        robustness_score: 1.28,
+        efficiency: 0.71,
+        gate_flags: [],
+        passed_gates: true,
+        oos_metrics: { total_trades: 18 },
+        is_metrics_summary: { mean_objective: 1.95, window_count: 3 },
+        best_params: { strategy_params: { sma_period: 12 }, quantity: 1 },
+        window_count: 3,
+        completed_windows: 3,
+        error: null,
+        genome: mockSampleGenome,
+        generation: 5,
+        genome_node_count: 3,
+      },
+      {
+        symbol: 'WIN$',
+        timeframe: 'M15',
+        start: '2025-01-01T00:00:00.000Z',
+        end: '2025-06-01T00:00:00.000Z',
+        initial_capital: 5000,
+        point_value: 0.25,
+        strategy: 'CompositeStrategy',
+      },
+    )
+
+    useAppStore.getState().setPendingBacktestConfig(pending)
+
+    let capturedConfig: ReturnType<typeof useBacktestConfig> | null = null
+
+    function PromoteHarness() {
+      const config = useBacktestConfig()
+      capturedConfig = config
+      return <BacktestSetupPanel config={config} loading={false} error={null} onSubmit={vi.fn()} />
+    }
+
+    renderWithQueryClient(<PromoteHarness />)
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Evolved composite/i, pressed: true }),
+      ).toBeInTheDocument()
+    })
+
+    if (!capturedConfig) {
+      throw new Error('expected backtest config to be captured')
+    }
+    expect(capturedConfig.buildRequest().strategy_params).toEqual({
+      genome: mockSampleGenome,
+      sma_period: 12,
+    })
+    expect(useAppStore.getState().pendingBacktestConfig).toBeNull()
   })
 })

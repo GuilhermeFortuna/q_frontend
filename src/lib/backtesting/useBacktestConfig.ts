@@ -20,7 +20,7 @@ import {
 } from '@/lib/backtesting/transactionCosts'
 import {
   defaultParamsFromSpecs,
-  mergeParamValues,
+  hydrateStrategyParamsFromPending,
   type StrategyParamValue,
 } from '@/lib/strategies/strategyParams'
 import { strategyEngine } from '@/lib/strategies/strategyPresentation'
@@ -200,7 +200,7 @@ export function useBacktestConfig() {
     const strategyInfo =
       strategies.find((entry) => entry.name === (cfg.strategy ?? strategy)) ?? selectedStrategy
     if (strategyInfo) {
-      setStrategyParams(mergeParamValues(strategyInfo.params, cfg.strategy_params))
+      setStrategyParams(hydrateStrategyParamsFromPending(strategyInfo.params, cfg.strategy_params))
       paramsInitialized.current = true
     } else if (cfg.strategy_params) {
       setStrategyParams(cfg.strategy_params as Record<string, StrategyParamValue>)

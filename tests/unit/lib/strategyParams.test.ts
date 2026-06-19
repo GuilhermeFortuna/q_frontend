@@ -4,13 +4,16 @@ import {
   defaultParamsFromSpecs,
   defaultSearchSpaceFromSpecs,
   hydrateSearchSpaceFromPayload,
+  hydrateStrategyParamsFromPending,
   mergeParamValues,
   searchSpaceToPayload,
   validateSearchSpace,
 } from '@/lib/strategies/strategyParams'
 import { mockStrategies } from '@/mocks/data'
+import { mockSampleGenome } from '@/mocks/strategySearch'
 
 const maCrossover = mockStrategies.strategies.find((s) => s.name === 'MACrossover')!
+const compositeStrategy = mockStrategies.strategies.find((s) => s.name === 'CompositeStrategy')!
 
 describe('strategyParams utilities', () => {
   it('builds default param values from specs', () => {
@@ -36,6 +39,12 @@ describe('strategyParams utilities', () => {
       threshold: 1.25,
       short_ma_type: 'sma',
     })
+  })
+
+  it('passes through genome params when strategy has no param specs', () => {
+    const staged = { genome: mockSampleGenome, sma_period: 12 }
+    expect(hydrateStrategyParamsFromPending(compositeStrategy.params, staged)).toEqual(staged)
+    expect(mergeParamValues(compositeStrategy.params, staged)).toEqual({})
   })
 
   it('builds default search space from min/max bounds', () => {

@@ -18,6 +18,7 @@ import {
 import { defaultTransactionCostFields } from '@/lib/backtesting/transactionCosts'
 import { useAppStore } from '@/store/useAppStore'
 import { handlers } from '@/mocks/handlers'
+import { mockSampleGenome } from '@/mocks/strategySearch'
 import { createTestQueryClient } from '../../testUtils'
 
 const server = setupServer(...handlers)
@@ -174,5 +175,34 @@ describe('useBacktestConfig', () => {
       long_ma_type: 'sma',
       threshold: 0,
     })
+  })
+
+  it('preserves genome when hydrating CompositeStrategy from discovery promote', async () => {
+    useAppStore.getState().setPendingBacktestConfig({
+      symbol: 'WIN$',
+      timeframe: 'M15',
+      start: '2025-01-01T00:00:00.000Z',
+      end: '2025-06-01T00:00:00.000Z',
+      initial_capital: 5000,
+      point_value: 0.25,
+      strategy: 'CompositeStrategy',
+      strategy_params: {
+        genome: mockSampleGenome,
+        sma_period: 12,
+      },
+      position_sizing: { type: 'fixed_quantity', quantity: 1 },
+    })
+
+    const { result } = renderHook(() => useBacktestConfig(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.fields.strategy).toBe('CompositeStrategy')
+    })
+
+    expect(result.current.buildRequest().strategy_params).toEqual({
+      genome: mockSampleGenome,
+      sma_period: 12,
+    })
+    expect(useAppStore.getState().pendingBacktestConfig).toBeNull()
   })
 })

@@ -732,6 +732,16 @@ export const mockStrategies: StrategiesResponse = {
       ],
     },
     {
+      name: 'CompositeStrategy',
+      label: 'Evolved composite',
+      description: 'Interpreted genome DSL (genetic search only).',
+      category: 'other',
+      thesis: 'Interpreted genome DSL (genetic search only).',
+      strong_in: '',
+      weak_in: '',
+      params: [],
+    },
+    {
       name: 'DonchianBreakout',
       label: 'Donchian Breakout',
       description: 'Enter on upper/lower channel breakouts.',

@@ -247,7 +247,7 @@ export function DiscoverGeneticSection({
                 <NumberInput
                   className="border-carbon-600/60 bg-carbon-950/50 text-silver-100 w-full rounded-md border px-2 py-1.5 font-mono text-sm"
                   nullable
-                  value={lockbox.max_drawdown_pct}
+                  value={lockbox.max_drawdown_pct ?? null}
                   min={0}
                   max={1}
                   step={0.01}
