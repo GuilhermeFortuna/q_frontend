@@ -460,6 +460,74 @@ frontend against that message and must degrade cleanly against a pre-WO40 backen
    `pendingBacktestConfig` / `pendingOptimizationConfig` seams?
 10. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
 
+## Phase: Feature Engine (next batch)
+
+Turns Generative Discovery from "recombine the ~8 indicators we wrote" into "**invent the features**
+edge actually lives in." A genetic algorithm can only rearrange the primitives the grammar exposes
+(today price sources + ~8 indicators + comparisons/logic), so the discovery ceiling is set by the
+**feature vocabulary, not the search operator**. This batch widens that vocabulary with
+economically-motivated, **causal-by-construction** primitive families — normalization transforms,
+B3 session/calendar gates, volatility/trend regime, and **cross-asset-as-feature** (read WDO /
+overnight ES / PETR4–VALE3 while trading one symbol, no capital required) — and then adds a
+**feature-discovery layer** that mines compositions and promotes only those surviving **purged
+out-of-sample IC + cross-fold stability + de-duplication + null-floor deflation** on a dedicated
+discovery segment the GA never trains on. Finally it seeds validated features into the GA and adds
+diversity-aware selection so a run yields a **book of low-correlation single-symbol strategies**.
+Scope is deliberately **single-instrument** (B3 focus) — portfolio/cross-sectional stays deferred.
+Full design: [`../design/feature-engine.md`](../design/feature-engine.md).
+
+| #   | File                                                                                                 | Repo      | Depends on            |
+| --- | ---------------------------------------------------------------------------------------------------- | --------- | --------------------- |
+| 42  | [WO42-backend-feature-primitive-substrate.md](WO42-backend-feature-primitive-substrate.md)           | q_backend | WO38/WO39 (read)      |
+| 43  | [WO43-backend-session-regime-features.md](WO43-backend-session-regime-features.md)                   | q_backend | WO42                  |
+| 44  | [WO44-backend-exogenous-cross-asset-features.md](WO44-backend-exogenous-cross-asset-features.md)     | q_backend | WO42                  |
+| 45  | [WO45-backend-feature-discovery-validation.md](WO45-backend-feature-discovery-validation.md)         | q_backend | WO42 (WO43/44 enrich) |
+| 46  | [WO46-backend-feature-ga-integration-diversity.md](WO46-backend-feature-ga-integration-diversity.md) | q_backend | WO45 + WO39           |
+
+### Dispatch order
+
+```
+WO42 ─┬─►  WO43 ─┐
+      └─►  WO44 ─┴─►  WO45  ──►  WO46
+```
+
+WO42 first — it establishes the canonical "five seams to add a primitive" contract and refactors the
+**hardcoded** operator pools (today `_mutate_add_node` only ever adds `ind.ma/ema/rsi`) into
+category-driven pools so WO43/WO44 primitives are reachable by the GA for free. **WO42 must paste the
+updated `NodeSpec` fields + the category-pool helper signatures** — WO43/WO44 add primitives against
+that exact contract. WO43 (session/regime) and WO44 (exogenous) are independent enrichments that run
+**in parallel** after WO42. **WO45 must paste the `FeatureDiscoveryConfig` + three-way-split bounds +
+`FeatureDefinition` shapes** — WO46 seeds the GA against them. A frontend WO47 (discovered-feature
+panel, IC stability, book correlation) is a deferred follow-up — this batch is discovery capability,
+not UI.
+
+### Batch-specific review checklist
+
+1. Is every new primitive **causal by construction** (value at bar _i_ uses only bars ≤ _i_; no
+   centered windows, no contemporaneous-future exogenous reads), and does `CompositeStrategy` keep
+   passing `test_strategy_causality.py` for a canonical **and** random genomes including the new kinds?
+2. Are the new kinds actually **reachable** by the GA (drawn by `_mutate_add_node` /
+   `build_random_genome`), not dead primitives? (random-genome sampling test asserts each appears)
+3. **Disabled = byte-identical**: with no new kinds in a genome, `exogenous=[]`, feature discovery
+   off, `seed_features=[]`, and `diversity_lambda=0`, the run / persistence / payloads match the
+   pre-batch snapshot, and the three-way split collapses to the WO40 two-segment lock-box split.
+4. **No leakage across the three-way split**: feature IC/stability/dedup computed **only** on the
+   front discovery segment; WF test windows strictly inside the middle; lock-box is the tail
+   (date-assertion tests). A planted lookahead feature has high naive IC but **fails** the
+   purged/stability gate.
+5. Does **deflation bite** — more candidates tried → higher null floor → lower `ic_deflated`
+   (monotonicity test, mirroring `test_dsr.py`)?
+6. Is the project **single-instrument** throughout — exogenous symbols are **features, never
+   positions** (the engine still trades only `backtest.symbol`)?
+7. Is data loaded **once per symbol per run** (primary + each exogenous via `get_ohlcv`, call-count
+   spy), with exogenous columns riding the reused `from_frame_sliced` frame?
+8. Did the batch **change nothing** in `evaluate_candidate` / `WalkForwardRunner` /
+   `OptimizationRunner` (new code = primitives + discovery module + provider/operator + additive
+   config/persistence), and is the run **deterministic** under its seeds?
+9. Best-effort persistence both ways (lake unwritable / Postgres stopped) for feature-discovery
+   artifacts and the book summary?
+10. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
+
 ## Review checklist (apply to every returned PR)
 
 1. Does the compute path still work with Postgres **stopped**? (stop the container, run a backtest / a study)
