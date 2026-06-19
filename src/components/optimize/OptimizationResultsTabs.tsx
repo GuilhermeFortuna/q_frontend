@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { BestParamsCard } from '@/components/optimize/BestParamsCard'
 import { OptimizationLogs } from '@/components/optimize/OptimizationLogs'
@@ -35,6 +35,10 @@ export function OptimizationResultsTabs({
     results.best_trial?.number ?? null,
   )
 
+  useEffect(() => {
+    setSelectedTrialNumber(results.best_trial?.number ?? null)
+  }, [results.study_id, results.best_trial?.number])
+
   const selectedTrial = useMemo(
     () => results.trials.find((t) => t.number === selectedTrialNumber) ?? results.best_trial,
     [results.trials, results.best_trial, selectedTrialNumber],
@@ -65,25 +69,39 @@ export function OptimizationResultsTabs({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {activeTab === 'overview' && (
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-            <OptimizationMetricsBar results={results} />
-            <BestParamsCard
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+            <div className="shrink-0">
+              <OptimizationMetricsBar results={results} />
+            </div>
+            <div className="shrink-0">
+              <BestParamsCard
+                results={results}
+                backtest={backtest}
+                trial={selectedTrial}
+                title={
+                  selectedTrial?.number === results.best_trial?.number
+                    ? undefined
+                    : `Selected Trial #${selectedTrial?.number ?? '—'}`
+                }
+              />
+            </div>
+            <OptimizationScatter
               results={results}
-              backtest={backtest}
-              trial={selectedTrial}
-              title={
-                selectedTrial?.number === results.best_trial?.number
-                  ? undefined
-                  : `Selected Trial #${selectedTrial?.number ?? '—'}`
-              }
+              selectedTrialNumber={selectedTrialNumber}
+              onSelectTrial={setSelectedTrialNumber}
+              className="min-h-0 flex-1"
             />
-            <OptimizationScatter results={results} selectedTrialNumber={selectedTrialNumber} />
           </div>
         )}
 
         {activeTab === 'chart' && (
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <OptimizationScatter results={results} selectedTrialNumber={selectedTrialNumber} />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <OptimizationScatter
+              results={results}
+              selectedTrialNumber={selectedTrialNumber}
+              onSelectTrial={setSelectedTrialNumber}
+              className="min-h-0 flex-1"
+            />
           </div>
         )}
 

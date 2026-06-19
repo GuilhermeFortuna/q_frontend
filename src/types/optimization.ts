@@ -86,6 +86,8 @@ export type OptimizationStatus = {
   backtest_config?: OptimizationBacktestConfig
   /** Full optimization config for rehydrating the optimizer form. */
   optimization_config?: OptimizationConfig
+  best_trial?: OptimizationTrial | null
+  trials?: OptimizationTrial[]
 }
 
 export type OptimizationTrial = {
