@@ -4,6 +4,7 @@ import {
   OBJECTIVE_MODES,
   SAMPLERS,
 } from '@/components/optimize/optimizeFormShared'
+import { NumberInput } from '@/components/ui/number-input'
 import type { ObjectiveMode, Sampler } from '@/types/optimization'
 
 type OptimizeStudySectionProps = {
@@ -71,11 +72,11 @@ export function OptimizeStudySection({
 
           <div className="space-y-1">
             <label className="text-silver-300 text-xs font-semibold">Trials</label>
-            <input
-              type="number"
+            <NumberInput
               min="1"
+              integer
               value={nTrials}
-              onChange={(e) => setNTrials(Number(e.target.value))}
+              onChange={setNTrials}
               className={inputClass}
             />
           </div>

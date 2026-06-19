@@ -1,4 +1,5 @@
 import { FormSection, inputClass } from '@/components/optimize/optimizeFormShared'
+import { NumberInput } from '@/components/ui/number-input'
 import { estimateWalkForwardWindowCount } from '@/lib/walkforward/windowCount'
 import type { WalkForwardMode } from '@/types/walkforward'
 
@@ -41,12 +42,12 @@ export function WalkForwardWindowsSection({
           <label htmlFor="wf-train-days" className="text-silver-300 text-xs font-semibold">
             Train Days
           </label>
-          <input
+          <NumberInput
             id="wf-train-days"
-            type="number"
             min={1}
+            integer
             value={trainDays}
-            onChange={(e) => setTrainDays(Number(e.target.value))}
+            onChange={setTrainDays}
             className={inputClass}
           />
         </div>
@@ -54,12 +55,12 @@ export function WalkForwardWindowsSection({
           <label htmlFor="wf-test-days" className="text-silver-300 text-xs font-semibold">
             Test Days
           </label>
-          <input
+          <NumberInput
             id="wf-test-days"
-            type="number"
             min={1}
+            integer
             value={testDays}
-            onChange={(e) => setTestDays(Number(e.target.value))}
+            onChange={setTestDays}
             className={inputClass}
           />
         </div>
@@ -89,12 +90,12 @@ export function WalkForwardWindowsSection({
         <label htmlFor="wf-min-windows" className="text-silver-300 text-xs font-semibold">
           Minimum Windows
         </label>
-        <input
+        <NumberInput
           id="wf-min-windows"
-          type="number"
           min={1}
+          integer
           value={minWindows}
-          onChange={(e) => setMinWindows(Number(e.target.value))}
+          onChange={setMinWindows}
           className={inputClass}
         />
       </div>

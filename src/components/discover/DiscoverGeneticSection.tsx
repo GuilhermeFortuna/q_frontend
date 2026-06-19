@@ -2,6 +2,7 @@ import type { GeneticSearchConfig, LockboxConfig } from '@/types/strategySearch'
 import { DEFAULT_GENETIC_CONFIG, DEFAULT_LOCKBOX_CONFIG } from '@/types/strategySearch'
 
 import { FormSection } from '@/components/optimize/optimizeFormShared'
+import { NumberInput } from '@/components/ui/number-input'
 import { cn } from '@/lib/utils'
 
 type DiscoverGeneticSectionProps = {
@@ -35,14 +36,13 @@ function NumberField({
   return (
     <label className="block text-xs">
       <span className="text-silver-400 mb-1 block">{label}</span>
-      <input
-        type="number"
+      <NumberInput
         className="border-carbon-600/60 bg-carbon-950/50 text-silver-100 w-full rounded-md border px-2 py-1.5 font-mono text-sm"
         value={value}
         min={min}
         max={max}
         step={step}
-        onChange={(event) => onChange(Number(event.target.value))}
+        onChange={onChange}
       />
     </label>
   )
@@ -244,21 +244,20 @@ export function DiscoverGeneticSection({
               />
               <label className="block text-xs">
                 <span className="text-silver-400 mb-1 block">Max lock-box drawdown (optional)</span>
-                <input
-                  type="number"
+                <NumberInput
                   className="border-carbon-600/60 bg-carbon-950/50 text-silver-100 w-full rounded-md border px-2 py-1.5 font-mono text-sm"
-                  value={lockbox.max_drawdown_pct ?? ''}
+                  nullable
+                  value={lockbox.max_drawdown_pct}
                   min={0}
                   max={1}
                   step={0.01}
                   placeholder="—"
-                  onChange={(event) => {
-                    const raw = event.target.value
+                  onChange={(value) =>
                     setLockbox((current) => ({
                       ...current,
-                      max_drawdown_pct: raw === '' ? null : Number(raw),
+                      max_drawdown_pct: value,
                     }))
-                  }}
+                  }
                 />
               </label>
             </div>

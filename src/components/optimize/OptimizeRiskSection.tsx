@@ -5,6 +5,8 @@ import {
   type RiskMode,
   fieldErrorClass,
 } from '@/components/optimize/optimizeFormShared'
+import { NumberInput } from '@/components/ui/number-input'
+import { normalizeLeadingZero } from '@/lib/numberInput'
 
 type OptimizeRiskSectionProps = {
   open: boolean
@@ -147,7 +149,11 @@ export function OptimizeRiskSection({
                   step="1"
                   min="1"
                   value={inverseMaxContractsInput}
-                  onChange={(e) => setInverseMaxContractsInput(e.target.value)}
+                  onChange={(e) =>
+                    setInverseMaxContractsInput(
+                      normalizeLeadingZero(inverseMaxContractsInput, e.target.value),
+                    )
+                  }
                   className={inputClass}
                   placeholder="No limit"
                 />
@@ -169,13 +175,13 @@ export function OptimizeRiskSection({
             <label htmlFor="cost-per-contract" className="text-silver-400 text-[11px]">
               Per contract
             </label>
-            <input
+            <NumberInput
               id="cost-per-contract"
-              type="number"
               step="0.01"
               min="0"
               value={costPerContract}
-              onChange={(e) => setCostPerContract(Number(e.target.value))}
+              onChange={setCostPerContract}
+              emptyOnBlur={0}
               className={inputClass}
             />
             {costErrors.costPerContract && (
@@ -186,13 +192,13 @@ export function OptimizeRiskSection({
             <label htmlFor="cost-bps" className="text-silver-400 text-[11px]">
               Bps of notional
             </label>
-            <input
+            <NumberInput
               id="cost-bps"
-              type="number"
               step="0.01"
               min="0"
               value={costBps}
-              onChange={(e) => setCostBps(Number(e.target.value))}
+              onChange={setCostBps}
+              emptyOnBlur={0}
               className={inputClass}
             />
             {costErrors.costBps && <p className={fieldErrorClass}>{costErrors.costBps}</p>}

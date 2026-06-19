@@ -1,4 +1,6 @@
 import { FormSection, inputClass, PRUNERS } from '@/components/optimize/optimizeFormShared'
+import { NumberInput } from '@/components/ui/number-input'
+import { normalizeLeadingZero } from '@/lib/numberInput'
 
 type OptimizeAdvancedSectionProps = {
   open: boolean
@@ -33,12 +35,7 @@ export function OptimizeAdvancedSection({
         <div className={`grid gap-3 ${showWorkerProcesses ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <div className="space-y-1">
             <label className="text-silver-300 text-xs font-semibold">Seed</label>
-            <input
-              type="number"
-              value={seed}
-              onChange={(e) => setSeed(Number(e.target.value))}
-              className={inputClass}
-            />
+            <NumberInput value={seed} onChange={setSeed} className={inputClass} />
           </div>
 
           <div className="space-y-1">
@@ -71,7 +68,9 @@ export function OptimizeAdvancedSection({
                 step={1}
                 placeholder="Auto"
                 value={maxWorkersInput}
-                onChange={(e) => onMaxWorkersInputChange(e.target.value)}
+                onChange={(e) =>
+                  onMaxWorkersInputChange(normalizeLeadingZero(maxWorkersInput, e.target.value))
+                }
                 className={inputClass}
               />
               <p className="text-silver-400 text-[11px] leading-normal">

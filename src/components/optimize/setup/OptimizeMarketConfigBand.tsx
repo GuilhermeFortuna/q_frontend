@@ -1,5 +1,7 @@
 import { DateRangePresetsFields, inputClass } from '@/components/shared/InstrumentConfigFields'
 import { RangeRow } from '@/components/optimize/optimizeFormShared'
+import { NumberInput } from '@/components/ui/number-input'
+import { normalizeLeadingZero } from '@/lib/numberInput'
 import {
   DISPLAY_TIMEFRAME_OPTIONS,
   type OptimizeConfigFields,
@@ -223,10 +225,9 @@ export function OptimizeMarketConfigBand({
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="text-silver-300 text-xs font-medium">Capital</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={fields.capital}
-                  onChange={(e) => setters.setCapital(Number(e.target.value))}
+                  onChange={setters.setCapital}
                   className={inputClass}
                   min="1000"
                   required
@@ -234,11 +235,10 @@ export function OptimizeMarketConfigBand({
               </div>
               <div className="space-y-1">
                 <label className="text-silver-300 text-xs font-medium">Val/Point</label>
-                <input
-                  type="number"
+                <NumberInput
                   step="0.01"
                   value={fields.pointValue}
-                  onChange={(e) => setters.setPointValue(Number(e.target.value))}
+                  onChange={setters.setPointValue}
                   className={inputClass}
                   min="0.01"
                   required
@@ -323,7 +323,11 @@ export function OptimizeMarketConfigBand({
                       step="1"
                       min="1"
                       value={fields.inverseMaxContractsInput}
-                      onChange={(e) => setters.setInverseMaxContractsInput(e.target.value)}
+                      onChange={(e) =>
+                        setters.setInverseMaxContractsInput(
+                          normalizeLeadingZero(fields.inverseMaxContractsInput, e.target.value),
+                        )
+                      }
                       className={inputClass}
                       placeholder="No limit"
                     />
@@ -343,18 +347,18 @@ export function OptimizeMarketConfigBand({
               >
                 Cost per contract (per side)
               </label>
-              <input
+              <NumberInput
                 id="optimize-cost-per-contract"
-                type="number"
                 step="0.01"
                 min="0"
                 value={fields.costFields.costPerContract}
-                onChange={(e) =>
+                onChange={(costPerContract) =>
                   setters.setCostFields((current) => ({
                     ...current,
-                    costPerContract: e.target.value ? Number(e.target.value) : 0,
+                    costPerContract,
                   }))
                 }
+                emptyOnBlur={0}
                 className={inputClass}
               />
               {costErrors.costPerContract && (
@@ -368,18 +372,18 @@ export function OptimizeMarketConfigBand({
               <label htmlFor="optimize-cost-bps" className="text-silver-300 text-xs font-medium">
                 Cost (bps of notional, per side)
               </label>
-              <input
+              <NumberInput
                 id="optimize-cost-bps"
-                type="number"
                 step="0.01"
                 min="0"
                 value={fields.costFields.costBps}
-                onChange={(e) =>
+                onChange={(costBps) =>
                   setters.setCostFields((current) => ({
                     ...current,
-                    costBps: e.target.value ? Number(e.target.value) : 0,
+                    costBps,
                   }))
                 }
+                emptyOnBlur={0}
                 className={inputClass}
               />
               {costErrors.costBps && (

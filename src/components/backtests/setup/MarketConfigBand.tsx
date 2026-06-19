@@ -1,5 +1,6 @@
 import { inputClass, DateRangePresetsFields } from '@/components/shared/InstrumentConfigFields'
 import { PositionSizingModeFields } from '@/components/shared/PositionSizingModeFields'
+import { NumberInput } from '@/components/ui/number-input'
 import type { PositionSizingMode } from '@/lib/backtesting/positionSizing'
 import {
   DISPLAY_TIMEFRAME_OPTIONS,
@@ -219,10 +220,9 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="text-silver-300 text-xs font-medium">Capital</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={fields.capital}
-                  onChange={(e) => setters.setCapital(Number(e.target.value))}
+                  onChange={setters.setCapital}
                   className={inputClass}
                   min="1000"
                   required
@@ -230,11 +230,10 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
               </div>
               <div className="space-y-1">
                 <label className="text-silver-300 text-xs font-medium">Val/Point</label>
-                <input
-                  type="number"
+                <NumberInput
                   step="0.01"
                   value={fields.pointValue}
-                  onChange={(e) => setters.setPointValue(Number(e.target.value))}
+                  onChange={setters.setPointValue}
                   className={inputClass}
                   min="0.01"
                   required
@@ -288,18 +287,18 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
               <label htmlFor="cost-per-contract" className="text-silver-300 text-xs font-medium">
                 Cost per contract (per side)
               </label>
-              <input
+              <NumberInput
                 id="cost-per-contract"
-                type="number"
                 step="0.01"
                 min="0"
                 value={fields.costFields.costPerContract}
-                onChange={(e) =>
+                onChange={(costPerContract) =>
                   setters.setCostFields((current) => ({
                     ...current,
-                    costPerContract: e.target.value ? Number(e.target.value) : 0,
+                    costPerContract,
                   }))
                 }
+                emptyOnBlur={0}
                 className={inputClass}
               />
               {costErrors.costPerContract && (
@@ -313,18 +312,18 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
               <label htmlFor="cost-bps" className="text-silver-300 text-xs font-medium">
                 Cost (bps of notional, per side)
               </label>
-              <input
+              <NumberInput
                 id="cost-bps"
-                type="number"
                 step="0.01"
                 min="0"
                 value={fields.costFields.costBps}
-                onChange={(e) =>
+                onChange={(costBps) =>
                   setters.setCostFields((current) => ({
                     ...current,
-                    costBps: e.target.value ? Number(e.target.value) : 0,
+                    costBps,
                   }))
                 }
+                emptyOnBlur={0}
                 className={inputClass}
               />
               {costErrors.costBps && (

@@ -1,4 +1,5 @@
 import { FormSection, inputClass } from '@/components/optimize/optimizeFormShared'
+import { NumberInput } from '@/components/ui/number-input'
 import type { GateConfig } from '@/types/strategySearch'
 
 type DiscoverGatesSectionProps = {
@@ -25,12 +26,12 @@ export function DiscoverGatesSection({
           <label htmlFor="gate-min-windows" className="text-silver-300 text-xs font-semibold">
             Min completed windows
           </label>
-          <input
+          <NumberInput
             id="gate-min-windows"
-            type="number"
             min={1}
+            integer
             value={gates.min_completed_windows}
-            onChange={(e) => setGates({ ...gates, min_completed_windows: Number(e.target.value) })}
+            onChange={(value) => setGates({ ...gates, min_completed_windows: value })}
             className={inputClass}
           />
         </div>
@@ -38,12 +39,12 @@ export function DiscoverGatesSection({
           <label htmlFor="gate-min-trades" className="text-silver-300 text-xs font-semibold">
             Min OOS trades
           </label>
-          <input
+          <NumberInput
             id="gate-min-trades"
-            type="number"
             min={0}
+            integer
             value={gates.min_oos_trades}
-            onChange={(e) => setGates({ ...gates, min_oos_trades: Number(e.target.value) })}
+            onChange={(value) => setGates({ ...gates, min_oos_trades: value })}
             className={inputClass}
           />
         </div>
@@ -51,13 +52,12 @@ export function DiscoverGatesSection({
           <label htmlFor="gate-eff-low" className="text-silver-300 text-xs font-semibold">
             Efficiency low
           </label>
-          <input
+          <NumberInput
             id="gate-eff-low"
-            type="number"
             step={0.05}
             min={0}
             value={gates.efficiency_low}
-            onChange={(e) => setGates({ ...gates, efficiency_low: Number(e.target.value) })}
+            onChange={(value) => setGates({ ...gates, efficiency_low: value })}
             className={inputClass}
           />
         </div>
@@ -65,13 +65,12 @@ export function DiscoverGatesSection({
           <label htmlFor="gate-eff-high" className="text-silver-300 text-xs font-semibold">
             Efficiency high
           </label>
-          <input
+          <NumberInput
             id="gate-eff-high"
-            type="number"
             step={0.05}
             min={0}
             value={gates.efficiency_high}
-            onChange={(e) => setGates({ ...gates, efficiency_high: Number(e.target.value) })}
+            onChange={(value) => setGates({ ...gates, efficiency_high: value })}
             className={inputClass}
           />
         </div>

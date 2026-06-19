@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Search, Activity, Sliders } from 'lucide-react'
 import type { OhlcvBar } from '@/types/api'
+import { NumberInput } from '@/components/ui/number-input'
 import { DEFAULT_INDICATORS, type IndicatorConfig } from '@/components/charts/types/chart'
 import {
   sma,
@@ -1064,16 +1065,16 @@ export function IndicatorsModal({
                   {activeDraftConfig.type !== 'macd' && 'period' in activeDraftConfig && (
                     <div className="flex flex-col gap-1">
                       <span className="text-silver-500 font-bold uppercase">Period</span>
-                      <input
-                        type="number"
+                      <NumberInput
                         min={2}
                         max={
                           activeDraftConfig.type === 'bollinger' || activeDraftConfig.type === 'rsi'
                             ? 100
                             : 200
                         }
+                        integer
                         value={activeDraftConfig.period}
-                        onChange={(e) => updateField('period', Number(e.target.value))}
+                        onChange={(period) => updateField('period', period)}
                         className="border-brass-600/15 bg-carbon-950 text-silver-200 focus:border-brass-500/50 w-16 rounded px-2 py-1 text-center font-bold shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] focus:outline-none"
                       />
                     </div>
@@ -1083,13 +1084,12 @@ export function IndicatorsModal({
                   {activeDraftConfig.type === 'bollinger' && 'stdDev' in activeDraftConfig && (
                     <div className="flex flex-col gap-1">
                       <span className="text-silver-500 font-bold uppercase">Std Dev</span>
-                      <input
-                        type="number"
+                      <NumberInput
                         min={0.5}
                         max={5}
                         step={0.1}
                         value={activeDraftConfig.stdDev}
-                        onChange={(e) => updateField('stdDev', Number(e.target.value))}
+                        onChange={(stdDev) => updateField('stdDev', stdDev)}
                         className="border-brass-600/15 bg-carbon-950 text-silver-200 focus:border-brass-500/50 w-16 rounded px-2 py-1 text-center font-bold shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] focus:outline-none"
                       />
                     </div>
@@ -1100,34 +1100,34 @@ export function IndicatorsModal({
                     <div className="flex flex-wrap gap-3">
                       <div className="flex flex-col gap-1">
                         <span className="text-silver-500 font-bold uppercase">Fast</span>
-                        <input
-                          type="number"
+                        <NumberInput
                           min={2}
                           max={50}
+                          integer
                           value={activeDraftConfig.fast}
-                          onChange={(e) => updateField('fast', Number(e.target.value))}
+                          onChange={(fast) => updateField('fast', fast)}
                           className="border-brass-600/15 bg-carbon-950 text-silver-200 focus:border-brass-500/50 w-12 rounded px-1.5 py-1 text-center font-bold shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] focus:outline-none"
                         />
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-silver-500 font-bold uppercase">Slow</span>
-                        <input
-                          type="number"
+                        <NumberInput
                           min={5}
                           max={100}
+                          integer
                           value={activeDraftConfig.slow}
-                          onChange={(e) => updateField('slow', Number(e.target.value))}
+                          onChange={(slow) => updateField('slow', slow)}
                           className="border-brass-600/15 bg-carbon-950 text-silver-200 focus:border-brass-500/50 w-12 rounded px-1.5 py-1 text-center font-bold shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] focus:outline-none"
                         />
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-silver-500 font-bold uppercase">Signal</span>
-                        <input
-                          type="number"
+                        <NumberInput
                           min={2}
                           max={40}
+                          integer
                           value={activeDraftConfig.signal}
-                          onChange={(e) => updateField('signal', Number(e.target.value))}
+                          onChange={(signal) => updateField('signal', signal)}
                           className="border-brass-600/15 bg-carbon-950 text-silver-200 focus:border-brass-500/50 w-12 rounded px-1.5 py-1 text-center font-bold shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] focus:outline-none"
                         />
                       </div>

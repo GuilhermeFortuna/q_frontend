@@ -3,6 +3,7 @@ import { endOfDay, format, startOfDay } from 'date-fns'
 import { useState } from 'react'
 
 import { fetchOhlcvAvailableRange } from '@/api/queries/market-data'
+import { NumberInput } from '@/components/ui/number-input'
 import {
   getAllAvailableDateRange,
   getDateRangeFromPreset,
@@ -256,10 +257,9 @@ export function InstrumentConfigFields({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-silver-300 text-xs font-semibold">Initial Capital</label>
-          <input
-            type="number"
+          <NumberInput
             value={capital}
-            onChange={(e) => setCapital(Number(e.target.value))}
+            onChange={setCapital}
             className={inputClass}
             min="1000"
             required
@@ -268,11 +268,10 @@ export function InstrumentConfigFields({
 
         <div className="space-y-1">
           <label className="text-silver-300 text-xs font-semibold">Value / Point</label>
-          <input
-            type="number"
+          <NumberInput
             step="0.01"
             value={pointValue}
-            onChange={(e) => setPointValue(Number(e.target.value))}
+            onChange={setPointValue}
             className={inputClass}
             min="0.01"
             required

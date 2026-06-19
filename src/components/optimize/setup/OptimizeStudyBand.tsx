@@ -4,6 +4,8 @@ import {
   PRUNERS,
   SAMPLERS,
 } from '@/components/optimize/optimizeFormShared'
+import { NumberInput } from '@/components/ui/number-input'
+import { normalizeLeadingZero } from '@/lib/numberInput'
 import type {
   OptimizeConfigFields,
   OptimizeConfigSetters,
@@ -100,12 +102,12 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
                 <label htmlFor="optimize-trials" className="text-silver-300 text-xs font-medium">
                   Trials
                 </label>
-                <input
+                <NumberInput
                   id="optimize-trials"
-                  type="number"
                   min="1"
+                  integer
                   value={fields.nTrials}
-                  onChange={(e) => setters.setNTrials(Number(e.target.value))}
+                  onChange={setters.setNTrials}
                   className={inputClass}
                 />
               </div>
@@ -120,11 +122,10 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
                 <label htmlFor="optimize-seed" className="text-silver-300 text-xs font-medium">
                   Seed
                 </label>
-                <input
+                <NumberInput
                   id="optimize-seed"
-                  type="number"
                   value={fields.seed}
-                  onChange={(e) => setters.setSeed(Number(e.target.value))}
+                  onChange={setters.setSeed}
                   className={inputClass}
                 />
               </div>
@@ -163,7 +164,11 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
                   step={1}
                   placeholder="Auto"
                   value={fields.maxWorkersInput}
-                  onChange={(e) => setters.setMaxWorkersInput(e.target.value)}
+                  onChange={(e) =>
+                    setters.setMaxWorkersInput(
+                      normalizeLeadingZero(fields.maxWorkersInput, e.target.value),
+                    )
+                  }
                   className={inputClass}
                 />
                 <p className="text-silver-400 text-[10px] leading-normal">

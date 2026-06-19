@@ -1,4 +1,6 @@
 import { fieldErrorClass, inputClass } from '@/components/shared/InstrumentConfigFields'
+import { NumberInput } from '@/components/ui/number-input'
+import { normalizeLeadingZero } from '@/lib/numberInput'
 import type { PositionSizingFields, PositionSizingMode } from '@/lib/backtesting/positionSizing'
 
 type PositionSizingModeFieldsProps = {
@@ -32,13 +34,12 @@ export function PositionSizingModeFields({
         <label htmlFor="position-quantity" className="text-silver-400 text-xs">
           Quantity
         </label>
-        <input
+        <NumberInput
           id="position-quantity"
-          type="number"
           step="1"
           min="0.01"
           value={fields.quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
+          onChange={setQuantity}
           className={inputClass}
         />
         {errors.quantity && <p className={fieldErrorClass}>{errors.quantity}</p>}
@@ -51,12 +52,12 @@ export function PositionSizingModeFields({
       <div className="bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3">
         <div className="space-y-1">
           <label className="text-silver-400 text-xs">Safety Margin per Contract</label>
-          <input
-            type="number"
+          <NumberInput
             step="1"
             min="1"
+            integer
             value={fields.safetyMargin}
-            onChange={(e) => setSafetyMargin(Number(e.target.value))}
+            onChange={setSafetyMargin}
             className={inputClass}
           />
           {errors.safety_margin_per_contract && (
@@ -65,12 +66,12 @@ export function PositionSizingModeFields({
         </div>
         <div className="space-y-1">
           <label className="text-silver-400 text-xs">Min Contracts</label>
-          <input
-            type="number"
+          <NumberInput
             step="1"
             min="0"
+            integer
             value={fields.minContracts}
-            onChange={(e) => setMinContracts(Number(e.target.value))}
+            onChange={setMinContracts}
             className={inputClass}
           />
           {errors.min_contracts && <p className={fieldErrorClass}>{errors.min_contracts}</p>}
@@ -82,7 +83,9 @@ export function PositionSizingModeFields({
             step="1"
             min="0"
             value={fields.maxContractsInput}
-            onChange={(e) => setMaxContractsInput(e.target.value)}
+            onChange={(e) =>
+              setMaxContractsInput(normalizeLeadingZero(fields.maxContractsInput, e.target.value))
+            }
             className={inputClass}
             placeholder="No limit"
           />
@@ -102,13 +105,12 @@ export function PositionSizingModeFields({
         <label htmlFor="target-volatility-pct" className="text-silver-400 text-xs">
           Target volatility (%)
         </label>
-        <input
+        <NumberInput
           id="target-volatility-pct"
-          type="number"
           step="0.1"
           min="0.01"
           value={fields.targetVolatilityPct}
-          onChange={(e) => setTargetVolatilityPct(Number(e.target.value))}
+          onChange={setTargetVolatilityPct}
           className={inputClass}
         />
         {errors.target_volatility_pct && (
@@ -117,12 +119,12 @@ export function PositionSizingModeFields({
       </div>
       <div className="space-y-1">
         <label className="text-silver-400 text-xs">Min Contracts</label>
-        <input
-          type="number"
+        <NumberInput
           step="1"
           min="0"
+          integer
           value={fields.inverseMinContracts}
-          onChange={(e) => setInverseMinContracts(Number(e.target.value))}
+          onChange={setInverseMinContracts}
           className={inputClass}
         />
         {errors.min_contracts && <p className={fieldErrorClass}>{errors.min_contracts}</p>}
@@ -134,7 +136,11 @@ export function PositionSizingModeFields({
           step="1"
           min="1"
           value={fields.inverseMaxContractsInput}
-          onChange={(e) => setInverseMaxContractsInput(e.target.value)}
+          onChange={(e) =>
+            setInverseMaxContractsInput(
+              normalizeLeadingZero(fields.inverseMaxContractsInput, e.target.value),
+            )
+          }
           className={inputClass}
           placeholder="No limit"
         />

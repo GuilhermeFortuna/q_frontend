@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react'
 
 import { fieldErrorClass, inputClass } from '@/components/shared/InstrumentConfigFields'
+import { NumberInput } from '@/components/ui/number-input'
 import { cn } from '@/lib/utils'
 import type { ObjectiveMode, Sampler } from '@/types/optimization'
 
@@ -60,34 +61,29 @@ export function RangeRow({
     <div className="space-y-1">
       <label className={labelClass}>{label}</label>
       <div className={cn('grid gap-2', editableStep ? 'grid-cols-3' : 'grid-cols-2')}>
-        <input
-          type="number"
+        <NumberInput
           step={step}
           value={low}
-          onChange={(e) => setLow(Number(e.target.value))}
+          onChange={setLow}
           className={inputClass}
           placeholder="Low"
           aria-label={`${label} low`}
         />
-        <input
-          type="number"
+        <NumberInput
           step={step}
           value={high}
-          onChange={(e) => setHigh(Number(e.target.value))}
+          onChange={setHigh}
           className={inputClass}
           placeholder="High"
           aria-label={`${label} high`}
         />
         {editableStep && (
-          <input
-            type="number"
+          <NumberInput
             min="0"
             step={step}
-            value={stepValue ?? ''}
-            onChange={(e) => {
-              const next = e.target.value.trim()
-              setStepValue(next === '' ? null : Number(next))
-            }}
+            nullable
+            value={stepValue ?? null}
+            onChange={setStepValue}
             className={inputClass}
             placeholder="Step"
             aria-label={`${label} step`}

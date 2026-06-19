@@ -1,4 +1,5 @@
 import { fieldErrorClass, inputClass } from '@/components/shared/InstrumentConfigFields'
+import { NumberInput } from '@/components/ui/number-input'
 import { paramHint } from '@/lib/strategies/strategyPresentation'
 import type { StrategyParamValue } from '@/lib/strategies/strategyParams'
 import type { StrategyParamSpec } from '@/types/strategies'
@@ -67,19 +68,14 @@ export function StrategyParamFields({
               {spec.label}
             </label>
             {hint ? <ParamHint hint={hint} /> : null}
-            <input
+            <NumberInput
               id={id}
-              type="number"
               step={step}
               min={spec.min ?? undefined}
               max={spec.max ?? undefined}
               value={numValue}
-              onChange={(e) =>
-                onChange(
-                  spec.name,
-                  spec.type === 'int' ? parseInt(e.target.value, 10) : Number(e.target.value),
-                )
-              }
+              integer={spec.type === 'int'}
+              onChange={(next) => onChange(spec.name, next)}
               className={inputClass}
             />
             {(belowMin || aboveMax) && (

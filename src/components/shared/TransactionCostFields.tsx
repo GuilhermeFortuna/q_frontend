@@ -1,4 +1,5 @@
 import { fieldErrorClass, inputClass } from '@/components/shared/InstrumentConfigFields'
+import { NumberInput } from '@/components/ui/number-input'
 
 type TransactionCostFieldsProps = {
   costPerContract: number
@@ -28,13 +29,13 @@ export function TransactionCostFields({
           <label htmlFor="cost-per-contract" className="text-silver-400 text-xs">
             Cost per contract (per side)
           </label>
-          <input
+          <NumberInput
             id="cost-per-contract"
-            type="number"
             step="0.01"
             min="0"
             value={costPerContract}
-            onChange={(e) => setCostPerContract(Number(e.target.value))}
+            onChange={setCostPerContract}
+            emptyOnBlur={0}
             className={inputClass}
           />
           {errors.costPerContract && <p className={fieldErrorClass}>{errors.costPerContract}</p>}
@@ -43,13 +44,13 @@ export function TransactionCostFields({
           <label htmlFor="cost-bps" className="text-silver-400 text-xs">
             Cost (bps of notional, per side)
           </label>
-          <input
+          <NumberInput
             id="cost-bps"
-            type="number"
             step="0.01"
             min="0"
             value={costBps}
-            onChange={(e) => setCostBps(Number(e.target.value))}
+            onChange={setCostBps}
+            emptyOnBlur={0}
             className={inputClass}
           />
           {errors.costBps && <p className={fieldErrorClass}>{errors.costBps}</p>}
