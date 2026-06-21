@@ -116,9 +116,13 @@ async function main() {
     await run('docker', composeArgs, { cwd: monorepoRoot })
   } else {
     console.log('Starting Postgres and Redis in Docker...')
-    await run('docker', ['compose', '-f', composeFile, 'up', '-d', '--remove-orphans', 'postgres', 'redis'], {
-      cwd: monorepoRoot,
-    })
+    await run(
+      'docker',
+      ['compose', '-f', composeFile, 'up', '-d', '--remove-orphans', 'postgres', 'redis'],
+      {
+        cwd: monorepoRoot,
+      },
+    )
     await waitForPostgres()
 
     console.log('Running database migrations...')
