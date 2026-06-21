@@ -1,13 +1,21 @@
 import { Plus, Save, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
+import { ExitStrategyCards } from '@/components/backtests/setup/ExitStrategyCards'
 import { StrategyLibrary } from '@/components/backtests/setup/StrategyLibrary'
 import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
-import { cn } from '@/lib/utils'
-import { ExitConfigurator } from '@/workspaces/strategy/ExitConfigurator'
-import { getEnabledExitRules } from '@/workspaces/strategy/exitRuleSemantics'
+import { filterApplicableExitRules } from '@/lib/optimize/exitSearchSpace'
+import type { ExitRuleInfo } from '@/types/strategies'
+import {
+  getEnabledExitRules,
+  getVisibleSharedParamNames,
+  isExitRuleEnabled,
+  resolveRuleParamSpecs,
+  toggleExitRuleParam,
+} from '@/workspaces/strategy/exitRuleSemantics'
+import { EXIT_GROUP_LABELS } from '@/workspaces/strategy/exitWorkbenchGroups'
 
 type BacktestConfig = ReturnType<typeof useBacktestConfig>
 
@@ -15,12 +23,18 @@ type StrategyStudioProps = {
   config: BacktestConfig
 }
 
-type StudioTab = 'entry' | 'exit'
-
 const THESIS_COLLAPSE_THRESHOLD = 160
 
+function tunableRuleParamSpecs(
+  rule: ExitRuleInfo,
+  exitParamSpecs: BacktestConfig['exitParamSpecs'],
+) {
+  return resolveRuleParamSpecs(rule, exitParamSpecs).filter(
+    (spec) => spec.name !== rule.enable_param,
+  )
+}
+
 export function StrategyStudio({ config }: StrategyStudioProps) {
-  const [activeTab, setActiveTab] = useState<StudioTab>('entry')
   const [thesisOpen, setThesisOpen] = useState(true)
 
   const {
@@ -38,10 +52,30 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
     authoring,
   } = config
 
-  const enabledExitCount = useMemo(() => {
-    if (!exitCatalog) return 0
-    return getEnabledExitRules(exitCatalog.exit_rules, fields.strategyParams).length
-  }, [exitCatalog, fields.strategyParams])
+  const applicableExitRules = useMemo(
+    () => filterApplicableExitRules(exitCatalog?.exit_rules ?? [], exitParamSpecs),
+    [exitCatalog?.exit_rules, exitParamSpecs],
+  )
+
+  const enabledExitRules = useMemo(
+    () => getEnabledExitRules(applicableExitRules, fields.strategyParams),
+    [applicableExitRules, fields.strategyParams],
+  )
+
+  const visibleSharedParamNames = useMemo(
+    () =>
+      getVisibleSharedParamNames(
+        applicableExitRules,
+        fields.strategyParams,
+        exitCatalog?.shared_exit_params ?? [],
+      ),
+    [applicableExitRules, fields.strategyParams, exitCatalog?.shared_exit_params],
+  )
+
+  const sharedParamSpecs = useMemo(
+    () => exitParamSpecs.filter((spec) => visibleSharedParamNames.includes(spec.name)),
+    [exitParamSpecs, visibleSharedParamNames],
+  )
 
   useEffect(() => {
     const thesis = selectedStrategy?.thesis ?? ''
@@ -51,15 +85,17 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
   const handleSelectBuiltIn = (name: string) => {
     setters.handleStrategyChange(name)
     authoring.newDraft()
-    setActiveTab('exit')
   }
 
   const handleSelectCustom = (custom: Parameters<BacktestConfig['authoring']['loadCustom']>[0]) => {
     authoring.loadCustom(custom)
-    setActiveTab('exit')
   }
 
-  const exitLoading = exitCatalogLoading || strategiesLoading || customLoading
+  const handleToggleExitRule = (rule: ExitRuleInfo) => {
+    toggleExitRuleParam(rule, fields.strategyParams, setters.handleParamChange, exitParamSpecs)
+  }
+
+  const libraryLoading = strategiesLoading || customLoading
 
   return (
     <div
@@ -142,150 +178,111 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
         ) : null}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
-        <div
-          className="border-carbon-700/40 flex gap-1 border-b pb-px"
-          role="tablist"
-          aria-label="Strategy studio"
-        >
-          <StudioTabButton
-            id="studio-tab-entry"
-            panelId="studio-panel-entry"
-            active={activeTab === 'entry'}
-            onClick={() => setActiveTab('entry')}
-          >
-            Entry
-          </StudioTabButton>
-          <StudioTabButton
-            id="studio-tab-exit"
-            panelId="studio-panel-exit"
-            active={activeTab === 'exit'}
-            onClick={() => setActiveTab('exit')}
-          >
-            Exit & Targets
-            {enabledExitCount > 0 ? ` (${enabledExitCount})` : ''}
-          </StudioTabButton>
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto">
+          <StrategyLibrary
+            strategies={builtInStrategies}
+            strategyCatalog={config.strategies}
+            customStrategies={customStrategies}
+            engine={fields.engine}
+            selectedStrategyName={authoring.loadedCustomName ? undefined : selectedStrategy?.name}
+            selectedCustomName={authoring.loadedCustomName}
+            onSelectBuiltIn={handleSelectBuiltIn}
+            onSelectCustom={handleSelectCustom}
+            onDeleteCustom={authoring.deleteCustom}
+            loading={libraryLoading}
+          />
+          {exitCatalogLoading ? (
+            <p className="text-silver-500 text-xs italic">Loading exits…</p>
+          ) : (
+            <ExitStrategyCards
+              rules={applicableExitRules}
+              isEnabled={(rule) => isExitRuleEnabled(rule, fields.strategyParams)}
+              onToggle={handleToggleExitRule}
+            />
+          )}
         </div>
 
-        <div
-          id="studio-panel-entry"
-          role="tabpanel"
-          aria-labelledby="studio-tab-entry"
-          className={cn('min-h-0 flex-1', activeTab !== 'entry' && 'hidden')}
-        >
-          <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <StrategyLibrary
-              strategies={builtInStrategies}
-              strategyCatalog={config.strategies}
-              customStrategies={customStrategies}
-              engine={fields.engine}
-              selectedStrategyName={authoring.loadedCustomName ? undefined : selectedStrategy?.name}
-              selectedCustomName={authoring.loadedCustomName}
-              onSelectBuiltIn={handleSelectBuiltIn}
-              onSelectCustom={handleSelectCustom}
-              onDeleteCustom={authoring.deleteCustom}
-              loading={strategiesLoading || customLoading}
-            />
-
-            <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
-              {selectedStrategy?.thesis ? (
-                <div className="bg-carbon-900/35 border-carbon-800/60 rounded-lg border px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => setThesisOpen((open) => !open)}
-                    className="text-brass-400 flex w-full items-center justify-between text-left text-xs font-semibold"
-                    aria-expanded={thesisOpen}
-                    data-testid="studio-thesis-toggle"
-                  >
-                    <span>Thesis</span>
-                    <span className="text-silver-500 font-normal">
-                      {thesisOpen ? 'Hide' : 'Show'}
-                    </span>
-                  </button>
-                  {thesisOpen ? (
-                    <p className="text-silver-400 mt-2 text-xs leading-relaxed">
-                      {selectedStrategy.thesis}
-                    </p>
-                  ) : null}
-                </div>
+        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
+          {selectedStrategy?.thesis ? (
+            <div className="bg-carbon-900/35 border-carbon-800/60 rounded-lg border px-3 py-2">
+              <button
+                type="button"
+                onClick={() => setThesisOpen((open) => !open)}
+                className="text-brass-400 flex w-full items-center justify-between text-left text-xs font-semibold"
+                aria-expanded={thesisOpen}
+                data-testid="studio-thesis-toggle"
+              >
+                <span>Thesis</span>
+                <span className="text-silver-500 font-normal">{thesisOpen ? 'Hide' : 'Show'}</span>
+              </button>
+              {thesisOpen ? (
+                <p className="text-silver-400 mt-2 text-xs leading-relaxed">
+                  {selectedStrategy.thesis}
+                </p>
               ) : null}
+            </div>
+          ) : null}
 
-              {entryParamSpecs.length > 0 ? (
+          {entryParamSpecs.length > 0 ? (
+            <StrategyParamFields
+              params={entryParamSpecs}
+              values={fields.strategyParams}
+              onChange={setters.handleParamChange}
+              className="bg-carbon-900/20 border-carbon-800/40 grid gap-3 rounded-lg border p-3 sm:grid-cols-2"
+              showHints
+              hintMode="compact"
+            />
+          ) : (
+            <div className="text-silver-500 text-xs italic">No entry parameters to configure.</div>
+          )}
+
+          {enabledExitRules.map((rule) => {
+            const tunableSpecs = tunableRuleParamSpecs(rule, exitParamSpecs)
+            if (tunableSpecs.length === 0) return null
+
+            const groupLabel =
+              rule.exit_group in EXIT_GROUP_LABELS
+                ? EXIT_GROUP_LABELS[rule.exit_group as keyof typeof EXIT_GROUP_LABELS]
+                : rule.label
+
+            return (
+              <section
+                key={rule.id}
+                className="bg-carbon-900/20 border-carbon-800/40 rounded-lg border p-3"
+              >
+                <h5 className="text-silver-400 mb-3 text-xs font-semibold tracking-wide uppercase">
+                  {groupLabel}
+                </h5>
                 <StrategyParamFields
-                  params={entryParamSpecs}
+                  params={tunableSpecs}
                   values={fields.strategyParams}
                   onChange={setters.handleParamChange}
-                  className="bg-carbon-900/20 border-carbon-800/40 grid gap-3 rounded-lg border p-3 sm:grid-cols-2"
+                  className="grid gap-3 sm:grid-cols-2"
                   showHints
                   hintMode="compact"
                 />
-              ) : (
-                <div className="text-silver-500 text-xs italic">
-                  No entry parameters to configure.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+              </section>
+            )
+          })}
 
-        <div
-          id="studio-panel-exit"
-          role="tabpanel"
-          aria-labelledby="studio-tab-exit"
-          className={cn('min-h-0 flex-1 overflow-y-auto', activeTab !== 'exit' && 'hidden')}
-        >
-          {exitCatalog && exitCatalog.exit_rules.length > 0 ? (
-            <ExitConfigurator
-              exitRules={exitCatalog.exit_rules}
-              sharedExitParams={exitCatalog.shared_exit_params}
-              exitPresets={exitCatalog.exit_presets}
-              exitParamSpecs={exitParamSpecs}
-              paramValues={fields.strategyParams}
-              onChange={setters.handleParamChange}
-              onParamsMerge={authoring.handleParamsMerge}
-            />
-          ) : (
-            <div className="text-silver-500 text-xs italic">
-              {exitLoading
-                ? 'Loading exit catalog...'
-                : 'Exit parameters not available for this strategy.'}
-            </div>
-          )}
+          {sharedParamSpecs.length > 0 ? (
+            <section className="bg-carbon-900/20 border-carbon-800/40 rounded-lg border p-3">
+              <h5 className="text-silver-400 mb-3 text-xs font-semibold tracking-wide uppercase">
+                {EXIT_GROUP_LABELS.general}
+              </h5>
+              <StrategyParamFields
+                params={sharedParamSpecs}
+                values={fields.strategyParams}
+                onChange={setters.handleParamChange}
+                className="grid gap-3 sm:grid-cols-2"
+                showHints
+                hintMode="compact"
+              />
+            </section>
+          ) : null}
         </div>
       </div>
     </div>
-  )
-}
-
-function StudioTabButton({
-  id,
-  panelId,
-  active,
-  onClick,
-  children,
-}: {
-  id: string
-  panelId: string
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      id={id}
-      role="tab"
-      aria-selected={active}
-      aria-controls={panelId}
-      onClick={onClick}
-      className={cn(
-        'rounded-t-md border-b-2 px-4 py-2 text-sm font-semibold transition-colors',
-        active
-          ? 'border-brass-500 text-brass-400'
-          : 'text-silver-400 hover:text-silver-200 border-transparent',
-      )}
-    >
-      {children}
-    </button>
   )
 }

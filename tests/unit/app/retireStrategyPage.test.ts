@@ -39,8 +39,7 @@ describe('retire standalone strategy page', () => {
 
   it('retains shared exit modules for StrategyStudio', () => {
     const exitModules = [
-      'src/workspaces/strategy/ExitConfigurator.tsx',
-      'src/workspaces/strategy/ExitRuleCard.tsx',
+      'src/components/backtests/setup/ExitStrategyCards.tsx',
       'src/workspaces/strategy/exitRuleSemantics.ts',
       'src/workspaces/strategy/exitWorkbenchGroups.ts',
     ]

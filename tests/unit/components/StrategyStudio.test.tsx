@@ -1,7 +1,7 @@
 import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
@@ -47,7 +47,7 @@ const savedCustom: CustomStrategy = {
     entry_period: 25,
     rule_a_enable: 2,
     rule_b_enable: 0,
-    rule_a_offset: 0,
+    rule_a_offset: 0.05,
     rule_c_enable: 0,
     shared_indicator: 14,
   },
@@ -88,36 +88,22 @@ async function waitForDefaultStrategy() {
 }
 
 describe('StrategyStudio', () => {
-  it('defaults to Entry and does not auto-switch on programmatic default selection', async () => {
-    renderWithQueryClient(<StrategyStudioHarness />)
-    await waitForDefaultStrategy()
-
-    expect(screen.getByRole('tab', { name: 'Entry', selected: true })).toBeInTheDocument()
-    expect(
-      screen.getByRole('tab', { name: /^Exit & Targets/i, selected: false }),
-    ).toBeInTheDocument()
-  })
-
-  it('switches to Exit when a user picks a strategy card and back to Entry via tab', async () => {
+  it('renders entry cards and exit cards in one column without tabs', async () => {
     const user = userEvent.setup()
     renderWithQueryClient(<StrategyStudioHarness />)
     await waitForDefaultStrategy()
 
-    await user.click(screen.getByRole('button', { name: /MACD Crossover/i }))
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+    expect(screen.getByRole('spinbutton', { name: 'Short Period' })).toBeInTheDocument()
 
-    expect(
-      screen.getByRole('tab', { name: /^Exit & Targets/i, selected: true }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Active:')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('tab', { name: 'Entry', selected: false }))
+    await user.click(screen.getByRole('button', { name: /Studio Strategy/i }))
 
     await waitFor(() => {
-      expect(screen.getByRole('spinbutton', { name: 'Fast Period' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Exit Strategies' })).toBeInTheDocument()
     })
   })
 
-  it('edits entry params on Entry tab and exit params on Exit tab in the same flat bag', async () => {
+  it('toggling an exit card on reveals value fields and toggling off hides them', async () => {
     const user = userEvent.setup()
     renderWithQueryClient(<StrategyStudioHarness />)
     await waitForDefaultStrategy()
@@ -125,12 +111,35 @@ describe('StrategyStudio', () => {
     await user.click(screen.getByRole('button', { name: /Studio Strategy/i }))
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('tab', { name: /^Exit & Targets/i, selected: true }),
-      ).toBeInTheDocument()
+      expect(screen.getByRole('spinbutton', { name: 'Entry Period' })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('tab', { name: 'Entry', selected: false }))
+    expect(screen.queryByRole('spinbutton', { name: 'Rule A Offset' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('switch', { name: 'Enable Rule A' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('spinbutton', { name: 'Rule A Offset' })).toBeInTheDocument()
+    })
+    expect(screen.getByRole('switch', { name: 'Disable Rule A' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+
+    await user.click(screen.getByRole('switch', { name: 'Disable Rule A' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('spinbutton', { name: 'Rule A Offset' })).not.toBeInTheDocument()
+    })
+  })
+
+  it('edits entry and enabled-exit params in the same flat strategyParams bag', async () => {
+    const user = userEvent.setup()
+    renderWithQueryClient(<StrategyStudioHarness />)
+    await waitForDefaultStrategy()
+
+    await user.click(screen.getByRole('button', { name: /Studio Strategy/i }))
+
     await waitFor(() => {
       expect(screen.getByRole('spinbutton', { name: 'Entry Period' })).toBeInTheDocument()
     })
@@ -139,20 +148,37 @@ describe('StrategyStudio', () => {
     await user.clear(entryPeriod)
     await user.type(entryPeriod, '15')
 
-    await user.click(screen.getByRole('tab', { name: /^Exit & Targets/i, selected: false }))
     await user.click(screen.getByRole('switch', { name: 'Enable Rule A' }))
     await waitFor(() => {
-      expect(screen.getByRole('spinbutton', { name: 'Rule A Mult' })).toBeInTheDocument()
+      expect(screen.getByRole('spinbutton', { name: 'Rule A Offset' })).toBeInTheDocument()
     })
-    const ruleAInput = screen.getByRole('spinbutton', { name: 'Rule A Mult' })
-    await user.clear(ruleAInput)
-    await user.type(ruleAInput, '2')
 
-    await user.click(screen.getByRole('tab', { name: 'Entry', selected: false }))
+    const ruleAOffset = screen.getByRole('spinbutton', { name: 'Rule A Offset' })
+    await user.clear(ruleAOffset)
+    await user.type(ruleAOffset, '0.05')
+
     expect(screen.getByRole('spinbutton', { name: 'Entry Period' })).toHaveValue(15)
+    expect(screen.getByRole('spinbutton', { name: 'Rule A Offset' })).toHaveValue(0.05)
+  })
 
-    await user.click(screen.getByRole('tab', { name: /^Exit & Targets/i, selected: false }))
-    expect(screen.getByRole('spinbutton', { name: 'Rule A Mult' })).toHaveValue(2)
+  it('shows shared indicator settings only when an enabled rule requires them', async () => {
+    const user = userEvent.setup()
+    renderWithQueryClient(<StrategyStudioHarness />)
+    await waitForDefaultStrategy()
+
+    await user.click(screen.getByRole('button', { name: /Studio Strategy/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Exit Strategies' })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByRole('spinbutton', { name: 'Shared Indicator' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('switch', { name: 'Enable Rule B' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('spinbutton', { name: 'Shared Indicator' })).toBeInTheDocument()
+    })
   })
 
   it('posts save payload and rejects built-in name collisions', async () => {
@@ -241,7 +267,7 @@ describe('StrategyStudio', () => {
     })
   })
 
-  it('loads a saved custom with enabled exits visible on the Exit tab', async () => {
+  it('loads a saved custom with enabled exits on and their values on the right', async () => {
     const user = userEvent.setup()
     useStudioCustomMocks()
 
@@ -261,32 +287,32 @@ describe('StrategyStudio', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Name')).toHaveValue(savedCustom.name)
       expect(screen.getByLabelText('Description')).toHaveValue(savedCustom.description!)
+      expect(screen.getByRole('spinbutton', { name: 'Entry Period' })).toHaveValue(25)
     })
 
-    expect(
-      screen.getByRole('tab', { name: /Exit & Targets \(1\)/i, selected: true }),
-    ).toBeInTheDocument()
-
-    const exitPanel = document.getElementById('studio-panel-exit')
-    expect(exitPanel).not.toBeNull()
-    expect(within(exitPanel!).getByRole('spinbutton', { name: 'Rule A Mult' })).toHaveValue(2)
+    expect(screen.getByRole('switch', { name: 'Disable Rule A' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+    expect(screen.getByRole('spinbutton', { name: 'Rule A Offset' })).toHaveValue(0.05)
   })
 
-  it('preserves the active tab while the studio stays mounted', async () => {
+  it('keeps the stacked layout while the studio stays mounted', async () => {
     const user = userEvent.setup()
     const { rerender } = renderWithQueryClient(<StrategyStudioHarness />)
     await waitForDefaultStrategy()
 
-    await user.click(screen.getByRole('button', { name: /MACD Crossover/i }))
-    expect(
-      screen.getByRole('tab', { name: /^Exit & Targets/i, selected: true }),
-    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Studio Strategy/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Exit Strategies' })).toBeInTheDocument()
+    })
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
 
     rerender(<StrategyStudioHarness hidden />)
     rerender(<StrategyStudioHarness hidden={false} />)
 
-    expect(
-      screen.getByRole('tab', { name: /^Exit & Targets/i, selected: true }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Exit Strategies' })).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 })

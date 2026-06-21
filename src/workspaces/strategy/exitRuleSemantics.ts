@@ -113,3 +113,35 @@ export function buildClearAllExitUpdates(
 ): Record<string, StrategyParamValue> {
   return Object.fromEntries(rules.map((rule) => [rule.enable_param, 0]))
 }
+
+/** Patch for enabling or disabling an exit rule's enable_param. */
+export function exitRuleEnableUpdate(
+  rule: ExitRuleInfo,
+  enabled: boolean,
+  exitParamSpecs: StrategyParamSpec[],
+): Record<string, StrategyParamValue> {
+  if (!enabled) {
+    return { [rule.enable_param]: 0 }
+  }
+
+  const enableSpec = exitParamSpecs.find((spec) => spec.name === rule.enable_param)
+  const enableValue =
+    typeof rule.enable_value === 'number' && rule.enable_value > 0
+      ? rule.enable_value
+      : enableSpec != null
+        ? defaultEnableValue(enableSpec)
+        : 1
+
+  return { [rule.enable_param]: enableValue }
+}
+
+export function toggleExitRuleParam(
+  rule: ExitRuleInfo,
+  paramValues: Record<string, StrategyParamValue>,
+  onChange: (name: string, value: StrategyParamValue) => void,
+  exitParamSpecs: StrategyParamSpec[],
+): void {
+  const enabled = isExitRuleEnabled(rule, paramValues)
+  const update = exitRuleEnableUpdate(rule, !enabled, exitParamSpecs)
+  onChange(rule.enable_param, update[rule.enable_param])
+}

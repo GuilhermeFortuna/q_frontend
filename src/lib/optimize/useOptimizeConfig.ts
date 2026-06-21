@@ -2,7 +2,7 @@ import { endOfDay, startOfDay } from 'date-fns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useCustomStrategies } from '@/api/queries/customStrategies'
-import { useStrategies } from '@/api/queries/strategies'
+import { useExitRuleCatalog, useStrategies } from '@/api/queries/strategies'
 import type { RiskMode } from '@/components/optimize/optimizeFormShared'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import {
@@ -11,6 +11,12 @@ import {
   validateTransactionCosts,
   type TransactionCostFields,
 } from '@/lib/backtesting/transactionCosts'
+import {
+  buildStrategyParamsSearchSpacePayload,
+  filterApplicableExitRules,
+  initialEnabledExitRuleIds,
+  buildEnabledExitParamSpecs,
+} from '@/lib/optimize/exitSearchSpace'
 import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
 import { isMaxWorkersInputInvalid, withMaxWorkers } from '@/lib/optimize/studyConfig'
 import { withResolvedCustomStrategyParams } from '@/lib/strategies/resolveCustomStrategyParams'
@@ -23,6 +29,7 @@ import {
 } from '@/lib/strategies/strategyParams'
 import { useAppStore } from '@/store/useAppStore'
 import type { ObjectiveMode, OptimizationConfig, Sampler, SearchParam } from '@/types/optimization'
+import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
 
 export type OptimizeEngine = 'candle' | 'tick'
 
@@ -262,6 +269,7 @@ export function useOptimizeConfig() {
   const [strategySearchSpace, setStrategySearchSpace] = useState<
     Record<string, SearchSpaceFieldState>
   >({})
+  const [enabledExitRuleIds, setEnabledExitRuleIds] = useState<Set<string>>(() => new Set())
 
   const [riskMode, setRiskMode] = useState<RiskMode>('fixed_quantity')
   const [qtyLow, setQtyLow] = useState(1)
@@ -278,6 +286,7 @@ export function useOptimizeConfig() {
   const [costFields, setCostFields] = useState(defaultTransactionCostFields)
 
   const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
+  const { data: exitCatalog } = useExitRuleCatalog()
   const { data: customStrategies = [], isLoading: customStrategiesLoading } = useCustomStrategies()
   const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
   const customStrategyNames = useMemo(
@@ -293,6 +302,27 @@ export function useOptimizeConfig() {
     if (!info) return undefined
     return withResolvedCustomStrategyParams(info, strategies, customStrategies)
   }, [filteredStrategies, strategy, strategies, customStrategies])
+  const { entryParamSpecs, exitParamSpecs } = useMemo(
+    () => partitionStrategyParamSpecs(selectedStrategy?.params ?? []),
+    [selectedStrategy?.params],
+  )
+  const applicableExitRules = useMemo(
+    () => filterApplicableExitRules(exitCatalog?.exit_rules ?? [], exitParamSpecs),
+    [exitCatalog?.exit_rules, exitParamSpecs],
+  )
+  const enabledExitRules = useMemo(
+    () => applicableExitRules.filter((rule) => enabledExitRuleIds.has(rule.id)),
+    [applicableExitRules, enabledExitRuleIds],
+  )
+  const enabledExitParamSpecs = useMemo(
+    () =>
+      buildEnabledExitParamSpecs(
+        enabledExitRules,
+        exitParamSpecs,
+        exitCatalog?.shared_exit_params ?? [],
+      ),
+    [enabledExitRules, exitParamSpecs, exitCatalog?.shared_exit_params],
+  )
   const searchSpaceInitialized = useRef(false)
 
   const pendingOptimizationConfig = useAppStore((s) => s.pendingOptimizationConfig)
@@ -310,6 +340,22 @@ export function useOptimizeConfig() {
     setStrategySearchSpace(defaultSearchSpaceFromSpecs(resolved.params))
     searchSpaceInitialized.current = true
   }, [strategies, strategy, engine, customStrategies])
+
+  useEffect(() => {
+    setEnabledExitRuleIds(initialEnabledExitRuleIds(applicableExitRules, exitParamSpecs))
+  }, [strategy, applicableExitRules, exitParamSpecs])
+
+  const toggleExitRule = (ruleId: string) => {
+    setEnabledExitRuleIds((current) => {
+      const next = new Set(current)
+      if (next.has(ruleId)) {
+        next.delete(ruleId)
+      } else {
+        next.add(ruleId)
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!pendingOptimizationConfig) return
@@ -493,9 +539,13 @@ export function useOptimizeConfig() {
       throw new Error('No strategy selected')
     }
     const config = buildOptimizationConfig(fields, selectedStrategy.name)
-    config.search_space.strategy_params = searchSpaceToPayload(
+    config.search_space.strategy_params = buildStrategyParamsSearchSpacePayload(
       strategySearchSpace,
-      selectedStrategy.params,
+      entryParamSpecs,
+      exitParamSpecs,
+      applicableExitRules,
+      enabledExitRuleIds,
+      exitCatalog?.shared_exit_params ?? [],
     )
     return config
   }
@@ -508,6 +558,12 @@ export function useOptimizeConfig() {
     customStrategies,
     customStrategyNames,
     selectedStrategy,
+    entryParamSpecs,
+    exitParamSpecs,
+    applicableExitRules,
+    enabledExitRuleIds,
+    enabledExitParamSpecs,
+    toggleExitRule,
     strategiesLoading: strategiesLoading || customStrategiesLoading,
     validation,
     buildOptimizationConfig: buildOptimizationConfigPayload,

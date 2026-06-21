@@ -242,9 +242,8 @@ describe('BacktestsWorkspace — focus swap', () => {
 
     await user.click(setupTeaser)
     await waitFor(() => {
-      expect(
-        within(workflow).getByRole('tab', { name: 'Entry', selected: true }),
-      ).toBeInTheDocument()
+      expect(within(workflow).getByTestId('strategy-studio')).toBeInTheDocument()
+      expect(within(workflow).queryByRole('tablist')).not.toBeInTheDocument()
     })
 
     const studio = within(workflow).getByTestId('strategy-studio')
@@ -263,18 +262,16 @@ describe('BacktestsWorkspace — focus swap', () => {
     expect(screen.getByRole('button', { name: 'Expand setup' }).textContent).toMatch(/12\/200/)
   })
 
-  it('preserves StrategyStudio tab across setup/results focus swap', async () => {
+  it('preserves StrategyStudio layout across setup/results focus swap', async () => {
     const user = userEvent.setup()
     renderWithQueryClient(<BacktestsWorkspace />)
     await waitForStrategyLibrary()
 
     await user.click(screen.getByRole('button', { name: /MACD Crossover/i }))
-    expect(
-      within(screen.getByTestId('backtest-workflow')).getByRole('tab', {
-        name: /^Exit & Targets/i,
-        selected: true,
-      }),
-    ).toBeInTheDocument()
+
+    const workflow = screen.getByTestId('backtest-workflow')
+    expect(within(workflow).queryByRole('tablist')).not.toBeInTheDocument()
+    expect(within(workflow).getByRole('spinbutton', { name: 'Fast Period' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
 
@@ -285,12 +282,8 @@ describe('BacktestsWorkspace — focus swap', () => {
     await user.click(screen.getByRole('button', { name: 'Expand setup' }))
 
     await waitFor(() => {
-      expect(
-        within(screen.getByTestId('backtest-workflow')).getByRole('tab', {
-          name: /^Exit & Targets/i,
-          selected: true,
-        }),
-      ).toBeInTheDocument()
+      expect(within(workflow).queryByRole('tablist')).not.toBeInTheDocument()
+      expect(within(workflow).getByRole('spinbutton', { name: 'Fast Period' })).toBeInTheDocument()
     })
   })
 

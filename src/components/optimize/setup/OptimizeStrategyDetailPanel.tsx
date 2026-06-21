@@ -1,16 +1,23 @@
 import { StrategySearchSpaceFields } from '@/components/optimize/StrategySearchSpaceFields'
 import type { SearchSpaceFieldState } from '@/lib/strategies/strategyParams'
 import { strategyThesis } from '@/lib/strategies/strategyPresentation'
-import type { StrategyInfo } from '@/types/strategies'
+import type { ExitRuleInfo, StrategyInfo, StrategyParamSpec } from '@/types/strategies'
+import { groupExitParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
 
 type OptimizeStrategyDetailPanelProps = {
   strategy: StrategyInfo | undefined
+  entryParamSpecs: StrategyParamSpec[]
+  enabledExitParamSpecs: StrategyParamSpec[]
+  applicableExitRules: ExitRuleInfo[]
   searchSpace: Record<string, SearchSpaceFieldState>
   onSearchSpaceChange: (name: string, field: SearchSpaceFieldState) => void
 }
 
 export function OptimizeStrategyDetailPanel({
   strategy,
+  entryParamSpecs,
+  enabledExitParamSpecs,
+  applicableExitRules,
   searchSpace,
   onSearchSpaceChange,
 }: OptimizeStrategyDetailPanelProps) {
@@ -25,6 +32,9 @@ export function OptimizeStrategyDetailPanel({
   const thesis = strategyThesis(strategy)
   const strongIn = strategy.strong_in?.trim()
   const weakIn = strategy.weak_in?.trim()
+  const exitGroups = groupExitParamSpecs(enabledExitParamSpecs)
+  const showSearchSpace =
+    entryParamSpecs.length > 0 || enabledExitParamSpecs.length > 0 || applicableExitRules.length > 0
 
   return (
     <div className="border-carbon-600/50 bg-carbon-950/30 flex h-full min-h-0 flex-col gap-4 overflow-y-auto rounded-xl border p-4">
@@ -50,14 +60,33 @@ export function OptimizeStrategyDetailPanel({
         </div>
       ) : null}
 
-      {strategy.params.length > 0 ? (
-        <div className="space-y-2">
+      {showSearchSpace ? (
+        <div className="space-y-4">
           <h4 className="text-silver-200 text-sm font-medium">Search Space</h4>
-          <StrategySearchSpaceFields
-            params={strategy.params}
-            state={searchSpace}
-            onChange={onSearchSpaceChange}
-          />
+          {entryParamSpecs.length > 0 ? (
+            <StrategySearchSpaceFields
+              params={entryParamSpecs}
+              state={searchSpace}
+              onChange={onSearchSpaceChange}
+            />
+          ) : null}
+          {exitGroups.map(({ group, label, specs }) => (
+            <div key={group} className="space-y-2">
+              <h5 className="text-silver-400 text-xs font-semibold tracking-wide uppercase">
+                {label}
+              </h5>
+              <StrategySearchSpaceFields
+                params={specs}
+                state={searchSpace}
+                onChange={onSearchSpaceChange}
+              />
+            </div>
+          ))}
+          {applicableExitRules.length > 0 && enabledExitParamSpecs.length === 0 ? (
+            <p className="text-silver-500 text-xs">
+              Toggle an exit strategy to optimize its parameters.
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

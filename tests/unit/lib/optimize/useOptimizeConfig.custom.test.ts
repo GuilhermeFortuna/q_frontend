@@ -5,7 +5,8 @@ import {
   buildOptimizationConfig,
   type OptimizeConfigFields,
 } from '@/lib/optimize/useOptimizeConfig'
-import { defaultSearchSpaceFromSpecs, searchSpaceToPayload } from '@/lib/strategies/strategyParams'
+import { buildStrategyParamsSearchSpacePayload } from '@/lib/optimize/exitSearchSpace'
+import { defaultSearchSpaceFromSpecs } from '@/lib/strategies/strategyParams'
 import { withResolvedCustomStrategyParams } from '@/lib/strategies/resolveCustomStrategyParams'
 import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
 import type { StrategyInfo } from '@/types/strategies'
@@ -57,8 +58,31 @@ function baseOptimizeFields(
   }
 }
 
+const customExitRules = [
+  {
+    id: 'fixed_sl',
+    label: 'Fixed Stop Loss',
+    description: 'Fixed stop.',
+    exit_group: 'stop_loss' as const,
+    enable_param: 'stop_loss_pct',
+    enable_value: 0.02,
+    param_names: ['stop_loss_pct'],
+    required_param_names: [],
+  },
+  {
+    id: 'trailing_pct',
+    label: 'Trailing Stop',
+    description: 'Trailing stop.',
+    exit_group: 'trailing' as const,
+    enable_param: 'trailing_stop_pct',
+    enable_value: 0.015,
+    param_names: ['trailing_stop_pct'],
+    required_param_names: [],
+  },
+]
+
 describe('useOptimizeConfig custom strategies', () => {
-  it('buildOptimizationConfig uses the custom strategy name and entry+exit search space', () => {
+  it('buildOptimizationConfig uses the custom strategy name and pins enabled exits', () => {
     const strategies = strategiesWithCustomCustom().strategies
     const selected = withResolvedCustomStrategyParams(mockOptimizeCustomStrategy, strategies, [
       mockOptimizeCustomSaved,
@@ -70,12 +94,20 @@ describe('useOptimizeConfig custom strategies', () => {
     expect(exitParamSpecs.length).toBeGreaterThan(0)
 
     const config = buildOptimizationConfig(baseOptimizeFields(searchSpace), selected.name)
-    config.search_space.strategy_params = searchSpaceToPayload(searchSpace, selected.params)
+    config.search_space.strategy_params = buildStrategyParamsSearchSpacePayload(
+      searchSpace,
+      entryParamSpecs,
+      exitParamSpecs,
+      customExitRules,
+      new Set(['fixed_sl', 'trailing_pct']),
+      [],
+    )
 
     expect(config.backtest.strategy).toBe('MyCustomMA')
     expect(config.search_space.strategy_params).toMatchObject({
       short_period: expect.objectContaining({ type: 'int' }),
-      trailing_stop_pct: expect.objectContaining({ type: 'float' }),
+      stop_loss_pct: { type: 'float', low: 0.02, high: 0.02, step: null },
+      trailing_stop_pct: { type: 'float', low: 0.015, high: 0.015, step: null },
     })
   })
 

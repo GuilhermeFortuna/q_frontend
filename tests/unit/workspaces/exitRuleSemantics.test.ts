@@ -1,7 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { defaultEnableValue } from '@/workspaces/strategy/exitRuleSemantics'
+import {
+  defaultEnableValue,
+  exitRuleEnableUpdate,
+  toggleExitRuleParam,
+} from '@/workspaces/strategy/exitRuleSemantics'
 import type { StrategyParamSpec } from '@/types/strategies'
+import { mockExitCatalog, mockExitParamSpecs } from './exitConfiguratorFixtures'
 
 describe('defaultEnableValue', () => {
   it('uses a positive spec default when present', () => {
@@ -39,5 +44,38 @@ describe('defaultEnableValue', () => {
       step: 0.1,
     }
     expect(defaultEnableValue(floatSpec)).toBe(5)
+  })
+})
+
+describe('exitRuleEnableUpdate', () => {
+  const ruleA = mockExitCatalog.exit_rules.find((rule) => rule.id === 'rule_a')!
+  const ruleB = mockExitCatalog.exit_rules.find((rule) => rule.id === 'rule_b')!
+
+  it('returns zero when disabling a rule', () => {
+    expect(exitRuleEnableUpdate(ruleA, false, mockExitParamSpecs)).toEqual({ rule_a_enable: 0 })
+  })
+
+  it('uses enable_value when positive', () => {
+    expect(exitRuleEnableUpdate(ruleA, true, mockExitParamSpecs)).toEqual({ rule_a_enable: 2 })
+    expect(exitRuleEnableUpdate(ruleB, true, mockExitParamSpecs)).toEqual({ rule_b_enable: 3 })
+  })
+
+  it('falls back to defaultEnableValue when enable_value is zero', () => {
+    const ruleC = mockExitCatalog.exit_rules.find((rule) => rule.id === 'rule_c')!
+    expect(exitRuleEnableUpdate(ruleC, true, mockExitParamSpecs)).toEqual({ rule_c_enable: 50 })
+  })
+})
+
+describe('toggleExitRuleParam', () => {
+  it('flips between on-baseline and zero via onChange', () => {
+    const ruleB = mockExitCatalog.exit_rules.find((rule) => rule.id === 'rule_b')!
+    const onChange = vi.fn()
+
+    toggleExitRuleParam(ruleB, { rule_b_enable: 0 }, onChange, mockExitParamSpecs)
+    expect(onChange).toHaveBeenCalledWith('rule_b_enable', 3)
+
+    onChange.mockClear()
+    toggleExitRuleParam(ruleB, { rule_b_enable: 3 }, onChange, mockExitParamSpecs)
+    expect(onChange).toHaveBeenCalledWith('rule_b_enable', 0)
   })
 })

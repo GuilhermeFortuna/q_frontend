@@ -988,6 +988,16 @@ export const mockExitRuleCatalog: ExitRuleCatalogResponse = {
       required_param_names: [],
     },
     {
+      id: 'trailing_pct',
+      label: 'Trailing Stop',
+      description: 'Trail the stop as price moves in your favor by a fixed percentage.',
+      exit_group: 'trailing',
+      enable_param: 'trailing_stop_pct',
+      enable_value: 0.015,
+      param_names: ['trailing_stop_pct'],
+      required_param_names: [],
+    },
+    {
       id: 'chandelier',
       label: 'Chandelier Exit',
       description: 'Trailing stop at peak high minus an ATR multiple.',

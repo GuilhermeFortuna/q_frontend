@@ -53,7 +53,7 @@ describe('OptimizeSetupPanel custom strategies', () => {
     expect(screen.getAllByText('Custom').length).toBeGreaterThan(0)
   })
 
-  it('shows entry and exit params as search-space fields when a custom is selected', async () => {
+  it('shows entry search-space fields when a custom is selected', async () => {
     useCustomStrategyMocks()
     const user = userEvent.setup()
     renderWithQueryClient(<OptimizeSetupHarness />)
@@ -66,7 +66,9 @@ describe('OptimizeSetupPanel custom strategies', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Short Period')).toBeInTheDocument()
-      expect(screen.getByText('Trailing Stop %')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Exit Strategies' })).toBeInTheDocument()
+      expect(screen.getByRole('switch', { name: /Fixed Stop Loss/i })).toBeInTheDocument()
+      expect(screen.getByRole('switch', { name: /Trailing Stop/i })).toBeInTheDocument()
     })
   })
 
@@ -88,7 +90,8 @@ describe('OptimizeSetupPanel custom strategies', () => {
     expect(config.backtest.strategy).toBe(mockOptimizeCustomStrategy.name)
     expect(config.search_space.strategy_params).toMatchObject({
       short_period: expect.objectContaining({ type: 'int' }),
-      trailing_stop_pct: expect.objectContaining({ type: 'float' }),
+      stop_loss_pct: { type: 'float', low: 0.02, high: 0.02, step: null },
+      trailing_stop_pct: { type: 'float', low: 0.015, high: 0.015, step: null },
     })
   })
 

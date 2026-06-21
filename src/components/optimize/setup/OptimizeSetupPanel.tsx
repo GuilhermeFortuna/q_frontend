@@ -1,3 +1,4 @@
+import { ExitStrategyCards } from '@/components/backtests/setup/ExitStrategyCards'
 import { StrategyLibrary } from '@/components/backtests/setup/StrategyLibrary'
 import { OptimizeMarketConfigBand } from '@/components/optimize/setup/OptimizeMarketConfigBand'
 import { OptimizeStrategyDetailPanel } from '@/components/optimize/setup/OptimizeStrategyDetailPanel'
@@ -38,16 +39,26 @@ export function OptimizeSetupPanel({
       />
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <StrategyLibrary
-          strategies={config.strategies}
-          customStrategies={config.customStrategies}
-          engine={config.fields.engine}
-          selectedStrategyName={config.selectedStrategy?.name}
-          onSelectBuiltIn={config.setters.handleStrategyChange}
-          loading={config.strategiesLoading}
-        />
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto">
+          <StrategyLibrary
+            strategies={config.strategies}
+            customStrategies={config.customStrategies}
+            engine={config.fields.engine}
+            selectedStrategyName={config.selectedStrategy?.name}
+            onSelectBuiltIn={config.setters.handleStrategyChange}
+            loading={config.strategiesLoading}
+          />
+          <ExitStrategyCards
+            rules={config.applicableExitRules}
+            isEnabled={(rule) => config.enabledExitRuleIds.has(rule.id)}
+            onToggle={(rule) => config.toggleExitRule(rule.id)}
+          />
+        </div>
         <OptimizeStrategyDetailPanel
           strategy={config.selectedStrategy}
+          entryParamSpecs={config.entryParamSpecs}
+          enabledExitParamSpecs={config.enabledExitParamSpecs}
+          applicableExitRules={config.applicableExitRules}
           searchSpace={config.fields.strategySearchSpace}
           onSearchSpaceChange={config.setters.handleSearchSpaceChange}
         />
