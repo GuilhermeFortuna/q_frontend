@@ -8,7 +8,11 @@ import { EquityCurveChart } from '@/components/backtests/EquityCurveChart'
 import { MonthlyBreakdownTable } from '@/components/backtests/MonthlyBreakdownTable'
 import { MonthlyPnLChart } from '@/components/backtests/MonthlyPnLChart'
 import { formatDisplayDateTime } from '@/lib/formatDate'
-import { formatCurrency, formatSignedCurrency } from '@/components/backtests/chartUtils'
+import {
+  formatCurrency,
+  formatSignedCurrency,
+  formatExitReason,
+} from '@/components/backtests/chartUtils'
 import { generateBacktestReport } from '@/lib/reports/backtestReport'
 import { cn } from '@/lib/utils'
 import type {
@@ -55,6 +59,7 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
             <th className="px-4 py-3">Entry Price</th>
             <th className="px-4 py-3">Exit Time</th>
             <th className="px-4 py-3">Exit Price</th>
+            <th className="px-4 py-3">Exit Reason</th>
             <th className="px-4 py-3 text-right">PnL</th>
           </tr>
         </thead>
@@ -84,6 +89,9 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
               <td className="px-4 py-3 font-mono text-xs">
                 {trade.exit_price != null ? formatCurrency(trade.exit_price) : '-'}
               </td>
+              <td className="px-4 py-3 font-mono text-xs">
+                {trade.exit_reason ? formatExitReason(trade.exit_reason) : '-'}
+              </td>
               <td
                 className={`px-4 py-3 text-right font-mono text-xs font-bold tabular-nums ${trade.pnl && trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
               >
@@ -93,7 +101,7 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
           ))}
           {trades.length === 0 && (
             <tr>
-              <td colSpan={8} className="text-silver-400 px-4 py-8 text-center">
+              <td colSpan={9} className="text-silver-400 px-4 py-8 text-center">
                 No trades executed in this backtest.
               </td>
             </tr>
@@ -141,12 +149,12 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden pr-2">
-      <div className="shrink-0">
+    <div className="grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(320px,1fr)] overflow-hidden pr-2">
+      <div>
         <BacktestMetricsBar metrics={results.metrics} />
       </div>
 
-      <div className="border-brass-600/15 mb-4 flex shrink-0 items-center gap-1 border-b">
+      <div className="border-brass-600/15 mb-4 flex items-center gap-1 border-b">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -185,45 +193,48 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
         </div>
       </div>
 
-      {activeTab === 'performance' && (
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
-          <EquityCurveChart
-            key={`equity-${equityCurve.length}-${initialCapital}`}
-            data={equityCurve}
-            initialCapital={initialCapital}
-          />
-          <DrawdownChart key={`drawdown-${equityCurve.length}`} data={equityCurve} />
-        </div>
-      )}
-
-      {activeTab === 'monthly' && (
-        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto">
-          <MonthlyPnLChart data={monthlyStats} />
-          <div>
-            <h3 className="text-silver-100 mb-4 text-lg font-semibold">Monthly Breakdown</h3>
-            <MonthlyBreakdownTable data={monthlyStats} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {activeTab === 'performance' && (
+          <div className="h-full space-y-3 overflow-y-auto">
+            <EquityCurveChart
+              key={`equity-${equityCurve.length}-${initialCapital}`}
+              data={equityCurve}
+              initialCapital={initialCapital}
+            />
+            <DrawdownChart key={`drawdown-${equityCurve.length}`} data={equityCurve} />
           </div>
-        </div>
-      )}
+        )}
 
-      {activeTab === 'trade-chart' && (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <BacktestStrategyChart
-            bars={results.bars}
-            indicators={results.indicators}
-            trades={results.trades}
-            symbol={symbol}
-            timeframe={timeframe}
-          />
-        </div>
-      )}
+        {activeTab === 'monthly' && (
+          <div className="h-full space-y-6 overflow-y-auto">
+            <MonthlyPnLChart data={monthlyStats} />
+            <div>
+              <h3 className="text-silver-100 mb-4 text-lg font-semibold">Monthly Breakdown</h3>
+              <MonthlyBreakdownTable data={monthlyStats} />
+            </div>
+          </div>
+        )}
 
-      {activeTab === 'trades' && (
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <h3 className="text-silver-100 mb-4 text-lg font-semibold">Trade History</h3>
-          <TradeHistoryTable trades={results.trades} />
-        </div>
-      )}
+        {activeTab === 'trade-chart' && (
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">
+            <BacktestStrategyChart
+              bars={results.bars}
+              indicators={results.indicators}
+              trades={results.trades}
+              symbol={symbol}
+              timeframe={timeframe}
+              runId={results.run_id || undefined}
+            />
+          </div>
+        )}
+
+        {activeTab === 'trades' && (
+          <div className="h-full overflow-y-auto">
+            <h3 className="text-silver-100 mb-4 text-lg font-semibold">Trade History</h3>
+            <TradeHistoryTable trades={results.trades} />
+          </div>
+        )}
+      </div>
     </div>
   )
 })

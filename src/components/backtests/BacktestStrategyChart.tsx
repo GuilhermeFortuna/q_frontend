@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ParentSize } from '@visx/responsive'
+import { useParentSize } from '@visx/responsive'
 import { scaleBand, scaleLinear } from '@visx/scale'
 import { localPoint } from '@visx/event'
+import { Grid, RotateCcw, BarChart3, LineChart, AreaChart, ExternalLink } from 'lucide-react'
+import { isTauri } from '@tauri-apps/api/core'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
 import {
@@ -15,6 +18,7 @@ import {
   applyPriceAxisTransform,
   computePriceDomain,
   usePriceAxis,
+  timestampAtX,
 } from '@/components/charts/hooks/useChartScales'
 import { useChartViewport } from '@/components/charts/hooks/useChartViewport'
 import { CandlestickLayer } from '@/components/charts/layers/CandlestickLayer'
@@ -22,7 +26,9 @@ import { ChartAxes } from '@/components/charts/layers/ChartAxes'
 import { ChartAxisDragHandles } from '@/components/charts/layers/ChartAxisDragHandles'
 import { GridLayer } from '@/components/charts/layers/GridLayer'
 import { VolumeLayer } from '@/components/charts/layers/VolumeLayer'
-import { CHART_MARGINS } from '@/components/charts/types/chart'
+import { CrosshairLayer } from '@/components/charts/layers/CrosshairLayer'
+import { CHART_MARGINS, buildViewportSlots, barsFromSlots } from '@/components/charts/types/chart'
+import { formatCurrency } from '@/components/backtests/chartUtils'
 import type { ChartIndicatorSeries, Trade } from '@/types/backtesting'
 import type { OhlcvBar } from '@/types/api'
 
@@ -32,6 +38,7 @@ export type BacktestStrategyChartProps = {
   trades: Trade[]
   symbol: string
   timeframe?: string
+  runId?: string
 }
 
 type BacktestPaneLayout = {
@@ -82,6 +89,7 @@ function ChartInner({
   trades,
   symbol,
   timeframe = 'D1',
+  runId,
 }: BacktestStrategyChartProps & { width: number; height: number }) {
   const processed = useMemo(() => processBars(bars), [bars])
   const hasOscillator = indicators.some((ind) => ind.pane === 'oscillator')
@@ -95,17 +103,18 @@ function ChartInner({
   const { pricePanOffset, priceScaleFactor, resetPriceAxis, stretchPriceByPixels } = usePriceAxis(
     String(processed.length),
   )
-  const visibleBars = useMemo(
-    () => processed.slice(viewport.startIndex, viewport.endIndex + 1),
+  const viewportSlots = useMemo(
+    () => buildViewportSlots(processed, viewport),
     [processed, viewport],
   )
+  const visibleBars = useMemo(() => barsFromSlots(viewportSlots), [viewportSlots])
   const visibleTimestamps = useMemo(
     () => new Set(visibleBars.map((bar) => bar.timestamp)),
     [visibleBars],
   )
 
   const scales = useMemo(() => {
-    const domain = visibleBars.map((b) => b.timestamp)
+    const domain = viewportSlots.map((s) => s.key)
     const xScale = scaleBand<string>({
       domain,
       range: [0, layout.innerWidth],
@@ -153,10 +162,50 @@ function ChartInner({
   }, [visibleBars, layout, indicators, pricePanOffset, priceScaleFactor])
 
   const isPanning = useRef(false)
-  const panStart = useRef<{ x: number; startIndex: number } | null>(null)
+  const panStart = useRef<{ x: number; y: number } | null>(null)
   const chartRef = useRef<HTMLDivElement>(null)
+  const [chartType, setChartType] = useState<'candles' | 'line' | 'area'>('candles')
+  const [showGrid, setShowGrid] = useState<boolean>(true)
+  const [hoveredBar, setHoveredBar] = useState<(typeof visibleBars)[0] | null>(null)
+  const [mouseY, setMouseY] = useState<number | null>(null)
   const [hoveredTrade, setHoveredTrade] = useState<Trade | null>(null)
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null)
+
+  const isStandalone = useMemo(() => {
+    if (typeof window === 'undefined') return false
+    return new URLSearchParams(window.location.search).has('run_id')
+  }, [])
+
+  const handleOpenWindow = useCallback(() => {
+    if (!runId) {
+      console.error('No runId available to open standalone window.')
+      return
+    }
+    const url = `/?run_id=${encodeURIComponent(runId)}&symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`
+
+    if (isTauri()) {
+      const safeSymbol = symbol.replace(/[^a-zA-Z0-9-]/g, '')
+      const windowLabel = `chart-${safeSymbol || 'default'}-${Date.now()}`
+      try {
+        const chartWindow = new WebviewWindow(windowLabel, {
+          url,
+          title: `Quant Chart - ${symbol}`,
+          width: 1000,
+          height: 700,
+          resizable: true,
+          decorations: false,
+          focus: true,
+        })
+        void chartWindow.once('tauri://error', (event) => {
+          console.error('Failed to open Tauri chart window:', event.payload)
+        })
+      } catch (err) {
+        console.error('Failed to open Tauri chart window:', err)
+      }
+    } else {
+      window.open(url, '_blank', 'width=1000,height=700')
+    }
+  }, [runId, symbol, timeframe])
 
   useEffect(() => {
     const el = chartRef.current
@@ -177,29 +226,37 @@ function ChartInner({
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<SVGRectElement>) => {
       const point = localPoint(event)
-      if (!point || !isPanning.current || !panStart.current) return
-
-      const barDelta = Math.round(
-        (point.x - panStart.current.x) / Math.max(scales.xScale.step(), 4),
-      )
-      if (barDelta !== 0) {
-        panBy(-barDelta)
-        panStart.current = { x: point.x, startIndex: viewport.startIndex }
-      }
-    },
-    [panBy, scales.xScale, viewport.startIndex],
-  )
-
-  const handleMouseDown = useCallback(
-    (event: React.MouseEvent<SVGRectElement>) => {
-      if (event.button !== 0) return
-      const point = localPoint(event)
       if (!point) return
-      isPanning.current = true
-      panStart.current = { x: point.x, startIndex: viewport.startIndex }
+
+      const x = point.x - CHART_MARGINS.left
+      const y = point.y
+
+      if (isPanning.current && panStart.current) {
+        const barDelta = Math.round(
+          (point.x - panStart.current.x) / Math.max(scales.xScale.step(), 4),
+        )
+        if (barDelta !== 0) {
+          panBy(-barDelta)
+          panStart.current = { x: point.x, y: point.y }
+        }
+        return
+      }
+
+      // Track cursor position and active bar when not panning
+      const bar = timestampAtX(scales.xScale, x, visibleBars)
+      setHoveredBar(bar || null)
+      setMouseY(y)
     },
-    [viewport.startIndex],
+    [panBy, scales, visibleBars],
   )
+
+  const handleMouseDown = useCallback((event: React.MouseEvent<SVGRectElement>) => {
+    if (event.button !== 0) return
+    const point = localPoint(event)
+    if (!point) return
+    isPanning.current = true
+    panStart.current = { x: point.x, y: point.y }
+  }, [])
 
   const handleMouseUp = useCallback(() => {
     isPanning.current = false
@@ -236,25 +293,183 @@ function ChartInner({
     }
   }, [])
 
+  const activeBar = hoveredBar || visibleBars[visibleBars.length - 1] || null
+  const activeIndex = activeBar
+    ? processed.findIndex((b) => b.timestamp === activeBar.timestamp)
+    : -1
+
+  const fNum = (val: number | undefined | null) => (val != null ? val.toFixed(2) : '—')
+
+  let change = 0
+  let changePercent = 0
+  if (activeBar) {
+    change = activeBar.close - activeBar.open
+    changePercent = (change / activeBar.open) * 100
+  }
+
+  const formatVol = (vol: number | undefined | null) => {
+    if (vol == null) return '—'
+    if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(2)}M`
+    if (vol >= 1_000) return `${(vol / 1_000).toFixed(2)}K`
+    return vol.toString()
+  }
+
   return (
     <div
       ref={chartRef}
-      className="border-carbon-700 relative h-full w-full overflow-hidden overscroll-contain rounded-lg border shadow-2xl"
+      className="border-carbon-700 relative flex-1 overflow-hidden overscroll-contain rounded-lg border shadow-2xl"
       style={{
+        width,
+        height,
         background: 'radial-gradient(circle at 50% 30%, #16273f 0%, #07101c 100%)',
       }}
     >
-      <div className="text-silver-400 absolute top-2 left-3 z-10 font-mono text-[10px] uppercase">
-        {symbol} · {timeframe}
+      {/* Floating HUD status line */}
+      {activeBar && (
+        <div className="bg-carbon-950/70 border-brass-600/10 text-silver-300 absolute top-2.5 left-3.5 z-10 flex flex-wrap items-center gap-x-3.5 gap-y-1 rounded-lg border px-3 py-1.5 font-mono text-[10px] shadow-md backdrop-blur-md transition-all duration-150 select-none sm:text-xs">
+          {/* Symbol & Timeframe */}
+          <span className="text-brass-400 font-bold tracking-wider uppercase">
+            {symbol} · {timeframe}
+          </span>
+
+          {/* Timestamp */}
+          <span className="text-silver-400 border-carbon-800 border-l pl-3">
+            {new Date(activeBar.timestamp).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+
+          {/* OHLC */}
+          <span className="border-carbon-800 flex gap-2.5 border-l pl-3">
+            <span>
+              O<span className="text-silver-100 ml-0.5">{formatCurrency(activeBar.open)}</span>
+            </span>
+            <span>
+              H<span className="text-silver-100 ml-0.5">{formatCurrency(activeBar.high)}</span>
+            </span>
+            <span>
+              L<span className="text-silver-100 ml-0.5">{formatCurrency(activeBar.low)}</span>
+            </span>
+            <span>
+              C
+              <span className="text-silver-100 ml-0.5 font-semibold">
+                {formatCurrency(activeBar.close)}
+              </span>
+            </span>
+          </span>
+
+          {/* Change */}
+          <span className={`font-bold ${change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {change >= 0 ? '+' : ''}
+            {formatCurrency(change)} ({change >= 0 ? '+' : ''}
+            {changePercent.toFixed(2)}%)
+          </span>
+
+          {/* Volume */}
+          <span className="text-silver-400 border-carbon-800 border-l pl-3">
+            V <span className="text-silver-100">{formatVol(activeBar.volume)}</span>
+          </span>
+
+          {/* Indicator values */}
+          {indicators
+            .filter((ind) => ind.pane === 'price')
+            .map((ind) => {
+              const val = activeIndex !== -1 ? ind.values[activeIndex] : null
+              return (
+                <span
+                  key={ind.key}
+                  className="border-carbon-800 inline-flex items-center gap-1 border-l pl-3"
+                  style={{ color: ind.color ?? '#c9a227' }}
+                >
+                  <span className="text-[9px] font-bold uppercase opacity-75">{ind.label}:</span>
+                  <span className="font-bold">{val != null ? fNum(val) : '—'}</span>
+                </span>
+              )
+            })}
+        </div>
+      )}
+
+      {/* Floating Toolbar Controls */}
+      <div className="bg-carbon-950/70 border-brass-600/10 absolute top-2.5 right-3.5 z-10 flex items-center gap-1 rounded-lg border p-1 shadow-md backdrop-blur-md transition-all duration-150 select-none">
+        {/* Chart Style Selector */}
+        <div className="border-carbon-800/80 mr-1 flex gap-0.5 border-r pr-1.5">
+          <button
+            type="button"
+            onClick={() => setChartType('candles')}
+            title="Candlestick Chart"
+            className={`rounded-md border p-1.5 transition-all duration-150 active:scale-90 ${
+              chartType === 'candles'
+                ? 'bg-brass-600/20 text-brass-400 border-brass-500/25 shadow-[0_0_10px_rgba(196,165,116,0.12)]'
+                : 'text-silver-400 hover:text-silver-100 hover:bg-carbon-850/50 border-transparent'
+            }`}
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setChartType('line')}
+            title="Line Chart"
+            className={`rounded-md border p-1.5 transition-all duration-150 active:scale-90 ${
+              chartType === 'line'
+                ? 'bg-brass-600/20 text-brass-400 border-brass-500/25 shadow-[0_0_10px_rgba(196,165,116,0.12)]'
+                : 'text-silver-400 hover:text-silver-100 hover:bg-carbon-850/50 border-transparent'
+            }`}
+          >
+            <LineChart className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setChartType('area')}
+            title="Area Chart"
+            className={`rounded-md border p-1.5 transition-all duration-150 active:scale-90 ${
+              chartType === 'area'
+                ? 'bg-brass-600/20 text-brass-400 border-brass-500/25 shadow-[0_0_10px_rgba(196,165,116,0.12)]'
+                : 'text-silver-400 hover:text-silver-100 hover:bg-carbon-850/50 border-transparent'
+            }`}
+          >
+            <AreaChart className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Grid Toggle */}
+        <button
+          type="button"
+          onClick={() => setShowGrid(!showGrid)}
+          title="Toggle Gridlines"
+          className={`rounded-md border p-1.5 transition-all duration-150 active:scale-90 ${
+            showGrid
+              ? 'bg-brass-600/20 text-brass-400 border-brass-500/25 shadow-[0_0_10px_rgba(196,165,116,0.12)]'
+              : 'text-silver-500 hover:text-silver-300 hover:bg-carbon-850/50 border-transparent'
+          }`}
+        >
+          <Grid className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Reset View Button */}
+        <button
+          type="button"
+          onClick={handleResetView}
+          title="Reset Zoom/Pan"
+          className="text-silver-400 hover:text-brass-400 hover:bg-carbon-850/50 rounded-md border border-transparent p-1.5 transition-all duration-150 active:scale-90"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Popout Standalone Window Button */}
+        {!isStandalone && (
+          <button
+            type="button"
+            onClick={handleOpenWindow}
+            title="Open in Standalone Window"
+            className="text-silver-400 hover:text-brass-400 hover:bg-carbon-850/50 rounded-md border border-transparent p-1.5 transition-all duration-150 active:scale-90"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
-      <button
-        type="button"
-        onClick={handleResetView}
-        className="border-carbon-700 bg-carbon-900/80 text-silver-400 hover:border-brass-500 hover:text-brass-400 absolute top-2 right-3 z-10 rounded border px-2 py-0.5 font-mono text-[9px] uppercase"
-        aria-label="Reset chart view"
-      >
-        Reset
-      </button>
 
       <svg width={width} height={height}>
         <defs>
@@ -313,14 +528,16 @@ function ChartInner({
           </g>
         )}
 
-        <GridLayer
-          xScale={scales.xScale}
-          yScale={scales.priceScale}
-          width={layout.innerWidth}
-          height={layout.priceHeight}
-          top={layout.priceTop}
-          left={CHART_MARGINS.left}
-        />
+        {showGrid && (
+          <GridLayer
+            xScale={scales.xScale}
+            yScale={scales.priceScale}
+            width={layout.innerWidth}
+            height={layout.priceHeight}
+            top={layout.priceTop}
+            left={CHART_MARGINS.left}
+          />
+        )}
 
         <VolumeLayer
           bars={visibleBars}
@@ -333,7 +550,7 @@ function ChartInner({
           bars={visibleBars}
           xScale={scales.xScale}
           yScale={scales.priceScale}
-          chartType="candles"
+          chartType={chartType}
           left={CHART_MARGINS.left}
         />
 
@@ -360,6 +577,25 @@ function ChartInner({
               left={CHART_MARGINS.left}
             />
           )}
+
+        {hasOscillator &&
+          layout.oscillatorTop !== undefined &&
+          indicators
+            .filter((ind) => ind.pane === 'oscillator')
+            .map((ind) => {
+              const val = activeIndex !== -1 ? ind.values[activeIndex] : null
+              return (
+                <text
+                  key={ind.key}
+                  x={CHART_MARGINS.left + 12}
+                  y={layout.oscillatorTop! + 16}
+                  fill={ind.color ?? '#e2e8f0'}
+                  className="font-mono text-[9px] font-bold uppercase opacity-80"
+                >
+                  {ind.label}: {val != null ? val.toFixed(2) : '—'}
+                </text>
+              )
+            })}
 
         <ChartAxes
           xScale={scales.xScale}
@@ -392,6 +628,7 @@ function ChartInner({
           width={layout.innerWidth}
           height={layout.innerHeight}
           fill="transparent"
+          pointerEvents="all"
           style={{ cursor: isPanning.current ? 'grabbing' : 'crosshair' }}
           onMouseMove={handleMouseMove}
           onMouseDown={handleMouseDown}
@@ -399,6 +636,8 @@ function ChartInner({
           onMouseLeave={() => {
             handleMouseUp()
             handleTradeHover(null)
+            setHoveredBar(null)
+            setMouseY(null)
           }}
           onDoubleClick={handleDoubleClick}
         />
@@ -413,6 +652,22 @@ function ChartInner({
           hoveredTradeId={hoveredTrade?.id}
           onTradeHover={handleTradeHover}
         />
+
+        {hoveredBar && (
+          <CrosshairLayer
+            activeBar={hoveredBar}
+            xScale={scales.xScale}
+            priceScale={scales.priceScale}
+            layout={{
+              priceTop: layout.priceTop,
+              priceHeight: layout.priceHeight,
+              innerWidth: layout.innerWidth,
+            }}
+            timeframe={timeframe}
+            left={CHART_MARGINS.left}
+            mouseY={mouseY}
+          />
+        )}
       </svg>
 
       {hoveredTrade && hoverPos && (
@@ -450,9 +705,44 @@ function ChartLegend({ indicators }: { indicators: ChartIndicatorSeries[] }) {
         <span className="inline-block h-0 w-0 border-t-[8px] border-r-[5px] border-l-[5px] border-t-rose-400 border-r-transparent border-l-transparent" />
         Short entry
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="border-silver-200 inline-block h-3 w-3 rounded-full border-2 border-emerald-400 bg-emerald-500/80" />
-        Exit
+      <span className="inline-flex flex-wrap items-center gap-1.5">
+        <span className="text-silver-500 mr-1">Exits:</span>
+        <span className="mr-2 inline-flex items-center gap-1">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/80 text-[7px] font-bold text-[#07101c]">
+            SL
+          </span>
+          <span className="text-silver-300">Stop Loss</span>
+        </span>
+        <span className="mr-2 inline-flex items-center gap-1">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/80 text-[7px] font-bold text-[#07101c]">
+            TP
+          </span>
+          <span className="text-silver-300">Take Profit</span>
+        </span>
+        <span className="mr-2 inline-flex items-center gap-1">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/80 text-[7px] font-bold text-[#07101c]">
+            TS
+          </span>
+          <span className="text-silver-300">Trailing</span>
+        </span>
+        <span className="mr-2 inline-flex items-center gap-1">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/80 text-[7px] font-bold text-[#07101c]">
+            S
+          </span>
+          <span className="text-silver-300">Signal</span>
+        </span>
+        <span className="mr-2 inline-flex items-center gap-1">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/80 text-[7px] font-bold text-[#07101c]">
+            D
+          </span>
+          <span className="text-silver-300">Intraday</span>
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/80 text-[7px] font-bold text-[#07101c]">
+            F
+          </span>
+          <span className="text-silver-300">Force</span>
+        </span>
       </span>
       <span className="inline-flex items-center gap-1.5">
         <span className="inline-block h-0.5 w-4 bg-emerald-400/60" />
@@ -470,27 +760,20 @@ function ChartLegend({ indicators }: { indicators: ChartIndicatorSeries[] }) {
 }
 
 export function BacktestStrategyChart(props: BacktestStrategyChartProps) {
-  const lastSize = useRef({ width: 0, height: 0 })
+  const { parentRef, width, height } = useParentSize({ debounceTime: 50 })
 
   if (props.bars.length === 0) {
     return <ChartEmptyState message="No price data available for this backtest." />
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-      <div className="relative min-h-0 flex-1">
-        <ParentSize className="absolute inset-0" debounceTime={50}>
-          {({ width, height }) => {
-            if (width > 0 && height > 0) {
-              lastSize.current = { width, height }
-            }
-            const stableWidth = lastSize.current.width || width
-            const stableHeight = lastSize.current.height || height
-            if (stableWidth <= 0 || stableHeight <= 0) return null
-
-            return <ChartInner {...props} width={stableWidth} height={stableHeight} />
-          }}
-        </ParentSize>
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+      <div ref={parentRef} className="relative min-h-0 flex-1 overflow-hidden">
+        {width > 0 && height > 0 ? (
+          <div className="absolute inset-0">
+            <ChartInner {...props} width={width} height={height} />
+          </div>
+        ) : null}
       </div>
       <ChartLegend indicators={props.indicators} />
     </div>

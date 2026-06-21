@@ -65,6 +65,7 @@ export interface Trade {
   pnl: number | null
   commission: number
   point_value: number
+  exit_reason?: string | null
 }
 
 export interface BacktestMetrics {

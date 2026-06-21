@@ -8,6 +8,9 @@ import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
 
 type ReaderWindowShellProps = {
   children: ReactNode
+  title?: string
+  tag?: string
+  mainClassName?: string
 }
 
 const BLACK_BG_MAP = {
@@ -16,12 +19,17 @@ const BLACK_BG_MAP = {
   low: '/mid_brightness/Quant_Background_Black_Mid_Brightness.jpeg', // Fallback to Mid for now
 }
 
-export function ReaderWindowShell({ children }: ReaderWindowShellProps) {
+export function ReaderWindowShell({
+  children,
+  title = 'News Reader',
+  tag = 'Market News',
+  mainClassName,
+}: ReaderWindowShellProps) {
   const resolvedBrightness = useResolvedBrightness()
   const bgImage = BLACK_BG_MAP[resolvedBrightness]
 
   return (
-    <div className="bg-carbon-950 relative flex min-h-full flex-col overflow-hidden">
+    <div className="bg-carbon-950 relative flex h-screen flex-col overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center opacity-90 transition-all duration-700"
         style={{ backgroundImage: `url('${bgImage}')` }}
@@ -43,19 +51,23 @@ export function ReaderWindowShell({ children }: ReaderWindowShellProps) {
           />
           <div className="bg-brass-600/25 h-5 w-px" />
           <span className="text-silver-300 font-mono text-[10px] font-semibold tracking-wider uppercase">
-            News Reader
+            {title}
           </span>
         </div>
         <div className="flex h-full items-center gap-6">
           <BrightnessToggle />
           <div className="border-brass-600/30 bg-brass-600/10 text-brass-400 flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase shadow-[0_0_10px_rgba(196,165,116,0.05)]">
             <span className="bg-brass-400 h-1 w-1 animate-pulse rounded-full" />
-            Market News
+            {tag}
           </div>
           <WindowControls />
         </div>
       </header>
-      <main className="animate-fade-in-up relative z-10 flex-1 overflow-auto px-6 py-6">
+      <main
+        className={
+          mainClassName ?? 'animate-fade-in-up relative z-10 flex-1 overflow-auto px-6 py-6'
+        }
+      >
         {children}
       </main>
     </div>

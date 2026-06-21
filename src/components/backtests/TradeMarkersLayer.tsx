@@ -50,6 +50,28 @@ function tradeLineColor(pnl: number | null): string {
   return 'rgba(154, 161, 172, 0.35)'
 }
 
+function exitReasonMarkerLabel(exitReason?: string | null): string {
+  if (!exitReason) return ''
+
+  const reason = exitReason.toUpperCase()
+  if (reason === 'STOP_LOSS' || reason === 'SL' || reason === 'FIXED_SL') return 'SL'
+  if (reason === 'ATR_SL') return 'AS'
+  if (reason === 'TAKE_PROFIT' || reason === 'TP' || reason === 'FIXED_TP') return 'TP'
+  if (reason === 'ATR_TP') return 'AT'
+  if (reason === 'TRAILING_STOP' || reason === 'TRAILING') return 'TS'
+  if (reason === 'CHANDELIER') return 'CH'
+  if (reason === 'BREAKEVEN') return 'BE'
+  if (reason === 'PSAR') return 'PS'
+  if (reason === 'PROFIT_TARGET_RATCHET') return 'PR'
+  if (reason === 'TIME_STOP') return 'TI'
+  if (reason === 'DONCHIAN_STOP') return 'DC'
+  if (reason.includes('SIGNAL')) return 'S'
+  if (reason.includes('END_OF_DAY')) return 'D'
+  if (reason.includes('FORCE_CLOSE') || reason.includes('FORCE')) return 'F'
+
+  return ''
+}
+
 function EntryMarker({ x, y, isBuy }: { x: number; y: number; isBuy: boolean }) {
   const color = isBuy ? BULL_COLOR : BEAR_COLOR
   const size = ENTRY_MARKER_SIZE
@@ -68,20 +90,41 @@ function EntryMarker({ x, y, isBuy }: { x: number; y: number; isBuy: boolean }) 
   )
 }
 
-function ExitMarker({ x, y, isBuy }: { x: number; y: number; isBuy: boolean }) {
+function ExitMarker({
+  x,
+  y,
+  isBuy,
+  exitReason,
+}: {
+  x: number
+  y: number
+  isBuy: boolean
+  exitReason?: string | null
+}) {
   const fillColor = isBuy ? 'rgba(0, 192, 118, 0.85)' : 'rgba(255, 59, 48, 0.85)'
   const strokeColor = isBuy ? BULL_COLOR : BEAR_COLOR
+  const letter = exitReasonMarkerLabel(exitReason)
+
+  const radius = letter ? EXIT_MARKER_RADIUS + 2.5 : EXIT_MARKER_RADIUS
 
   return (
-    <circle
-      cx={x}
-      cy={y}
-      r={EXIT_MARKER_RADIUS}
-      fill={fillColor}
-      stroke={strokeColor}
-      strokeWidth={2}
-      style={{ filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.65))' }}
-    />
+    <g style={{ filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.65))' }}>
+      <circle cx={x} cy={y} r={radius} fill={fillColor} stroke={strokeColor} strokeWidth={2} />
+      {letter && (
+        <text
+          x={x}
+          y={y}
+          dy="0.31em"
+          textAnchor="middle"
+          fill="#07101c"
+          fontSize="8px"
+          fontWeight="bold"
+          style={{ userSelect: 'none', pointerEvents: 'none' }}
+        >
+          {letter}
+        </text>
+      )}
+    </g>
   )
 }
 
@@ -189,7 +232,7 @@ export function TradeMarkersLayer({
                   fill="transparent"
                   pointerEvents="all"
                 />
-                <ExitMarker x={exitX} y={exitY} isBuy={isBuy} />
+                <ExitMarker x={exitX} y={exitY} isBuy={isBuy} exitReason={trade.exit_reason} />
               </>
             )}
           </g>
