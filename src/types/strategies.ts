@@ -29,3 +29,10 @@ export type StrategyInfo = {
 export type StrategiesResponse = {
   strategies: StrategyInfo[]
 }
+
+export type CustomStrategy = {
+  name: string
+  base_strategy: string
+  description?: string
+  parameters: Record<string, number | string>
+}

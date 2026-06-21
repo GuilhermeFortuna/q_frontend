@@ -3,11 +3,11 @@ import {
   Activity,
   BarChart3,
   Compass,
+  Cpu,
   Database,
   Home,
   Settings,
   ShieldCheck,
-  SlidersHorizontal,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 
@@ -27,8 +27,8 @@ const dockItems: DockItem[] = [
   { id: 'launcher', label: 'Launcher', to: '/', icon: Home, enabled: true },
   { id: 'market-data', label: 'Market', to: '/market-data', icon: BarChart3, enabled: true },
   { id: 'storage', label: 'Storage', to: '/storage', icon: Database, enabled: true },
+  { id: 'strategy', label: 'Strategy', to: '/strategy', icon: Cpu, enabled: true },
   { id: 'backtests', label: 'Backtests', to: '/backtests', icon: Activity, enabled: true },
-  { id: 'optimize', label: 'Optimize', to: '/optimize', icon: SlidersHorizontal, enabled: true },
   { id: 'validate', label: 'Validate', to: '/validate', icon: ShieldCheck, enabled: true },
   { id: 'discover', label: 'Discover', to: '/discover', icon: Compass, enabled: true },
   { id: 'system', label: 'System', to: '/system', icon: Settings, enabled: true },

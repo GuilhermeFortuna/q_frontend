@@ -12,10 +12,10 @@ import { DiscoverWorkspace } from '@/workspaces/discover/DiscoverWorkspace'
 import { LauncherWorkspace } from '@/workspaces/launcher/LauncherWorkspace'
 import { MarketDataWorkspace } from '@/workspaces/market-data/MarketDataWorkspace'
 import { NewsReaderWorkspace } from '@/workspaces/news/NewsReaderWorkspace'
-import { OptimizeWorkspace } from '@/workspaces/optimize/OptimizeWorkspace'
 import { StorageWorkspace } from '@/workspaces/storage/StorageWorkspace'
 import { SystemWorkspace } from '@/workspaces/system/SystemWorkspace'
 import { WalkForwardWorkspace } from '@/workspaces/walkforward/WalkForwardWorkspace'
+import { StrategyWorkspace } from '@/workspaces/strategy/StrategyWorkspace'
 import { useAppStore } from '@/store/useAppStore'
 import type { WorkspaceId } from '@/types/api'
 
@@ -46,7 +46,15 @@ const indexRoute = createRoute({
         active = 'launcher'
       }
       if (active && active !== 'launcher') {
-        throw redirect({ to: active === 'validate' ? '/validate' : `/${active}` })
+        if (active === 'validate') {
+          throw redirect({ to: '/validate' })
+        }
+        if ((active as string) === 'optimize') {
+          useAppStore.getState().setActiveWorkspace('backtests')
+          useAppStore.getState().patchBacktestSession({ workflowMode: 'optimize' })
+          throw redirect({ to: '/backtests', search: { mode: 'optimize' } })
+        }
+        throw redirect({ to: `/${active}` })
       }
     }
     syncWorkspace('launcher')
@@ -75,18 +83,35 @@ const systemRoute = createRoute({
   component: SystemWorkspace,
 })
 
+type BacktestsSearch = {
+  mode?: 'optimize'
+}
+
 const backtestsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/backtests',
-  beforeLoad: () => syncWorkspace('backtests'),
-  component: BacktestsWorkspace,
+  validateSearch: (search: Record<string, unknown>): BacktestsSearch => ({
+    mode: search.mode === 'optimize' ? 'optimize' : undefined,
+  }),
+  beforeLoad: ({ search }) => {
+    syncWorkspace('backtests')
+    if (search.mode === 'optimize') {
+      useAppStore.getState().patchBacktestSession({ workflowMode: 'optimize' })
+    }
+  },
+  component: () => {
+    const search = backtestsRoute.useSearch()
+    return <BacktestsWorkspace initialMode={search.mode} />
+  },
 })
 
 const optimizeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/optimize',
-  beforeLoad: () => syncWorkspace('optimize'),
-  component: OptimizeWorkspace,
+  beforeLoad: () => {
+    useAppStore.getState().patchBacktestSession({ workflowMode: 'optimize' })
+    throw redirect({ to: '/backtests', search: { mode: 'optimize' } })
+  },
 })
 
 const validateRoute = createRoute({
@@ -101,6 +126,13 @@ const discoverRoute = createRoute({
   path: '/discover',
   beforeLoad: () => syncWorkspace('discover'),
   component: DiscoverWorkspace,
+})
+
+const strategyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/strategy',
+  beforeLoad: () => syncWorkspace('strategy'),
+  component: StrategyWorkspace,
 })
 
 type NewsReaderSearch = {
@@ -129,6 +161,7 @@ const routeTree = rootRoute.addChildren([
   validateRoute,
   discoverRoute,
   newsReaderRoute,
+  strategyRoute,
 ])
 
 export const router = createRouter({

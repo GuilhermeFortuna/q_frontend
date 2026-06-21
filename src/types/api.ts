@@ -3,10 +3,10 @@ export type WorkspaceId =
   | 'market-data'
   | 'storage'
   | 'backtests'
-  | 'optimize'
   | 'validate'
   | 'discover'
   | 'system'
+  | 'strategy'
 
 export type SystemHealth = {
   status: 'healthy' | 'degraded' | 'down'
