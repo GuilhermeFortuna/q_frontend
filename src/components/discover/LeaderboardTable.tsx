@@ -165,7 +165,7 @@ export function LeaderboardTable({
   const handlePromoteOptimize = (candidate: CandidateResult) => {
     if (!searchConfig) return
     setPendingOptimizationConfig(buildOptimizationConfigFromCandidate(candidate, searchConfig))
-    void navigate({ to: '/optimize' })
+    void navigate({ to: '/backtests', search: { mode: 'optimize' } })
   }
 
   const objectiveHeader = `OOS ${objectiveMetricLabel(objectiveMode)} (out-of-sample)`

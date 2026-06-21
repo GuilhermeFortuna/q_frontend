@@ -27,6 +27,7 @@ function formatValue(value: unknown): string {
 export function BestParamsCard({ results, backtest, trial, title, onLoad }: BestParamsCardProps) {
   const navigate = useNavigate()
   const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
+  const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
 
   const displayTrial = trial ?? results.best_trial
   const strategyParams = displayTrial?.user_attrs.strategy_params ?? {}
@@ -35,8 +36,17 @@ export function BestParamsCard({ results, backtest, trial, title, onLoad }: Best
   const handleLoad = () => {
     if (!displayTrial) return
     setPendingBacktestConfig(buildBacktestRequestFromTrial(displayTrial, backtest))
+    patchBacktestSession({
+      workflowMode: 'backtest',
+      focus: 'setup',
+      rightPanelTab: 'results',
+    })
     onLoad?.()
-    void navigate({ to: '/backtests' })
+    const onBacktestsPage =
+      typeof window !== 'undefined' && window.location.pathname === '/backtests'
+    if (!onBacktestsPage) {
+      void navigate({ to: '/backtests' })
+    }
   }
 
   const heading =

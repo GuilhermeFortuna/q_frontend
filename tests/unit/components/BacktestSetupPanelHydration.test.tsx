@@ -162,7 +162,8 @@ describe('BacktestSetupPanel — hydration from pending config', () => {
     if (!capturedConfig) {
       throw new Error('expected backtest config to be captured')
     }
-    expect(capturedConfig.buildRequest().strategy_params).toEqual({
+    const config = capturedConfig as ReturnType<typeof useBacktestConfig>
+    expect(config.buildRequest().strategy_params).toEqual({
       genome: mockSampleGenome,
       sma_period: 12,
     })

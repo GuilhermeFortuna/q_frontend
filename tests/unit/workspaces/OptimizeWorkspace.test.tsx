@@ -1,20 +1,51 @@
 import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { handlers } from '@/mocks/handlers'
 import { useAppStore } from '@/store/useAppStore'
-import { OptimizeWorkspace } from '@/workspaces/optimize/OptimizeWorkspace'
+import { BacktestsWorkspace } from '@/workspaces/backtests/BacktestsWorkspace'
 import { renderWithQueryClient } from '../testUtils'
 import type { OptimizationConfig } from '@/types/optimization'
 
 const server = setupServer(...handlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeEach(() => {
+  useAppStore.getState().patchBacktestSession({
+    workflowMode: 'backtest',
+    runId: null,
+    lastCapital: 100000,
+    lastRequest: null,
+    focus: 'setup',
+    rightPanelTab: 'results',
+    selectedHistoryRunId: null,
+    comparisonRuns: null,
+  })
+  useAppStore.getState().patchOptimizeSession({
+    studyId: null,
+    studyBacktestConfigs: {},
+    submittedConfig: null,
+    focus: 'setup',
+    rightPanelTab: 'results',
+    selectedHistoryStudyId: null,
+  })
+  useAppStore.getState().setPendingOptimizationConfig(null)
+})
 afterEach(() => {
   server.resetHandlers()
+  useAppStore.getState().patchBacktestSession({
+    workflowMode: 'backtest',
+    runId: null,
+    lastCapital: 100000,
+    lastRequest: null,
+    focus: 'setup',
+    rightPanelTab: 'results',
+    selectedHistoryRunId: null,
+    comparisonRuns: null,
+  })
   useAppStore.getState().patchOptimizeSession({
     studyId: null,
     studyBacktestConfigs: {},
@@ -34,8 +65,17 @@ vi.mock('@/api/queries/market-data', async (importOriginal) => {
 
 async function waitForStrategyLibrary() {
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: /MA Crossover/i, pressed: true })).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('optimize-workflow')).getByRole('button', {
+        name: /MA Crossover/i,
+        pressed: true,
+      }),
+    ).toBeInTheDocument()
   })
+}
+
+function optimizeScope() {
+  return within(screen.getByTestId('optimize-workflow'))
 }
 
 function immediateOptimizeHandlers() {
@@ -88,11 +128,11 @@ function immediateOptimizeHandlers() {
   )
 }
 
-describe('OptimizeWorkspace — focus swap', () => {
+describe('BacktestsWorkspace — optimization focus swap', () => {
   it('submits a study and lands focus on expanded results', async () => {
     immediateOptimizeHandlers()
     const user = userEvent.setup()
-    renderWithQueryClient(<OptimizeWorkspace />)
+    renderWithQueryClient(<BacktestsWorkspace initialMode="optimize" />)
     await waitForStrategyLibrary()
 
     await user.click(screen.getByRole('button', { name: 'Run Optimization' }))
@@ -106,10 +146,10 @@ describe('OptimizeWorkspace — focus swap', () => {
   it('expands setup from the collapsed strip and preserves form state', async () => {
     immediateOptimizeHandlers()
     const user = userEvent.setup()
-    renderWithQueryClient(<OptimizeWorkspace />)
+    renderWithQueryClient(<BacktestsWorkspace initialMode="optimize" />)
     await waitForStrategyLibrary()
 
-    const symbolInput = screen.getByPlaceholderText('e.g. PETR4') as HTMLInputElement
+    const symbolInput = optimizeScope().getByPlaceholderText('e.g. PETR4') as HTMLInputElement
     await user.clear(symbolInput)
     await user.type(symbolInput, 'VALE3')
     await user.click(screen.getByRole('button', { name: 'Run Optimization' }))
@@ -123,7 +163,9 @@ describe('OptimizeWorkspace — focus swap', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Run Optimization' })).toBeInTheDocument()
     })
-    expect((screen.getByPlaceholderText('e.g. PETR4') as HTMLInputElement).value).toBe('VALE3')
+    expect((optimizeScope().getByPlaceholderText('e.g. PETR4') as HTMLInputElement).value).toBe(
+      'VALE3',
+    )
   })
 
   it('returns to results from the collapsed teaser without restarting the study', async () => {
@@ -175,7 +217,7 @@ describe('OptimizeWorkspace — focus swap', () => {
       ),
     )
 
-    renderWithQueryClient(<OptimizeWorkspace />)
+    renderWithQueryClient(<BacktestsWorkspace initialMode="optimize" />)
     await waitForStrategyLibrary()
     await user.click(screen.getByRole('button', { name: 'Run Optimization' }))
 
@@ -246,7 +288,7 @@ describe('OptimizeWorkspace — focus swap', () => {
       ),
     )
 
-    renderWithQueryClient(<OptimizeWorkspace />)
+    renderWithQueryClient(<BacktestsWorkspace initialMode="optimize" />)
     await waitForStrategyLibrary()
     await user.click(screen.getByRole('button', { name: 'Run Optimization' }))
 
@@ -265,7 +307,7 @@ describe('OptimizeWorkspace — focus swap', () => {
 
   it('routes the pre-run results teaser to history', async () => {
     const user = userEvent.setup()
-    renderWithQueryClient(<OptimizeWorkspace />)
+    renderWithQueryClient(<BacktestsWorkspace initialMode="optimize" />)
     await waitForStrategyLibrary()
 
     await user.click(screen.getByRole('button', { name: 'Open optimization history' }))
@@ -274,13 +316,37 @@ describe('OptimizeWorkspace — focus swap', () => {
       expect(screen.getByText('Past Studies')).toBeInTheDocument()
     })
   })
+
+  it('preserves optimization state when switching to Simulation and back', async () => {
+    immediateOptimizeHandlers()
+    const user = userEvent.setup()
+    renderWithQueryClient(<BacktestsWorkspace initialMode="optimize" />)
+    await waitForStrategyLibrary()
+
+    const symbolInput = optimizeScope().getByPlaceholderText('e.g. PETR4') as HTMLInputElement
+    await user.clear(symbolInput)
+    await user.type(symbolInput, 'VALE3')
+
+    await user.click(screen.getByRole('button', { name: 'Simulation' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Run Simulation' })).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Optimization' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Run Optimization' })).toBeInTheDocument()
+    })
+    expect((optimizeScope().getByPlaceholderText('e.g. PETR4') as HTMLInputElement).value).toBe(
+      'VALE3',
+    )
+  })
 })
 
 describe('CollapsedOptimizeResultsTeaser', () => {
   it('shows headline metrics after a completed study', async () => {
     immediateOptimizeHandlers()
     const user = userEvent.setup()
-    renderWithQueryClient(<OptimizeWorkspace />)
+    renderWithQueryClient(<BacktestsWorkspace initialMode="optimize" />)
     await waitForStrategyLibrary()
     await user.click(screen.getByRole('button', { name: 'Run Optimization' }))
 

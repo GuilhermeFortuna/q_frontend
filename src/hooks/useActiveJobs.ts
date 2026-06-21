@@ -41,16 +41,14 @@ export function useActiveJobs(): ActiveJobsMap {
 
   const map: ActiveJobsMap = {}
 
-  if (backtest?.status === 'running') {
+  if (isActive(optimize?.status) && optimize) {
+    map.backtests = {
+      pct: pctOf(optimize.completed_trials, optimize.n_trials),
+      detail: `Optimize: Trial ${optimize.completed_trials} / ${optimize.n_trials}`,
+    }
+  } else if (backtest?.status === 'running') {
     // A single backtest has no granular progress; show an indeterminate caption.
     map.backtests = { pct: 0, detail: 'Running…' }
-  }
-
-  if (isActive(optimize?.status) && optimize) {
-    map.optimize = {
-      pct: pctOf(optimize.completed_trials, optimize.n_trials),
-      detail: `Trial ${optimize.completed_trials} / ${optimize.n_trials}`,
-    }
   }
 
   if (isActive(walkForward?.status) && walkForward) {

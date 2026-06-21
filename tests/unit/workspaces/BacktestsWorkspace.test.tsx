@@ -1,6 +1,6 @@
 import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
@@ -14,11 +14,24 @@ import type { BacktestRequest } from '@/types/backtesting'
 const server = setupServer(...handlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeEach(() => {
+  useAppStore.getState().patchBacktestSession({
+    workflowMode: 'backtest',
+    runId: null,
+    lastCapital: 100000,
+    lastRequest: null,
+    focus: 'setup',
+    rightPanelTab: 'results',
+    selectedHistoryRunId: null,
+    comparisonRuns: null,
+  })
+})
 afterEach(() => {
   server.resetHandlers()
   // Backtests now persist the active run id across navigation; clear it and other session
   // state so they don't leak from one test to the next.
   useAppStore.getState().patchBacktestSession({
+    workflowMode: 'backtest',
     runId: null,
     lastCapital: 100000,
     lastRequest: null,
@@ -32,9 +45,43 @@ afterAll(() => server.close())
 
 async function waitForStrategyLibrary() {
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: /MA Crossover/i, pressed: true })).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('backtest-workflow')).getByRole('button', {
+        name: /MA Crossover/i,
+        pressed: true,
+      }),
+    ).toBeInTheDocument()
   })
 }
+
+describe('BacktestsWorkspace — workflow mode', () => {
+  it('defaults to Simulation mode', async () => {
+    renderWithQueryClient(<BacktestsWorkspace />)
+    await waitForStrategyLibrary()
+
+    expect(screen.getByRole('button', { name: 'Simulation' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Run Simulation' })).toBeInTheDocument()
+  })
+
+  it('switches to Optimization mode from the segmented control', async () => {
+    const user = userEvent.setup()
+    renderWithQueryClient(<BacktestsWorkspace />)
+    await waitForStrategyLibrary()
+
+    await user.click(screen.getByRole('button', { name: 'Optimization' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Run Optimization' })).toBeInTheDocument()
+    })
+  })
+
+  it('opens in Optimization mode when initialMode is optimize', async () => {
+    renderWithQueryClient(<BacktestsWorkspace initialMode="optimize" />)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Run Optimization' })).toBeInTheDocument()
+    })
+  })
+})
 
 describe('BacktestsWorkspace — focus swap', () => {
   it('submits a run and lands focus on expanded results', async () => {
@@ -55,7 +102,9 @@ describe('BacktestsWorkspace — focus swap', () => {
     renderWithQueryClient(<BacktestsWorkspace />)
     await waitForStrategyLibrary()
 
-    const symbolInput = screen.getByPlaceholderText('e.g. PETR4') as HTMLInputElement
+    const symbolInput = within(screen.getByTestId('backtest-workflow')).getByPlaceholderText(
+      'e.g. PETR4',
+    ) as HTMLInputElement
     await user.clear(symbolInput)
     await user.type(symbolInput, 'VALE3')
     await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
@@ -69,7 +118,13 @@ describe('BacktestsWorkspace — focus swap', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Run Simulation' })).toBeInTheDocument()
     })
-    expect((screen.getByPlaceholderText('e.g. PETR4') as HTMLInputElement).value).toBe('VALE3')
+    expect(
+      (
+        within(screen.getByTestId('backtest-workflow')).getByPlaceholderText(
+          'e.g. PETR4',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe('VALE3')
   })
 
   it('returns to results from the collapsed teaser without refetching', async () => {

@@ -10,17 +10,10 @@ import { OptimizeFocusWorkbench } from '@/components/optimize/focus/OptimizeFocu
 import { OptimizationHistoryPanel } from '@/components/optimize/OptimizationHistoryPanel'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
-import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
-import type { JobPanelTab } from '@/store/slices/jobSessionsSlice'
 import type { JobStatus, OptimizationConfig } from '@/types/optimization'
 
-const RIGHT_PANEL_TABS: { id: JobPanelTab; label: string }[] = [
-  { id: 'results', label: 'Results' },
-  { id: 'history', label: 'History' },
-]
-
-export function OptimizeWorkspace() {
+export function OptimizeWorkflow() {
   const optimizeConfig = useOptimizeConfig()
   const reducedMotion = usePrefersReducedMotion()
 
@@ -110,55 +103,35 @@ export function OptimizeWorkspace() {
     ? formatApiError(cancelOptimization.error, 'Failed to cancel optimization')
     : null
 
-  return (
-    <div className="text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col overflow-hidden">
-      <div className="quant-panel flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
-        <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
-          {RIGHT_PANEL_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => patchSession({ rightPanelTab: tab.id })}
-              className={cn(
-                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
-                rightPanelTab === tab.id
-                  ? 'border-brass-400 text-brass-400'
-                  : 'text-silver-400 hover:text-silver-200 border-transparent',
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+  if (rightPanelTab === 'history') {
+    return (
+      <OptimizationHistoryPanel
+        selectedStudyId={selectedHistoryStudyId}
+        onSelectStudy={(id) => patchSession({ selectedHistoryStudyId: id })}
+        studyBacktestConfigs={studyBacktestConfigs}
+        onContinueStudy={handleContinueStudy}
+      />
+    )
+  }
 
-        {rightPanelTab === 'history' ? (
-          <OptimizationHistoryPanel
-            selectedStudyId={selectedHistoryStudyId}
-            onSelectStudy={(id) => patchSession({ selectedHistoryStudyId: id })}
-            studyBacktestConfigs={studyBacktestConfigs}
-            onContinueStudy={handleContinueStudy}
-          />
-        ) : (
-          <OptimizeFocusWorkbench
-            focus={focus}
-            onFocusChange={(next) => patchSession({ focus: next })}
-            onOpenHistory={() => patchSession({ rightPanelTab: 'history' })}
-            reducedMotion={reducedMotion}
-            config={optimizeConfig}
-            loading={startOptimization.isPending}
-            error={startError}
-            disabled={isRunning}
-            onSubmit={handleSubmit}
-            isRunning={isRunning}
-            status={status}
-            results={resultsQuery.data}
-            backtest={submittedConfig?.backtest ?? null}
-            onCancel={handleCancel}
-            cancelling={cancelOptimization.isPending}
-            cancelError={cancelError}
-          />
-        )}
-      </div>
-    </div>
+  return (
+    <OptimizeFocusWorkbench
+      focus={focus}
+      onFocusChange={(next) => patchSession({ focus: next })}
+      onOpenHistory={() => patchSession({ rightPanelTab: 'history' })}
+      reducedMotion={reducedMotion}
+      config={optimizeConfig}
+      loading={startOptimization.isPending}
+      error={startError}
+      disabled={isRunning}
+      onSubmit={handleSubmit}
+      isRunning={isRunning}
+      status={status}
+      results={resultsQuery.data}
+      backtest={submittedConfig?.backtest ?? null}
+      onCancel={handleCancel}
+      cancelling={cancelOptimization.isPending}
+      cancelError={cancelError}
+    />
   )
 }

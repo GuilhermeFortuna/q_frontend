@@ -48,12 +48,15 @@ export type DiscoverSession = {
 
 export type BacktestWorkbenchFocus = 'setup' | 'results'
 
+export type BacktestWorkflowMode = 'backtest' | 'optimize'
+
 /**
  * Backtests are now async jobs, so the active run id must outlive navigation just
  * like the other job workspaces — when the workspace remounts the id is restored
  * and polling resumes.
  */
 export type BacktestSession = {
+  workflowMode: BacktestWorkflowMode
   runId: string | null
   lastCapital: number
   lastRequest: BacktestRequest | null
@@ -132,6 +135,7 @@ const initialDiscoverSession: DiscoverSession = {
 }
 
 const initialBacktestSession: BacktestSession = {
+  workflowMode: 'backtest',
   runId: null,
   lastCapital: 100000,
   lastRequest: null,
