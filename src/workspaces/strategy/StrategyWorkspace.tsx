@@ -1,40 +1,43 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useStrategies } from '@/api/queries/strategies'
+import { useStrategies, useExitRuleCatalog } from '@/api/queries/strategies'
 import {
   useCustomStrategies,
   useSaveCustomStrategy,
   useDeleteCustomStrategy,
 } from '@/api/queries/customStrategies'
 import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
-import { inputClass, presetButtonActiveClass } from '@/components/shared/InstrumentConfigFields'
+import { inputClass } from '@/components/shared/InstrumentConfigFields'
 import { cn } from '@/lib/utils'
 import type { CustomStrategy } from '@/types/strategies'
 import type { StrategyParamValue } from '@/lib/strategies/strategyParams'
+import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
+import { ExitConfigurator } from '@/workspaces/strategy/ExitConfigurator'
+import { getEnabledExitRules } from '@/workspaces/strategy/exitRuleSemantics'
 import {
-  groupExitParamSpecs,
-  partitionStrategyParamSpecs,
-} from '@/workspaces/strategy/exitWorkbenchGroups'
-import { Cpu, Trash2, Plus, Settings2, ShieldCheck, HelpCircle } from 'lucide-react'
+  buildWorkbenchSummary,
+  StrategyWorkbenchActionBar,
+} from '@/workspaces/strategy/StrategyWorkbenchActionBar'
+import { Cpu, Trash2, Plus, Settings2, ShieldCheck } from 'lucide-react'
 import axios from 'axios'
+
+const THESIS_COLLAPSE_THRESHOLD = 160
 
 export function StrategyWorkspace() {
   const { data: allStrategies, isLoading: strategiesLoading } = useStrategies()
+  const { data: exitCatalog, isLoading: exitCatalogLoading } = useExitRuleCatalog()
   const { data: customStrategies, isLoading: customLoading } = useCustomStrategies()
   const saveCustomStrategy = useSaveCustomStrategy()
   const deleteCustomStrategy = useDeleteCustomStrategy()
 
-  // Selection state
   const [selectedCustomName, setSelectedCustomName] = useState<string | null>(null)
-
-  // Form states
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [baseStrategyName, setBaseStrategyName] = useState('')
   const [paramValues, setParamValues] = useState<Record<string, StrategyParamValue>>({})
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [thesisOpen, setThesisOpen] = useState(true)
 
-  // Derived built-in base strategies
   const customNames = useMemo(() => {
     return new Set(customStrategies?.map((s) => s.name) ?? [])
   }, [customStrategies])
@@ -46,7 +49,6 @@ export function StrategyWorkspace() {
     )
   }, [allStrategies, customNames])
 
-  // Selected base strategy details
   const selectedBaseStrategy = useMemo(() => {
     return baseStrategies.find((s) => s.name === baseStrategyName) || null
   }, [baseStrategies, baseStrategyName])
@@ -58,9 +60,27 @@ export function StrategyWorkspace() {
     return partitionStrategyParamSpecs(selectedBaseStrategy.params)
   }, [selectedBaseStrategy])
 
-  const exitParamGroups = useMemo(() => groupExitParamSpecs(exitParamSpecs), [exitParamSpecs])
+  const enabledExitCount = useMemo(() => {
+    if (!exitCatalog) return 0
+    return getEnabledExitRules(exitCatalog.exit_rules, paramValues).length
+  }, [exitCatalog, paramValues])
 
-  // Load a custom strategy into the form
+  const workbenchSummary = buildWorkbenchSummary(enabledExitCount, name)
+  const canSave = name.trim().length > 0 && !saveCustomStrategy.isPending
+  const canBacktest = Boolean(baseStrategyName)
+
+  useEffect(() => {
+    const thesis = selectedBaseStrategy?.thesis ?? ''
+    setThesisOpen(thesis.length <= THESIS_COLLAPSE_THRESHOLD)
+  }, [selectedBaseStrategy?.thesis, baseStrategyName])
+
+  const handleParamsMerge = (updates: Record<string, StrategyParamValue>) => {
+    setParamValues((prev) => ({
+      ...prev,
+      ...updates,
+    }))
+  }
+
   const handleSelectCustom = (strategy: CustomStrategy) => {
     setSelectedCustomName(strategy.name)
     setName(strategy.name)
@@ -70,19 +90,16 @@ export function StrategyWorkspace() {
     setErrorMsg(null)
   }
 
-  // Clear form to create a new custom strategy
   const handleNewStrategy = () => {
     setSelectedCustomName(null)
     setName('')
     setDescription('')
     setErrorMsg(null)
 
-    // Default to the first base strategy if available
     if (baseStrategies.length > 0) {
       const defaultBase = baseStrategies[0]
       setBaseStrategyName(defaultBase.name)
 
-      // Initialize parameter defaults
       const defaults: Record<string, StrategyParamValue> = {}
       defaultBase.params.forEach((p) => {
         defaults[p.name] = p.default
@@ -94,7 +111,6 @@ export function StrategyWorkspace() {
     }
   }
 
-  // Handle base strategy change
   const handleBaseStrategyChange = (newBaseName: string) => {
     setBaseStrategyName(newBaseName)
     const base = baseStrategies.find((s) => s.name === newBaseName)
@@ -109,7 +125,6 @@ export function StrategyWorkspace() {
     }
   }
 
-  // Handle parameter value change
   const handleParamChange = (pName: string, value: StrategyParamValue) => {
     setParamValues((prev) => ({
       ...prev,
@@ -117,7 +132,6 @@ export function StrategyWorkspace() {
     }))
   }
 
-  // Handle Save
   const handleSave = () => {
     setErrorMsg(null)
     const trimmedName = name.trim()
@@ -126,7 +140,6 @@ export function StrategyWorkspace() {
       return
     }
 
-    // Ensure name doesn't conflict with built-in strategy
     const isBuiltIn = baseStrategies.some((s) => s.name.toLowerCase() === trimmedName.toLowerCase())
     if (isBuiltIn) {
       setErrorMsg(
@@ -135,7 +148,6 @@ export function StrategyWorkspace() {
       return
     }
 
-    // If creating a new strategy, check if name already exists in custom list
     if (!selectedCustomName && customNames.has(trimmedName)) {
       setErrorMsg(`A custom strategy named "${trimmedName}" already exists.`)
       return
@@ -163,7 +175,6 @@ export function StrategyWorkspace() {
     })
   }
 
-  // Handle Delete
   const handleDelete = (cName: string) => {
     if (window.confirm(`Are you sure you want to delete the custom strategy "${cName}"?`)) {
       deleteCustomStrategy.mutate(cName, {
@@ -176,10 +187,10 @@ export function StrategyWorkspace() {
     }
   }
 
-  const isLoading = strategiesLoading || customLoading
+  const isLoading = strategiesLoading || customLoading || exitCatalogLoading
+  const hasSavedStrategies = Boolean(customStrategies && customStrategies.length > 0)
 
-  // Initialize form if empty and strategies loaded
-  useMemo(() => {
+  useEffect(() => {
     if (!isLoading && baseStrategies.length > 0 && !baseStrategyName && !selectedCustomName) {
       const defaultBase = baseStrategies[0]
       setBaseStrategyName(defaultBase.name)
@@ -192,69 +203,83 @@ export function StrategyWorkspace() {
   }, [isLoading, baseStrategies, baseStrategyName, selectedCustomName])
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-1">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-silver-100 text-xl font-medium">Strategy Workbench</h1>
           <p className="text-silver-400 text-sm">
-            Create, customize, and save strategies by blending entry logic with risk management exit
-            strategies.
+            Blend entry logic with composable exits, then save or send to Backtests.
           </p>
         </div>
         <button
           type="button"
           onClick={handleNewStrategy}
-          className="border-brass-600/30 bg-brass-600/10 text-brass-400 hover:bg-brass-600/20 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors"
+          className="border-brass-600/30 bg-brass-600/10 text-brass-400 hover:bg-brass-600/20 flex items-center gap-1.5 self-start rounded-lg border px-3 py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors"
         >
           <Plus className="h-4 w-4" /> New Strategy
         </button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-12">
-        {/* Left Column: Custom Strategies List */}
-        <div className="flex flex-col gap-4 md:col-span-4">
-          <Card className="flex flex-1 flex-col">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold tracking-wider uppercase">
+      <div className="grid gap-4 lg:grid-cols-12">
+        <aside className="lg:col-span-3" data-testid="workbench-saved-rail">
+          <Card className="flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold tracking-wider uppercase">
                 Saved Strategies
               </CardTitle>
-              <CardDescription>Select a custom strategy to edit or test</CardDescription>
+              {hasSavedStrategies ? (
+                <CardDescription className="text-[11px]">
+                  Select a custom strategy to edit
+                </CardDescription>
+              ) : null}
             </CardHeader>
-            <CardContent className="max-h-[500px] flex-1 space-y-2 overflow-y-auto">
+            <CardContent
+              className={cn(
+                'flex-1',
+                hasSavedStrategies
+                  ? 'max-h-[min(70vh,520px)] space-y-1.5 overflow-y-auto pb-3'
+                  : 'pb-3',
+              )}
+            >
               {isLoading ? (
-                <div className="text-silver-500 py-6 text-center font-mono text-xs">
-                  Loading workbench data...
-                </div>
-              ) : !customStrategies || customStrategies.length === 0 ? (
-                <div className="border-carbon-800/80 text-silver-500 rounded-lg border-2 border-dashed px-4 py-8 text-center text-xs">
-                  No custom strategies saved yet. Create your first one!
+                <div className="text-silver-500 py-3 text-center font-mono text-xs">Loading...</div>
+              ) : !hasSavedStrategies ? (
+                <div
+                  className="flex flex-col items-start gap-2 py-1"
+                  data-testid="workbench-saved-empty"
+                >
+                  <p className="text-silver-500 text-xs">No saved strategies yet.</p>
+                  <button
+                    type="button"
+                    onClick={handleNewStrategy}
+                    className="border-brass-600/30 bg-brass-600/10 text-brass-400 hover:bg-brass-600/20 rounded-md border px-2.5 py-1 text-[11px] font-semibold tracking-wider uppercase"
+                  >
+                    New Strategy
+                  </button>
                 </div>
               ) : (
-                customStrategies.map((strategy) => {
+                customStrategies!.map((strategy) => {
                   const isActive = selectedCustomName === strategy.name
                   return (
                     <div
                       key={strategy.name}
                       onClick={() => handleSelectCustom(strategy)}
                       className={cn(
-                        'group flex cursor-pointer items-start justify-between rounded-lg border p-3 transition-all duration-200',
+                        'group flex cursor-pointer items-start justify-between rounded-md border px-2.5 py-2 transition-colors',
                         isActive
                           ? 'border-brass-500 bg-brass-500/10 text-brass-200'
                           : 'border-carbon-800/60 bg-carbon-900/35 text-silver-300 hover:border-brass-600/30 hover:bg-carbon-800/30',
                       )}
                     >
-                      <div className="flex min-w-0 items-start gap-2.5">
-                        <Cpu className="text-brass-400 mt-0.5 h-4.5 w-4.5 shrink-0" />
+                      <div className="flex min-w-0 items-start gap-2">
+                        <Cpu className="text-brass-400 mt-0.5 h-4 w-4 shrink-0" />
                         <div className="min-w-0">
-                          <h3 className="truncate font-mono text-xs font-bold">{strategy.name}</h3>
+                          <h3 className="truncate font-mono text-[11px] font-bold">
+                            {strategy.name}
+                          </h3>
                           <p className="text-silver-500 truncate font-mono text-[10px]">
-                            Base: {strategy.base_strategy}
+                            {strategy.base_strategy}
                           </p>
-                          {strategy.description && (
-                            <p className="text-silver-400 mt-1 line-clamp-1 text-[11px] leading-normal">
-                              {strategy.description}
-                            </p>
-                          )}
                         </div>
                       </div>
                       <button
@@ -263,7 +288,7 @@ export function StrategyWorkspace() {
                           e.stopPropagation()
                           handleDelete(strategy.name)
                         }}
-                        className="text-silver-500 hover:bg-carbon-800/50 rounded p-1 opacity-0 transition-opacity group-hover:text-rose-400 group-hover:opacity-100"
+                        className="text-silver-500 hover:bg-carbon-800/50 rounded p-0.5 opacity-0 transition-opacity group-hover:text-rose-400 group-hover:opacity-100"
                         title="Delete custom strategy"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -274,181 +299,175 @@ export function StrategyWorkspace() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </aside>
 
-        {/* Right Column: Workbench Form */}
-        <div className="md:col-span-8">
-          <Card>
-            <CardHeader className="border-carbon-800/60 border-b pb-4">
-              <CardTitle className="text-sm font-semibold tracking-wider uppercase">
+        <div className="lg:col-span-9" data-testid="workbench-form-panel">
+          <Card className="overflow-hidden">
+            <CardHeader className="border-carbon-800/60 border-b px-4 py-3">
+              <CardTitle className="text-xs font-semibold tracking-wider uppercase">
                 {selectedCustomName ? 'Edit Strategy' : 'Create Custom Strategy'}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[11px]">
                 {selectedCustomName
-                  ? `Modifying parameters for "${selectedCustomName}"`
-                  : 'Specify entry rules and specialized exits to design your custom strategy'}
+                  ? `Editing "${selectedCustomName}"`
+                  : 'Setup → entry parameters → exit rules'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 pt-5">
+
+            <CardContent className="space-y-4 px-4 pt-4 pb-2">
               {errorMsg && (
-                <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3.5 py-2.5 text-xs text-rose-300">
+                <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
                   {errorMsg}
                 </div>
               )}
 
-              {/* 1. Identity & Base Selection */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="workbench-name"
-                    className="text-silver-300 text-xs font-medium tracking-wider uppercase"
-                  >
-                    Strategy Name
-                  </label>
-                  <input
-                    id="workbench-name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={inputClass}
-                    placeholder="e.g. MyRSIReversion"
-                    disabled={!!selectedCustomName}
-                  />
-                  {selectedCustomName && (
-                    <p className="text-silver-500 text-[10px]">
-                      Strategy names cannot be changed once saved.
-                    </p>
-                  )}
+              <section id="workbench-setup" className="space-y-3">
+                <h3 className="text-silver-400 text-[11px] font-semibold tracking-wider uppercase">
+                  Setup
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="workbench-name"
+                      className="text-silver-300 text-xs font-medium tracking-wider uppercase"
+                    >
+                      Strategy Name
+                    </label>
+                    <input
+                      id="workbench-name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className={inputClass}
+                      placeholder="e.g. MyRSIReversion"
+                      disabled={!!selectedCustomName}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="workbench-base"
+                      className="text-silver-300 text-xs font-medium tracking-wider uppercase"
+                    >
+                      Base Entry Strategy
+                    </label>
+                    <select
+                      id="workbench-base"
+                      value={baseStrategyName}
+                      onChange={(e) => handleBaseStrategyChange(e.target.value)}
+                      className={inputClass}
+                      disabled={!!selectedCustomName}
+                    >
+                      {baseStrategies.map((s) => (
+                        <option key={s.name} value={s.name}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1 sm:col-span-2 xl:col-span-1">
+                    <label
+                      htmlFor="workbench-desc"
+                      className="text-silver-300 text-xs font-medium tracking-wider uppercase"
+                    >
+                      Description
+                    </label>
+                    <input
+                      id="workbench-desc"
+                      type="text"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className={inputClass}
+                      placeholder="Optional thesis summary..."
+                    />
+                  </div>
                 </div>
+              </section>
 
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="workbench-base"
-                    className="text-silver-300 text-xs font-medium tracking-wider uppercase"
-                  >
-                    Base Entry Strategy
-                  </label>
-                  <select
-                    id="workbench-base"
-                    value={baseStrategyName}
-                    onChange={(e) => handleBaseStrategyChange(e.target.value)}
-                    className={inputClass}
-                    disabled={!!selectedCustomName}
-                  >
-                    {baseStrategies.map((s) => (
-                      <option key={s.name} value={s.name}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="workbench-desc"
-                  className="text-silver-300 text-xs font-medium tracking-wider uppercase"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="workbench-desc"
-                  rows={2}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className={cn(inputClass, 'resize-none')}
-                  placeholder="Summarize the core thesis, settings, or risk model..."
-                />
-              </div>
-
-              <hr className="border-carbon-800/80" />
-
-              {/* 2. Strategy Parameters (Entry Rules) */}
-              <div className="space-y-3">
+              <section id="workbench-entry" className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Settings2 className="text-brass-400 h-4 w-4" />
+                  <Settings2 className="text-brass-400 h-4 w-4" aria-hidden />
                   <h3 className="text-silver-200 text-sm font-semibold tracking-wide">
                     1. Entry Strategy Parameters
                   </h3>
                 </div>
-                {selectedBaseStrategy && selectedBaseStrategy.thesis && (
-                  <p className="text-silver-400 bg-carbon-900/35 border-carbon-800/60 rounded-lg border p-3 text-xs leading-normal">
-                    <span className="text-brass-400 mb-0.5 block font-semibold">Thesis:</span>
-                    {selectedBaseStrategy.thesis}
-                  </p>
-                )}
+
+                {selectedBaseStrategy?.thesis ? (
+                  <div className="bg-carbon-900/35 border-carbon-800/60 rounded-lg border px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setThesisOpen((open) => !open)}
+                      className="text-brass-400 flex w-full items-center justify-between text-left text-xs font-semibold"
+                      aria-expanded={thesisOpen}
+                      data-testid="workbench-thesis-toggle"
+                    >
+                      <span>Thesis</span>
+                      <span className="text-silver-500 font-normal">
+                        {thesisOpen ? 'Hide' : 'Show'}
+                      </span>
+                    </button>
+                    {thesisOpen ? (
+                      <p className="text-silver-400 mt-2 text-xs leading-relaxed">
+                        {selectedBaseStrategy.thesis}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 {entryParamSpecs.length > 0 ? (
                   <StrategyParamFields
                     params={entryParamSpecs}
                     values={paramValues}
                     onChange={handleParamChange}
-                    className="bg-carbon-900/20 border-carbon-800/40 grid gap-4 rounded-lg border p-4 sm:grid-cols-2"
-                    showHints={true}
+                    className="bg-carbon-900/20 border-carbon-800/40 grid gap-3 rounded-lg border p-3 sm:grid-cols-2 xl:grid-cols-3"
+                    showHints
+                    hintMode="compact"
                   />
                 ) : (
-                  <div className="text-silver-500 py-3 text-xs italic">
+                  <div className="text-silver-500 text-xs italic">
                     No entry parameters to configure.
                   </div>
                 )}
-              </div>
+              </section>
 
-              <hr className="border-carbon-800/80" />
-
-              {/* 3. Exit Strategy & Risk Management */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="text-brass-400 h-4.5 w-4.5" />
-                    <h3 className="text-silver-200 text-sm font-semibold tracking-wide">
-                      2. Exit Strategy & Risk Management
-                    </h3>
-                  </div>
-                  <div className="text-silver-500 flex items-center gap-1 font-mono text-[10px] tracking-wider uppercase">
-                    <HelpCircle className="h-3.5 w-3.5" /> Set to 0 to disable
-                  </div>
+              <section id="workbench-exits" className="space-y-3 pb-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="text-brass-400 h-4 w-4" aria-hidden />
+                  <h3 className="text-silver-200 text-sm font-semibold tracking-wide">
+                    2. Exit Strategy & Risk Management
+                  </h3>
                 </div>
 
-                {exitParamGroups.length > 0 ? (
-                  <div className="space-y-4">
-                    {exitParamGroups.map(({ group, label, specs }) => (
-                      <div
-                        key={group}
-                        className="bg-carbon-900/20 border-carbon-800/40 rounded-lg border p-4"
-                      >
-                        <h4 className="text-silver-300 mb-3 text-xs font-semibold tracking-wider uppercase">
-                          {label}
-                        </h4>
-                        <StrategyParamFields
-                          params={specs}
-                          values={paramValues}
-                          onChange={handleParamChange}
-                          className="grid gap-4 sm:grid-cols-3"
-                          showHints
-                        />
-                      </div>
-                    ))}
-                  </div>
+                {exitCatalog && exitCatalog.exit_rules.length > 0 ? (
+                  <ExitConfigurator
+                    exitRules={exitCatalog.exit_rules}
+                    sharedExitParams={exitCatalog.shared_exit_params}
+                    exitPresets={exitCatalog.exit_presets}
+                    exitParamSpecs={exitParamSpecs}
+                    paramValues={paramValues}
+                    onChange={handleParamChange}
+                    onParamsMerge={handleParamsMerge}
+                  />
                 ) : (
-                  <div className="text-silver-500 py-3 text-xs italic">
-                    Exit parameters not available for this strategy.
+                  <div className="text-silver-500 text-xs italic">
+                    {isLoading
+                      ? 'Loading exit catalog...'
+                      : 'Exit parameters not available for this strategy.'}
                   </div>
                 )}
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saveCustomStrategy.isPending}
-                  className={cn(
-                    presetButtonActiveClass,
-                    'px-5 py-2.5 text-xs font-bold tracking-wider uppercase',
-                  )}
-                >
-                  {saveCustomStrategy.isPending ? 'Saving...' : 'Save Strategy'}
-                </button>
-              </div>
+              </section>
             </CardContent>
+
+            <StrategyWorkbenchActionBar
+              summary={workbenchSummary}
+              canSave={canSave}
+              isSaving={saveCustomStrategy.isPending}
+              onSave={handleSave}
+              canBacktest={canBacktest}
+              baseStrategyName={baseStrategyName}
+              paramValues={paramValues}
+            />
           </Card>
         </div>
       </div>

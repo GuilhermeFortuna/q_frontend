@@ -11,10 +11,24 @@ type StrategyParamFieldsProps = {
   className?: string
   /** When true, renders optional param hints beside/below each field. Default false. */
   showHints?: boolean
+  /** How hints render when showHints is true. Default 'paragraph'. */
+  hintMode?: 'paragraph' | 'compact'
 }
 
 function ParamHint({ hint }: { hint: string }) {
   return <p className="text-silver-500 text-xs leading-snug">{hint}</p>
+}
+
+function ParamHintCompact({ hint }: { hint: string }) {
+  return (
+    <span
+      className="text-silver-500 ml-1 inline-flex cursor-help align-middle text-[10px]"
+      title={hint}
+      aria-hidden="true"
+    >
+      ⓘ
+    </span>
+  )
 }
 
 export function StrategyParamFields({
@@ -23,6 +37,7 @@ export function StrategyParamFields({
   onChange,
   className = 'bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3',
   showHints = false,
+  hintMode = 'paragraph',
 }: StrategyParamFieldsProps) {
   if (params.length === 0) return null
 
@@ -37,10 +52,11 @@ export function StrategyParamFields({
           const choices = spec.choices ?? []
           return (
             <div key={spec.name} className="space-y-1">
-              <label htmlFor={id} className="text-silver-400 text-xs">
+              <label htmlFor={id} className="text-silver-400 inline-flex items-center text-xs">
                 {spec.label}
+                {hint && hintMode === 'compact' ? <ParamHintCompact hint={hint} /> : null}
               </label>
-              {hint ? <ParamHint hint={hint} /> : null}
+              {hint && hintMode === 'paragraph' ? <ParamHint hint={hint} /> : null}
               <select
                 id={id}
                 value={String(value)}
@@ -64,10 +80,11 @@ export function StrategyParamFields({
 
         return (
           <div key={spec.name} className="space-y-1">
-            <label htmlFor={id} className="text-silver-400 text-xs">
+            <label htmlFor={id} className="text-silver-400 inline-flex items-center text-xs">
               {spec.label}
+              {hint && hintMode === 'compact' ? <ParamHintCompact hint={hint} /> : null}
             </label>
-            {hint ? <ParamHint hint={hint} /> : null}
+            {hint && hintMode === 'paragraph' ? <ParamHint hint={hint} /> : null}
             <NumberInput
               id={id}
               step={step}

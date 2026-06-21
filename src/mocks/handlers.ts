@@ -14,6 +14,7 @@ import {
   mockOptimizationStudySummaries,
   mockSnapshots,
   mockStrategies,
+  mockExitRuleCatalog,
   mockSystemHealth,
 } from '@/mocks/data'
 import {
@@ -172,6 +173,8 @@ export const handlers = [
   }),
 
   http.get('*/api/v1/strategies', () => HttpResponse.json(mockStrategies)),
+
+  http.get('*/api/v1/exit-rules', () => HttpResponse.json(mockExitRuleCatalog)),
 
   http.get('*/api/v1/market/instruments', () => HttpResponse.json(mockInstruments)),
 

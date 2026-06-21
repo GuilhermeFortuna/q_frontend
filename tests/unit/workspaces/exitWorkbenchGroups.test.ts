@@ -74,6 +74,32 @@ describe('partitionStrategyParamSpecs', () => {
 })
 
 describe('groupExitParamSpecs', () => {
+  it('groups general exit params under Indicator Settings', () => {
+    const grouped = groupExitParamSpecs([
+      {
+        name: 'atr_period',
+        label: 'ATR Period',
+        type: 'int',
+        default: 14,
+        exit_group: 'general',
+        hint: 'Shared ATR lookback.',
+      },
+    ])
+
+    expect(grouped).toEqual([
+      {
+        group: 'general',
+        label: 'Indicator Settings',
+        specs: [
+          expect.objectContaining({
+            name: 'atr_period',
+            hint: 'Shared ATR lookback.',
+          }),
+        ],
+      },
+    ])
+  })
+
   it('renders one group per present exit_group in fixed order', () => {
     const { exitParamSpecs } = partitionStrategyParamSpecs(mockSpecs)
     const grouped = groupExitParamSpecs(exitParamSpecs)

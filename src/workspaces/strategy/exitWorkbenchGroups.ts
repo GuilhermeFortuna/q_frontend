@@ -1,12 +1,19 @@
 import type { ExitGroup, StrategyParamSpec } from '@/types/strategies'
 
-export const EXIT_GROUP_ORDER: readonly ExitGroup[] = ['stop_loss', 'trailing', 'target', 'time']
+export const EXIT_GROUP_ORDER: readonly ExitGroup[] = [
+  'stop_loss',
+  'trailing',
+  'target',
+  'time',
+  'general',
+]
 
 export const EXIT_GROUP_LABELS: Record<ExitGroup, string> = {
   stop_loss: 'Stop Loss',
   trailing: 'Trailing Stops',
   target: 'Profit Targets',
   time: 'Time Exits',
+  general: 'Indicator Settings',
 }
 
 export const EXIT_GROUP_OTHER_LABEL = 'Other Exits'

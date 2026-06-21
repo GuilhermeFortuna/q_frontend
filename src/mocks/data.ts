@@ -21,7 +21,7 @@ import type {
   OptimizationStatus,
   OptimizationStudySummary,
 } from '@/types/optimization'
-import type { StrategiesResponse } from '@/types/strategies'
+import type { ExitRuleCatalogResponse, StrategiesResponse } from '@/types/strategies'
 
 export const mockSystemHealth: SystemHealth = {
   status: 'degraded',
@@ -967,6 +967,42 @@ export const mockStrategies: StrategiesResponse = {
           hint: '0 disables target; wider = fewer hits, larger wins.',
         },
       ],
+    },
+  ],
+}
+
+export const mockExitRuleCatalog: ExitRuleCatalogResponse = {
+  exit_rules: [
+    {
+      id: 'fixed_sl',
+      label: 'Fixed Stop Loss',
+      description: 'Exit when price moves against the position by a fixed percentage from entry.',
+      exit_group: 'stop_loss',
+      enable_param: 'stop_loss_pct',
+      param_names: ['stop_loss_pct'],
+      required_param_names: [],
+    },
+    {
+      id: 'chandelier',
+      label: 'Chandelier Exit',
+      description: 'Trailing stop at peak high minus an ATR multiple.',
+      exit_group: 'trailing',
+      enable_param: 'chandelier_atr_mult',
+      param_names: ['chandelier_atr_mult'],
+      required_param_names: ['atr_period'],
+    },
+  ],
+  shared_exit_params: ['atr_period'],
+  exit_presets: [
+    {
+      id: 'atr_stop_chandelier',
+      label: 'ATR stop + Chandelier trail',
+      description: 'Volatility stop with a trailing lock as the trend runs.',
+      parameters: {
+        stop_loss_atr: 2,
+        atr_period: 14,
+        chandelier_atr_mult: 3,
+      },
     },
   ],
 }
