@@ -50,6 +50,7 @@ The app shell uses a glassmorphic **dock** for workspace navigation. The dock sh
 - **Optimize Workspace:** Configurable Optuna-driven hyperparameter sweeps that support single/multi-objective optimization, real-time job cancellation, log streaming, and interactive Pareto Front / historical trial scatter charts.
 - **Validate Workspace:** Walk-forward analysis — optimize in-sample per window, test out-of-sample, compare IS/OOS metrics, and inspect stitched OOS equity curves.
 - **Discover Workspace:** Strategy search (discovery) — sweep registered candle strategies, walk-forward validate each candidate, and browse an OOS-ranked leaderboard.
+- **Strategy Workspace:** Custom strategy workbench — blend a base entry strategy with composable exit rules and save named presets. Exit parameters render generically by backend `exit_group` metadata (`Stop Loss`, `Trailing Stops`, `Profit Targets`, `Time Exits`); new backend exit rules appear automatically with no frontend changes.
 - **System Workspace:** System diagnostics, data-lake sync telemetries, and live FastAPI connection heartbeats.
 - **News Reader:** Secondary Tauri window (`?news_id=…` or `/news-reader`) for reading market headlines without leaving the main shell.
 - **Executive PDF Report Export:** Native Tauri-driven high-fidelity HTML-to-PDF report generation for exporting formatted backtest results directly to the user's filesystem.

@@ -2,6 +2,8 @@ export type StrategyParamType = 'int' | 'float' | 'categorical'
 
 export type StrategyCategory = 'trend' | 'mean_reversion' | 'breakout' | 'momentum' | 'other'
 
+export type ExitGroup = 'stop_loss' | 'trailing' | 'target' | 'time'
+
 export type StrategyParamSpec = {
   name: string
   label: string
@@ -12,6 +14,7 @@ export type StrategyParamSpec = {
   step?: number | null
   choices?: string[] | null
   hint?: string | null
+  exit_group?: ExitGroup | null
 }
 
 export type StrategyInfo = {

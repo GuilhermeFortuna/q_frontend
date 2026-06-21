@@ -11,17 +11,12 @@ import { inputClass, presetButtonActiveClass } from '@/components/shared/Instrum
 import { cn } from '@/lib/utils'
 import type { CustomStrategy } from '@/types/strategies'
 import type { StrategyParamValue } from '@/lib/strategies/strategyParams'
+import {
+  groupExitParamSpecs,
+  partitionStrategyParamSpecs,
+} from '@/workspaces/strategy/exitWorkbenchGroups'
 import { Cpu, Trash2, Plus, Settings2, ShieldCheck, HelpCircle } from 'lucide-react'
 import axios from 'axios'
-
-const EXIT_PARAM_NAMES = new Set([
-  'stop_loss_pct',
-  'take_profit_pct',
-  'trailing_stop_pct',
-  'stop_loss_atr',
-  'take_profit_atr',
-  'atr_period',
-])
 
 export function StrategyWorkspace() {
   const { data: allStrategies, isLoading: strategiesLoading } = useStrategies()
@@ -56,16 +51,14 @@ export function StrategyWorkspace() {
     return baseStrategies.find((s) => s.name === baseStrategyName) || null
   }, [baseStrategies, baseStrategyName])
 
-  // Filter entry vs exit parameter specs for the selected base strategy
-  const entryParamSpecs = useMemo(() => {
-    if (!selectedBaseStrategy) return []
-    return selectedBaseStrategy.params.filter((p) => !EXIT_PARAM_NAMES.has(p.name))
+  const { entryParamSpecs, exitParamSpecs } = useMemo(() => {
+    if (!selectedBaseStrategy) {
+      return { entryParamSpecs: [], exitParamSpecs: [] }
+    }
+    return partitionStrategyParamSpecs(selectedBaseStrategy.params)
   }, [selectedBaseStrategy])
 
-  const exitParamSpecs = useMemo(() => {
-    if (!selectedBaseStrategy) return []
-    return selectedBaseStrategy.params.filter((p) => EXIT_PARAM_NAMES.has(p.name))
-  }, [selectedBaseStrategy])
+  const exitParamGroups = useMemo(() => groupExitParamSpecs(exitParamSpecs), [exitParamSpecs])
 
   // Load a custom strategy into the form
   const handleSelectCustom = (strategy: CustomStrategy) => {
@@ -415,98 +408,25 @@ export function StrategyWorkspace() {
                   </div>
                 </div>
 
-                {exitParamSpecs.length > 0 ? (
+                {exitParamGroups.length > 0 ? (
                   <div className="space-y-4">
-                    {/* Percentage Exits */}
-                    <div className="bg-carbon-900/20 border-carbon-800/40 rounded-lg border p-4">
-                      <h4 className="text-silver-300 mb-3 text-xs font-semibold tracking-wider uppercase">
-                        Fixed & Trailing Percentage Exits
-                      </h4>
-                      <div className="grid gap-4 sm:grid-cols-3">
-                        {exitParamSpecs
-                          .filter((p) => p.name.endsWith('_pct'))
-                          .map((spec) => {
-                            const value = paramValues[spec.name] ?? spec.default
-                            return (
-                              <div key={spec.name} className="space-y-1">
-                                <label
-                                  htmlFor={`exit-param-${spec.name}`}
-                                  className="text-silver-400 font-mono text-xs"
-                                >
-                                  {spec.label}
-                                </label>
-                                <input
-                                  id={`exit-param-${spec.name}`}
-                                  type="number"
-                                  step={spec.step ?? 0.001}
-                                  min={spec.min ?? 0}
-                                  max={spec.max ?? undefined}
-                                  value={Number(value)}
-                                  onChange={(e) =>
-                                    handleParamChange(spec.name, parseFloat(e.target.value) || 0)
-                                  }
-                                  className={inputClass}
-                                />
-                                <p className="text-silver-500 text-[10px] leading-tight">
-                                  {spec.name === 'stop_loss_pct' &&
-                                    'Fixed stop loss (e.g. 0.02 = 2%)'}
-                                  {spec.name === 'take_profit_pct' &&
-                                    'Fixed target (e.g. 0.05 = 5%)'}
-                                  {spec.name === 'trailing_stop_pct' &&
-                                    'Trailing stop from peak (e.g. 0.02 = 2%)'}
-                                </p>
-                              </div>
-                            )
-                          })}
+                    {exitParamGroups.map(({ group, label, specs }) => (
+                      <div
+                        key={group}
+                        className="bg-carbon-900/20 border-carbon-800/40 rounded-lg border p-4"
+                      >
+                        <h4 className="text-silver-300 mb-3 text-xs font-semibold tracking-wider uppercase">
+                          {label}
+                        </h4>
+                        <StrategyParamFields
+                          params={specs}
+                          values={paramValues}
+                          onChange={handleParamChange}
+                          className="grid gap-4 sm:grid-cols-3"
+                          showHints
+                        />
                       </div>
-                    </div>
-
-                    {/* Volatility Exits */}
-                    <div className="bg-carbon-900/20 border-carbon-800/40 rounded-lg border p-4">
-                      <h4 className="text-silver-300 mb-3 text-xs font-semibold tracking-wider uppercase">
-                        Volatility-Adjusted Exits (ATR)
-                      </h4>
-                      <div className="grid gap-4 sm:grid-cols-3">
-                        {exitParamSpecs
-                          .filter((p) => !p.name.endsWith('_pct'))
-                          .map((spec) => {
-                            const value = paramValues[spec.name] ?? spec.default
-                            return (
-                              <div key={spec.name} className="space-y-1">
-                                <label
-                                  htmlFor={`exit-param-${spec.name}`}
-                                  className="text-silver-400 font-mono text-xs"
-                                >
-                                  {spec.label}
-                                </label>
-                                <input
-                                  id={`exit-param-${spec.name}`}
-                                  type="number"
-                                  step={spec.step ?? 1}
-                                  min={spec.min ?? 0}
-                                  max={spec.max ?? undefined}
-                                  value={Number(value)}
-                                  onChange={(e) =>
-                                    handleParamChange(
-                                      spec.name,
-                                      spec.type === 'int'
-                                        ? parseInt(e.target.value) || 0
-                                        : parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className={inputClass}
-                                />
-                                <p className="text-silver-500 text-[10px] leading-tight">
-                                  {spec.name === 'stop_loss_atr' && 'Stop Loss (ATR multiplier)'}
-                                  {spec.name === 'take_profit_atr' &&
-                                    'Take Profit (ATR multiplier)'}
-                                  {spec.name === 'atr_period' && "Wilder's smoothing lookback"}
-                                </p>
-                              </div>
-                            )
-                          })}
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-silver-500 py-3 text-xs italic">
