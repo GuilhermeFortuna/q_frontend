@@ -46,4 +46,68 @@ describe('OptimizationProgress', () => {
     expect(screen.getByText(/Running 20 trials · 8 in parallel/i)).toBeInTheDocument()
     expect(screen.getByText(/Progress: 4 \/ 20 Trials/i)).toBeInTheDocument()
   })
+
+  it('shows scalar best objective for single-objective runs', () => {
+    render(<OptimizationProgress status={baseStatus} onCancel={vi.fn()} cancelling={false} />)
+
+    expect(screen.getByText(/Best objective:/i)).toBeInTheDocument()
+    expect(screen.getByText('12.3400')).toBeInTheDocument()
+    expect(screen.queryByText(/Best Return:/i)).not.toBeInTheDocument()
+  })
+
+  it('shows best Return and Drawdown for multi-objective runs', () => {
+    render(
+      <OptimizationProgress
+        status={{
+          ...baseStatus,
+          best_value: null,
+          optimization_config: {
+            study: { name: 'Multi-objective study', n_trials: 20, sampler: 'nsgaii' },
+            objective: { mode: 'multi_objective_return_drawdown' },
+            backtest: {
+              symbol: 'PETR4',
+              start: '2024-01-01',
+              end: '2024-06-01',
+              initial_capital: 100000,
+              point_value: 1,
+              strategy: 'MACrossover',
+              engine: 'candle',
+            },
+            search_space: { strategy_params: {}, risk_params: {} },
+          },
+          trials: [
+            {
+              number: 1,
+              params: {},
+              values: [0.1, 0.15],
+              state: 'COMPLETE',
+              user_attrs: { status: 'complete' },
+            },
+            {
+              number: 2,
+              params: {},
+              values: [0.25, 0.08],
+              state: 'COMPLETE',
+              user_attrs: { status: 'complete' },
+            },
+            {
+              number: 3,
+              params: {},
+              values: [0.18, 0.05],
+              state: 'COMPLETE',
+              user_attrs: { status: 'complete' },
+            },
+          ],
+        }}
+        onCancel={vi.fn()}
+        cancelling={false}
+      />,
+    )
+
+    expect(screen.getByText(/Best Return:/i)).toBeInTheDocument()
+    expect(screen.getByText(/Best Drawdown:/i)).toBeInTheDocument()
+    expect(screen.getByText('25.00%')).toBeInTheDocument()
+    expect(screen.getByText('5.00%')).toBeInTheDocument()
+    expect(screen.queryByText(/Best objective:/i)).not.toBeInTheDocument()
+  })
 })

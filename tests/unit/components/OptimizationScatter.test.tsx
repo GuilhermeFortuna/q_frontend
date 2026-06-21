@@ -4,6 +4,7 @@ import { CartesianGrid, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'rec
 
 import { OptimizationScatter } from '@/components/optimize/OptimizationScatter'
 import { getMockOptimizationResults } from '@/mocks/data'
+import type { OptimizationResults } from '@/types/optimization'
 
 describe('OptimizationScatter', () => {
   beforeEach(() => {
@@ -31,6 +32,104 @@ describe('OptimizationScatter', () => {
     await waitFor(() => {
       expect(container.querySelector('.recharts-surface')).not.toBeNull()
       expect(container.querySelector('.recharts-scatter-symbol')).not.toBeNull()
+    })
+  })
+
+  it('renders Pareto Front chart for multi-objective trials', async () => {
+    const results: OptimizationResults = {
+      study_id: 'study-multi',
+      objective_mode: 'multi_objective_return_drawdown',
+      is_multi_objective: true,
+      best_params: {
+        strategy__short_period: 12,
+        strategy__long_period: 64,
+      },
+      best_trial: {
+        number: 3,
+        params: { strategy__short_period: 12, strategy__long_period: 64 },
+        values: [0.25, 0.05],
+        state: 'COMPLETE',
+        user_attrs: {
+          status: 'complete',
+          metrics: { total_pnl: 25000, max_drawdown_pct: 0.05, total_trades: 12 },
+          strategy_params: { short_period: 12, long_period: 64 },
+          risk_params: { type: 'fixed_quantity', quantity: 2 },
+        },
+      },
+      trials: [
+        {
+          number: 1,
+          params: { strategy__short_period: 5, strategy__long_period: 40 },
+          values: [0.1, 0.15],
+          state: 'COMPLETE',
+          user_attrs: {
+            status: 'complete',
+            metrics: { total_pnl: 10000, max_drawdown_pct: 0.15, total_trades: 8 },
+            strategy_params: { short_period: 5, long_period: 40 },
+            risk_params: { type: 'fixed_quantity', quantity: 2 },
+          },
+        },
+        {
+          number: 2,
+          params: { strategy__short_period: 8, strategy__long_period: 50 },
+          values: [0.18, 0.08],
+          state: 'COMPLETE',
+          user_attrs: {
+            status: 'complete',
+            metrics: { total_pnl: 18000, max_drawdown_pct: 0.08, total_trades: 10 },
+            strategy_params: { short_period: 8, long_period: 50 },
+            risk_params: { type: 'fixed_quantity', quantity: 2 },
+          },
+        },
+        {
+          number: 3,
+          params: { strategy__short_period: 12, strategy__long_period: 64 },
+          values: [0.25, 0.05],
+          state: 'COMPLETE',
+          user_attrs: {
+            status: 'complete',
+            metrics: { total_pnl: 25000, max_drawdown_pct: 0.05, total_trades: 12 },
+            strategy_params: { short_period: 12, long_period: 64 },
+            risk_params: { type: 'fixed_quantity', quantity: 2 },
+          },
+        },
+      ],
+      pareto_trials: [
+        {
+          number: 2,
+          params: { strategy__short_period: 8, strategy__long_period: 50 },
+          values: [0.18, 0.08],
+          state: 'COMPLETE',
+          user_attrs: {
+            status: 'complete',
+            metrics: { total_pnl: 18000, max_drawdown_pct: 0.08, total_trades: 10 },
+            strategy_params: { short_period: 8, long_period: 50 },
+            risk_params: { type: 'fixed_quantity', quantity: 2 },
+          },
+        },
+        {
+          number: 3,
+          params: { strategy__short_period: 12, strategy__long_period: 64 },
+          values: [0.25, 0.05],
+          state: 'COMPLETE',
+          user_attrs: {
+            status: 'complete',
+            metrics: { total_pnl: 25000, max_drawdown_pct: 0.05, total_trades: 12 },
+            strategy_params: { short_period: 12, long_period: 64 },
+            risk_params: { type: 'fixed_quantity', quantity: 2 },
+          },
+        },
+      ],
+      failures: [],
+    }
+
+    const { container, getByText } = render(
+      <OptimizationScatter results={results} selectedTrialNumber={results.best_trial!.number} />,
+    )
+
+    await waitFor(() => {
+      expect(container.querySelector('.recharts-surface')).not.toBeNull()
+      expect(getByText('Pareto Front — Return vs Drawdown')).not.toBeNull()
     })
   })
 

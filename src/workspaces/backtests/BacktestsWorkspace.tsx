@@ -133,14 +133,16 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
 
         <div
           data-testid="optimize-workflow"
-          style={{ display: workflowMode === 'optimize' ? undefined : 'none' }}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          style={{ display: workflowMode === 'optimize' ? 'flex' : 'none' }}
         >
           <OptimizeWorkflow />
         </div>
 
         <div
           data-testid="backtest-workflow"
-          style={{ display: workflowMode === 'backtest' ? undefined : 'none' }}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          style={{ display: workflowMode === 'backtest' ? 'flex' : 'none' }}
         >
           {backtestRightPanelTab === 'history' ? (
             comparisonRuns ? (

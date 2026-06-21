@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 
 import { Button } from '@/components/ui/button'
+import { formatMultiObjectiveTrialValues } from '@/lib/optimize/multiObjectiveMetrics'
 import { buildBacktestRequestFromTrial } from '@/lib/optimization/bridge'
 import { useAppStore } from '@/store/useAppStore'
 import type {
@@ -72,10 +73,21 @@ export function BestParamsCard({ results, backtest, trial, title, onLoad }: Best
 
       {displayTrial?.values && (
         <p className="text-silver-300 text-xs">
-          Objective ({results.objective_mode}):{' '}
-          <span className="text-silver-100">
-            {displayTrial.values.map((v) => v.toFixed(4)).join(', ')}
-          </span>
+          {results.is_multi_objective && displayTrial.values.length >= 2 ? (
+            <>
+              Objectives:{' '}
+              <span className="text-silver-100">
+                {formatMultiObjectiveTrialValues(displayTrial.values)}
+              </span>
+            </>
+          ) : (
+            <>
+              Objective ({results.objective_mode}):{' '}
+              <span className="text-silver-100">
+                {displayTrial.values.map((v) => v.toFixed(4)).join(', ')}
+              </span>
+            </>
+          )}
         </p>
       )}
 

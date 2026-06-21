@@ -1,4 +1,8 @@
 import { cn } from '@/lib/utils'
+import {
+  computeBestMultiObjectiveMetrics,
+  formatFractionAsPercent,
+} from '@/lib/optimize/multiObjectiveMetrics'
 import type { OptimizationResults } from '@/types/optimization'
 
 type OptimizationMetricsBarProps = {
@@ -24,16 +28,46 @@ export function OptimizationMetricsBar({ results }: OptimizationMetricsBarProps)
       ? results.best_trial.values.map((v) => v.toFixed(4)).join(', ')
       : '—'
 
+  const { bestReturn, bestDrawdown } = results.is_multi_objective
+    ? computeBestMultiObjectiveMetrics(results.trials)
+    : { bestReturn: null, bestDrawdown: null }
+
   return (
-    <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-      <div
-        className={cn(
-          metricCardClass,
-          'quant-panel--glow quant-panel--glow-breathing hover:scale-[1.02]',
-        )}
-      >
-        <Metric label="Best Objective" value={bestObjective} highlight />
-      </div>
+    <div
+      className={cn(
+        'mb-4 grid grid-cols-2 gap-4',
+        results.is_multi_objective ? 'sm:grid-cols-5' : 'sm:grid-cols-4',
+      )}
+    >
+      {results.is_multi_objective ? (
+        <>
+          <div
+            className={cn(
+              metricCardClass,
+              'quant-panel--glow quant-panel--glow-breathing hover:scale-[1.02]',
+            )}
+          >
+            <Metric label="Best Return" value={formatFractionAsPercent(bestReturn)} highlight />
+          </div>
+          <div
+            className={cn(
+              metricCardClass,
+              'quant-panel--glow quant-panel--glow-breathing hover:scale-[1.02]',
+            )}
+          >
+            <Metric label="Best Drawdown" value={formatFractionAsPercent(bestDrawdown)} highlight />
+          </div>
+        </>
+      ) : (
+        <div
+          className={cn(
+            metricCardClass,
+            'quant-panel--glow quant-panel--glow-breathing hover:scale-[1.02]',
+          )}
+        >
+          <Metric label="Best Objective" value={bestObjective} highlight />
+        </div>
+      )}
       <div className={metricCardClass}>
         <Metric label="Completed" value={String(completed)} />
       </div>

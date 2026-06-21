@@ -1,3 +1,4 @@
+import { formatMultiObjectiveTeaserValues } from '@/lib/optimize/multiObjectiveMetrics'
 import { cn } from '@/lib/utils'
 import type { OptimizationResults, OptimizationStatus } from '@/types/optimization'
 
@@ -15,6 +16,9 @@ const teaserButtonClass =
 
 function formatBestObjective(results: OptimizationResults | undefined): string {
   if (!results?.best_trial?.values?.length) return '—'
+  if (results.is_multi_objective) {
+    return formatMultiObjectiveTeaserValues(results.best_trial.values)
+  }
   return results.best_trial.values.map((value) => value.toFixed(4)).join(', ')
 }
 
