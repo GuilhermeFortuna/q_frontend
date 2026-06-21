@@ -1,6 +1,7 @@
 import { InstrumentConfigFields } from '@/components/shared/InstrumentConfigFields'
 import { StrategySearchSpaceFields } from '@/components/optimize/StrategySearchSpaceFields'
 import type { SearchSpaceFieldState } from '@/lib/strategies/strategyParams'
+import { strategyOptionLabel } from '@/lib/strategies/strategyPresentation'
 import type { StrategyInfo } from '@/types/strategies'
 
 import { FormSection, inputClass } from '@/components/optimize/optimizeFormShared'
@@ -45,6 +46,7 @@ type OptimizeStrategySectionProps = {
   setDayTradeCloseTime: (v: string) => void
   /** When false, hides engine/tick controls (e.g. walk-forward workspace). */
   showEngineSelector?: boolean
+  customStrategyNames?: ReadonlySet<string>
 }
 
 export function OptimizeStrategySection({
@@ -84,6 +86,7 @@ export function OptimizeStrategySection({
   dayTradeCloseTime,
   setDayTradeCloseTime,
   showEngineSelector = true,
+  customStrategyNames = new Set<string>(),
 }: OptimizeStrategySectionProps) {
   const selectedStrategy = strategies.find((entry) => entry.name === strategy)
 
@@ -190,7 +193,7 @@ export function OptimizeStrategySection({
         >
           {strategies.map((entry) => (
             <option key={entry.name} value={entry.name}>
-              {entry.label}
+              {strategyOptionLabel(entry, customStrategyNames)}
             </option>
           ))}
         </select>

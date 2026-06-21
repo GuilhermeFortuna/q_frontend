@@ -1,6 +1,7 @@
 import { endOfDay, startOfDay } from 'date-fns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { useCustomStrategies } from '@/api/queries/customStrategies'
 import { useStrategies } from '@/api/queries/strategies'
 import type { RiskMode } from '@/components/optimize/optimizeFormShared'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
@@ -12,6 +13,7 @@ import {
 } from '@/lib/backtesting/transactionCosts'
 import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
 import { isMaxWorkersInputInvalid, withMaxWorkers } from '@/lib/optimize/studyConfig'
+import { withResolvedCustomStrategyParams } from '@/lib/strategies/resolveCustomStrategyParams'
 import { strategyEngine } from '@/lib/strategies/strategyPresentation'
 import {
   defaultSearchSpaceFromSpecs,
@@ -276,12 +278,21 @@ export function useOptimizeConfig() {
   const [costFields, setCostFields] = useState(defaultTransactionCostFields)
 
   const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
+  const { data: customStrategies = [], isLoading: customStrategiesLoading } = useCustomStrategies()
   const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
+  const customStrategyNames = useMemo(
+    () => new Set(customStrategies.map((entry) => entry.name)),
+    [customStrategies],
+  )
   const filteredStrategies = useMemo(
     () => strategies.filter((entry) => strategyEngine(entry) === engine),
     [strategies, engine],
   )
-  const selectedStrategy = filteredStrategies.find((entry) => entry.name === strategy)
+  const selectedStrategy = useMemo(() => {
+    const info = filteredStrategies.find((entry) => entry.name === strategy)
+    if (!info) return undefined
+    return withResolvedCustomStrategyParams(info, strategies, customStrategies)
+  }, [filteredStrategies, strategy, strategies, customStrategies])
   const searchSpaceInitialized = useRef(false)
 
   const pendingOptimizationConfig = useAppStore((s) => s.pendingOptimizationConfig)
@@ -292,12 +303,13 @@ export function useOptimizeConfig() {
     const pool = strategies.filter((entry) => strategyEngine(entry) === engine)
     const info = pool.find((entry) => entry.name === strategy) ?? pool[0]
     if (!info) return
+    const resolved = withResolvedCustomStrategyParams(info, strategies, customStrategies)
     if (!pool.some((entry) => entry.name === strategy)) {
-      setStrategy(info.name)
+      setStrategy(resolved.name)
     }
-    setStrategySearchSpace(defaultSearchSpaceFromSpecs(info.params))
+    setStrategySearchSpace(defaultSearchSpaceFromSpecs(resolved.params))
     searchSpaceInitialized.current = true
-  }, [strategies, strategy, engine])
+  }, [strategies, strategy, engine, customStrategies])
 
   useEffect(() => {
     if (!pendingOptimizationConfig) return
@@ -349,7 +361,7 @@ export function useOptimizeConfig() {
     if (pool.length === 0) return
     const currentValid = pool.some((entry) => entry.name === strategy)
     if (!currentValid) {
-      const next = pool[0]
+      const next = withResolvedCustomStrategyParams(pool[0], strategies, customStrategies)
       setStrategy(next.name)
       setStrategySearchSpace(defaultSearchSpaceFromSpecs(next.params))
     }
@@ -359,7 +371,8 @@ export function useOptimizeConfig() {
     setStrategy(nextStrategy)
     const info = strategies.find((entry) => entry.name === nextStrategy)
     if (info) {
-      setStrategySearchSpace(defaultSearchSpaceFromSpecs(info.params))
+      const resolved = withResolvedCustomStrategyParams(info, strategies, customStrategies)
+      setStrategySearchSpace(defaultSearchSpaceFromSpecs(resolved.params))
     }
   }
 
@@ -492,8 +505,10 @@ export function useOptimizeConfig() {
     setters,
     strategies,
     filteredStrategies,
+    customStrategies,
+    customStrategyNames,
     selectedStrategy,
-    strategiesLoading,
+    strategiesLoading: strategiesLoading || customStrategiesLoading,
     validation,
     buildOptimizationConfig: buildOptimizationConfigPayload,
   }

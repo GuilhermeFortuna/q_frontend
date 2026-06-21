@@ -1,4 +1,5 @@
 import { setupServer } from 'msw/node'
+import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -10,6 +11,10 @@ import { mockStrategies } from '@/mocks/data'
 import { useAppStore } from '@/store/useAppStore'
 import type { OptimizationConfig } from '@/types/optimization'
 import { renderWithQueryClient } from '../testUtils'
+import {
+  mockOptimizeCustomSaved,
+  strategiesWithCustomCustom,
+} from '../fixtures/optimizeCustomStrategyFixtures'
 
 const server = setupServer(...handlers)
 
@@ -191,6 +196,21 @@ describe('OptimizeConfigForm', () => {
     expect(hydrated.engine).toBe('tick')
     expect(hydrated.displayTimeframe).toBe('H1')
     expect(hydrated.tickFlags).toBe('trade')
+  })
+
+  it('tags saved customs in the legacy strategy select', async () => {
+    server.use(
+      http.get('*/api/v1/strategies', () => HttpResponse.json(strategiesWithCustomCustom())),
+      http.get('*/api/v1/strategies/custom', () => HttpResponse.json([mockOptimizeCustomSaved])),
+    )
+    renderForm()
+
+    await waitFor(() => {
+      const options = Array.from(screen.getByLabelText('Strategy').querySelectorAll('option')).map(
+        (option) => option.textContent,
+      )
+      expect(options).toContain('MyCustomMA — custom')
+    })
   })
 
   it('submits max_workers when worker processes is set in advanced settings', async () => {

@@ -40,9 +40,10 @@ export function OptimizeSetupPanel({
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <StrategyLibrary
           strategies={config.strategies}
+          customStrategies={config.customStrategies}
           engine={config.fields.engine}
           selectedStrategyName={config.selectedStrategy?.name}
-          onSelectStrategy={config.setters.handleStrategyChange}
+          onSelectBuiltIn={config.setters.handleStrategyChange}
           loading={config.strategiesLoading}
         />
         <OptimizeStrategyDetailPanel

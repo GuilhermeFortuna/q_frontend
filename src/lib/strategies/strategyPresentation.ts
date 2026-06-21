@@ -44,3 +44,21 @@ export function paramHint(spec: { hint?: string | null }): string | null {
 export function categoryLabel(category: StrategyCategory): string {
   return STRATEGY_CATEGORY_LABELS[category]
 }
+
+export const CUSTOM_STRATEGY_CATEGORY_LABEL = 'Saved'
+
+export function isCustomStrategy(
+  strategyName: string,
+  customStrategyNames: ReadonlySet<string>,
+): boolean {
+  return customStrategyNames.has(strategyName)
+}
+
+export function strategyOptionLabel(
+  strategy: StrategyInfo,
+  customStrategyNames: ReadonlySet<string>,
+): string {
+  return isCustomStrategy(strategy.name, customStrategyNames)
+    ? `${strategy.label} — custom`
+    : strategy.label
+}

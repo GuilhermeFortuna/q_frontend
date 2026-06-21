@@ -58,6 +58,7 @@ export function OptimizeConfigForm({
             strategiesLoading={config.strategiesLoading}
             strategy={fields.strategy}
             onStrategyChange={setters.handleStrategyChange}
+            customStrategyNames={config.customStrategyNames}
             engine={fields.engine}
             onEngineChange={setters.handleEngineChange}
             displayTimeframe={fields.displayTimeframe}
