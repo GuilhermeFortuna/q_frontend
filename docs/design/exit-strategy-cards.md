@@ -66,18 +66,40 @@ Reused helpers (`src/workspaces/strategy/exitRuleSemantics.ts`): `isExitRuleEnab
 `getVisibleSharedParamNames`; plus `partitionStrategyParamSpecs` / `groupExitParamSpecs` /
 `EXIT_GROUP_ORDER` from `exitWorkbenchGroups.ts`.
 
-### Optimization (WO76)
+### Optimization (WO76, **corrected by WO78** — see below)
 
-- `useOptimizeConfig` gains `useExitRuleCatalog`, an explicit `enabledExitRuleIds: Set<string>`
-  - `toggleExitRule(id)`, and exit cards derived from the catalog filtered to
-    `selectedStrategy.params`. Enabled set initializes from the strategy's defaults (rules whose
-    enable default > 0) so today's behavior is preserved but now toggleable.
-- Right panel (`OptimizeStrategyDetailPanel` via `StrategySearchSpaceFields`) shows entry params
-  - enabled exits' params only.
-- `buildOptimizationConfigPayload` builds `search_space.strategy_params` from entry params +
-  enabled exits' params; each **enabled** exit's `enable_param` is pinned on
-  (`enable_value`/`defaultEnableValue`, as a fixed single-value search param), each **disabled**
-  exit's `enable_param` is pinned `0`.
+- `useOptimizeConfig` gains `useExitRuleCatalog`, an explicit set of selected exit rules +
+  `toggleExitRule(id)`, and exit cards derived from the catalog filtered to
+  `selectedStrategy.params`. The set initializes from the strategy's defaults (rules whose enable
+  default > 0); the user toggles which exits participate.
+- Right panel (`OptimizeStrategyDetailPanel` via `StrategySearchSpaceFields`) shows entry params +
+  selected exits' params only.
+
+## Correction — Optimization exit _search_ semantics (WO78)
+
+WO76 shipped a wrong semantic: it pinned every selected exit **on in every trial** (all applied at
+once). Correct intent: **a selected exit card is a _candidate_ in the search**, and the optimizer
+must explore enabling/disabling each candidate independently — testing the entry with **each exit
+alone, any combination, and entry-only** — never forcing all-on.
+
+**Mechanism (Optimization only; no backend change — `_suggest_param` already handles int/float/
+categorical):**
+
+- **Candidate (selected) exit** → all of its `param_names` are emitted as **swept ranges** from
+  `strategySearchSpace`, **including the `enable_param`/magnitude param**, whose range **must include
+  `0`** (off) up to its max with a step, so `0` is a sampled grid point. The optimizer thus explores
+  off ↔ magnitude for that exit, independently per candidate → arbitrary subsets/combinations. Shared
+  params (`atr_period`) are included when a candidate requires them.
+- **Non-candidate applicable exit** → `enable_param` pinned fixed `0` (off, excluded).
+- **Entry params** → ranges, unchanged.
+
+This is the original pre-WO76 flat behavior, scoped to selected candidates with the rest pinned off.
+**Simulation is unaffected** (a single run applies its toggled exits concretely; there is no search).
+
+> The candidate's `enable_param` is **never pinned to a single on-value** — that was the WO76 bug.
+> It is a range whose low is `0`. `defaultSearchSpaceFromSpecs` already seeds exit params with
+> `low = spec.min` (0 for exit params) plus a step, so `0` is a grid point; WO78 must force `low = 0`
+> defensively for a candidate's enable param if a spec ever has `min > 0`.
 
 ### Simulation (WO77, depends on WO76)
 
@@ -95,9 +117,12 @@ Reused helpers (`src/workspaces/strategy/exitRuleSemantics.ts`): `isExitRuleEnab
 
 ## Work Orders
 
-- **WO76** — Optimization exit cards + the shared `ExitStrategyCards` component (primary).
+- **WO76** — Optimization exit cards + the shared `ExitStrategyCards` component (primary). ✅ shipped.
 - **WO77** — Simulation: unify `StrategyStudio` to stacked entry+exit cards, reuse
-  `ExitStrategyCards`, move exit params to the right panel, remove the Exit tab.
+  `ExitStrategyCards`, move exit params to the right panel, remove the Exit tab. ✅ shipped.
+- **WO78** — **Correct the Optimization exit semantics**: a selected exit is a _candidate_ the
+  optimizer turns on/off (sweep its enable/magnitude range incl. 0), not a forced-on pin.
+  Optimization only.
 
 ## Out of scope
 

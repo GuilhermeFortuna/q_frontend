@@ -17,12 +17,16 @@ describe('OptimizeStrategyDetailPanel exit search space', () => {
     ],
   }
 
-  it('shows entry params plus tunable fields for enabled exits', () => {
+  it('shows entry params plus search fields for candidate exits including enable params', () => {
     render(
       <OptimizeStrategyDetailPanel
         strategy={strategyWithExitParams}
         entryParamSpecs={[strategyWithExitParams.params[0]]}
-        enabledExitParamSpecs={[mockExitParamSpecs[1], mockExitParamSpecs[4]]}
+        candidateExitParamSpecs={[
+          mockExitParamSpecs[0],
+          mockExitParamSpecs[1],
+          mockExitParamSpecs[4],
+        ]}
         applicableExitRules={mockExitCatalog.exit_rules}
         searchSpace={defaultSearchSpaceFromSpecs(strategyWithExitParams.params)}
         onSearchSpaceChange={vi.fn()}
@@ -30,17 +34,17 @@ describe('OptimizeStrategyDetailPanel exit search space', () => {
     )
 
     expect(screen.getByText('Entry Param')).toBeInTheDocument()
+    expect(screen.getByText('Rule A Mult')).toBeInTheDocument()
     expect(screen.getByText('Rule A Offset')).toBeInTheDocument()
     expect(screen.getByText('Shared Indicator')).toBeInTheDocument()
-    expect(screen.queryByText('Rule A Mult')).not.toBeInTheDocument()
   })
 
-  it('shows a hint when applicable exits exist but none are enabled', () => {
+  it('shows a hint when applicable exits exist but none are candidates', () => {
     render(
       <OptimizeStrategyDetailPanel
         strategy={strategyWithExitParams}
         entryParamSpecs={[strategyWithExitParams.params[0]]}
-        enabledExitParamSpecs={[]}
+        candidateExitParamSpecs={[]}
         applicableExitRules={mockExitCatalog.exit_rules}
         searchSpace={defaultSearchSpaceFromSpecs(strategyWithExitParams.params)}
         onSearchSpaceChange={vi.fn()}
@@ -48,7 +52,9 @@ describe('OptimizeStrategyDetailPanel exit search space', () => {
     )
 
     expect(
-      screen.getByText('Toggle an exit strategy to optimize its parameters.'),
+      screen.getByText(
+        'Select an exit strategy to include it in the search (on/off and magnitude).',
+      ),
     ).toBeInTheDocument()
   })
 })

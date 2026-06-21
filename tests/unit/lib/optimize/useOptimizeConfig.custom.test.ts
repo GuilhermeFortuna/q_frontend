@@ -82,7 +82,7 @@ const customExitRules = [
 ]
 
 describe('useOptimizeConfig custom strategies', () => {
-  it('buildOptimizationConfig uses the custom strategy name and pins enabled exits', () => {
+  it('buildOptimizationConfig uses the custom strategy name and sweeps candidate exits from zero', () => {
     const strategies = strategiesWithCustomCustom().strategies
     const selected = withResolvedCustomStrategyParams(mockOptimizeCustomStrategy, strategies, [
       mockOptimizeCustomSaved,
@@ -106,9 +106,17 @@ describe('useOptimizeConfig custom strategies', () => {
     expect(config.backtest.strategy).toBe('MyCustomMA')
     expect(config.search_space.strategy_params).toMatchObject({
       short_period: expect.objectContaining({ type: 'int' }),
-      stop_loss_pct: { type: 'float', low: 0.02, high: 0.02, step: null },
-      trailing_stop_pct: { type: 'float', low: 0.015, high: 0.015, step: null },
+      stop_loss_pct: { type: 'float', low: 0, high: 0.1, step: 0.001 },
+      trailing_stop_pct: { type: 'float', low: 0, high: 0.1, step: 0.001 },
     })
+    const stopLoss = config.search_space.strategy_params.stop_loss_pct
+    const trailingStop = config.search_space.strategy_params.trailing_stop_pct
+    if (stopLoss?.type === 'float') {
+      expect(stopLoss.low).not.toBe(stopLoss.high)
+    }
+    if (trailingStop?.type === 'float') {
+      expect(trailingStop.low).not.toBe(trailingStop.high)
+    }
   })
 
   it('resolves sparse custom params before building search space defaults', () => {

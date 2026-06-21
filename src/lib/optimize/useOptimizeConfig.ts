@@ -13,9 +13,9 @@ import {
 } from '@/lib/backtesting/transactionCosts'
 import {
   buildStrategyParamsSearchSpacePayload,
+  buildCandidateExitParamSpecs,
   filterApplicableExitRules,
-  initialEnabledExitRuleIds,
-  buildEnabledExitParamSpecs,
+  initialCandidateExitRuleIds,
 } from '@/lib/optimize/exitSearchSpace'
 import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
 import { isMaxWorkersInputInvalid, withMaxWorkers } from '@/lib/optimize/studyConfig'
@@ -269,7 +269,7 @@ export function useOptimizeConfig() {
   const [strategySearchSpace, setStrategySearchSpace] = useState<
     Record<string, SearchSpaceFieldState>
   >({})
-  const [enabledExitRuleIds, setEnabledExitRuleIds] = useState<Set<string>>(() => new Set())
+  const [candidateExitRuleIds, setCandidateExitRuleIds] = useState<Set<string>>(() => new Set())
 
   const [riskMode, setRiskMode] = useState<RiskMode>('fixed_quantity')
   const [qtyLow, setQtyLow] = useState(1)
@@ -310,18 +310,18 @@ export function useOptimizeConfig() {
     () => filterApplicableExitRules(exitCatalog?.exit_rules ?? [], exitParamSpecs),
     [exitCatalog?.exit_rules, exitParamSpecs],
   )
-  const enabledExitRules = useMemo(
-    () => applicableExitRules.filter((rule) => enabledExitRuleIds.has(rule.id)),
-    [applicableExitRules, enabledExitRuleIds],
+  const candidateExitRules = useMemo(
+    () => applicableExitRules.filter((rule) => candidateExitRuleIds.has(rule.id)),
+    [applicableExitRules, candidateExitRuleIds],
   )
-  const enabledExitParamSpecs = useMemo(
+  const candidateExitParamSpecs = useMemo(
     () =>
-      buildEnabledExitParamSpecs(
-        enabledExitRules,
+      buildCandidateExitParamSpecs(
+        candidateExitRules,
         exitParamSpecs,
         exitCatalog?.shared_exit_params ?? [],
       ),
-    [enabledExitRules, exitParamSpecs, exitCatalog?.shared_exit_params],
+    [candidateExitRules, exitParamSpecs, exitCatalog?.shared_exit_params],
   )
   const searchSpaceInitialized = useRef(false)
 
@@ -342,11 +342,11 @@ export function useOptimizeConfig() {
   }, [strategies, strategy, engine, customStrategies])
 
   useEffect(() => {
-    setEnabledExitRuleIds(initialEnabledExitRuleIds(applicableExitRules, exitParamSpecs))
+    setCandidateExitRuleIds(initialCandidateExitRuleIds(applicableExitRules, exitParamSpecs))
   }, [strategy, applicableExitRules, exitParamSpecs])
 
   const toggleExitRule = (ruleId: string) => {
-    setEnabledExitRuleIds((current) => {
+    setCandidateExitRuleIds((current) => {
       const next = new Set(current)
       if (next.has(ruleId)) {
         next.delete(ruleId)
@@ -544,7 +544,7 @@ export function useOptimizeConfig() {
       entryParamSpecs,
       exitParamSpecs,
       applicableExitRules,
-      enabledExitRuleIds,
+      candidateExitRuleIds,
       exitCatalog?.shared_exit_params ?? [],
     )
     return config
@@ -561,8 +561,8 @@ export function useOptimizeConfig() {
     entryParamSpecs,
     exitParamSpecs,
     applicableExitRules,
-    enabledExitRuleIds,
-    enabledExitParamSpecs,
+    candidateExitRuleIds,
+    candidateExitParamSpecs,
     toggleExitRule,
     strategiesLoading: strategiesLoading || customStrategiesLoading,
     validation,

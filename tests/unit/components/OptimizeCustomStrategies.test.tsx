@@ -66,7 +66,9 @@ describe('OptimizeSetupPanel custom strategies', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Short Period')).toBeInTheDocument()
-      expect(screen.getByRole('heading', { name: 'Exit Strategies' })).toBeInTheDocument()
+      expect(
+        screen.getByRole('heading', { name: 'Exit Strategies — searched (on/off)' }),
+      ).toBeInTheDocument()
       expect(screen.getByRole('switch', { name: /Fixed Stop Loss/i })).toBeInTheDocument()
       expect(screen.getByRole('switch', { name: /Trailing Stop/i })).toBeInTheDocument()
     })
@@ -90,8 +92,8 @@ describe('OptimizeSetupPanel custom strategies', () => {
     expect(config.backtest.strategy).toBe(mockOptimizeCustomStrategy.name)
     expect(config.search_space.strategy_params).toMatchObject({
       short_period: expect.objectContaining({ type: 'int' }),
-      stop_loss_pct: { type: 'float', low: 0.02, high: 0.02, step: null },
-      trailing_stop_pct: { type: 'float', low: 0.015, high: 0.015, step: null },
+      stop_loss_pct: { type: 'float', low: 0, high: 0.1, step: 0.001 },
+      trailing_stop_pct: { type: 'float', low: 0, high: 0.1, step: 0.001 },
     })
   })
 

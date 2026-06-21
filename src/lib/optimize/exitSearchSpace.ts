@@ -1,5 +1,4 @@
 import {
-  defaultEnableValue,
   getVisibleSharedParamNames,
   resolveRuleParamSpecs,
 } from '@/workspaces/strategy/exitRuleSemantics'
@@ -15,32 +14,23 @@ export function filterApplicableExitRules(
   return exitRules.filter((rule) => enableParams.has(rule.enable_param))
 }
 
-export function initialEnabledExitRuleIds(
+export function initialCandidateExitRuleIds(
   rules: ExitRuleInfo[],
   exitParamSpecs: StrategyParamSpec[],
 ): Set<string> {
   const specByName = new Map(exitParamSpecs.map((spec) => [spec.name, spec]))
-  const enabled = new Set<string>()
+  const candidates = new Set<string>()
   for (const rule of rules) {
     const enableSpec = specByName.get(rule.enable_param)
     if (enableSpec != null && Number(enableSpec.default) > 0) {
-      enabled.add(rule.id)
+      candidates.add(rule.id)
     }
   }
-  return enabled
+  return candidates
 }
 
-export function getTunableRuleParamSpecs(
-  rule: ExitRuleInfo,
-  exitParamSpecs: StrategyParamSpec[],
-): StrategyParamSpec[] {
-  return resolveRuleParamSpecs(rule, exitParamSpecs).filter(
-    (spec) => spec.name !== rule.enable_param,
-  )
-}
-
-export function buildEnabledExitParamSpecs(
-  enabledRules: ExitRuleInfo[],
+export function buildCandidateExitParamSpecs(
+  candidateRules: ExitRuleInfo[],
   exitParamSpecs: StrategyParamSpec[],
   sharedExitParams: string[],
 ): StrategyParamSpec[] {
@@ -48,8 +38,8 @@ export function buildEnabledExitParamSpecs(
   const seen = new Set<string>()
   const result: StrategyParamSpec[] = []
 
-  for (const rule of enabledRules) {
-    for (const spec of getTunableRuleParamSpecs(rule, exitParamSpecs)) {
+  for (const rule of candidateRules) {
+    for (const spec of resolveRuleParamSpecs(rule, exitParamSpecs)) {
       if (!seen.has(spec.name)) {
         seen.add(spec.name)
         result.push(spec)
@@ -57,8 +47,12 @@ export function buildEnabledExitParamSpecs(
     }
   }
 
-  const syntheticValues = Object.fromEntries(enabledRules.map((rule) => [rule.enable_param, 1]))
-  for (const name of getVisibleSharedParamNames(enabledRules, syntheticValues, sharedExitParams)) {
+  const syntheticValues = Object.fromEntries(candidateRules.map((rule) => [rule.enable_param, 1]))
+  for (const name of getVisibleSharedParamNames(
+    candidateRules,
+    syntheticValues,
+    sharedExitParams,
+  )) {
     const spec = specByName.get(name)
     if (spec != null && !seen.has(name)) {
       seen.add(name)
@@ -71,27 +65,36 @@ export function buildEnabledExitParamSpecs(
 
 export function pinEnableParamSearchParam(
   rule: ExitRuleInfo,
-  enabled: boolean,
   exitParamSpecs: StrategyParamSpec[],
 ): SearchParam {
   const enableSpec = exitParamSpecs.find((spec) => spec.name === rule.enable_param)
-  const value = enabled
-    ? typeof rule.enable_value === 'number' && rule.enable_value > 0
-      ? rule.enable_value
-      : enableSpec != null
-        ? defaultEnableValue(enableSpec)
-        : 1
-    : 0
 
   if (enableSpec?.type === 'categorical') {
-    return { type: 'categorical', choices: [String(value)] }
+    return { type: 'categorical', choices: ['0'] }
   }
 
   if (enableSpec?.type === 'int') {
-    return { type: 'int', low: value, high: value, step: 1 }
+    return { type: 'int', low: 0, high: 0, step: 1 }
   }
 
-  return { type: 'float', low: value, high: value, step: null }
+  return { type: 'float', low: 0, high: 0, step: null }
+}
+
+function forceEnableParamRangeIncludesOff(param: SearchParam): SearchParam {
+  if (param.type === 'categorical') {
+    return param
+  }
+  if (param.type === 'int') {
+    return { ...param, low: 0, step: param.step ?? 1 }
+  }
+  if (param.type === 'log-float') {
+    return { ...param, low: 0 }
+  }
+  return {
+    ...param,
+    low: 0,
+    step: param.step != null && param.step > 0 ? param.step : null,
+  }
 }
 
 export function buildStrategyParamsSearchSpacePayload(
@@ -99,25 +102,28 @@ export function buildStrategyParamsSearchSpacePayload(
   entryParamSpecs: StrategyParamSpec[],
   exitParamSpecs: StrategyParamSpec[],
   applicableExitRules: ExitRuleInfo[],
-  enabledExitRuleIds: Set<string>,
+  candidateExitRuleIds: Set<string>,
   sharedExitParams: string[],
 ): Record<string, SearchParam> {
-  const enabledRules = applicableExitRules.filter((rule) => enabledExitRuleIds.has(rule.id))
-  const disabledRules = applicableExitRules.filter((rule) => !enabledExitRuleIds.has(rule.id))
-  const enabledExitSpecs = buildEnabledExitParamSpecs(
-    enabledRules,
+  const candidateRules = applicableExitRules.filter((rule) => candidateExitRuleIds.has(rule.id))
+  const nonCandidateRules = applicableExitRules.filter((rule) => !candidateExitRuleIds.has(rule.id))
+  const candidateExitSpecs = buildCandidateExitParamSpecs(
+    candidateRules,
     exitParamSpecs,
     sharedExitParams,
   )
-  const tunableSpecs = [...entryParamSpecs, ...enabledExitSpecs]
+  const tunableSpecs = [...entryParamSpecs, ...candidateExitSpecs]
 
   const payload = searchSpaceToPayload(strategySearchSpace, tunableSpecs)
 
-  for (const rule of enabledRules) {
-    payload[rule.enable_param] = pinEnableParamSearchParam(rule, true, exitParamSpecs)
+  for (const rule of candidateRules) {
+    const enableParam = payload[rule.enable_param]
+    if (enableParam != null) {
+      payload[rule.enable_param] = forceEnableParamRangeIncludesOff(enableParam)
+    }
   }
-  for (const rule of disabledRules) {
-    payload[rule.enable_param] = pinEnableParamSearchParam(rule, false, exitParamSpecs)
+  for (const rule of nonCandidateRules) {
+    payload[rule.enable_param] = pinEnableParamSearchParam(rule, exitParamSpecs)
   }
 
   return payload

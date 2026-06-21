@@ -7,7 +7,7 @@ import { groupExitParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
 type OptimizeStrategyDetailPanelProps = {
   strategy: StrategyInfo | undefined
   entryParamSpecs: StrategyParamSpec[]
-  enabledExitParamSpecs: StrategyParamSpec[]
+  candidateExitParamSpecs: StrategyParamSpec[]
   applicableExitRules: ExitRuleInfo[]
   searchSpace: Record<string, SearchSpaceFieldState>
   onSearchSpaceChange: (name: string, field: SearchSpaceFieldState) => void
@@ -16,7 +16,7 @@ type OptimizeStrategyDetailPanelProps = {
 export function OptimizeStrategyDetailPanel({
   strategy,
   entryParamSpecs,
-  enabledExitParamSpecs,
+  candidateExitParamSpecs,
   applicableExitRules,
   searchSpace,
   onSearchSpaceChange,
@@ -32,9 +32,11 @@ export function OptimizeStrategyDetailPanel({
   const thesis = strategyThesis(strategy)
   const strongIn = strategy.strong_in?.trim()
   const weakIn = strategy.weak_in?.trim()
-  const exitGroups = groupExitParamSpecs(enabledExitParamSpecs)
+  const exitGroups = groupExitParamSpecs(candidateExitParamSpecs)
   const showSearchSpace =
-    entryParamSpecs.length > 0 || enabledExitParamSpecs.length > 0 || applicableExitRules.length > 0
+    entryParamSpecs.length > 0 ||
+    candidateExitParamSpecs.length > 0 ||
+    applicableExitRules.length > 0
 
   return (
     <div className="border-carbon-600/50 bg-carbon-950/30 flex h-full min-h-0 flex-col gap-4 overflow-y-auto rounded-xl border p-4">
@@ -82,9 +84,9 @@ export function OptimizeStrategyDetailPanel({
               />
             </div>
           ))}
-          {applicableExitRules.length > 0 && enabledExitParamSpecs.length === 0 ? (
+          {applicableExitRules.length > 0 && candidateExitParamSpecs.length === 0 ? (
             <p className="text-silver-500 text-xs">
-              Toggle an exit strategy to optimize its parameters.
+              Select an exit strategy to include it in the search (on/off and magnitude).
             </p>
           ) : null}
         </div>

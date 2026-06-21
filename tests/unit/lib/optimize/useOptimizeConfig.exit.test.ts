@@ -64,7 +64,7 @@ describe('useOptimizeConfig exit strategies', () => {
     })
   })
 
-  it('initializes enabled exits from default-on enable params', async () => {
+  it('initializes candidate exits from default-on enable params', async () => {
     useCustomStrategyMocks()
     const { result } = renderHook(() => useOptimizeConfig(), { wrapper })
 
@@ -77,12 +77,12 @@ describe('useOptimizeConfig exit strategies', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.enabledExitRuleIds.has('fixed_sl')).toBe(true)
-      expect(result.current.enabledExitRuleIds.has('trailing_pct')).toBe(true)
+      expect(result.current.candidateExitRuleIds.has('fixed_sl')).toBe(true)
+      expect(result.current.candidateExitRuleIds.has('trailing_pct')).toBe(true)
     })
   })
 
-  it('toggleExitRule flips membership in enabledExitRuleIds', async () => {
+  it('toggleExitRule flips membership in candidateExitRuleIds', async () => {
     useCustomStrategyMocks()
     const { result } = renderHook(() => useOptimizeConfig(), { wrapper })
 
@@ -95,19 +95,19 @@ describe('useOptimizeConfig exit strategies', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.enabledExitRuleIds.has('fixed_sl')).toBe(true)
+      expect(result.current.candidateExitRuleIds.has('fixed_sl')).toBe(true)
     })
 
     act(() => {
       result.current.toggleExitRule('fixed_sl')
     })
 
-    expect(result.current.enabledExitRuleIds.has('fixed_sl')).toBe(false)
+    expect(result.current.candidateExitRuleIds.has('fixed_sl')).toBe(false)
 
     act(() => {
       result.current.toggleExitRule('fixed_sl')
     })
 
-    expect(result.current.enabledExitRuleIds.has('fixed_sl')).toBe(true)
+    expect(result.current.candidateExitRuleIds.has('fixed_sl')).toBe(true)
   })
 })
