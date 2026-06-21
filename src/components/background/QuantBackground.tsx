@@ -226,10 +226,10 @@ function ParticleStars() {
       <PointMaterial
         transparent
         color="#ffca47" // matching gold-400 theme
-        size={0.15}
+        size={0.24}
         sizeAttenuation={true}
         depthWrite={false}
-        opacity={0.28}
+        opacity={0.6}
       />
     </Points>
   )
@@ -263,7 +263,7 @@ export function QuantBackground() {
       />
 
       {/* GPU-Accelerated 3D Parallax Starfield overlay */}
-      <div className="absolute inset-0 opacity-40">
+      <div className="absolute inset-0 opacity-85">
         <Canvas
           camera={{ position: [0, 0, 15], fov: 60 }}
           gl={{ antialias: true, alpha: true }}

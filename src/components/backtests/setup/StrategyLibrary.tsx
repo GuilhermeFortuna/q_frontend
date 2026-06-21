@@ -111,7 +111,7 @@ export const StrategyLibrary = memo(function StrategyLibrary({
         savedForEngine.length === 0 ? (
           <p className="text-silver-400 text-sm">No saved strategies yet.</p>
         ) : (
-          <div className="grid min-h-0 flex-1 auto-rows-min gap-2 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid min-h-0 flex-1 auto-rows-min gap-2 overflow-y-auto p-1.5 pb-4 sm:grid-cols-2 xl:grid-cols-3">
             {savedForEngine.map((custom) => (
               <CustomStrategyCard
                 key={custom.name}
@@ -138,7 +138,7 @@ export const StrategyLibrary = memo(function StrategyLibrary({
       ) : visibleStrategies.length === 0 ? (
         <p className="text-silver-400 text-sm">No strategies match this filter.</p>
       ) : (
-        <div className="grid min-h-0 flex-1 auto-rows-min gap-2 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid min-h-0 flex-1 auto-rows-min gap-2 overflow-y-auto p-1.5 pb-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleStrategies.map((entry) => (
             <StrategyCard
               key={entry.name}
@@ -199,8 +199,9 @@ function StrategyCard({
       aria-pressed={selected}
       onClick={onSelect}
       className={cn(
-        'border-carbon-600/50 bg-carbon-950/40 hover:border-brass-500/30 flex flex-col gap-2 rounded-lg border p-3 text-left transition-colors',
-        selected && 'border-brass-500/60 bg-brass-600/10 ring-brass-500/20 ring-1',
+        'quant-panel border-carbon-600/50 hover:border-brass-500/30 cubic-bezier(0.16,1,0.3,1) flex flex-col gap-2 rounded-lg border p-3 text-left transition-[transform,border-color,box-shadow] duration-350 hover:-translate-y-0.5 hover:scale-[1.01] active:scale-[0.97]',
+        selected &&
+          'quant-panel--glow quant-panel--active-run border-brass-500/60 bg-brass-600/10 ring-brass-500/20 ring-1',
       )}
     >
       <div className="flex flex-wrap items-center gap-1.5">
@@ -245,8 +246,9 @@ function CustomStrategyCard({
   return (
     <div
       className={cn(
-        'group border-carbon-600/50 bg-carbon-950/40 hover:border-brass-500/30 relative flex flex-col gap-2 rounded-lg border p-3 text-left transition-colors',
-        selected && 'border-brass-500/60 bg-brass-600/10 ring-brass-500/20 ring-1',
+        'quant-panel border-carbon-600/50 group cubic-bezier(0.16,1,0.3,1) relative flex flex-col gap-2 rounded-lg border p-3 text-left transition-[transform,border-color,box-shadow] duration-350 hover:-translate-y-0.5 hover:scale-[1.01] active:scale-[0.97]',
+        selected &&
+          'quant-panel--glow quant-panel--active-run border-brass-500/60 bg-brass-600/10 ring-brass-500/20 ring-1',
       )}
     >
       <button

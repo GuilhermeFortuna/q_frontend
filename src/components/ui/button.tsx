@@ -32,9 +32,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 ease-out',
+          'cubic-bezier(0.16,1,0.3,1) inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-[transform,opacity,background-color,border-color] duration-350',
           'focus-visible:outline-brass-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-          'active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
+          'hover:scale-[1.01] active:scale-[0.97] disabled:pointer-events-none disabled:scale-100 disabled:opacity-50',
           variantClasses[variant],
           sizeClasses[size],
           className,

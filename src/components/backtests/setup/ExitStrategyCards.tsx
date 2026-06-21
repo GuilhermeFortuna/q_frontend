@@ -21,8 +21,10 @@ function ExitStrategyCard({
   return (
     <article
       className={cn(
-        'border-carbon-800/60 rounded-lg border transition-colors',
-        enabled ? 'bg-carbon-900/40' : 'bg-carbon-900/15',
+        'quant-panel border-carbon-800/60 cubic-bezier(0.16,1,0.3,1) rounded-lg border transition-[transform,border-color,box-shadow] duration-350 hover:-translate-y-0.5 hover:scale-[1.01]',
+        enabled
+          ? 'quant-panel--glow quant-panel--active-run border-brass-500/50 bg-brass-600/10'
+          : 'opacity-85',
       )}
     >
       <div className="flex items-start justify-between gap-3 p-3">

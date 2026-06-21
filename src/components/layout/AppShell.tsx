@@ -72,7 +72,7 @@ export function AppShell({ children }: AppShellProps) {
       </header>
       <main
         className={cn(
-          'animate-fade-in-up flex-1 overflow-auto px-6 pt-6',
+          'vt-main animate-fade-in-up flex-1 overflow-auto px-6 pt-6',
           isLauncher ? 'flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-0' : 'pb-32',
         )}
       >

@@ -82,7 +82,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
             key={item.id}
             to={item.to}
             className={cn(
-              'text-cream-300 relative flex flex-col items-center border border-transparent transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-105 active:scale-95',
+              'text-cream-300 cubic-bezier(0.16,1,0.3,1) relative flex flex-col items-center border border-transparent transition-[transform,color,background-color,border-color] duration-350 hover:-translate-y-0.5 hover:scale-105 active:scale-95',
               isLauncher ? 'shrink-0 gap-1.5 rounded-xl px-4 py-3' : 'gap-1 rounded-lg px-4 py-2.5',
               isActive
                 ? 'text-brass-400 font-bold'
