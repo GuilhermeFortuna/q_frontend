@@ -32,7 +32,7 @@ export function ReaderWindowShell({ children }: ReaderWindowShellProps) {
       <div className="quant-vignette-overlay" />
       <header
         data-tauri-drag-region
-        className="vt-header border-brass-600/15 bg-espresso-950/40 relative z-10 flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] backdrop-blur-md select-none"
+        className="vt-header border-brass-600/15 bg-espresso-950/75 relative z-10 flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] select-none"
       >
         <div className="flex items-center gap-2.5" data-tauri-drag-region>
           <QuantEmblem className="h-10 w-10" />
@@ -55,7 +55,7 @@ export function ReaderWindowShell({ children }: ReaderWindowShellProps) {
           <WindowControls />
         </div>
       </header>
-      <main className="vt-content animate-fade-in-up relative z-10 flex-1 overflow-auto px-6 py-6">
+      <main className="animate-fade-in-up relative z-10 flex-1 overflow-auto px-6 py-6">
         {children}
       </main>
     </div>

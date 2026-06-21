@@ -5,8 +5,9 @@ import { useEffect } from 'react'
  *
  * A single rAF-throttled `pointermove` listener finds the `.quant-panel` under
  * the cursor and writes panel-local coordinates into `--spot-x` / `--spot-y`,
- * toggling `.is-lit`. The CSS in globals.css turns those into a brass highlight
- * that tracks the cursor across every panel — no per-component markup needed.
+ * toggling `.is-lit` (drives the ::after highlight opacity). The CSS in
+ * globals.css keeps the radial highlight on a compositor-promoted overlay so
+ * panel content does not repaint on pointer move.
  *
  * Renders nothing; mount once near the app root.
  */

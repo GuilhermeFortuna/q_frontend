@@ -44,7 +44,7 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
   const { sizingErrors, costErrors } = validation
 
   return (
-    <div className="border-carbon-600/50 bg-carbon-900/20 shrink-0 space-y-3 rounded-xl border p-4 shadow-lg backdrop-blur-sm">
+    <div className="border-carbon-600/50 bg-carbon-900/35 shrink-0 space-y-3 rounded-xl border p-4 shadow-lg">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* COLUMN 1: INSTRUMENT & MODELING */}
         <Fieldset legend="Instrument & Modeling">

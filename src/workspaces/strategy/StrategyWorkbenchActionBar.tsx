@@ -79,7 +79,7 @@ export function StrategyWorkbenchActionBar({
   return (
     <div
       data-testid="workbench-action-bar"
-      className="border-carbon-800/80 bg-carbon-950/95 supports-[backdrop-filter]:bg-carbon-950/85 sticky bottom-0 z-10 border-t px-4 py-3 backdrop-blur-sm"
+      className="border-carbon-800/80 bg-carbon-950/95 sticky bottom-0 z-10 border-t px-4 py-3"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-silver-500 text-xs" data-testid="workbench-summary">

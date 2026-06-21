@@ -44,7 +44,7 @@ export function AppShell({ children }: AppShellProps) {
       {rippleKey > 0 && <div key={rippleKey} className="quant-edge-ripple animate-edge-ripple" />}
       <header
         data-tauri-drag-region
-        className="vt-header border-brass-600/15 bg-espresso-950/40 relative flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] backdrop-blur-md select-none"
+        className="vt-header border-brass-600/15 bg-espresso-950/75 relative flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] select-none"
       >
         <div className="flex items-center gap-2.5" data-tauri-drag-region>
           <QuantEmblem className="h-10 w-10" />
@@ -72,7 +72,7 @@ export function AppShell({ children }: AppShellProps) {
       </header>
       <main
         className={cn(
-          'vt-content animate-fade-in-up flex-1 overflow-auto px-6 pt-6',
+          'animate-fade-in-up flex-1 overflow-auto px-6 pt-6',
           isLauncher ? 'flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-0' : 'pb-32',
         )}
       >

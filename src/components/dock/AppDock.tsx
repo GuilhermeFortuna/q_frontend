@@ -50,12 +50,11 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
   return (
     <nav
       aria-label="Workspace dock"
-      data-workspace={activeWorkspace}
       className={cn(
-        'vt-dock fixed left-1/2 z-20 flex -translate-x-1/2 items-end backdrop-blur-xl transition-all duration-300 ease-in-out',
+        'vt-dock fixed left-1/2 z-20 flex -translate-x-1/2 items-end transition-all duration-300 ease-in-out',
         isLauncher
-          ? 'border-brass-500/20 from-espresso-950/80 to-carbon-950/90 bottom-[12%] w-[min(980px,95vw)] justify-evenly gap-2.5 rounded-3xl border bg-gradient-to-b px-6 py-4 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),_0_0_40px_rgba(196,165,116,0.08)]'
-          : 'border-brass-500/20 from-espresso-950/85 to-carbon-950/92 bottom-8 gap-1.5 rounded-2xl border bg-gradient-to-b px-3.5 py-2.5 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8),_0_0_30px_rgba(196,165,116,0.06)]',
+          ? 'border-brass-500/20 from-espresso-950/92 to-carbon-950/96 bottom-[12%] w-[min(980px,95vw)] justify-evenly gap-2.5 rounded-3xl border bg-gradient-to-b px-6 py-4 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),_0_0_40px_rgba(196,165,116,0.08)]'
+          : 'border-brass-500/20 from-espresso-950/92 to-carbon-950/96 bottom-8 gap-1.5 rounded-2xl border bg-gradient-to-b px-3.5 py-2.5 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8),_0_0_30px_rgba(196,165,116,0.06)]',
       )}
     >
       {dockItems.map((item) => {
@@ -97,7 +96,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
               isLauncher ? 'shrink-0 gap-1.5 rounded-xl px-4 py-3' : 'gap-1 rounded-lg px-4 py-2.5',
               isActive
                 ? 'text-brass-400 font-bold'
-                : 'hover:text-silver-100 hover:bg-carbon-800/35 hover:border-carbon-700/20',
+                : 'hover:text-gold-400 hover:bg-brass-600/5 hover:border-brass-600/15',
             )}
           >
             {isActive ? (
@@ -105,16 +104,21 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
                 <motion.span
                   layoutId="dock-active"
                   className={cn(
-                    'from-brass-500/10 to-brass-600/5 border-brass-500/30 absolute inset-0 border bg-gradient-to-b shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_0_15px_rgba(196,165,116,0.12)]',
+                    'from-brass-500/12 to-brass-600/6 border-brass-500/30 border-t-brass-400/60 absolute inset-0 border bg-gradient-to-b shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(240,180,41,0.15)]',
                     isLauncher ? 'rounded-xl' : 'rounded-lg',
                   )}
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
-                <span className="bg-brass-400 absolute bottom-1.5 left-1/2 z-10 h-0.5 w-3.5 -translate-x-1/2 rounded-full shadow-[0_0_8px_rgba(196,165,116,0.8)]" />
+                <span className="bg-brass-400 absolute bottom-1.5 left-1/2 z-10 h-0.5 w-3.5 -translate-x-1/2 animate-pulse rounded-full shadow-[0_0_8px_rgba(240,180,41,0.9)]" />
               </>
             ) : null}
             <span className="relative z-10 flex">
-              <Icon className={isLauncher ? 'h-9 w-9' : 'h-6 w-6'} />
+              <Icon
+                className={cn(
+                  isLauncher ? 'h-9 w-9' : 'h-6 w-6',
+                  isActive && 'drop-shadow-[0_0_5px_rgba(240,180,41,0.55)] filter',
+                )}
+              />
               {hasRunningJob ? (
                 <span
                   className="absolute -top-0.5 -right-1 flex h-2 w-2"

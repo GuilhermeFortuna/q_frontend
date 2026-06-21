@@ -36,38 +36,24 @@ import { env } from '@/lib/env'
 import { cn } from '@/lib/utils'
 import type { LauncherPanelLayout, LauncherPanelLayouts } from '@/store/slices/jobSessionsSlice'
 import { useAppStore } from '@/store/useAppStore'
-
-const DEFAULT_SYMBOLS = ['BTCUSD', 'EURUSD', 'PETR4', 'VALE3']
-const LOCAL_STORAGE_KEY = 'quant-dashboard-symbols'
-const LEGACY_PANEL_LAYOUT_STORAGE_KEY = 'quant-launcher-panel-layouts'
-const PANEL_MIN_WIDTH = 320
-const PANEL_MIN_HEIGHT = 360
-const PANEL_DEFAULT_WIDTH = 360
-const PANEL_DEFAULT_HEIGHT_RATIO = 0.72
+import {
+  clampPanelLayout,
+  getDefaultPanelLayouts,
+  getLauncherPanelBounds,
+  layoutsAreEqual,
+  normalizePanelLayout,
+  panelLayoutNeedsRecovery,
+  PANEL_MIN_WIDTH,
+  type ContainerRect,
+} from '@/components/launcher/launcherPanelLayout'
 
 type PanelKey = 'market' | 'system'
 
 type ResizeMode = 'resize-se' | 'resize-e' | 'resize-s' | 'resize-w'
 
-function getDefaultPanelHeight(containerHeight: number): number {
-  if (containerHeight <= 0) return PANEL_MIN_HEIGHT
-  return Math.max(
-    PANEL_MIN_HEIGHT,
-    Math.min(Math.round(containerHeight * PANEL_DEFAULT_HEIGHT_RATIO), containerHeight - 24),
-  )
-}
-
-function getDefaultPanelLayouts(containerWidth = 0, containerHeight = 0): LauncherPanelLayouts {
-  const width = PANEL_DEFAULT_WIDTH
-  const height = getDefaultPanelHeight(containerHeight)
-  const rightX = Math.max(containerWidth - width, 0)
-  const y = containerHeight > height ? Math.floor((containerHeight - height) / 2) : 0
-
-  return {
-    market: { x: 0, y, width, height },
-    system: { x: rightX, y, width, height },
-  }
-}
+const DEFAULT_SYMBOLS = ['BTCUSD', 'EURUSD', 'PETR4', 'VALE3']
+const LOCAL_STORAGE_KEY = 'quant-dashboard-symbols'
+const LEGACY_PANEL_LAYOUT_STORAGE_KEY = 'quant-launcher-panel-layouts'
 
 function readLegacyPanelLayouts(): Partial<LauncherPanelLayouts> {
   try {
@@ -81,59 +67,6 @@ function readLegacyPanelLayouts(): Partial<LauncherPanelLayouts> {
   }
 }
 
-type ContainerRect = {
-  width: number
-  height: number
-}
-
-function clampPanelLayout(
-  layout: LauncherPanelLayout,
-  container: ContainerRect | null,
-): LauncherPanelLayout {
-  const containerWidth = Math.max(container?.width ?? 0, layout.width)
-  const containerHeight = Math.max(container?.height ?? 0, layout.height)
-  const width = Math.min(Math.max(layout.width, PANEL_MIN_WIDTH), containerWidth)
-  let height = Math.min(Math.max(layout.height, PANEL_MIN_HEIGHT), containerHeight)
-  let y = Math.max(layout.y, 0)
-  const x = Math.min(Math.max(layout.x, 0), Math.max(containerWidth - width, 0))
-
-  if (y + height > containerHeight) {
-    y = Math.max(0, containerHeight - height)
-  }
-
-  const maxY = Math.max(containerHeight - height, 0)
-  y = Math.min(y, maxY)
-
-  if (y + height > containerHeight) {
-    height = Math.max(PANEL_MIN_HEIGHT, containerHeight - y)
-  }
-
-  return { x, y, width, height }
-}
-
-function normalizePanelLayout(
-  layout: LauncherPanelLayout,
-  container: ContainerRect,
-  defaults: LauncherPanelLayout,
-): LauncherPanelLayout {
-  const clamped = clampPanelLayout(layout, container)
-  const fillsContainer =
-    container.height > 0 && clamped.height >= container.height - 4 && clamped.y <= 4
-
-  if (fillsContainer) {
-    return clampPanelLayout(
-      {
-        ...clamped,
-        height: defaults.height,
-        y: defaults.y,
-      },
-      container,
-    )
-  }
-
-  return clamped
-}
-
 function readContainerRect(node: HTMLDivElement | null): ContainerRect | null {
   if (!node) return null
   const bounds = node.getBoundingClientRect()
@@ -141,19 +74,6 @@ function readContainerRect(node: HTMLDivElement | null): ContainerRect | null {
   const height = bounds.height || node.clientHeight
   if (width <= 0 || height <= 0) return null
   return { width, height }
-}
-
-function layoutsAreEqual(a: LauncherPanelLayouts, b: LauncherPanelLayouts): boolean {
-  return (
-    a.market.x === b.market.x &&
-    a.market.y === b.market.y &&
-    a.market.width === b.market.width &&
-    a.market.height === b.market.height &&
-    a.system.x === b.system.x &&
-    a.system.y === b.system.y &&
-    a.system.width === b.system.width &&
-    a.system.height === b.system.height
-  )
 }
 
 // Simple Sparkline component using shared sparkline helpers
@@ -230,6 +150,7 @@ function FloatingLauncherPanel({
     const deltaX = clientX - start.pointerX
     const deltaY = clientY - start.pointerY
     const containerRect = readContainerRect(containerRef.current)
+    const layoutBounds = containerRect ? getLauncherPanelBounds(containerRect) : null
 
     let next: LauncherPanelLayout
     switch (start.mode) {
@@ -275,7 +196,7 @@ function FloatingLauncherPanel({
       }
     }
 
-    setLayout(panel, clampPanelLayout(next, containerRect))
+    setLayout(panel, clampPanelLayout(next, layoutBounds))
   }
 
   const startInteraction =
@@ -308,7 +229,7 @@ function FloatingLauncherPanel({
   return (
     <div
       className={cn(
-        'quant-panel bg-espresso-950/45 absolute z-30 flex min-h-0 flex-col overflow-hidden rounded-2xl backdrop-blur-xl',
+        'quant-panel bg-espresso-950/80 absolute z-30 flex min-h-0 flex-col overflow-hidden rounded-2xl',
       )}
       style={{
         left: layout.x,
@@ -423,24 +344,33 @@ export function LauncherDashboard() {
       const containerRect = readContainerRect(node)
       if (!containerRect) return
 
-      const sizeUnchanged =
-        containerRect.width === lastContainerSizeRef.current.width &&
-        containerRect.height === lastContainerSizeRef.current.height
+      const layoutBounds = getLauncherPanelBounds(containerRect)
+
       const current = useAppStore.getState().launcherSession.panelLayouts
-
-      if (sizeUnchanged && current) return
-
-      lastContainerSizeRef.current = containerRect
-      const defaults = getDefaultPanelLayouts(containerRect.width, containerRect.height)
+      const defaults = getDefaultPanelLayouts(layoutBounds.width, layoutBounds.height)
       const legacyLayouts = current ? {} : readLegacyPanelLayouts()
       const source = current ?? {
         market: { ...defaults.market, ...legacyLayouts.market },
         system: { ...defaults.system, ...legacyLayouts.system },
       }
       const next = {
-        market: normalizePanelLayout(source.market, containerRect, defaults.market),
-        system: normalizePanelLayout(source.system, containerRect, defaults.system),
+        market: normalizePanelLayout(source.market, layoutBounds, defaults.market),
+        system: normalizePanelLayout(source.system, layoutBounds, defaults.system),
       }
+
+      const sizeUnchanged =
+        containerRect.width === lastContainerSizeRef.current.width &&
+        containerRect.height === lastContainerSizeRef.current.height
+      const needsRecovery =
+        current != null &&
+        (panelLayoutNeedsRecovery(source.market, layoutBounds, defaults.market) ||
+          panelLayoutNeedsRecovery(source.system, layoutBounds, defaults.system))
+
+      if (sizeUnchanged && current && !needsRecovery && layoutsAreEqual(current, next)) {
+        return
+      }
+
+      lastContainerSizeRef.current = containerRect
 
       if (current && layoutsAreEqual(current, next)) return
 
