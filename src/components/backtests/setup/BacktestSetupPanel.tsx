@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { MarketConfigBand } from '@/components/backtests/setup/MarketConfigBand'
-import { StrategyDetailPanel } from '@/components/backtests/setup/StrategyDetailPanel'
-import { StrategyLibrary } from '@/components/backtests/setup/StrategyLibrary'
+import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import type { BacktestRequest } from '@/types/backtesting'
 
@@ -29,20 +28,7 @@ export function BacktestSetupPanel({ config, loading, error, onSubmit }: Backtes
         validation={config.validation}
       />
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <StrategyLibrary
-          strategies={config.strategies}
-          engine={config.fields.engine}
-          selectedStrategyName={config.selectedStrategy?.name}
-          onSelectStrategy={config.setters.handleStrategyChange}
-          loading={config.strategiesLoading}
-        />
-        <StrategyDetailPanel
-          strategy={config.selectedStrategy}
-          values={config.fields.strategyParams}
-          onParamChange={config.setters.handleParamChange}
-        />
-      </div>
+      <StrategyStudio config={config} />
 
       <div className="border-carbon-600/50 shrink-0 border-t pt-4">
         <Button

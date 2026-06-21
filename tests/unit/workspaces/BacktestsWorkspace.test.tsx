@@ -238,12 +238,21 @@ describe('BacktestsWorkspace — focus swap', () => {
     const setupTeaser = screen.getByRole('button', { name: 'Expand setup' })
     expect(setupTeaser.textContent).toMatch(/50\/200/)
 
+    const workflow = screen.getByTestId('backtest-workflow')
+
     await user.click(setupTeaser)
     await waitFor(() => {
-      expect(screen.getByLabelText('Short Period')).toBeInTheDocument()
+      expect(
+        within(workflow).getByRole('tab', { name: 'Entry', selected: true }),
+      ).toBeInTheDocument()
     })
 
-    const shortPeriod = screen.getByLabelText('Short Period')
+    const studio = within(workflow).getByTestId('strategy-studio')
+    await waitFor(() => {
+      expect(within(studio).getByRole('spinbutton', { name: 'Short Period' })).toBeInTheDocument()
+    })
+
+    const shortPeriod = within(studio).getByRole('spinbutton', { name: 'Short Period' })
     await user.clear(shortPeriod)
     await user.type(shortPeriod, '12')
     await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
@@ -252,6 +261,37 @@ describe('BacktestsWorkspace — focus swap', () => {
       expect(screen.getByRole('button', { name: 'Expand setup' })).toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: 'Expand setup' }).textContent).toMatch(/12\/200/)
+  })
+
+  it('preserves StrategyStudio tab across setup/results focus swap', async () => {
+    const user = userEvent.setup()
+    renderWithQueryClient(<BacktestsWorkspace />)
+    await waitForStrategyLibrary()
+
+    await user.click(screen.getByRole('button', { name: /MACD Crossover/i }))
+    expect(
+      within(screen.getByTestId('backtest-workflow')).getByRole('tab', {
+        name: /^Exit & Targets/i,
+        selected: true,
+      }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Expand setup' })).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Expand setup' }))
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('backtest-workflow')).getByRole('tab', {
+          name: /^Exit & Targets/i,
+          selected: true,
+        }),
+      ).toBeInTheDocument()
+    })
   })
 
   it('renders both focus states when reduced motion is preferred', async () => {

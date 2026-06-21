@@ -15,6 +15,7 @@ import {
   mockSnapshots,
   mockStrategies,
   mockExitRuleCatalog,
+  mockCustomStrategies,
   mockSystemHealth,
 } from '@/mocks/data'
 import {
@@ -173,6 +174,29 @@ export const handlers = [
   }),
 
   http.get('*/api/v1/strategies', () => HttpResponse.json(mockStrategies)),
+
+  http.get('*/api/v1/strategies/custom', () => HttpResponse.json(mockCustomStrategies)),
+
+  http.post('*/api/v1/strategies/custom', async ({ request }) => {
+    const body = (await request.json()) as (typeof mockCustomStrategies)[number]
+    const existingIndex = mockCustomStrategies.findIndex((entry) => entry.name === body.name)
+    if (existingIndex >= 0) {
+      mockCustomStrategies[existingIndex] = body
+    } else {
+      mockCustomStrategies.push(body)
+    }
+    return HttpResponse.json(body)
+  }),
+
+  http.delete('*/api/v1/strategies/custom/:name', ({ params }) => {
+    const name = String(params.name)
+    mockCustomStrategies.splice(
+      0,
+      mockCustomStrategies.length,
+      ...mockCustomStrategies.filter((entry) => entry.name !== name),
+    )
+    return HttpResponse.json({ deleted: true, name })
+  }),
 
   http.get('*/api/v1/exit-rules', () => HttpResponse.json(mockExitRuleCatalog)),
 

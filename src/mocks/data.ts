@@ -21,7 +21,11 @@ import type {
   OptimizationStatus,
   OptimizationStudySummary,
 } from '@/types/optimization'
-import type { ExitRuleCatalogResponse, StrategiesResponse } from '@/types/strategies'
+import type {
+  CustomStrategy,
+  ExitRuleCatalogResponse,
+  StrategiesResponse,
+} from '@/types/strategies'
 
 export const mockSystemHealth: SystemHealth = {
   status: 'degraded',
@@ -1007,4 +1011,10 @@ export const mockExitRuleCatalog: ExitRuleCatalogResponse = {
       },
     },
   ],
+}
+
+export let mockCustomStrategies: CustomStrategy[] = []
+
+export function resetMockCustomStrategies() {
+  mockCustomStrategies = []
 }

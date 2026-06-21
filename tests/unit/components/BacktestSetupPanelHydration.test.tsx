@@ -154,19 +154,17 @@ describe('BacktestSetupPanel — hydration from pending config', () => {
     renderWithQueryClient(<PromoteHarness />)
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /Evolved composite/i, pressed: true }),
-      ).toBeInTheDocument()
+      expect(useAppStore.getState().pendingBacktestConfig).toBeNull()
     })
 
     if (!capturedConfig) {
       throw new Error('expected backtest config to be captured')
     }
     const config = capturedConfig as ReturnType<typeof useBacktestConfig>
+    expect(config.fields.strategy).toBe('CompositeStrategy')
     expect(config.buildRequest().strategy_params).toEqual({
       genome: mockSampleGenome,
       sma_period: 12,
     })
-    expect(useAppStore.getState().pendingBacktestConfig).toBeNull()
   })
 })

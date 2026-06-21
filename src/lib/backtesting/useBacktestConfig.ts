@@ -1,7 +1,13 @@
+import axios from 'axios'
 import { endOfDay, startOfDay } from 'date-fns'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { useStrategies } from '@/api/queries/strategies'
+import {
+  useCustomStrategies,
+  useDeleteCustomStrategy,
+  useSaveCustomStrategy,
+} from '@/api/queries/customStrategies'
+import { useExitRuleCatalog, useStrategies } from '@/api/queries/strategies'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import {
   buildPositionSizingPayload,
@@ -21,11 +27,14 @@ import {
 import {
   defaultParamsFromSpecs,
   hydrateStrategyParamsFromPending,
+  mergeParamValues,
   type StrategyParamValue,
 } from '@/lib/strategies/strategyParams'
 import { strategyEngine } from '@/lib/strategies/strategyPresentation'
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
+import type { CustomStrategy, ExitRuleCatalogResponse } from '@/types/strategies'
+import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
 
 export type BacktestEngine = 'candle' | 'tick'
 
@@ -89,6 +98,21 @@ export type BacktestConfigValidation = {
   formInvalid: boolean
   sizingErrors: Partial<Record<string, string>>
   costErrors: Partial<Record<string, string>>
+}
+
+export type BacktestConfigAuthoring = {
+  customName: string
+  description: string
+  loadedCustomName: string | null
+  authoringError: string | null
+  setCustomName: (value: string) => void
+  setDescription: (value: string) => void
+  newDraft: () => void
+  loadCustom: (custom: CustomStrategy) => void
+  saveCustom: () => void
+  deleteCustom: (name: string) => void
+  handleParamsMerge: (updates: Record<string, StrategyParamValue>) => void
+  isSaving: boolean
 }
 
 export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequest {
@@ -160,14 +184,37 @@ export function useBacktestConfig() {
   const [engine, setEngine] = useState<BacktestEngine>('candle')
   const [displayTimeframe, setDisplayTimeframe] = useState('M1')
   const [tickFlags, setTickFlags] = useState<'all' | 'trade'>('all')
+  const [customName, setCustomName] = useState('')
+  const [description, setDescription] = useState('')
+  const [loadedCustomName, setLoadedCustomName] = useState<string | null>(null)
+  const [authoringError, setAuthoringError] = useState<string | null>(null)
 
   const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
+  const { data: exitCatalog, isLoading: exitCatalogLoading } = useExitRuleCatalog()
+  const { data: customStrategies, isLoading: customLoading } = useCustomStrategies()
+  const saveCustomStrategy = useSaveCustomStrategy()
+  const deleteCustomStrategy = useDeleteCustomStrategy()
   const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
   const filteredStrategies = useMemo(
     () => strategies.filter((entry) => strategyEngine(entry) === engine),
     [strategies, engine],
   )
   const selectedStrategy = filteredStrategies.find((entry) => entry.name === strategy)
+  const customNames = useMemo(
+    () => new Set(customStrategies?.map((entry) => entry.name) ?? []),
+    [customStrategies],
+  )
+  const builtInStrategies = useMemo(
+    () =>
+      strategies.filter(
+        (entry) => !customNames.has(entry.name) && entry.name !== 'CompositeStrategy',
+      ),
+    [strategies, customNames],
+  )
+  const { entryParamSpecs, exitParamSpecs } = useMemo(
+    () => partitionStrategyParamSpecs(selectedStrategy?.params ?? []),
+    [selectedStrategy?.params],
+  )
   const paramsInitialized = useRef(false)
 
   const pendingBacktestConfig = useAppStore((s) => s.pendingBacktestConfig)
@@ -253,6 +300,110 @@ export function useBacktestConfig() {
     setStrategyParams((current) => ({ ...current, [name]: value }))
   }, [])
 
+  const handleParamsMerge = useCallback((updates: Record<string, StrategyParamValue>) => {
+    setStrategyParams((current) => ({ ...current, ...updates }))
+  }, [])
+
+  const clearAuthoringDraft = useCallback(() => {
+    setLoadedCustomName(null)
+    setCustomName('')
+    setDescription('')
+    setAuthoringError(null)
+  }, [])
+
+  const newDraft = useCallback(() => {
+    clearAuthoringDraft()
+  }, [clearAuthoringDraft])
+
+  const loadCustom = useCallback(
+    (custom: CustomStrategy) => {
+      setLoadedCustomName(custom.name)
+      setCustomName(custom.name)
+      setDescription(custom.description ?? '')
+      setStrategy(custom.base_strategy)
+      const baseInfo = strategies.find((entry) => entry.name === custom.base_strategy)
+      if (baseInfo) {
+        setStrategyParams(mergeParamValues(baseInfo.params, custom.parameters))
+      } else {
+        setStrategyParams(custom.parameters)
+      }
+      setAuthoringError(null)
+      paramsInitialized.current = true
+    },
+    [strategies],
+  )
+
+  const saveCustom = useCallback(() => {
+    setAuthoringError(null)
+    const trimmedName = customName.trim()
+    if (!trimmedName) {
+      setAuthoringError('Strategy name is required.')
+      return
+    }
+
+    const isBuiltIn = builtInStrategies.some(
+      (entry) => entry.name.toLowerCase() === trimmedName.toLowerCase(),
+    )
+    if (isBuiltIn) {
+      setAuthoringError(
+        `"${trimmedName}" conflicts with a built-in strategy name. Please choose a different name.`,
+      )
+      return
+    }
+
+    if (!loadedCustomName && customNames.has(trimmedName)) {
+      setAuthoringError(`A custom strategy named "${trimmedName}" already exists.`)
+      return
+    }
+
+    const payload: CustomStrategy = {
+      name: trimmedName,
+      base_strategy: strategy,
+      description: description.trim(),
+      parameters: strategyParams,
+    }
+
+    saveCustomStrategy.mutate(payload, {
+      onSuccess: () => {
+        setLoadedCustomName(trimmedName)
+      },
+      onError: (err: unknown) => {
+        const message = axios.isAxiosError(err)
+          ? ((err.response?.data as { detail?: string })?.detail ?? err.message)
+          : err instanceof Error
+            ? err.message
+            : 'Failed to save strategy.'
+        setAuthoringError(message)
+      },
+    })
+  }, [
+    builtInStrategies,
+    customName,
+    customNames,
+    description,
+    loadedCustomName,
+    saveCustomStrategy,
+    strategy,
+    strategyParams,
+  ])
+
+  const deleteCustom = useCallback(
+    (name: string) => {
+      if (!window.confirm(`Are you sure you want to delete the custom strategy "${name}"?`)) {
+        return
+      }
+
+      deleteCustomStrategy.mutate(name, {
+        onSuccess: () => {
+          if (loadedCustomName === name) {
+            clearAuthoringDraft()
+          }
+        },
+      })
+    },
+    [clearAuthoringDraft, deleteCustomStrategy, loadedCustomName],
+  )
+
   const updateSizingField = useCallback(
     <K extends keyof PositionSizingFields>(key: K, value: PositionSizingFields[K]) => {
       setPositionSizingFields((current) => ({ ...current, [key]: value }))
@@ -328,14 +479,37 @@ export function useBacktestConfig() {
 
   const buildRequest = useCallback(() => buildBacktestRequest(fields), [fields])
 
+  const authoring: BacktestConfigAuthoring = {
+    customName,
+    description,
+    loadedCustomName,
+    authoringError,
+    setCustomName,
+    setDescription,
+    newDraft,
+    loadCustom,
+    saveCustom,
+    deleteCustom,
+    handleParamsMerge,
+    isSaving: saveCustomStrategy.isPending,
+  }
+
   return {
     fields,
     setters,
     strategies,
     filteredStrategies,
+    builtInStrategies,
     selectedStrategy,
     strategiesLoading,
+    entryParamSpecs,
+    exitParamSpecs,
+    exitCatalog: exitCatalog as ExitRuleCatalogResponse | undefined,
+    exitCatalogLoading,
+    customStrategies: customStrategies ?? [],
+    customLoading,
     validation,
     buildRequest,
+    authoring,
   }
 }
