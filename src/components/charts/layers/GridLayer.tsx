@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { GridColumns, GridRows } from '@visx/grid'
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
@@ -12,7 +13,7 @@ type GridLayerProps = {
   left: number
 }
 
-export function GridLayer({ xScale, yScale, width, height, top, left }: GridLayerProps) {
+function GridLayerImpl({ xScale, yScale, width, height, top, left }: GridLayerProps) {
   return (
     <g transform={`translate(${left}, 0)`}>
       <GridRows
@@ -32,3 +33,5 @@ export function GridLayer({ xScale, yScale, width, height, top, left }: GridLaye
     </g>
   )
 }
+
+export const GridLayer = memo(GridLayerImpl)

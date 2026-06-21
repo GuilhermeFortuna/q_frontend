@@ -169,10 +169,32 @@ const ChartInner = forwardRef<
   const isPanning = useRef(false)
   const panStart = useRef<{ x: number; y: number } | null>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
+  const hoverRafRef = useRef<number | null>(null)
+  const pendingHoverRef = useRef<{ bar: (typeof visibleBars)[0] | null; y: number } | null>(null)
 
   useEffect(() => {
     onViewportChange?.(viewport)
   }, [viewport, onViewportChange])
+
+  useEffect(() => {
+    return () => {
+      if (hoverRafRef.current !== null) {
+        cancelAnimationFrame(hoverRafRef.current)
+      }
+    }
+  }, [])
+
+  const scheduleHoverUpdate = useCallback((bar: (typeof visibleBars)[0] | null, y: number) => {
+    pendingHoverRef.current = { bar, y }
+    if (hoverRafRef.current !== null) return
+    hoverRafRef.current = requestAnimationFrame(() => {
+      hoverRafRef.current = null
+      const pending = pendingHoverRef.current
+      if (!pending) return
+      setHoveredBar(pending.bar)
+      setMouseY(pending.y)
+    })
+  }, [])
 
   useEffect(() => {
     if (activeDrawingTool === 'cursor' && hoveredBar) {
@@ -208,8 +230,7 @@ const ChartInner = forwardRef<
       }
 
       const bar = timestampAtX(scales.xScale, x, visibleBars)
-      setHoveredBar(bar)
-      setMouseY(y)
+      scheduleHoverUpdate(bar, y)
 
       if (draftPoint && draftDrawing) {
         const dp = dataPointFromEvent(x, y, scales.xScale, scales.priceScale, visibleBars)
@@ -219,7 +240,16 @@ const ChartInner = forwardRef<
         }
       }
     },
-    [visibleBars, scales, draftPoint, draftDrawing, panBy, panPriceByPixels, layout.priceHeight],
+    [
+      visibleBars,
+      scales,
+      draftPoint,
+      draftDrawing,
+      panBy,
+      panPriceByPixels,
+      layout.priceHeight,
+      scheduleHoverUpdate,
+    ],
   )
 
   const finishDrawing = useCallback(
@@ -289,6 +319,11 @@ const ChartInner = forwardRef<
   }, [])
 
   const handleMouseLeave = useCallback(() => {
+    pendingHoverRef.current = null
+    if (hoverRafRef.current !== null) {
+      cancelAnimationFrame(hoverRafRef.current)
+      hoverRafRef.current = null
+    }
     setHoveredBar(null)
     setMouseY(null)
     isPanning.current = false
@@ -364,7 +399,7 @@ const ChartInner = forwardRef<
     >
       {/* HUD Info Panel */}
       {hudInfo && (
-        <div className="text-silver-400 bg-carbon-950/45 border-carbon-800/40 pointer-events-none absolute top-3 left-4 z-10 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border px-3 py-1.5 font-mono text-[11px] shadow-xl backdrop-blur-[4px]">
+        <div className="text-silver-400 bg-carbon-950/80 border-carbon-800/40 pointer-events-none absolute top-3 left-4 z-10 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border px-3 py-1.5 font-mono text-[11px] shadow-xl">
           <span className="text-silver-100 mr-1 font-sans text-xs font-bold tracking-wider uppercase">
             {symbol}
           </span>
@@ -496,7 +531,6 @@ const ChartInner = forwardRef<
           yScale={scales.priceScale}
           chartType={chartType}
           left={CHART_MARGINS.left}
-          hoveredTimestamp={hoveredBar?.timestamp}
           candleOpacity={settings.candleOpacity}
         />
 
@@ -534,6 +568,7 @@ const ChartInner = forwardRef<
             left={CHART_MARGINS.left}
             type="macd"
             config={macdInd}
+            macdValues={macdValues}
           />
         )}
 

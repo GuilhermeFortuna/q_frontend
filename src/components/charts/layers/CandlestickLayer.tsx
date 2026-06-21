@@ -1,3 +1,5 @@
+import { memo, useMemo } from 'react'
+
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
 import type { ChartType, ProcessedBar } from '@/components/charts/types/chart'
@@ -9,22 +11,22 @@ type CandlestickLayerProps = {
   yScale: LinearScale
   chartType: ChartType
   left: number
-  hoveredTimestamp?: string | null
   candleOpacity?: number
 }
 
-export function CandlestickLayer({
+function CandlestickLayerImpl({
   bars,
   xScale,
   yScale,
   chartType,
   left,
-  hoveredTimestamp,
   candleOpacity = 0.85,
 }: CandlestickLayerProps) {
   const bandwidth = xScale.bandwidth()
 
-  if (chartType === 'line' || chartType === 'area') {
+  const lineOrArea = useMemo(() => {
+    if (chartType !== 'line' && chartType !== 'area') return null
+
     const points = bars
       .map((bar) => {
         const x = (xScale(bar.timestamp) ?? 0) + bandwidth / 2
@@ -45,77 +47,72 @@ export function CandlestickLayer({
         <polyline fill="none" stroke={BRASS_COLOR} strokeWidth={1.5} points={points} />
       </g>
     )
-  }
+  }, [bars, bandwidth, chartType, left, xScale, yScale])
 
-  const isNarrow = bandwidth < 4
+  const candles = useMemo(() => {
+    if (chartType === 'line' || chartType === 'area') return null
 
-  return (
-    <g transform={`translate(${left}, 0)`}>
-      {bars.map((bar) => {
-        const x = xScale(bar.timestamp) ?? 0
-        const cx = Math.round(x + bandwidth / 2)
-        const isHovered = bar.timestamp === hoveredTimestamp
+    const isNarrow = bandwidth < 4
 
-        const wickTop = Math.round(yScale(bar.high))
-        const wickBottom = Math.round(yScale(bar.low))
+    return (
+      <g transform={`translate(${left}, 0)`}>
+        {bars.map((bar) => {
+          const x = xScale(bar.timestamp) ?? 0
+          const cx = Math.round(x + bandwidth / 2)
 
-        return (
-          <g key={bar.timestamp}>
-            {isHovered && (
-              <rect
-                x={Math.floor(x)}
-                y={yScale.range()[1]}
-                width={Math.max(Math.ceil(bandwidth), 1)}
-                height={Math.max(yScale.range()[0] - yScale.range()[1], 0)}
-                fill="rgba(255, 255, 255, 0.05)"
-                pointerEvents="none"
-                shapeRendering="crispEdges"
-              />
-            )}
+          const wickTop = Math.round(yScale(bar.high))
+          const wickBottom = Math.round(yScale(bar.low))
 
-            {isNarrow ? (
-              <line
-                x1={cx}
-                x2={cx}
-                y1={wickTop}
-                y2={wickBottom}
-                stroke={bar.color}
-                strokeWidth={Math.max(Math.floor(bandwidth), 1)}
-                shapeRendering="crispEdges"
-              />
-            ) : (
-              <>
+          return (
+            <g key={bar.timestamp}>
+              {isNarrow ? (
                 <line
                   x1={cx}
                   x2={cx}
                   y1={wickTop}
                   y2={wickBottom}
                   stroke={bar.color}
-                  strokeWidth={1}
+                  strokeWidth={Math.max(Math.floor(bandwidth), 1)}
                   shapeRendering="crispEdges"
                 />
-                <rect
-                  x={Math.floor(cx - Math.max(Math.round(bandwidth * 0.7), 1) / 2)}
-                  y={Math.round(yScale(Math.max(bar.open, bar.close)))}
-                  width={Math.max(Math.round(bandwidth * 0.7), 1)}
-                  height={Math.max(
-                    Math.round(yScale(Math.min(bar.open, bar.close))) -
-                      Math.round(yScale(Math.max(bar.open, bar.close))),
-                    1,
-                  )}
-                  fill={bar.isBullish ? 'url(#bull-gradient)' : 'url(#bear-gradient)'}
-                  fillOpacity={candleOpacity}
-                  stroke={bar.color}
-                  strokeWidth={1}
-                  rx={1.5}
-                  ry={1.5}
-                  shapeRendering="geometricPrecision"
-                />
-              </>
-            )}
-          </g>
-        )
-      })}
-    </g>
-  )
+              ) : (
+                <>
+                  <line
+                    x1={cx}
+                    x2={cx}
+                    y1={wickTop}
+                    y2={wickBottom}
+                    stroke={bar.color}
+                    strokeWidth={1}
+                    shapeRendering="crispEdges"
+                  />
+                  <rect
+                    x={Math.floor(cx - Math.max(Math.round(bandwidth * 0.7), 1) / 2)}
+                    y={Math.round(yScale(Math.max(bar.open, bar.close)))}
+                    width={Math.max(Math.round(bandwidth * 0.7), 1)}
+                    height={Math.max(
+                      Math.round(yScale(Math.min(bar.open, bar.close))) -
+                        Math.round(yScale(Math.max(bar.open, bar.close))),
+                      1,
+                    )}
+                    fill={bar.isBullish ? 'url(#bull-gradient)' : 'url(#bear-gradient)'}
+                    fillOpacity={candleOpacity}
+                    stroke={bar.color}
+                    strokeWidth={1}
+                    rx={1.5}
+                    ry={1.5}
+                    shapeRendering="geometricPrecision"
+                  />
+                </>
+              )}
+            </g>
+          )
+        })}
+      </g>
+    )
+  }, [bars, bandwidth, candleOpacity, chartType, left, xScale, yScale])
+
+  return lineOrArea ?? candles
 }
+
+export const CandlestickLayer = memo(CandlestickLayerImpl)

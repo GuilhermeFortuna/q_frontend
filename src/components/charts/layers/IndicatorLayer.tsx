@@ -1,8 +1,15 @@
+import { memo, useMemo } from 'react'
+
+import { useIndicatorSeries } from '@/components/charts/hooks/useIndicatorSeries'
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
 import type { IndicatorConfig, ProcessedBar } from '@/components/charts/types/chart'
 import { BRASS_COLOR } from '@/components/charts/types/chart'
-import { bollingerBands, ema, sma, wma, hma, smma, donchianChannels } from '@/lib/indicators'
+import {
+  bandsAreaPath,
+  linePath,
+  visibleTimestampSet,
+} from '@/components/charts/utils/indicatorPaths'
 import type { OhlcvBar } from '@/types/api'
 
 type IndicatorLayerProps = {
@@ -12,71 +19,6 @@ type IndicatorLayerProps = {
   yScale: LinearScale
   indicators: IndicatorConfig[]
   left: number
-}
-
-function linePath(
-  values: (number | null)[],
-  allBars: OhlcvBar[],
-  visibleTimestamps: Set<string>,
-  xScale: BandScale,
-  yScale: LinearScale,
-): string {
-  const bw = xScale.bandwidth()
-  const parts: string[] = []
-  let started = false
-
-  for (let i = 0; i < allBars.length; i++) {
-    const ts = allBars[i].timestamp
-    if (!visibleTimestamps.has(ts)) continue
-    const val = values[i]
-    if (val === null) {
-      started = false
-      continue
-    }
-    const x = (xScale(ts) ?? 0) + bw / 2
-    const y = yScale(val)
-    parts.push(`${started ? 'L' : 'M'} ${x} ${y}`)
-    started = true
-  }
-
-  return parts.join(' ')
-}
-
-function bandsAreaPath(
-  upper: (number | null)[],
-  lower: (number | null)[],
-  allBars: OhlcvBar[],
-  visibleTimestamps: Set<string>,
-  xScale: BandScale,
-  yScale: LinearScale,
-): string {
-  const bw = xScale.bandwidth()
-  const upperPoints: string[] = []
-  const lowerPoints: string[] = []
-
-  for (let i = 0; i < allBars.length; i++) {
-    const ts = allBars[i].timestamp
-    if (!visibleTimestamps.has(ts)) continue
-    const uVal = upper[i]
-    const lVal = lower[i]
-    if (uVal === null || lVal === null) continue
-
-    const x = (xScale(ts) ?? 0) + bw / 2
-    const yUpper = yScale(uVal)
-    const yLower = yScale(lVal)
-
-    upperPoints.push(`${x},${yUpper}`)
-    lowerPoints.unshift(`${x},${yLower}`)
-  }
-
-  if (upperPoints.length === 0) return ''
-  return `M ${upperPoints[0].replace(',', ' ')} ${upperPoints
-    .slice(1)
-    .map((p) => `L ${p.replace(',', ' ')}`)
-    .join(' ')} L ${lowerPoints[0].replace(',', ' ')} ${lowerPoints
-    .slice(1)
-    .map((p) => `L ${p.replace(',', ' ')}`)
-    .join(' ')} Z`
 }
 
 function getStrokeDasharray(style?: 'solid' | 'dashed' | 'dotted'): string | undefined {
@@ -96,7 +38,7 @@ function getCloudFill(color: string): string {
   return 'rgba(201, 162, 39, 0.05)'
 }
 
-export function IndicatorLayer({
+function IndicatorLayerImpl({
   allBars,
   visibleBars,
   xScale,
@@ -104,49 +46,97 @@ export function IndicatorLayer({
   indicators,
   left,
 }: IndicatorLayerProps) {
-  const visibleSet = new Set(visibleBars.map((b) => b.timestamp))
+  const visibleSet = useMemo(
+    () => visibleTimestampSet(visibleBars.map((bar) => bar.timestamp)),
+    [visibleBars],
+  )
+  const series = useIndicatorSeries(allBars, indicators)
 
-  return (
-    <g transform={`translate(${left}, 0)`}>
-      {indicators.map((ind) => {
-        if (!ind.enabled) return null
-
-        if (ind.type === 'sma') {
-          const values = sma(allBars, ind.period)
-          const color = ind.color ?? BRASS_COLOR
-          const strokeWidth = ind.strokeWidth ?? 1.2
-          const dash = getStrokeDasharray(ind.lineStyle ?? 'dashed')
-          return (
-            <path
-              key="sma"
-              d={linePath(values, allBars, visibleSet, xScale, yScale)}
-              fill="none"
-              stroke={color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={dash}
-            />
-          )
+  const paths = useMemo(
+    () =>
+      series.map((entry) => {
+        if (entry.kind === 'line') {
+          const ind = entry.config
+          if (ind.type === 'sma') {
+            const color = ind.color ?? BRASS_COLOR
+            const strokeWidth = ind.strokeWidth ?? 1.2
+            const dash = getStrokeDasharray(ind.lineStyle ?? 'dashed')
+            return (
+              <path
+                key="sma"
+                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={dash}
+              />
+            )
+          }
+          if (ind.type === 'ema') {
+            const color = ind.color ?? '#6eb5ff'
+            const strokeWidth = ind.strokeWidth ?? 1.2
+            const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
+            return (
+              <path
+                key="ema"
+                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={dash}
+              />
+            )
+          }
+          if (ind.type === 'wma') {
+            const color = ind.color ?? '#f97316'
+            const strokeWidth = ind.strokeWidth ?? 1.2
+            const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
+            return (
+              <path
+                key="wma"
+                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={dash}
+              />
+            )
+          }
+          if (ind.type === 'hma') {
+            const color = ind.color ?? '#26a69a'
+            const strokeWidth = ind.strokeWidth ?? 1.2
+            const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
+            return (
+              <path
+                key="hma"
+                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={dash}
+              />
+            )
+          }
+          if (ind.type === 'smma') {
+            const color = ind.color ?? '#ef5350'
+            const strokeWidth = ind.strokeWidth ?? 1.2
+            const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
+            return (
+              <path
+                key="smma"
+                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={dash}
+              />
+            )
+          }
+          return null
         }
 
-        if (ind.type === 'ema') {
-          const values = ema(allBars, ind.period)
-          const color = ind.color ?? '#6eb5ff'
-          const strokeWidth = ind.strokeWidth ?? 1.2
-          const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
-          return (
-            <path
-              key="ema"
-              d={linePath(values, allBars, visibleSet, xScale, yScale)}
-              fill="none"
-              stroke={color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={dash}
-            />
-          )
-        }
-
+        const ind = entry.config
         if (ind.type === 'bollinger') {
-          const bands = bollingerBands(allBars, ind.period, ind.stdDev)
           const color = ind.color ?? '#c9a227'
           const strokeWidth = ind.strokeWidth ?? 1.0
           const showCloud = ind.showCloud ?? true
@@ -154,20 +144,20 @@ export function IndicatorLayer({
             <g key="bollinger">
               {showCloud && (
                 <path
-                  d={bandsAreaPath(bands.upper, bands.lower, allBars, visibleSet, xScale, yScale)}
+                  d={bandsAreaPath(entry.upper, entry.lower, allBars, visibleSet, xScale, yScale)}
                   fill={getCloudFill(color)}
                   stroke="none"
                 />
               )}
               <path
-                d={linePath(bands.upper, allBars, visibleSet, xScale, yScale)}
+                d={linePath(entry.upper, allBars, visibleSet, xScale, yScale)}
                 fill="none"
                 stroke={color}
                 strokeWidth={strokeWidth}
                 opacity={0.8}
               />
               <path
-                d={linePath(bands.middle, allBars, visibleSet, xScale, yScale)}
+                d={linePath(entry.middle, allBars, visibleSet, xScale, yScale)}
                 fill="none"
                 stroke={color}
                 strokeWidth={strokeWidth}
@@ -175,7 +165,7 @@ export function IndicatorLayer({
                 opacity={0.5}
               />
               <path
-                d={linePath(bands.lower, allBars, visibleSet, xScale, yScale)}
+                d={linePath(entry.lower, allBars, visibleSet, xScale, yScale)}
                 fill="none"
                 stroke={color}
                 strokeWidth={strokeWidth}
@@ -185,59 +175,7 @@ export function IndicatorLayer({
           )
         }
 
-        if (ind.type === 'wma') {
-          const values = wma(allBars, ind.period)
-          const color = ind.color ?? '#f97316'
-          const strokeWidth = ind.strokeWidth ?? 1.2
-          const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
-          return (
-            <path
-              key="wma"
-              d={linePath(values, allBars, visibleSet, xScale, yScale)}
-              fill="none"
-              stroke={color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={dash}
-            />
-          )
-        }
-
-        if (ind.type === 'hma') {
-          const values = hma(allBars, ind.period)
-          const color = ind.color ?? '#26a69a'
-          const strokeWidth = ind.strokeWidth ?? 1.2
-          const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
-          return (
-            <path
-              key="hma"
-              d={linePath(values, allBars, visibleSet, xScale, yScale)}
-              fill="none"
-              stroke={color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={dash}
-            />
-          )
-        }
-
-        if (ind.type === 'smma') {
-          const values = smma(allBars, ind.period)
-          const color = ind.color ?? '#ef5350'
-          const strokeWidth = ind.strokeWidth ?? 1.2
-          const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
-          return (
-            <path
-              key="smma"
-              d={linePath(values, allBars, visibleSet, xScale, yScale)}
-              fill="none"
-              stroke={color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={dash}
-            />
-          )
-        }
-
         if (ind.type === 'donchian') {
-          const bands = donchianChannels(allBars, ind.period)
           const color = ind.color ?? '#6eb5ff'
           const strokeWidth = ind.strokeWidth ?? 1.0
           const showCloud = ind.showCloud ?? true
@@ -245,20 +183,20 @@ export function IndicatorLayer({
             <g key="donchian">
               {showCloud && (
                 <path
-                  d={bandsAreaPath(bands.upper, bands.lower, allBars, visibleSet, xScale, yScale)}
+                  d={bandsAreaPath(entry.upper, entry.lower, allBars, visibleSet, xScale, yScale)}
                   fill={getCloudFill(color)}
                   stroke="none"
                 />
               )}
               <path
-                d={linePath(bands.upper, allBars, visibleSet, xScale, yScale)}
+                d={linePath(entry.upper, allBars, visibleSet, xScale, yScale)}
                 fill="none"
                 stroke={color}
                 strokeWidth={strokeWidth}
                 opacity={0.8}
               />
               <path
-                d={linePath(bands.middle, allBars, visibleSet, xScale, yScale)}
+                d={linePath(entry.middle, allBars, visibleSet, xScale, yScale)}
                 fill="none"
                 stroke={color}
                 strokeWidth={strokeWidth}
@@ -266,7 +204,7 @@ export function IndicatorLayer({
                 opacity={0.4}
               />
               <path
-                d={linePath(bands.lower, allBars, visibleSet, xScale, yScale)}
+                d={linePath(entry.lower, allBars, visibleSet, xScale, yScale)}
                 fill="none"
                 stroke={color}
                 strokeWidth={strokeWidth}
@@ -277,7 +215,11 @@ export function IndicatorLayer({
         }
 
         return null
-      })}
-    </g>
+      }),
+    [allBars, series, visibleSet, xScale, yScale],
   )
+
+  return <g transform={`translate(${left}, 0)`}>{paths}</g>
 }
+
+export const IndicatorLayer = memo(IndicatorLayerImpl)

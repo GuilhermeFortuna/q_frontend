@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
 import type { ProcessedBar } from '@/components/charts/types/chart'
@@ -15,7 +17,7 @@ type CrosshairLayerProps = {
   mouseY?: number | null
 }
 
-export function CrosshairLayer({
+function CrosshairLayerImpl({
   activeBar,
   xScale,
   priceScale,
@@ -27,12 +29,22 @@ export function CrosshairLayer({
   if (!activeBar) return null
 
   const cx = barCenterX(xScale, activeBar.timestamp) + left
+  const barX = (xScale(activeBar.timestamp) ?? 0) + left
+  const bandwidth = xScale.bandwidth()
   const priceY = mouseY ?? priceScale(activeBar.close)
   const timeLabel = formatCrosshairLabel(activeBar.timestamp, timeframe)
   const timeLabelWidth = Math.max(72, timeLabel.length * 5.6 + 12)
 
   return (
     <g pointerEvents="none">
+      <rect
+        x={Math.floor(barX)}
+        y={layout.priceTop}
+        width={Math.max(Math.ceil(bandwidth), 1)}
+        height={Math.max(layout.priceHeight, 0)}
+        fill="rgba(255, 255, 255, 0.05)"
+        shapeRendering="crispEdges"
+      />
       <line
         x1={cx}
         x2={cx}
@@ -89,3 +101,5 @@ export function CrosshairLayer({
     </g>
   )
 }
+
+export const CrosshairLayer = memo(CrosshairLayerImpl)
