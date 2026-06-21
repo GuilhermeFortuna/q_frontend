@@ -50,6 +50,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
   return (
     <nav
       aria-label="Workspace dock"
+      data-workspace={activeWorkspace}
       className={cn(
         'vt-dock fixed left-1/2 z-20 flex -translate-x-1/2 items-end backdrop-blur-xl transition-all duration-300 ease-in-out',
         isLauncher

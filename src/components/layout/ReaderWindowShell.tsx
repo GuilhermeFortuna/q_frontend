@@ -28,6 +28,8 @@ export function ReaderWindowShell({ children }: ReaderWindowShellProps) {
       />
       <div className="bg-carbon-950/35 absolute inset-0" />
       <PointerSpotlight />
+      <div className="quant-noise-overlay" />
+      <div className="quant-vignette-overlay" />
       <header
         data-tauri-drag-region
         className="vt-header border-brass-600/15 bg-espresso-950/40 relative z-10 flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] backdrop-blur-md select-none"

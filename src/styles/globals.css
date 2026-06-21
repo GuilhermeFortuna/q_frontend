@@ -99,8 +99,8 @@
   }
 
   ::selection {
-    background-color: rgba(217, 158, 34, 0.35); /* brass-500 */
-    color: #e8eaed; /* silver-100 */
+    background-color: color-mix(in srgb, var(--color-brass-500) 35%, transparent);
+    color: var(--color-silver-100);
   }
 }
 
@@ -110,6 +110,91 @@
   syntax: '<number>';
   inherits: false;
   initial-value: 0;
+}
+
+@property --color-brass-400 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f0b429;
+}
+@property --color-brass-500 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #d99e22;
+}
+@property --color-brass-600 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #b8831c;
+}
+@property --color-gold-400 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ffca47;
+}
+
+[data-workspace] {
+  transition:
+    --color-brass-400 600ms cubic-bezier(0.16, 1, 0.3, 1),
+    --color-brass-500 600ms cubic-bezier(0.16, 1, 0.3, 1),
+    --color-brass-600 600ms cubic-bezier(0.16, 1, 0.3, 1),
+    --color-gold-400 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-workspace='launcher'] {
+  --color-brass-400: #f0b429;
+  --color-brass-500: #d99e22;
+  --color-brass-600: #b8831c;
+  --color-gold-400: #ffca47;
+}
+
+[data-workspace='market-data'] {
+  --color-brass-400: #10b981;
+  --color-brass-500: #059669;
+  --color-brass-600: #047857;
+  --color-gold-400: #34d399;
+}
+
+[data-workspace='storage'] {
+  --color-brass-400: #3b82f6;
+  --color-brass-500: #2563eb;
+  --color-brass-600: #1d4ed8;
+  --color-gold-400: #60a5fa;
+}
+
+[data-workspace='strategy'] {
+  --color-brass-400: #f97316;
+  --color-brass-500: #ea580c;
+  --color-brass-600: #c2410c;
+  --color-gold-400: #fb923c;
+}
+
+[data-workspace='backtests'] {
+  --color-brass-400: #a855f7;
+  --color-brass-500: #9333ea;
+  --color-brass-600: #7e22ce;
+  --color-gold-400: #c084fc;
+}
+
+[data-workspace='validate'] {
+  --color-brass-400: #06b6d4;
+  --color-brass-500: #0891b2;
+  --color-brass-600: #0e7490;
+  --color-gold-400: #22d3ee;
+}
+
+[data-workspace='discover'] {
+  --color-brass-400: #ec4899;
+  --color-brass-500: #db2777;
+  --color-brass-600: #be185d;
+  --color-gold-400: #f472b6;
+}
+
+[data-workspace='system'] {
+  --color-brass-400: #94a3b8;
+  --color-brass-500: #64748b;
+  --color-brass-600: #475569;
+  --color-gold-400: #cbd5e1;
 }
 
 @layer utilities {
@@ -122,7 +207,7 @@
     background:
       radial-gradient(
         circle 340px at var(--spot-x) var(--spot-y),
-        rgb(240 180 41 / calc(0.16 * var(--spot-o))),
+        color-mix(in srgb, var(--color-brass-400) calc(16% * var(--spot-o)), transparent),
         transparent 72%
       ),
       linear-gradient(135deg, rgba(26, 16, 8, 0.88), rgba(17, 19, 21, 0.92));
@@ -130,7 +215,8 @@
     box-shadow:
       0 1px 0 rgba(212, 176, 106, 0.08) inset,
       0 8px 32px -8px rgba(0, 0, 0, 0.6),
-      0 0 38px -6px rgb(240 180 41 / calc(0.22 * var(--spot-o)));
+      0 0 38px -6px
+        color-mix(in srgb, var(--color-brass-400) calc(22% * var(--spot-o)), transparent);
     backdrop-filter: blur(12px);
     transition:
       border-color 250ms ease,
@@ -145,7 +231,8 @@
       0 1px 0 rgba(212, 176, 106, 0.12) inset,
       0 12px 38px -6px rgba(0, 0, 0, 0.7),
       0 0 12px rgba(168, 139, 82, 0.03),
-      0 0 38px -6px rgb(240 180 41 / calc(0.22 * var(--spot-o)));
+      0 0 38px -6px
+        color-mix(in srgb, var(--color-brass-400) calc(22% * var(--spot-o)), transparent);
   }
 
   /* Cursor is inside this panel — light it up. Placed after :hover so the brass
@@ -430,6 +517,63 @@
       background-position: 200% center;
     }
   }
+
+  /* Film Grain tactile noise filter */
+  .quant-noise-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
+  /* Cinematic Vignette edge shadow matching active theme */
+  .quant-vignette-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    pointer-events: none;
+    background: radial-gradient(
+      circle,
+      transparent 70%,
+      color-mix(in srgb, var(--color-brass-600) 5%, rgba(10, 11, 12, 0.4)) 150%
+    );
+    transition: background 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Screen Edge Ripple Sweep Animation classes */
+  .quant-edge-ripple {
+    position: fixed;
+    inset: 0;
+    z-index: 9997;
+    pointer-events: none;
+    border: 0px solid transparent;
+    box-shadow: inset 0 0 0 0px var(--color-brass-400);
+    opacity: 0;
+  }
+
+  @keyframes edge-ripple-sweep {
+    0% {
+      box-shadow: inset 0 0 0 0px var(--color-brass-400);
+      opacity: 0.85;
+      filter: blur(0px);
+    }
+    10% {
+      box-shadow: inset 0 0 25px 2px var(--color-brass-400);
+      opacity: 0.75;
+    }
+    100% {
+      box-shadow: inset 0 0 90px 0px transparent;
+      opacity: 0;
+      filter: blur(8px);
+    }
+  }
+
+  .animate-edge-ripple {
+    animation: edge-ripple-sweep 850ms cubic-bezier(0.1, 0.8, 0.15, 1) forwards;
+  }
 }
 
 /* Custom Premium Scrollbars */
@@ -443,11 +587,11 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(184, 131, 28, 0.2); /* brass-600 */
+  background: color-mix(in srgb, var(--color-brass-600) 20%, transparent);
   border-radius: 9999px;
   transition: background-color 150ms ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(217, 158, 34, 0.4); /* brass-500 */
+  background: color-mix(in srgb, var(--color-brass-500) 40%, transparent);
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { type ReactNode, useState, useEffect } from 'react'
 
 import { QuantBackground } from '@/components/background/QuantBackground'
 import { QuantEmblem } from '@/components/brand/QuantEmblem'
@@ -23,6 +23,14 @@ export function AppShell({ children }: AppShellProps) {
   const isLauncher = activeWorkspace === 'launcher'
   const isReader = location.pathname === '/news-reader'
 
+  const [rippleKey, setRippleKey] = useState(0)
+
+  useEffect(() => {
+    if (activeWorkspace) {
+      setRippleKey((prev) => prev + 1)
+    }
+  }, [activeWorkspace])
+
   if (isReader) {
     return <ReaderWindowShell>{children}</ReaderWindowShell>
   }
@@ -31,6 +39,9 @@ export function AppShell({ children }: AppShellProps) {
     <div className="relative flex min-h-full flex-col">
       <QuantBackground />
       <PointerSpotlight />
+      <div className="quant-noise-overlay" />
+      <div className="quant-vignette-overlay" />
+      {rippleKey > 0 && <div key={rippleKey} className="quant-edge-ripple animate-edge-ripple" />}
       <header
         data-tauri-drag-region
         className="vt-header border-brass-600/15 bg-espresso-950/40 relative flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] backdrop-blur-md select-none"
