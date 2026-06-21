@@ -17,9 +17,9 @@ src/assets/fonts/
 # Agent/scratch recovery files
 *.wip
 
-# Editor
-.vscode/*
-!.vscode/extensions.json
+# Editor / local tooling
+.vscode/
+.husky/
 .idea
 
 # Env
