@@ -81,20 +81,21 @@ export function pinEnableParamSearchParam(
 }
 
 function forceEnableParamRangeIncludesOff(param: SearchParam): SearchParam {
-  if (param.type === 'categorical') {
-    return param
-  }
+  // Only numeric int/float enable params can carry an "off" (0) grid point.
+  // Strategy enable params are always int/float (the seeded search space never
+  // produces categorical/log-float for them), and forcing low=0 on a log scale
+  // is invalid (log(0) is undefined) — so leave any other type untouched.
   if (param.type === 'int') {
     return { ...param, low: 0, step: param.step ?? 1 }
   }
-  if (param.type === 'log-float') {
-    return { ...param, low: 0 }
+  if (param.type === 'float') {
+    return {
+      ...param,
+      low: 0,
+      step: param.step != null && param.step > 0 ? param.step : null,
+    }
   }
-  return {
-    ...param,
-    low: 0,
-    step: param.step != null && param.step > 0 ? param.step : null,
-  }
+  return param
 }
 
 export function buildStrategyParamsSearchSpacePayload(
@@ -118,9 +119,12 @@ export function buildStrategyParamsSearchSpacePayload(
 
   for (const rule of candidateRules) {
     const enableParam = payload[rule.enable_param]
-    if (enableParam != null) {
-      payload[rule.enable_param] = forceEnableParamRangeIncludesOff(enableParam)
-    }
+    // Candidate enable params are always seeded (applicable rules require the spec),
+    // but guard defensively: if one is ever missing, pin it off rather than let it
+    // fall back to a possibly-on strategy default.
+    payload[rule.enable_param] = enableParam
+      ? forceEnableParamRangeIncludesOff(enableParam)
+      : pinEnableParamSearchParam(rule, exitParamSpecs)
   }
   for (const rule of nonCandidateRules) {
     payload[rule.enable_param] = pinEnableParamSearchParam(rule, exitParamSpecs)
