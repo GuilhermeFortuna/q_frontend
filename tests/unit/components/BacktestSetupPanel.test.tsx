@@ -163,4 +163,19 @@ describe('BacktestSetupPanel', () => {
     expect(startInput.value).toBe('2020-01-01')
     expect(endInput.value).toBe(format(new Date(), 'yyyy-MM-dd'))
   })
+
+  it('submits edited capital in the run payload', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderSetup(onSubmit)
+    await waitForMaCrossoverSelected()
+
+    const capitalInput = screen.getByDisplayValue('100000')
+    await user.clear(capitalInput)
+    await user.type(capitalInput, '250000')
+    await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit.mock.calls[0][0].initial_capital).toBe(250000)
+  })
 })

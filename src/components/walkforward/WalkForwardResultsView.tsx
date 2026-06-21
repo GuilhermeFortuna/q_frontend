@@ -78,7 +78,6 @@ export function WalkForwardResultsView({
         data={equityPoints}
         initialCapital={backtest.initial_capital}
         windowBoundaries={windowBoundaries}
-        fillHeight
       />
 
       <IsOosComparisonChart

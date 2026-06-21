@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
 import { CollapsedOptimizeResultsTeaser } from '@/components/optimize/focus/CollapsedOptimizeResultsTeaser'
 import { CollapsedOptimizeSetupTeaser } from '@/components/optimize/focus/CollapsedOptimizeSetupTeaser'
@@ -89,8 +89,11 @@ export function OptimizeFocusWorkbench({
   const resultsExpanded = focus === 'results'
   const hasResults = Boolean(results && backtest)
 
-  const statusLabel =
-    status?.status === 'cancelled' ? 'Study cancelled — showing partial results' : undefined
+  const statusLabel = useMemo(
+    () =>
+      status?.status === 'cancelled' ? 'Study cancelled — showing partial results' : undefined,
+    [status?.status],
+  )
 
   return (
     <div

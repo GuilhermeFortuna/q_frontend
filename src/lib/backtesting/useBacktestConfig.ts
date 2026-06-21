@@ -1,5 +1,5 @@
 import { endOfDay, startOfDay } from 'date-fns'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useStrategies } from '@/api/queries/strategies'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
@@ -223,36 +223,42 @@ export function useBacktestConfig() {
     setPendingBacktestConfig(null)
   }, [pendingBacktestConfig, setPendingBacktestConfig, strategies, strategy, selectedStrategy])
 
-  const handleEngineChange = (nextEngine: BacktestEngine) => {
-    setEngine(nextEngine)
-    const pool = strategies.filter((entry) => strategyEngine(entry) === nextEngine)
-    if (pool.length === 0) return
-    const currentValid = pool.some((entry) => entry.name === strategy)
-    if (!currentValid) {
-      const next = pool[0]
-      setStrategy(next.name)
-      setStrategyParams(defaultParamsFromSpecs(next.params))
-    }
-  }
+  const handleEngineChange = useCallback(
+    (nextEngine: BacktestEngine) => {
+      setEngine(nextEngine)
+      const pool = strategies.filter((entry) => strategyEngine(entry) === nextEngine)
+      if (pool.length === 0) return
+      const currentValid = pool.some((entry) => entry.name === strategy)
+      if (!currentValid) {
+        const next = pool[0]
+        setStrategy(next.name)
+        setStrategyParams(defaultParamsFromSpecs(next.params))
+      }
+    },
+    [strategies, strategy],
+  )
 
-  const handleStrategyChange = (nextStrategy: string) => {
-    setStrategy(nextStrategy)
-    const info = strategies.find((entry) => entry.name === nextStrategy)
-    if (info) {
-      setStrategyParams(defaultParamsFromSpecs(info.params))
-    }
-  }
+  const handleStrategyChange = useCallback(
+    (nextStrategy: string) => {
+      setStrategy(nextStrategy)
+      const info = strategies.find((entry) => entry.name === nextStrategy)
+      if (info) {
+        setStrategyParams(defaultParamsFromSpecs(info.params))
+      }
+    },
+    [strategies],
+  )
 
-  const handleParamChange = (name: string, value: StrategyParamValue) => {
+  const handleParamChange = useCallback((name: string, value: StrategyParamValue) => {
     setStrategyParams((current) => ({ ...current, [name]: value }))
-  }
+  }, [])
 
-  const updateSizingField = <K extends keyof PositionSizingFields>(
-    key: K,
-    value: PositionSizingFields[K],
-  ) => {
-    setPositionSizingFields((current) => ({ ...current, [key]: value }))
-  }
+  const updateSizingField = useCallback(
+    <K extends keyof PositionSizingFields>(key: K, value: PositionSizingFields[K]) => {
+      setPositionSizingFields((current) => ({ ...current, [key]: value }))
+    },
+    [],
+  )
 
   const dateRangeInvalid = startDate >= endDate
 
@@ -320,7 +326,7 @@ export function useBacktestConfig() {
     costErrors: costValidation.errors,
   }
 
-  const buildRequest = () => buildBacktestRequest(fields)
+  const buildRequest = useCallback(() => buildBacktestRequest(fields), [fields])
 
   return {
     fields,

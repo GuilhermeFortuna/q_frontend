@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
 
 import { BacktestMetricsBar } from '@/components/backtests/BacktestMetricsBar'
@@ -104,7 +104,7 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
   )
 }
 
-export function BacktestResultsTabs({
+export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   results,
   request,
   initialCapital,
@@ -186,14 +186,13 @@ export function BacktestResultsTabs({
       </div>
 
       {activeTab === 'performance' && (
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
           <EquityCurveChart
+            key={`equity-${equityCurve.length}-${initialCapital}`}
             data={equityCurve}
             initialCapital={initialCapital}
-            fillHeight
-            className="min-h-0 flex-[3]"
           />
-          <DrawdownChart data={equityCurve} fillHeight className="min-h-0 flex-[2]" />
+          <DrawdownChart key={`drawdown-${equityCurve.length}`} data={equityCurve} />
         </div>
       )}
 
@@ -227,4 +226,4 @@ export function BacktestResultsTabs({
       )}
     </div>
   )
-}
+})

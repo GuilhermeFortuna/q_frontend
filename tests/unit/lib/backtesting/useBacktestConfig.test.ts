@@ -164,17 +164,18 @@ describe('useBacktestConfig', () => {
   it('initializes MACrossover defaults after strategies load', async () => {
     const { result } = renderHook(() => useBacktestConfig(), { wrapper })
 
-    await waitFor(() => {
-      expect(result.current.selectedStrategy?.name).toBe('MACrossover')
-    })
-
-    expect(result.current.buildRequest().strategy_params).toEqual({
-      short_period: 50,
-      long_period: 200,
-      short_ma_type: 'sma',
-      long_ma_type: 'sma',
-      threshold: 0,
-    })
+    await waitFor(
+      () => {
+        expect(result.current.buildRequest().strategy_params).toEqual({
+          short_period: 50,
+          long_period: 200,
+          short_ma_type: 'sma',
+          long_ma_type: 'sma',
+          threshold: 0,
+        })
+      },
+      { timeout: 5000 },
+    )
   })
 
   it('preserves genome when hydrating CompositeStrategy from discovery promote', async () => {

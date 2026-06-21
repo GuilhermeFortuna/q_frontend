@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 
 import {
   categoryLabel,
@@ -20,7 +20,7 @@ type StrategyLibraryProps = {
 
 type CategoryFilter = StrategyCategory | 'all'
 
-export function StrategyLibrary({
+export const StrategyLibrary = memo(function StrategyLibrary({
   strategies,
   engine,
   selectedStrategyName,
@@ -86,7 +86,7 @@ export function StrategyLibrary({
       )}
     </div>
   )
-}
+})
 
 function CategoryChip({
   label,

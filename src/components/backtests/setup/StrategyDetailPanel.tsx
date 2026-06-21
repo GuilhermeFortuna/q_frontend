@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
 import type { StrategyParamValue } from '@/lib/strategies/strategyParams'
 import { strategyThesis } from '@/lib/strategies/strategyPresentation'
@@ -9,7 +11,11 @@ type StrategyDetailPanelProps = {
   onParamChange: (name: string, value: StrategyParamValue) => void
 }
 
-export function StrategyDetailPanel({ strategy, values, onParamChange }: StrategyDetailPanelProps) {
+export const StrategyDetailPanel = memo(function StrategyDetailPanel({
+  strategy,
+  values,
+  onParamChange,
+}: StrategyDetailPanelProps) {
   if (!strategy) {
     return (
       <div className="border-carbon-600/50 bg-carbon-950/30 text-silver-400 flex h-full items-center justify-center rounded-xl border p-6 text-sm">
@@ -60,4 +66,4 @@ export function StrategyDetailPanel({ strategy, values, onParamChange }: Strateg
       ) : null}
     </div>
   )
-}
+})

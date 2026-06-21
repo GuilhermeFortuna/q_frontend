@@ -13,20 +13,16 @@ import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
 import { cn } from '@/lib/utils'
 import type { EquityPoint } from '@/types/backtesting'
 
+const DRAWDOWN_CHART_HEIGHT_PX = 200
+
 type DrawdownChartProps = {
   data: EquityPoint[]
   className?: string
-  fillHeight?: boolean
 }
 
-export function DrawdownChart({ data, className, fillHeight = false }: DrawdownChartProps) {
+export function DrawdownChart({ data, className }: DrawdownChartProps) {
   if (data.length === 0) {
-    return (
-      <ChartEmptyState
-        message="No drawdown data available."
-        className={cn(fillHeight && 'min-h-[140px] flex-1', className)}
-      />
-    )
+    return <ChartEmptyState message="No drawdown data available." className={className} />
   }
 
   const chartData = data.map((point) => ({
@@ -36,16 +32,10 @@ export function DrawdownChart({ data, className, fillHeight = false }: DrawdownC
   }))
 
   return (
-    <div
-      className={cn(
-        'border-carbon-600/40 flex min-h-0 flex-col rounded-lg border bg-transparent p-4',
-        fillHeight && 'flex-1',
-        className,
-      )}
-    >
-      <h4 className="text-silver-200 mb-3 shrink-0 text-sm font-medium">Drawdown</h4>
-      <div className={cn('w-full', fillHeight ? 'min-h-[140px] flex-1' : 'h-[200px]')}>
-        <ResponsiveContainer width="100%" height="100%">
+    <div className={cn('border-carbon-600/40 rounded-lg border bg-transparent p-4', className)}>
+      <h4 className="text-silver-200 mb-3 text-sm font-medium">Drawdown</h4>
+      <div className="w-full" style={{ height: DRAWDOWN_CHART_HEIGHT_PX }}>
+        <ResponsiveContainer width="100%" height={DRAWDOWN_CHART_HEIGHT_PX}>
           <AreaChart data={chartData} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
             <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" vertical={false} />
             <XAxis

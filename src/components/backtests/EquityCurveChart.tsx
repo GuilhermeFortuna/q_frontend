@@ -14,11 +14,12 @@ import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
 import { cn } from '@/lib/utils'
 import type { EquityPoint } from '@/types/backtesting'
 
+const EQUITY_CHART_HEIGHT_PX = 260
+
 type EquityCurveChartProps = {
   data: EquityPoint[]
   initialCapital: number
   className?: string
-  fillHeight?: boolean
   /** ISO timestamps for vertical window-boundary markers (e.g. OOS segment starts). */
   windowBoundaries?: string[]
 }
@@ -27,14 +28,13 @@ export function EquityCurveChart({
   data,
   initialCapital,
   className,
-  fillHeight = false,
   windowBoundaries = [],
 }: EquityCurveChartProps) {
   if (data.length === 0) {
     return (
       <ChartEmptyState
         message="No equity data — run a backtest with closed trades."
-        className={cn(fillHeight && 'min-h-[180px] flex-1', className)}
+        className={className}
       />
     )
   }
@@ -47,16 +47,10 @@ export function EquityCurveChart({
   const boundaryLabels = windowBoundaries.map((timestamp) => formatChartDate(timestamp))
 
   return (
-    <div
-      className={cn(
-        'border-carbon-600/40 flex min-h-0 flex-col rounded-lg border bg-transparent p-4',
-        fillHeight && 'flex-1',
-        className,
-      )}
-    >
-      <h4 className="text-silver-200 mb-3 shrink-0 text-sm font-medium">Equity Curve</h4>
-      <div className={cn('w-full', fillHeight ? 'min-h-[180px] flex-1' : 'h-[260px]')}>
-        <ResponsiveContainer width="100%" height="100%">
+    <div className={cn('border-carbon-600/40 rounded-lg border bg-transparent p-4', className)}>
+      <h4 className="text-silver-200 mb-3 text-sm font-medium">Equity Curve</h4>
+      <div className="w-full" style={{ height: EQUITY_CHART_HEIGHT_PX }}>
+        <ResponsiveContainer width="100%" height={EQUITY_CHART_HEIGHT_PX}>
           <LineChart data={chartData} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
             <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" vertical={false} />
             <XAxis

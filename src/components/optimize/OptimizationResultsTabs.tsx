@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 
 import { BestParamsCard } from '@/components/optimize/BestParamsCard'
 import { OptimizationLogs } from '@/components/optimize/OptimizationLogs'
@@ -25,7 +25,7 @@ type OptimizationResultsTabsProps = {
   statusLabel?: string
 }
 
-export function OptimizationResultsTabs({
+export const OptimizationResultsTabs = memo(function OptimizationResultsTabs({
   results,
   backtest,
   statusLabel,
@@ -127,4 +127,4 @@ export function OptimizationResultsTabs({
       </div>
     </div>
   )
-}
+})

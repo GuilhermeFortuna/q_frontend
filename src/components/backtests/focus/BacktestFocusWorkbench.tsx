@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 
 import { CollapsedResultsTeaser } from '@/components/backtests/focus/CollapsedResultsTeaser'
 import { CollapsedSetupTeaser } from '@/components/backtests/focus/CollapsedSetupTeaser'
@@ -53,24 +53,13 @@ export function BacktestFocusWorkbench({
   monthlyStats,
 }: BacktestFocusWorkbenchProps) {
   const workbenchRef = useRef<HTMLDivElement>(null)
-  const [chartsReady, setChartsReady] = useState(true)
-
-  const handleTransitionEnd = useCallback((event: React.TransitionEvent<HTMLDivElement>) => {
-    if (event.propertyName !== 'grid-template-rows') return
-    if (event.currentTarget !== event.target) return
-    setChartsReady(true)
-    window.dispatchEvent(new Event('resize'))
-  }, [])
 
   const handleFocusChange = useCallback(
     (next: BacktestWorkbenchFocus) => {
       if (next === focus) return
-      if (!reducedMotion) {
-        setChartsReady(false)
-      }
       onFocusChange(next)
     },
-    [focus, onFocusChange, reducedMotion],
+    [focus, onFocusChange],
   )
 
   const handleRunFromTeaser = useCallback(() => {
@@ -83,6 +72,13 @@ export function BacktestFocusWorkbench({
   const hasResults = Boolean(results)
   const showResultsContent = hasResults && lastRequest
 
+  const resultsSymbol = useMemo(
+    () => lastRequest?.symbol ?? results?.trades[0]?.symbol ?? '—',
+    [lastRequest, results?.trades],
+  )
+
+  const resultsTimeframe = useMemo(() => lastRequest?.timeframe ?? 'D1', [lastRequest?.timeframe])
+
   return (
     <div
       ref={workbenchRef}
@@ -91,7 +87,6 @@ export function BacktestFocusWorkbench({
         reducedMotion && 'focus-workbench--reduce-motion',
       )}
       data-focus={focus}
-      onTransitionEnd={handleTransitionEnd}
     >
       <section className="flex min-h-0 flex-col overflow-hidden" aria-expanded={setupExpanded}>
         <div
@@ -134,24 +129,19 @@ export function BacktestFocusWorkbench({
                 <p className="text-silver-400">Simulating strategy over historical data...</p>
               </div>
             </div>
-          ) : showResultsContent ? (
-            <div
-              className={cn(
-                'flex min-h-0 flex-1 flex-col overflow-hidden',
-                !chartsReady && 'invisible',
-              )}
-            >
+          ) : showResultsContent && resultsExpanded ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <BacktestResultsTabs
                 results={results!}
                 request={lastRequest}
                 initialCapital={initialCapital}
                 equityCurve={equityCurve}
                 monthlyStats={monthlyStats}
-                symbol={lastRequest.symbol ?? results!.trades[0]?.symbol ?? '—'}
-                timeframe={lastRequest.timeframe ?? 'D1'}
+                symbol={resultsSymbol}
+                timeframe={resultsTimeframe}
               />
             </div>
-          ) : (
+          ) : showResultsContent ? null : (
             <div className="border-carbon-600/60 flex flex-1 items-center justify-center rounded-xl border-2 border-dashed">
               <p className="text-silver-400 text-sm">Run a simulation to see results here.</p>
             </div>
