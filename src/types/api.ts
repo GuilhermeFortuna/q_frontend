@@ -6,7 +6,6 @@ export type WorkspaceId =
   | 'validate'
   | 'discover'
   | 'system'
-  | 'strategy'
 
 export type SystemHealth = {
   status: 'healthy' | 'degraded' | 'down'

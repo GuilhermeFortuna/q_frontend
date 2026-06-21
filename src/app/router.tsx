@@ -15,7 +15,6 @@ import { NewsReaderWorkspace } from '@/workspaces/news/NewsReaderWorkspace'
 import { StorageWorkspace } from '@/workspaces/storage/StorageWorkspace'
 import { SystemWorkspace } from '@/workspaces/system/SystemWorkspace'
 import { WalkForwardWorkspace } from '@/workspaces/walkforward/WalkForwardWorkspace'
-import { StrategyWorkspace } from '@/workspaces/strategy/StrategyWorkspace'
 import { useAppStore } from '@/store/useAppStore'
 import type { WorkspaceId } from '@/types/api'
 
@@ -53,6 +52,10 @@ const indexRoute = createRoute({
           useAppStore.getState().setActiveWorkspace('backtests')
           useAppStore.getState().patchBacktestSession({ workflowMode: 'optimize' })
           throw redirect({ to: '/backtests', search: { mode: 'optimize' } })
+        }
+        if ((active as string) === 'strategy') {
+          useAppStore.getState().setActiveWorkspace('backtests')
+          throw redirect({ to: '/backtests' })
         }
         throw redirect({ to: `/${active}` })
       }
@@ -131,8 +134,10 @@ const discoverRoute = createRoute({
 const strategyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/strategy',
-  beforeLoad: () => syncWorkspace('strategy'),
-  component: StrategyWorkspace,
+  beforeLoad: () => {
+    useAppStore.getState().setActiveWorkspace('backtests')
+    throw redirect({ to: '/backtests' })
+  },
 })
 
 type NewsReaderSearch = {

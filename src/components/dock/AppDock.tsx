@@ -1,14 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import {
-  Activity,
-  BarChart3,
-  Compass,
-  Cpu,
-  Database,
-  Home,
-  Settings,
-  ShieldCheck,
-} from 'lucide-react'
+import { Activity, BarChart3, Compass, Database, Home, Settings, ShieldCheck } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 
 import { useActiveJobs } from '@/hooks/useActiveJobs'
@@ -27,7 +18,6 @@ const dockItems: DockItem[] = [
   { id: 'launcher', label: 'Launcher', to: '/', icon: Home, enabled: true },
   { id: 'market-data', label: 'Market', to: '/market-data', icon: BarChart3, enabled: true },
   { id: 'storage', label: 'Storage', to: '/storage', icon: Database, enabled: true },
-  { id: 'strategy', label: 'Strategy', to: '/strategy', icon: Cpu, enabled: true },
   { id: 'backtests', label: 'Backtests', to: '/backtests', icon: Activity, enabled: true },
   { id: 'validate', label: 'Validate', to: '/validate', icon: ShieldCheck, enabled: true },
   { id: 'discover', label: 'Discover', to: '/discover', icon: Compass, enabled: true },
