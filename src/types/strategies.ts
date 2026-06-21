@@ -46,6 +46,7 @@ export type ExitRuleInfo = {
   description: string
   exit_group: ExitGroup
   enable_param: string
+  enable_value: number
   param_names: string[]
   required_param_names: string[]
 }

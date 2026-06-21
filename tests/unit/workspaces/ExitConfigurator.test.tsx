@@ -56,7 +56,7 @@ describe('ExitConfigurator', () => {
     )
   })
 
-  it('toggling a card on sets a non-zero enable default and toggling off zeroes it', () => {
+  it('toggling a card on sets enable_value from the catalog and toggling off zeroes it', () => {
     const onChange = vi.fn()
     const { rerender } = render(
       <ExitConfigurator
@@ -71,8 +71,7 @@ describe('ExitConfigurator', () => {
     )
 
     fireEvent.click(screen.getByRole('switch', { name: 'Enable Rule B' }))
-    const enableSpec = mockExitParamSpecs.find((spec) => spec.name === 'rule_b_enable')
-    expect(onChange).toHaveBeenCalledWith('rule_b_enable', defaultEnableValue(enableSpec!))
+    expect(onChange).toHaveBeenCalledWith('rule_b_enable', 3)
 
     onChange.mockClear()
     rerender(
@@ -81,13 +80,32 @@ describe('ExitConfigurator', () => {
         sharedExitParams={mockExitCatalog.shared_exit_params}
         exitPresets={[]}
         exitParamSpecs={mockExitParamSpecs}
-        paramValues={{ rule_b_enable: 2 }}
+        paramValues={{ rule_b_enable: 3 }}
         onChange={onChange}
         onParamsMerge={vi.fn()}
       />,
     )
     fireEvent.click(screen.getByRole('switch', { name: 'Disable Rule B' }))
     expect(onChange).toHaveBeenCalledWith('rule_b_enable', 0)
+  })
+
+  it('falls back to defaultEnableValue when enable_value is missing or zero', () => {
+    const onChange = vi.fn()
+    render(
+      <ExitConfigurator
+        exitRules={mockExitCatalog.exit_rules}
+        sharedExitParams={mockExitCatalog.shared_exit_params}
+        exitPresets={[]}
+        exitParamSpecs={mockExitParamSpecs}
+        paramValues={{ rule_c_enable: 0 }}
+        onChange={onChange}
+        onParamsMerge={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Enable Rule C' }))
+    const enableSpec = mockExitParamSpecs.find((spec) => spec.name === 'rule_c_enable')
+    expect(onChange).toHaveBeenCalledWith('rule_c_enable', defaultEnableValue(enableSpec!))
   })
 
   it('shows ACTIVE chips for enabled rules and an empty state when none are enabled', () => {

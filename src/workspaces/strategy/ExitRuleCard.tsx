@@ -38,7 +38,11 @@ export function ExitRuleCard({
       return
     }
 
-    onChange(rule.enable_param, defaultEnableValue(enableSpec))
+    const enableValue =
+      typeof rule.enable_value === 'number' && rule.enable_value > 0
+        ? rule.enable_value
+        : defaultEnableValue(enableSpec)
+    onChange(rule.enable_param, enableValue)
   }
 
   return (
