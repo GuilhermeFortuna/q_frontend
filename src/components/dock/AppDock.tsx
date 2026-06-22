@@ -1,7 +1,16 @@
 import { Link } from '@tanstack/react-router'
-import { Activity, BarChart3, Compass, Database, Home, Settings, ShieldCheck } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
+import type { ComponentType } from 'react'
 
+import {
+  LauncherIcon,
+  MarketIcon,
+  StorageIcon,
+  BacktestsIcon,
+  ValidateIcon,
+  DiscoverIcon,
+  SystemIcon,
+} from '@/components/dock/DockIcons'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { cn } from '@/lib/utils'
 import type { WorkspaceId } from '@/types/api'
@@ -10,18 +19,18 @@ type DockItem = {
   id: WorkspaceId
   label: string
   to: string
-  icon: typeof Home
+  icon: ComponentType<{ className?: string }>
   enabled: boolean
 }
 
 const dockItems: DockItem[] = [
-  { id: 'launcher', label: 'Launcher', to: '/', icon: Home, enabled: true },
-  { id: 'market-data', label: 'Market', to: '/market-data', icon: BarChart3, enabled: true },
-  { id: 'storage', label: 'Storage', to: '/storage', icon: Database, enabled: true },
-  { id: 'backtests', label: 'Backtests', to: '/backtests', icon: Activity, enabled: true },
-  { id: 'validate', label: 'Validate', to: '/validate', icon: ShieldCheck, enabled: true },
-  { id: 'discover', label: 'Discover', to: '/discover', icon: Compass, enabled: true },
-  { id: 'system', label: 'System', to: '/system', icon: Settings, enabled: true },
+  { id: 'launcher', label: 'Launcher', to: '/', icon: LauncherIcon, enabled: true },
+  { id: 'market-data', label: 'Market', to: '/market-data', icon: MarketIcon, enabled: true },
+  { id: 'storage', label: 'Storage', to: '/storage', icon: StorageIcon, enabled: true },
+  { id: 'backtests', label: 'Backtests', to: '/backtests', icon: BacktestsIcon, enabled: true },
+  { id: 'validate', label: 'Validate', to: '/validate', icon: ValidateIcon, enabled: true },
+  { id: 'discover', label: 'Discover', to: '/discover', icon: DiscoverIcon, enabled: true },
+  { id: 'system', label: 'System', to: '/system', icon: SystemIcon, enabled: true },
 ]
 
 type AppDockProps = {
@@ -64,7 +73,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
                   : 'gap-1 rounded-lg px-4 py-2.5',
               )}
             >
-              <Icon className={isLauncher ? 'h-9 w-9' : 'h-6 w-6'} />
+              <Icon className={cn(isLauncher ? 'h-9 w-9' : 'h-6 w-6', 'opacity-20 grayscale')} />
               <span
                 className={cn(
                   'font-mono font-bold tracking-wider uppercase',
@@ -82,7 +91,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
             key={item.id}
             to={item.to}
             className={cn(
-              'text-cream-300 cubic-bezier(0.16,1,0.3,1) relative flex flex-col items-center border border-transparent transition-[transform,color,background-color,border-color] duration-350 hover:-translate-y-0.5 hover:scale-105 active:scale-95',
+              'text-cream-300 cubic-bezier(0.16,1,0.3,1) group relative flex flex-col items-center border border-transparent transition-[transform,color,background-color,border-color] duration-350 hover:-translate-y-0.5 hover:scale-105 active:scale-95',
               isLauncher ? 'shrink-0 gap-1.5 rounded-xl px-4 py-3' : 'gap-1 rounded-lg px-4 py-2.5',
               isActive
                 ? 'text-brass-400 font-bold'
@@ -106,7 +115,10 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
               <Icon
                 className={cn(
                   isLauncher ? 'h-9 w-9' : 'h-6 w-6',
-                  isActive && 'drop-shadow-[0_0_5px_rgba(240,180,41,0.55)] filter',
+                  'transition-all duration-300 ease-out',
+                  isActive
+                    ? 'scale-110 brightness-105 contrast-105 drop-shadow-[0_0_8px_rgba(240,180,41,0.6)] filter'
+                    : 'scale-95 opacity-50 group-hover:scale-105 group-hover:opacity-100',
                 )}
               />
               {hasRunningJob ? (
