@@ -236,7 +236,7 @@ describe('pre-WO40 degrade path', () => {
       />,
     )
 
-    expect(screen.getByText('MACrossover')).toBeInTheDocument()
+    expect(screen.getAllByText('MACrossover').length).toBeGreaterThanOrEqual(1)
     expect(screen.queryByText(/Overfitting defense/i)).not.toBeInTheDocument()
   })
 })

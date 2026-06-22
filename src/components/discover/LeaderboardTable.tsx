@@ -6,6 +6,7 @@ import { CandidateDetailPanel } from '@/components/discover/CandidateDetailPanel
 import { ComplexityLine } from '@/components/discover/GenomeViewer'
 import { Button } from '@/components/ui/button'
 import { gateFlagsLabel } from '@/lib/discover/candidateMetrics'
+import { candidateExitLabel } from '@/lib/discover/exitInsights'
 import {
   buildBacktestRequestFromCandidate,
   buildOptimizationConfigFromCandidate,
@@ -255,6 +256,14 @@ export function LeaderboardTable({
                             {isGeneticCandidate(candidate) ? (
                               <span className="border-brass-500/30 text-brass-400 rounded-full border px-1.5 py-0 text-[9px] font-semibold tracking-wide uppercase">
                                 Evolved
+                              </span>
+                            ) : null}
+                            {candidateExitLabel(candidate) ? (
+                              <span
+                                className="text-silver-500 hidden max-w-[9rem] truncate text-[10px] sm:inline"
+                                title={`Exit: ${candidateExitLabel(candidate)}`}
+                              >
+                                Exit: {candidateExitLabel(candidate)}
                               </span>
                             ) : null}
                           </span>

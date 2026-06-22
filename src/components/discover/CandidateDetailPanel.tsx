@@ -6,6 +6,7 @@ import {
   useStrategySearchCandidateGenome,
 } from '@/api/queries/strategySearch'
 import { GenomeViewer, ComplexityLine } from '@/components/discover/GenomeViewer'
+import { ExitInsightPanel } from '@/components/discover/ExitInsightPanel'
 import { WalkForwardResultsView } from '@/components/walkforward/WalkForwardResultsView'
 import { isSummaryToMetrics } from '@/lib/discover/candidateMetrics'
 import { cn } from '@/lib/utils'
@@ -88,12 +89,15 @@ export function CandidateDetailPanel({
     }
 
     return (
-      <WalkForwardResultsView
-        results={syntheticResults}
-        backtest={{ ...backtest, strategy: strategyName }}
-        compact
-        aggregatedIsMetrics={aggregatedIsMetrics}
-      />
+      <>
+        <WalkForwardResultsView
+          results={syntheticResults}
+          backtest={{ ...backtest, strategy: strategyName }}
+          compact
+          aggregatedIsMetrics={aggregatedIsMetrics}
+        />
+        <ExitInsightPanel candidate={candidate} />
+      </>
     )
   })()
 

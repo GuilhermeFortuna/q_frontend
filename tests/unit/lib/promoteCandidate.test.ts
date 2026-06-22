@@ -113,4 +113,52 @@ describe('promoteCandidate', () => {
       genome: mockSampleGenome,
     })
   })
+
+  it('does not include exit diagnostic fields in promoted strategy_params', () => {
+    const candidateWithExitMetadata: CandidateResult = {
+      ...registryCandidate,
+      exit_preset_id: 'chandelier',
+      exit_preset_label: 'Chandelier trail',
+      exit_quality: {
+        total_closed_trades: 10,
+        by_reason: { signal: { trades: 10, total_pnl: 500, win_rate: 0.5 } },
+      },
+      best_params: {
+        short_period: 8,
+        long_period: 21,
+        quantity: 1.2,
+        chandelier_atr_mult: 2.5,
+      },
+    }
+
+    const payload = buildBacktestRequestFromCandidate(candidateWithExitMetadata, backtest)
+    expect(payload.strategy_params).toEqual({
+      short_period: 8,
+      long_period: 21,
+      chandelier_atr_mult: 2.5,
+    })
+    expect(payload.strategy_params).not.toHaveProperty('exit_quality')
+    expect(payload.strategy_params).not.toHaveProperty('exit_preset_id')
+  })
+
+  it('passes explicit backend exit params from best_params through promotion', () => {
+    const candidateWithExitParams: CandidateResult = {
+      ...registryCandidate,
+      best_params: {
+        short_period: 8,
+        long_period: 21,
+        quantity: 1.0,
+        stop_loss_pct: 0.02,
+        take_profit_pct: 0.04,
+      },
+    }
+
+    const payload = buildBacktestRequestFromCandidate(candidateWithExitParams, backtest)
+    expect(payload.strategy_params).toEqual({
+      short_period: 8,
+      long_period: 21,
+      stop_loss_pct: 0.02,
+      take_profit_pct: 0.04,
+    })
+  })
 })

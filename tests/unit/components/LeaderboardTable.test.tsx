@@ -44,7 +44,7 @@ describe('LeaderboardTable', () => {
 
     const rows = screen.getAllByRole('row')
     expect(rows.length).toBeGreaterThan(1)
-    expect(screen.getByText('MACrossover')).toBeInTheDocument()
+    expect(screen.getAllByText('MACrossover').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('RSIMeanReversion')).toBeInTheDocument()
     expect(screen.getByText('Flagged')).toBeInTheDocument()
     expect(screen.getByText('unsupported')).toBeInTheDocument()
@@ -76,7 +76,7 @@ describe('LeaderboardTable', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: /MACrossover/i }))
+    await user.click(screen.getAllByRole('button', { name: /MACrossover/i })[0]!)
 
     await waitFor(() => {
       const queries = queryClient.getQueryCache().findAll({
@@ -104,5 +104,35 @@ describe('LeaderboardTable', () => {
     const pending = useAppStore.getState().pendingBacktestConfig
     expect(pending?.strategy).toBe('MACrossover')
     expect(pending?.strategy_params).toEqual({ short_period: 8, long_period: 21 })
+  })
+
+  it('renders compact exit tag for exit-expanded candidates', () => {
+    renderWithQueryClient(
+      <LeaderboardTable
+        runId="ss-run-petr4"
+        candidates={results.candidates}
+        objectiveMode={results.objective_mode}
+        backtest={backtest}
+        searchConfig={results.search_config}
+      />,
+    )
+
+    expect(screen.getByTitle('Exit: Chandelier trail')).toBeInTheDocument()
+  })
+
+  it('still renders candidates without exit metadata', () => {
+    renderWithQueryClient(
+      <LeaderboardTable
+        runId="ss-run-petr4"
+        candidates={results.candidates}
+        objectiveMode={results.objective_mode}
+        backtest={backtest}
+        searchConfig={results.search_config}
+      />,
+    )
+
+    expect(screen.getAllByText('MACrossover').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('VMA')).toBeInTheDocument()
+    expect(screen.getByTitle('Exit: Chandelier trail')).toBeInTheDocument()
   })
 })

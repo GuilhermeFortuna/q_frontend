@@ -108,6 +108,30 @@ export type IsMetricsSummary = {
   window_count: number
 }
 
+export type ExitQualityByReason = {
+  trades: number
+  total_pnl?: number | null
+  win_rate?: number | null
+  avg_pnl?: number | null
+}
+
+export type ExitQualitySummary = {
+  total_closed_trades?: number
+  by_reason?: Record<string, ExitQualityByReason>
+  holding_period?: {
+    median_bars?: number | null
+    p90_bars?: number | null
+    median_minutes?: number | null
+    median_duration_seconds?: number | null
+    p90_duration_seconds?: number | null
+  }
+  path_quality?: {
+    avg_mfe_capture_ratio?: number | null
+    avg_profit_giveback?: number | null
+    avg_mae?: number | null
+  }
+}
+
 export type CandidateResult = {
   candidate_id: string
   strategy: string
@@ -129,6 +153,13 @@ export type CandidateResult = {
   genome_node_count?: number | null
   dsr?: number | null
   complexity_penalty?: number | null
+  exit_preset_id?: string | null
+  exit_preset_label?: string | null
+  exit_policy_id?: string | null
+  exit_policy_label?: string | null
+  last_exit_mutation_op?: string | null
+  exit_quality?: ExitQualitySummary | null
+  diagnostics?: { exit_quality?: ExitQualitySummary | null } | null
 }
 
 export type StrategySearchSummary = {
