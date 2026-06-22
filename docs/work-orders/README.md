@@ -528,6 +528,90 @@ not UI.
    artifacts and the book summary?
 10. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
 
+## Phase: Exit-Driven Discovery (next batch)
+
+Makes exit logic a first-class discovery surface. Today Discovery can rank entries and genetic
+structures, and the app has a rich exit-rule catalog, but automated search does not deliberately ask
+"is the interesting part the exit?" This batch expands registry Discovery over curated exit presets,
+lets genetic search seed/mutate exit policies independently of entries, computes exit-quality
+diagnostics from OOS trades, and surfaces those diagnostics in Discover.
+
+| #   | File                                                                                                 | Repo       | Depends on         |
+| --- | ---------------------------------------------------------------------------------------------------- | ---------- | ------------------ |
+| 79  | [WO79-backend-discovery-exit-preset-candidates.md](WO79-backend-discovery-exit-preset-candidates.md) | q_backend  | WO66 + WO31        |
+| 80  | [WO80-backend-genetic-exit-policy-mutation.md](WO80-backend-genetic-exit-policy-mutation.md)         | q_backend  | WO39 + WO55 + WO66 |
+| 81  | [WO81-backend-exit-quality-analytics.md](WO81-backend-exit-quality-analytics.md)                     | q_backend  | WO79 and/or WO80   |
+| 82  | [WO82-frontend-discovery-exit-insights.md](WO82-frontend-discovery-exit-insights.md)                 | q_frontend | WO81 contract      |
+
+### Dispatch order
+
+```
+WO79 ─┬─► WO81 ──► WO82
+      └─► WO80 ─┘
+```
+
+WO79 and WO80 are independent backend tracks after the existing exit catalog and genetic operator
+work. WO79 is the smaller first win: registry strategies get exit-preset variants without touching
+genome operators. WO80 makes genetic search mutate exit policies directly. WO81 can start after one
+of those lands but is most useful after both, because it explains which exits improved OOS behavior.
+WO82 is frontend-only and must degrade against pre-WO81 payloads.
+
+### Batch-specific review checklist
+
+1. With exit-driven discovery configs omitted, is registry Discovery byte-compatible with the
+   current WO31/WO32 path?
+2. Are candidate exits searched on/off (`low == 0` for enable/magnitude params), not forced on?
+3. Are non-candidate exits pinned off for interpretability when a candidate is named after one
+   preset/policy?
+4. Do exit-only genetic mutations preserve entry refs and remain deterministic under `init_seed`?
+5. Are exit-quality diagnostics computed from stitched OOS trades only, with no in-sample leakage?
+6. Do diagnostics stay optional/additive through live payloads, DB rebuilds, and old rows?
+7. Does the frontend keep promote-to-backtest/optimizer payloads clean of diagnostic-only fields?
+8. Did the agent actually run `uv run pytest` / `pnpm test:run` / typecheck/build as specified, or
+   just claim green?
+
+## Phase: Exit-Driven Discovery Follow-ups
+
+Closes review findings from the first WO79-WO82 implementation pass. The backend work makes genetic
+exit-policy metadata survive distributed execution and result reloads, and removes a duplicated OHLCV
+load introduced by exit-quality diagnostics. The frontend work exposes the backend's exit-search knobs
+in the Discover request flow and isolates an unrelated background-rendering rewrite from the exit
+feature branch.
+
+| #   | File                                                                                                                     | Repo       | Depends on         |
+| --- | ------------------------------------------------------------------------------------------------------------------------ | ---------- | ------------------ |
+| 83  | [WO83-backend-discovery-exit-policy-metadata-persistence.md](WO83-backend-discovery-exit-policy-metadata-persistence.md) | q_backend  | WO80 + WO82 review |
+| 84  | [WO84-backend-discovery-ohlcv-load-reuse.md](WO84-backend-discovery-ohlcv-load-reuse.md)                                 | q_backend  | WO81               |
+| 85  | [WO85-frontend-discovery-exit-search-controls.md](WO85-frontend-discovery-exit-search-controls.md)                       | q_frontend | WO79 + WO80 + WO81 |
+| 86  | [WO86-frontend-quant-background-scope-cleanup.md](WO86-frontend-quant-background-scope-cleanup.md)                       | q_frontend | WO82 review        |
+
+### Dispatch order
+
+```
+WO83 ─┐
+WO84 ─┼─► WO85
+WO86 ─┘
+```
+
+WO83 and WO84 are independent backend fixes and can run in parallel. WO85 can start after the backend
+request contracts from WO79-WO81 are stable, but should be reviewed after WO83 so genetic exit labels
+survive reloads. WO86 is independent and should be handled separately from exit feature work to keep
+the branch scope clean.
+
+### Batch-specific review checklist
+
+1. Does a distributed genetic candidate with an exit policy expose the same `exit_policy_*` fields in
+   live results and DB-reloaded history results?
+2. Do old strategy-search candidate rows with null/missing policy columns still serialize safely?
+3. Does each distributed candidate worker load OHLCV once for the runner and exit diagnostics, proven
+   by a call-count test?
+4. Does the frontend send `exit_presets.enabled` only in registry mode and genetic exit seeding only
+   under `genetic`?
+5. With all new frontend toggles off, is the Discover request body behavior unchanged?
+6. Was the `QuantBackground.tsx` rewrite either reverted out of this workstream or verified with
+   typecheck/build and visual evidence?
+7. Did the agent actually run the stated `uv` / `pnpm` verification commands, or just claim green?
+
 ## Review checklist (apply to every returned PR)
 
 1. Does the compute path still work with Postgres **stopped**? (stop the container, run a backtest / a study)
