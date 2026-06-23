@@ -165,6 +165,29 @@ describe('LeaderboardTable', () => {
     const pending = useAppStore.getState().pendingBacktestConfig
     expect(pending?.strategy).toBe('MACrossover')
     expect(pending?.strategy_params).toEqual({ short_period: 8, long_period: 21 })
+
+    const backtestSession = useAppStore.getState().backtestSession
+    expect(backtestSession.workflowMode).toBe('backtest')
+    expect(backtestSession.focus).toBe('setup')
+    expect(backtestSession.rightPanelTab).toBe('results')
+  })
+
+  it('Send to Optimizer sets pendingOptimizationConfig and updates sessions state', async () => {
+    const user = userEvent.setup()
+    renderLeaderboard()
+
+    const promoteButtons = screen.getAllByRole('button', { name: 'Send to Optimizer' })
+    await user.click(promoteButtons[0]!)
+
+    const pending = useAppStore.getState().pendingOptimizationConfig
+    expect(pending?.backtest?.strategy).toBe('MACrossover')
+
+    const backtestSession = useAppStore.getState().backtestSession
+    expect(backtestSession.workflowMode).toBe('optimize')
+
+    const optimizeSession = useAppStore.getState().optimizeSession
+    expect(optimizeSession.focus).toBe('setup')
+    expect(optimizeSession.rightPanelTab).toBe('results')
   })
 
   it('virtualizes large leaderboards and expands a row without nested tables', async () => {

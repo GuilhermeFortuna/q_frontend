@@ -88,6 +88,8 @@ export function LeaderboardTable({
   const navigate = useNavigate()
   const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
   const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
+  const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
+  const patchOptimizeSession = useAppStore((s) => s.patchOptimizeSession)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('rank')
   const [sortAsc, setSortAsc] = useState(true)
@@ -134,12 +136,24 @@ export function LeaderboardTable({
 
   const handlePromoteBacktest = (candidate: CandidateResult) => {
     setPendingBacktestConfig(buildBacktestRequestFromCandidate(candidate, backtest))
+    patchBacktestSession({
+      workflowMode: 'backtest',
+      focus: 'setup',
+      rightPanelTab: 'results',
+    })
     void navigate({ to: '/backtests' })
   }
 
   const handlePromoteOptimize = (candidate: CandidateResult) => {
     if (!searchConfig) return
     setPendingOptimizationConfig(buildOptimizationConfigFromCandidate(candidate, searchConfig))
+    patchBacktestSession({
+      workflowMode: 'optimize',
+    })
+    patchOptimizeSession({
+      focus: 'setup',
+      rightPanelTab: 'results',
+    })
     void navigate({ to: '/backtests', search: { mode: 'optimize' } })
   }
 
