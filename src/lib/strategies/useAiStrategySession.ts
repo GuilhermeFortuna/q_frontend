@@ -1,0 +1,361 @@
+import axios from 'axios'
+import { useQueryClient } from '@tanstack/react-query'
+import { useCallback, useMemo, useState } from 'react'
+
+import {
+  fetchStrategyBuilderCapabilities,
+  strategyBuilderKeys,
+  useInterpretStrategy,
+} from '@/api/queries/strategyBuilder'
+import { applyCompiledStrategyToConfig } from '@/lib/strategies/applyCompiledStrategy'
+import {
+  buildAiStrategyMetadata,
+  canSaveAiStrategy,
+  compareRevisionSections,
+  createRevisionSnapshot,
+  duplicateStrategyName,
+  getAiWorkflowBlocker,
+  requiresUnsupportedAcknowledgement,
+  type AiRevisionSnapshot,
+} from '@/lib/strategies/aiStrategyMetadata'
+import { buildOptimizationConfigFromBacktestFields } from '@/lib/strategies/buildOptimizationFromBacktest'
+import { downloadStrategySpecJson } from '@/lib/strategies/exportStrategySpec'
+import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
+import { useAppStore } from '@/store/useAppStore'
+import type { BacktestRequest } from '@/types/backtesting'
+import type { AiStrategyMetadata, CustomStrategy } from '@/types/strategies'
+import type {
+  AiStrategyResponse,
+  AiStrategyServiceErrorResponse,
+  ConversationMessage,
+  StrategySpec,
+  ValidationErrorDetail,
+} from '@/types/strategyBuilder'
+
+type BacktestConfig = ReturnType<typeof useBacktestConfig>
+
+type UseAiStrategySessionOptions = {
+  config: BacktestConfig
+  onRunBacktest?: (request: BacktestRequest) => void
+}
+
+function extractInterpretError(error: unknown): string {
+  if (!axios.isAxiosError(error)) {
+    return error instanceof Error ? error.message : 'AI interpretation failed.'
+  }
+
+  const detail = error.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (detail && typeof detail === 'object' && 'message' in detail) {
+    const serviceError = detail as AiStrategyServiceErrorResponse
+    return serviceError.detail
+      ? `${serviceError.message} (${serviceError.detail})`
+      : serviceError.message
+  }
+  return error.message
+}
+
+export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySessionOptions) {
+  const queryClient = useQueryClient()
+  const interpretMutation = useInterpretStrategy()
+  const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
+  const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
+
+  const [message, setMessage] = useState('')
+  const [conversation, setConversation] = useState<ConversationMessage[]>([])
+  const [draftSpec, setDraftSpec] = useState<StrategySpec | null>(null)
+  const [response, setResponse] = useState<AiStrategyResponse | null>(null)
+  const [serviceError, setServiceError] = useState<string | null>(null)
+  const [originalPrompt, setOriginalPrompt] = useState('')
+  const [unsupportedAcknowledged, setUnsupportedAcknowledged] = useState(false)
+  const [appliedToSetup, setAppliedToSetup] = useState(false)
+  const [activeAiDraft, setActiveAiDraft] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [revisions, setRevisions] = useState<AiRevisionSnapshot[]>([])
+  const [capabilitiesVersion, setCapabilitiesVersion] = useState('q_capabilities.v1')
+
+  const previewSpec = draftSpec ?? response?.strategy_spec ?? null
+  const validationErrors = response?.validation?.errors ?? []
+  const unsupportedRequests = response?.unsupported_requests ?? []
+  const assumptions = response?.assumptions ?? []
+  const questions = response?.questions ?? []
+
+  const workflowBlocker = useMemo(
+    () =>
+      getAiWorkflowBlocker({
+        response,
+        appliedToSetup,
+        unsupportedAcknowledged,
+        activeAiDraft,
+      }),
+    [activeAiDraft, appliedToSetup, response, unsupportedAcknowledged],
+  )
+
+  const canSave = useMemo(
+    () =>
+      canSaveAiStrategy({
+        response,
+        previewSpec,
+        appliedToSetup,
+        unsupportedAcknowledged,
+        customName: config.authoring.customName,
+      }),
+    [appliedToSetup, config.authoring.customName, previewSpec, response, unsupportedAcknowledged],
+  )
+
+  const revisionDiff = useMemo(
+    () =>
+      compareRevisionSections(
+        revisions.length > 1 ? revisions[revisions.length - 2] : null,
+        revisions.at(-1) ?? null,
+      ),
+    [revisions],
+  )
+
+  const resetDraft = useCallback(() => {
+    setMessage('')
+    setConversation([])
+    setDraftSpec(null)
+    setResponse(null)
+    setServiceError(null)
+    setOriginalPrompt('')
+    setUnsupportedAcknowledged(false)
+    setAppliedToSetup(false)
+    setActiveAiDraft(false)
+    setSaveError(null)
+    setRevisions([])
+  }, [])
+
+  const ensureCapabilitiesVersion = useCallback(async () => {
+    const capabilities = await queryClient.fetchQuery({
+      queryKey: strategyBuilderKeys.capabilities(),
+      queryFn: fetchStrategyBuilderCapabilities,
+      staleTime: Infinity,
+    })
+    setCapabilitiesVersion(capabilities.schema_version)
+    return capabilities.schema_version
+  }, [queryClient])
+
+  const hydrateFromMetadata = useCallback(
+    (metadata?: AiStrategyMetadata | null) => {
+      resetDraft()
+      if (!metadata) return
+
+      setDraftSpec(metadata.strategy_spec)
+      setOriginalPrompt(metadata.original_prompt)
+      setUnsupportedAcknowledged(metadata.unsupported_requests_acknowledged.length > 0)
+      setAppliedToSetup(true)
+      setActiveAiDraft(true)
+      setResponse({
+        summary: metadata.strategy_spec.name,
+        assumptions: metadata.assumptions,
+        questions: [],
+        unsupported_requests: metadata.unsupported_requests_acknowledged,
+        strategy_spec: metadata.strategy_spec,
+        validation: { valid: true, errors: [] },
+        compiled_strategy: metadata.compiled_strategy,
+        confidence: 1,
+      })
+      setRevisions([
+        createRevisionSnapshot(metadata.original_prompt, {
+          summary: metadata.strategy_spec.name,
+          assumptions: metadata.assumptions,
+          questions: [],
+          unsupported_requests: metadata.unsupported_requests_acknowledged,
+          strategy_spec: metadata.strategy_spec,
+          validation: { valid: true, errors: [] },
+          compiled_strategy: metadata.compiled_strategy,
+          confidence: 1,
+        }),
+      ])
+    },
+    [resetDraft],
+  )
+
+  const submitInterpret = useCallback(
+    async (nextMessage: string, validationErrorsToRepair: ValidationErrorDetail[] = []) => {
+      const trimmed = nextMessage.trim()
+      if (!trimmed) return
+
+      setServiceError(null)
+      setSaveError(null)
+      const userTurn: ConversationMessage = { role: 'user', content: trimmed }
+      const nextConversation = [...conversation, userTurn]
+      setConversation(nextConversation)
+      if (!originalPrompt) {
+        setOriginalPrompt(trimmed)
+      }
+
+      try {
+        const nextCapabilitiesVersion = await ensureCapabilitiesVersion()
+        const result = await interpretMutation.mutateAsync({
+          message: trimmed,
+          conversation: nextConversation,
+          current_spec: draftSpec ?? response?.strategy_spec ?? null,
+          capabilities_version: nextCapabilitiesVersion,
+          validation_errors: validationErrorsToRepair,
+        })
+
+        setResponse(result)
+        setDraftSpec(result.strategy_spec)
+        setUnsupportedAcknowledged(false)
+        setAppliedToSetup(false)
+        setActiveAiDraft(true)
+        setConversation((current) => [...current, { role: 'assistant', content: result.summary }])
+        setRevisions((current) => [...current, createRevisionSnapshot(trimmed, result)])
+        setMessage('')
+      } catch (error) {
+        setServiceError(extractInterpretError(error))
+      }
+    },
+    [
+      conversation,
+      draftSpec,
+      ensureCapabilitiesVersion,
+      interpretMutation,
+      originalPrompt,
+      response?.strategy_spec,
+    ],
+  )
+
+  const handleApplyToSetup = useCallback(() => {
+    if (!response?.compiled_strategy || !previewSpec) return
+    applyCompiledStrategyToConfig(response.compiled_strategy, config, {
+      draftName: previewSpec.name,
+      draftDescription: response.summary,
+    })
+    setAppliedToSetup(true)
+  }, [config, previewSpec, response])
+
+  const handleSaveAiStrategy = useCallback(() => {
+    setSaveError(null)
+    if (!canSave || !previewSpec || !response?.compiled_strategy) {
+      setSaveError(workflowBlocker ?? 'AI strategy is not ready to save.')
+      return
+    }
+
+    const trimmedName = config.authoring.customName.trim()
+    const metadata = buildAiStrategyMetadata({
+      strategySpec: previewSpec,
+      capabilitiesVersion,
+      originalPrompt: originalPrompt || message.trim(),
+      assumptions: response.assumptions,
+      unsupportedRequestsAcknowledged: requiresUnsupportedAcknowledgement(response)
+        ? unsupportedRequests
+        : [],
+      compiledStrategy: response.compiled_strategy,
+    })
+
+    const payload: CustomStrategy = {
+      name: trimmedName,
+      base_strategy: config.fields.strategy,
+      description: config.authoring.description.trim() || response.summary,
+      parameters: config.fields.strategyParams,
+      ai_metadata: metadata,
+    }
+
+    config.authoring.saveCustomPayload(payload)
+  }, [
+    canSave,
+    capabilitiesVersion,
+    config.authoring,
+    config.fields.strategy,
+    config.fields.strategyParams,
+    message,
+    originalPrompt,
+    previewSpec,
+    response,
+    unsupportedRequests,
+    workflowBlocker,
+  ])
+
+  const handleDuplicate = useCallback(() => {
+    if (!previewSpec || !response) return
+    const nextName = duplicateStrategyName(previewSpec.name)
+    config.authoring.newDraft()
+    config.authoring.setCustomName(nextName)
+    config.authoring.setDescription(response.summary)
+    setAppliedToSetup(false)
+    setUnsupportedAcknowledged(false)
+  }, [config.authoring, previewSpec, response])
+
+  const handleExport = useCallback(() => {
+    if (!previewSpec) return
+    downloadStrategySpecJson(previewSpec)
+  }, [previewSpec])
+
+  const handleRunBacktest = useCallback(() => {
+    if (workflowBlocker) {
+      setSaveError(workflowBlocker)
+      return
+    }
+    if (!onRunBacktest) return
+    onRunBacktest(config.buildRequest())
+  }, [config, onRunBacktest, workflowBlocker])
+
+  const handleOptimize = useCallback(() => {
+    if (workflowBlocker) {
+      setSaveError(workflowBlocker)
+      return
+    }
+
+    const optimizationConfig = buildOptimizationConfigFromBacktestFields(
+      config.fields,
+      config.selectedStrategy,
+    )
+    if (!optimizationConfig) {
+      setSaveError('Unable to build an optimization config from the current setup.')
+      return
+    }
+
+    setPendingOptimizationConfig(optimizationConfig)
+    patchBacktestSession({ workflowMode: 'optimize' })
+  }, [
+    config.fields,
+    config.selectedStrategy,
+    patchBacktestSession,
+    setPendingOptimizationConfig,
+    workflowBlocker,
+  ])
+
+  const updateDraft = useCallback((next: StrategySpec) => {
+    setDraftSpec(next)
+    setAppliedToSetup(false)
+  }, [])
+
+  return {
+    message,
+    setMessage,
+    conversation,
+    draftSpec,
+    previewSpec,
+    response,
+    serviceError,
+    saveError,
+    validationErrors,
+    unsupportedRequests,
+    assumptions,
+    questions,
+    unsupportedAcknowledged,
+    setUnsupportedAcknowledged,
+    appliedToSetup,
+    activeAiDraft,
+    workflowBlocker,
+    canSave,
+    revisionDiff,
+    revisions,
+    interpretMutation,
+    submitInterpret,
+    handleApplyToSetup,
+    handleSaveAiStrategy,
+    handleDuplicate,
+    handleExport,
+    handleRunBacktest,
+    handleOptimize,
+    resetDraft,
+    hydrateFromMetadata,
+    updateDraft,
+  }
+}
+
+export type AiStrategySession = ReturnType<typeof useAiStrategySession>

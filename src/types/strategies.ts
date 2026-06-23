@@ -43,6 +43,18 @@ export type CustomStrategy = {
   base_strategy: string
   description?: string
   parameters: Record<string, number | string>
+  ai_metadata?: AiStrategyMetadata | null
+}
+
+export type AiStrategyMetadata = {
+  strategy_spec: import('@/types/strategyBuilder').StrategySpec
+  strategy_spec_version: string
+  capabilities_version: string
+  original_prompt: string
+  assumptions: string[]
+  unsupported_requests_acknowledged: string[]
+  compiled_strategy_id: string | null
+  compiled_strategy: import('@/types/strategyBuilder').CompiledStrategy | null
 }
 
 export type ExitRuleInfo = {

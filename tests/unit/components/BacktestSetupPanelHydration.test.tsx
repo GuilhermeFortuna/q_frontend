@@ -1,5 +1,5 @@
 import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 
 import { BacktestSetupPanel } from '@/components/backtests/setup/BacktestSetupPanel'
@@ -7,14 +7,22 @@ import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { buildBacktestRequestFromCandidate } from '@/lib/discover/promoteCandidate'
 import { handlers } from '@/mocks/handlers'
 import { mockSampleGenome } from '@/mocks/strategySearch'
+import { MOCK_CAPABILITIES } from '../fixtures/strategyBuilderFixtures'
 import { useAppStore } from '@/store/useAppStore'
 import { renderWithQueryClient } from '../testUtils'
+import { http, HttpResponse } from 'msw'
 
 const server = setupServer(...handlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
+
+beforeEach(() => {
+  server.use(
+    http.get('*/api/v1/strategy-builder/capabilities', () => HttpResponse.json(MOCK_CAPABILITIES)),
+  )
+})
 
 vi.mock('@/api/queries/market-data', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api/queries/market-data')>()

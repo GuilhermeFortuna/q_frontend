@@ -2,10 +2,12 @@ import { Plus, Save, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { ExitStrategyCards } from '@/components/backtests/setup/ExitStrategyCards'
+import { AiStrategyPanel } from '@/components/backtests/setup/AiStrategyPanel'
 import { StrategyLibrary } from '@/components/backtests/setup/StrategyLibrary'
 import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
+import type { AiStrategySession } from '@/lib/strategies/useAiStrategySession'
 import { filterApplicableExitRules } from '@/lib/optimize/exitSearchSpace'
 import type { ExitRuleInfo } from '@/types/strategies'
 import {
@@ -21,6 +23,7 @@ type BacktestConfig = ReturnType<typeof useBacktestConfig>
 
 type StrategyStudioProps = {
   config: BacktestConfig
+  aiSession: AiStrategySession
 }
 
 const THESIS_COLLAPSE_THRESHOLD = 160
@@ -34,7 +37,7 @@ function tunableRuleParamSpecs(
   )
 }
 
-export function StrategyStudio({ config }: StrategyStudioProps) {
+export function StrategyStudio({ config, aiSession }: StrategyStudioProps) {
   const [thesisOpen, setThesisOpen] = useState(true)
 
   const {
@@ -85,10 +88,12 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
   const handleSelectBuiltIn = (name: string) => {
     setters.handleStrategyChange(name)
     authoring.newDraft()
+    aiSession.resetDraft()
   }
 
   const handleSelectCustom = (custom: Parameters<BacktestConfig['authoring']['loadCustom']>[0]) => {
     authoring.loadCustom(custom)
+    aiSession.hydrateFromMetadata(custom.ai_metadata)
   }
 
   const handleToggleExitRule = (rule: ExitRuleInfo) => {
@@ -176,6 +181,8 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
             {authoring.authoringError}
           </div>
         ) : null}
+
+        <AiStrategyPanel session={aiSession} />
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">

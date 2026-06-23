@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
@@ -9,13 +9,21 @@ import { BacktestSetupPanel } from '@/components/backtests/setup/BacktestSetupPa
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { handlers } from '@/mocks/handlers'
 import { mockStrategies } from '@/mocks/data'
+import { MOCK_CAPABILITIES } from '../fixtures/strategyBuilderFixtures'
 import { renderWithQueryClient } from '../testUtils'
+import { http, HttpResponse } from 'msw'
 
 const server = setupServer(...handlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
+
+beforeEach(() => {
+  server.use(
+    http.get('*/api/v1/strategy-builder/capabilities', () => HttpResponse.json(MOCK_CAPABILITIES)),
+  )
+})
 
 vi.mock('@/api/queries/market-data', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api/queries/market-data')>()

@@ -110,6 +110,7 @@ export type BacktestConfigAuthoring = {
   newDraft: () => void
   loadCustom: (custom: CustomStrategy) => void
   saveCustom: () => void
+  saveCustomPayload: (payload: CustomStrategy) => void
   deleteCustom: (name: string) => void
   handleParamsMerge: (updates: Record<string, StrategyParamValue>) => void
   isSaving: boolean
@@ -333,6 +334,28 @@ export function useBacktestConfig() {
     [strategies],
   )
 
+  const saveCustomPayload = useCallback(
+    (payload: CustomStrategy) => {
+      setAuthoringError(null)
+      saveCustomStrategy.mutate(payload, {
+        onSuccess: () => {
+          setLoadedCustomName(payload.name)
+          setCustomName(payload.name)
+          setDescription(payload.description ?? '')
+        },
+        onError: (err: unknown) => {
+          const message = axios.isAxiosError(err)
+            ? ((err.response?.data as { detail?: string })?.detail ?? err.message)
+            : err instanceof Error
+              ? err.message
+              : 'Failed to save strategy.'
+          setAuthoringError(message)
+        },
+      })
+    },
+    [saveCustomStrategy],
+  )
+
   const saveCustom = useCallback(() => {
     setAuthoringError(null)
     const trimmedName = customName.trim()
@@ -356,25 +379,11 @@ export function useBacktestConfig() {
       return
     }
 
-    const payload: CustomStrategy = {
+    saveCustomPayload({
       name: trimmedName,
       base_strategy: strategy,
       description: description.trim(),
       parameters: strategyParams,
-    }
-
-    saveCustomStrategy.mutate(payload, {
-      onSuccess: () => {
-        setLoadedCustomName(trimmedName)
-      },
-      onError: (err: unknown) => {
-        const message = axios.isAxiosError(err)
-          ? ((err.response?.data as { detail?: string })?.detail ?? err.message)
-          : err instanceof Error
-            ? err.message
-            : 'Failed to save strategy.'
-        setAuthoringError(message)
-      },
     })
   }, [
     builtInStrategies,
@@ -382,7 +391,7 @@ export function useBacktestConfig() {
     customNames,
     description,
     loadedCustomName,
-    saveCustomStrategy,
+    saveCustomPayload,
     strategy,
     strategyParams,
   ])
@@ -489,6 +498,7 @@ export function useBacktestConfig() {
     newDraft,
     loadCustom,
     saveCustom,
+    saveCustomPayload,
     deleteCustom,
     handleParamsMerge,
     isSaving: saveCustomStrategy.isPending,

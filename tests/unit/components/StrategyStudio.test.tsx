@@ -6,10 +6,12 @@ import userEvent from '@testing-library/user-event'
 
 import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
+import { useAiStrategySession } from '@/lib/strategies/useAiStrategySession'
 import { handlers } from '@/mocks/handlers'
 import { mockStrategies, resetMockCustomStrategies } from '@/mocks/data'
 import { renderWithQueryClient } from '../testUtils'
 import { mockExitCatalog, mockExitParamSpecs } from '../workspaces/exitConfiguratorFixtures'
+import { MOCK_CAPABILITIES } from '../fixtures/strategyBuilderFixtures'
 import type { CustomStrategy, StrategiesResponse } from '@/types/strategies'
 
 const server = setupServer(...handlers)
@@ -63,6 +65,7 @@ beforeEach(() => {
   server.use(
     http.get('*/api/v1/strategies', () => HttpResponse.json(studioStrategyResponse)),
     http.get('*/api/v1/exit-rules', () => HttpResponse.json(mockExitCatalog)),
+    http.get('*/api/v1/strategy-builder/capabilities', () => HttpResponse.json(MOCK_CAPABILITIES)),
   )
 })
 afterEach(() => {
@@ -74,9 +77,10 @@ afterAll(() => server.close())
 
 function StrategyStudioHarness({ hidden = false }: { hidden?: boolean }) {
   const config = useBacktestConfig()
+  const aiSession = useAiStrategySession({ config })
   return (
     <div hidden={hidden}>
-      <StrategyStudio config={config} />
+      <StrategyStudio config={config} aiSession={aiSession} />
     </div>
   )
 }
