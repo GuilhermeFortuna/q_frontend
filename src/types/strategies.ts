@@ -15,6 +15,11 @@ export type StrategyParamSpec = {
   choices?: string[] | null
   hint?: string | null
   exit_group?: ExitGroup | null
+  search_min?: number | null
+  search_max?: number | null
+  search_step?: number | null
+  search_scale?: 'linear' | 'log' | null
+  searchable?: boolean
 }
 
 export type StrategyInfo = {

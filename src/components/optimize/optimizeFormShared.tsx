@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import { fieldErrorClass, inputClass } from '@/components/shared/InstrumentConfigFields'
@@ -43,7 +44,7 @@ export function RangeRow({
   stepValue,
   setStepValue,
 }: {
-  label: string
+  label: ReactNode
   low: number
   high: number
   setLow: (v: number) => void

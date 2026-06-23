@@ -47,17 +47,17 @@ describe('strategyParams utilities', () => {
     expect(mergeParamValues(compositeStrategy.params, staged)).toEqual({})
   })
 
-  it('builds default search space from min/max bounds', () => {
+  it('builds default search space from search bounds when present', () => {
     const space = defaultSearchSpaceFromSpecs(maCrossover.params)
-    expect(space.short_period).toEqual({ kind: 'numeric', low: 2, high: 400, step: 1 })
+    expect(space.short_period).toEqual({ kind: 'numeric', low: 10, high: 60, step: 10 })
     expect(space.short_ma_type).toEqual({ kind: 'categorical', choices: ['sma'] })
   })
 
   it('carries per-parameter step into the optimizer payload', () => {
     const space = defaultSearchSpaceFromSpecs(maCrossover.params)
     const payload = searchSpaceToPayload(space, maCrossover.params)
-    expect(payload.short_period).toMatchObject({ type: 'int', step: 1 })
-    expect(payload.threshold).toMatchObject({ type: 'float', step: 0.01 })
+    expect(payload.short_period).toMatchObject({ type: 'int', step: 10 })
+    expect(payload.threshold).toMatchObject({ type: 'float', step: 0.25 })
   })
 
   it('coerces invalid steps to safe values in the payload', () => {

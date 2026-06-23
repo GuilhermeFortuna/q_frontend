@@ -15,8 +15,23 @@ export type NumericSearchRange = {
 export type CategoricalSearchChoices = { kind: 'categorical'; choices: string[] }
 export type SearchSpaceFieldState = NumericSearchRange | CategoricalSearchChoices
 
+function searchBoundsForSpec(spec: StrategyParamSpec): {
+  low: number
+  high: number
+  step: number | null
+} {
+  const low = spec.search_min ?? spec.min ?? Number(spec.default)
+  const high = spec.search_max ?? spec.max ?? Number(spec.default)
+  const step =
+    spec.search_step ??
+    spec.step ??
+    (spec.type === 'int' ? 1 : spec.search_scale === 'log' ? null : null)
+  return { low, high, step }
+}
+
 // Optuna requires an integer step for int params; fall back to a coarse grid of 1.
 function defaultStepForSpec(spec: StrategyParamSpec): number | null {
+  if (spec.search_step != null) return spec.search_step
   if (spec.step != null) return spec.step
   return spec.type === 'int' ? 1 : null
 }
@@ -62,14 +77,16 @@ export function defaultSearchSpaceFromSpecs(
 ): Record<string, SearchSpaceFieldState> {
   const result: Record<string, SearchSpaceFieldState> = {}
   for (const spec of specs) {
+    if (spec.searchable === false) continue
     if (spec.type === 'categorical') {
       result[spec.name] = { kind: 'categorical', choices: [String(spec.default)] }
       continue
     }
+    const { low, high } = searchBoundsForSpec(spec)
     result[spec.name] = {
       kind: 'numeric',
-      low: spec.min ?? Number(spec.default),
-      high: spec.max ?? Number(spec.default),
+      low,
+      high,
       step: defaultStepForSpec(spec),
     }
   }
@@ -82,6 +99,7 @@ export function searchSpaceToPayload(
 ): Record<string, SearchParam> {
   const result: Record<string, SearchParam> = {}
   for (const spec of specs) {
+    if (spec.searchable === false) continue
     const field = state[spec.name]
     if (!field) continue
     if (field.kind === 'categorical') {
@@ -90,6 +108,8 @@ export function searchSpaceToPayload(
       // Optuna's int step must be a positive integer; coerce and default to 1.
       const step = field.step != null && field.step >= 1 ? Math.round(field.step) : 1
       result[spec.name] = { type: 'int', low: field.low, high: field.high, step }
+    } else if (spec.search_scale === 'log' && field.low > 0) {
+      result[spec.name] = { type: 'log-float', low: field.low, high: field.high }
     } else {
       const step = field.step != null && field.step > 0 ? field.step : null
       result[spec.name] = { type: 'float', low: field.low, high: field.high, step }
@@ -114,6 +134,13 @@ export function hydrateSearchSpaceFromPayload(
         low: param.low,
         high: param.high,
         step: param.step ?? 1,
+      }
+    } else if (param.type === 'log-float') {
+      result[spec.name] = {
+        kind: 'numeric',
+        low: param.low,
+        high: param.high,
+        step: null,
       }
     } else if (param.type === 'float') {
       result[spec.name] = {
