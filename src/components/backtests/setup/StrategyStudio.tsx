@@ -197,6 +197,7 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
           ) : (
             <ExitStrategyCards
               rules={applicableExitRules}
+              exitParamSpecs={exitParamSpecs}
               isEnabled={(rule) => isExitRuleEnabled(rule, fields.strategyParams)}
               onToggle={handleToggleExitRule}
             />

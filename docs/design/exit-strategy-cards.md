@@ -1,7 +1,8 @@
-# Design — Exit strategies as toggle cards (Optimization + Simulation)
+# Design — Exit strategies as first-class cards (Optimization + Simulation)
 
-**Status:** approved design, drives WO76–WO77. Frontend-only (`q_frontend`); no backend or
-API changes — the run/optimize payloads are unchanged in shape.
+**Status:** approved design, drives WO76–WO77; **WO88 supersedes the toggle-card decision** with
+first-class selectable cards (click = enable/disable, no switch). Frontend-only (`q_frontend`); no
+backend or API changes — the run/optimize payloads are unchanged in shape.
 
 ## Problem
 
@@ -33,17 +34,18 @@ In both Simulation and Optimization, the strategy library column shows:
 ```
 
 - **Entry cards:** single-select (pick one base strategy) — unchanged.
-- **Exit cards:** multi-select toggles, sourced from the exit-rule catalog
-  (`useExitRuleCatalog`), grouped by `exit_group` (Stop Loss / Trailing / Targets / Time),
-  filtered to rules whose params exist on the selected strategy.
+- **Exit cards:** multi-select selectable cards (shared `LibraryCard` shell), sourced from the
+  exit-rule catalog (`useExitRuleCatalog`), each tagged by `exit_group` (Stop Loss / Trailing /
+  Targets / Time), filtered to rules whose params exist on the selected strategy. Click toggles
+  enable — no separate switch.
 - **Toggle-into-params:** enabling an exit reveals its params on the right (values in
   Simulation, ranges in Optimization). Disabling **hides its params and pins the exit off**.
 
 ## Key decisions (from brainstorming)
 
 1. **Scope:** both tabs. Optimization first (the gap the user saw); Simulation aligned to match.
-2. **Exit card behavior:** toggle into the params/search space. Disabled exits show no params
-   and are pinned off (not left to a possibly-on strategy default).
+2. **Exit card behavior:** click-to-select toggles enable state (`aria-pressed`). Disabled exits
+   show no params and are pinned off (not left to a possibly-on strategy default).
 3. **Simulation:** "mirror Optimize" — remove the Entry/Exit tab; entry cards + exit toggle
    cards stacked in the left column, params on the right. This **supersedes the Entry/Exit tab
    from the `strategy-into-backtests` design (WO73).** Presets + ACTIVE-chip row from
@@ -55,11 +57,10 @@ In both Simulation and Optimization, the strategy library column shows:
 
 ### Shared
 
-`src/components/backtests/setup/ExitStrategyCards.tsx` (new) — presentational multi-select
-toggle cards, grouped via `groupExitRules`, card visual matching the entry `StrategyCard`
-(label + description + on/off state, `aria-pressed`). Props: `rules` (already filtered),
-`isEnabled(rule) => boolean`, `onToggle(rule) => void`, optional heading. No business logic —
-each tab supplies enabled-state + toggle behavior.
+`src/components/backtests/setup/ExitStrategyCards.tsx` — presentational multi-select card grid
+via shared `LibraryCard`, one card per rule tagged by exit group. Props: `rules` (already
+filtered), `exitParamSpecs`, `isEnabled(rule) => boolean`, `onToggle(rule) => void`, optional
+heading/subheading. No business logic — each tab supplies enabled-state + toggle behavior.
 
 Reused helpers (`src/workspaces/strategy/exitRuleSemantics.ts`): `isExitRuleEnabled`,
 `defaultEnableValue`, `resolveRuleParamSpecs`, `groupExitRules`, `getEnabledExitRules`,
@@ -123,6 +124,8 @@ This is the original pre-WO76 flat behavior, scoped to selected candidates with 
 - **WO78** — **Correct the Optimization exit semantics**: a selected exit is a _candidate_ the
   optimizer turns on/off (sweep its enable/magnitude range incl. 0), not a forced-on pin.
   Optimization only.
+- **WO88** — Exit cards reach full parity with entry cards via shared `LibraryCard` (grid layout,
+  group tag chip, param count, click-to-toggle; switches removed). ✅ shipped.
 
 ## Out of scope
 

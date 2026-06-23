@@ -66,15 +66,70 @@ describe('OptimizeSetupPanel custom strategies', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Short Period')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Exit Strategies' })).toBeInTheDocument()
       expect(
-        screen.getByRole('heading', { name: 'Exit Strategies — searched (on/off)' }),
+        screen.getByText('Selected exits are searched (on/off + magnitude).'),
       ).toBeInTheDocument()
-      expect(screen.getByRole('switch', { name: /Fixed Stop Loss/i })).toBeInTheDocument()
-      expect(screen.getByRole('switch', { name: /Trailing Stop/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Fixed Stop Loss/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Trailing Stop/i })).toBeInTheDocument()
+    })
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+  })
+
+  it('enabling an exit card adds its search-space fields to the detail panel', async () => {
+    useCustomStrategyMocks()
+    const user = userEvent.setup()
+    renderWithQueryClient(<OptimizeSetupHarness />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /MyCustomMA/i })).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: /MyCustomMA/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Stop Loss %')).toBeInTheDocument()
+      expect(screen.getByText('Trailing Stop %')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: /Fixed Stop Loss/i }))
+
+    await waitFor(() => {
+      expect(screen.queryByText('Stop Loss %')).not.toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: /Fixed Stop Loss/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Stop Loss %')).toBeInTheDocument()
     })
   })
 
-  it('submits optimization with strategy set to the custom name', async () => {
+  it('submits optimization payload with only selected exit params', async () => {
+    useCustomStrategyMocks()
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    renderWithQueryClient(<OptimizeSetupHarness onSubmit={onSubmit} />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /MyCustomMA/i })).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: /MyCustomMA/i }))
+    await user.click(screen.getByRole('button', { name: /Fixed Stop Loss/i }))
+    await user.click(screen.getByRole('button', { name: 'Run Optimization' }))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    const config = onSubmit.mock.calls[0][0]
+    expect(config.backtest.strategy).toBe(mockOptimizeCustomStrategy.name)
+    expect(config.search_space.strategy_params).toMatchObject({
+      short_period: expect.objectContaining({ type: 'int' }),
+      trailing_stop_pct: { type: 'float', low: 0, high: 0.1, step: 0.001 },
+      stop_loss_pct: { type: 'float', low: 0, high: 0, step: null },
+    })
+  })
+
+  it('submits optimization with strategy set to the custom name and all default exits', async () => {
     useCustomStrategyMocks()
     const user = userEvent.setup()
     const onSubmit = vi.fn()

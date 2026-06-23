@@ -1,97 +1,56 @@
-import { cn } from '@/lib/utils'
-import type { ExitRuleInfo } from '@/types/strategies'
-import { groupExitRules } from '@/workspaces/strategy/exitRuleSemantics'
+import { LibraryCard } from '@/components/backtests/setup/LibraryCard'
+import type { ExitGroup, ExitRuleInfo, StrategyParamSpec } from '@/types/strategies'
+import {
+  EXIT_GROUP_LABELS,
+  EXIT_GROUP_OTHER_LABEL,
+} from '@/workspaces/strategy/exitWorkbenchGroups'
+import { resolveRuleParamSpecs } from '@/workspaces/strategy/exitRuleSemantics'
 
 type ExitStrategyCardsProps = {
   rules: ExitRuleInfo[]
+  exitParamSpecs: StrategyParamSpec[]
   isEnabled: (rule: ExitRuleInfo) => boolean
   onToggle: (rule: ExitRuleInfo) => void
   heading?: string
+  subheading?: string
 }
 
-function ExitStrategyCard({
-  rule,
-  enabled,
-  onToggle,
-}: {
-  rule: ExitRuleInfo
-  enabled: boolean
-  onToggle: () => void
-}) {
-  return (
-    <article
-      className={cn(
-        'quant-panel border-carbon-800/60 cubic-bezier(0.16,1,0.3,1) rounded-lg border transition-[transform,border-color,box-shadow] duration-350 hover:-translate-y-0.5 hover:scale-[1.01]',
-        enabled
-          ? 'quant-panel--glow quant-panel--active-run border-brass-500/50 bg-brass-600/10'
-          : 'opacity-85',
-      )}
-    >
-      <div className="flex items-start justify-between gap-3 p-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                'h-2 w-2 shrink-0 rounded-full',
-                enabled ? 'bg-brass-400' : 'bg-carbon-600',
-              )}
-              aria-hidden
-            />
-            <h5 className="text-silver-200 text-sm font-medium">{rule.label}</h5>
-          </div>
-          <p className="text-silver-500 mt-1 text-xs leading-snug">{rule.description}</p>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
-          aria-label={`${enabled ? 'Disable' : 'Enable'} ${rule.label}`}
-          onClick={onToggle}
-          className={cn(
-            'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors',
-            enabled ? 'border-brass-500/50 bg-brass-500/30' : 'border-carbon-700 bg-carbon-800/80',
-          )}
-        >
-          <span
-            className={cn(
-              'bg-silver-100 inline-block h-4 w-4 rounded-full transition-transform',
-              enabled ? 'translate-x-5' : 'translate-x-1',
-            )}
-          />
-        </button>
-      </div>
-    </article>
-  )
+function ruleGroupLabel(rule: ExitRuleInfo): string {
+  if (rule.exit_group in EXIT_GROUP_LABELS) {
+    return EXIT_GROUP_LABELS[rule.exit_group as ExitGroup]
+  }
+  return EXIT_GROUP_OTHER_LABEL
 }
 
 export function ExitStrategyCards({
   rules,
+  exitParamSpecs,
   isEnabled,
   onToggle,
   heading = 'Exit Strategies',
+  subheading,
 }: ExitStrategyCardsProps) {
   if (rules.length === 0) return null
 
-  const groupedRules = groupExitRules(rules)
-
   return (
     <section className="border-carbon-600/50 bg-carbon-950/30 flex flex-col gap-3 rounded-xl border p-4">
-      <h4 className="text-silver-200 text-sm font-medium">{heading}</h4>
-      {groupedRules.map(({ group, label, rules: groupRules }) => (
-        <div key={group} className="space-y-2">
-          <h5 className="text-silver-400 text-xs font-semibold tracking-wide uppercase">{label}</h5>
-          <div className="space-y-2">
-            {groupRules.map((rule) => (
-              <ExitStrategyCard
-                key={rule.id}
-                rule={rule}
-                enabled={isEnabled(rule)}
-                onToggle={() => onToggle(rule)}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
+      <div>
+        <h4 className="text-silver-200 text-sm font-medium">{heading}</h4>
+        {subheading ? <p className="text-silver-500 mt-1 text-xs">{subheading}</p> : null}
+      </div>
+      <div className="grid auto-rows-min gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {rules.map((rule) => (
+          <LibraryCard
+            key={rule.id}
+            title={rule.label}
+            tag={ruleGroupLabel(rule)}
+            description={rule.description}
+            paramCount={resolveRuleParamSpecs(rule, exitParamSpecs).length}
+            selected={isEnabled(rule)}
+            onClick={() => onToggle(rule)}
+          />
+        ))}
+      </div>
     </section>
   )
 }

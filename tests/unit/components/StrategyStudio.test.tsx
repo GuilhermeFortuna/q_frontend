@@ -116,21 +116,19 @@ describe('StrategyStudio', () => {
 
     expect(screen.queryByRole('spinbutton', { name: 'Rule A Offset' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('switch', { name: 'Enable Rule A' }))
+    await user.click(screen.getByRole('button', { name: /Rule A/i }))
 
     await waitFor(() => {
       expect(screen.getByRole('spinbutton', { name: 'Rule A Offset' })).toBeInTheDocument()
     })
-    expect(screen.getByRole('switch', { name: 'Disable Rule A' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    )
+    expect(screen.getByRole('button', { name: /Rule A/i })).toHaveAttribute('aria-pressed', 'true')
 
-    await user.click(screen.getByRole('switch', { name: 'Disable Rule A' }))
+    await user.click(screen.getByRole('button', { name: /Rule A/i }))
 
     await waitFor(() => {
       expect(screen.queryByRole('spinbutton', { name: 'Rule A Offset' })).not.toBeInTheDocument()
     })
+    expect(screen.getByRole('button', { name: /Rule A/i })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('edits entry and enabled-exit params in the same flat strategyParams bag', async () => {
@@ -148,7 +146,7 @@ describe('StrategyStudio', () => {
     await user.clear(entryPeriod)
     await user.type(entryPeriod, '15')
 
-    await user.click(screen.getByRole('switch', { name: 'Enable Rule A' }))
+    await user.click(screen.getByRole('button', { name: /Rule A/i }))
     await waitFor(() => {
       expect(screen.getByRole('spinbutton', { name: 'Rule A Offset' })).toBeInTheDocument()
     })
@@ -174,7 +172,7 @@ describe('StrategyStudio', () => {
 
     expect(screen.queryByRole('spinbutton', { name: 'Shared Indicator' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('switch', { name: 'Enable Rule B' }))
+    await user.click(screen.getByRole('button', { name: /Rule B/i }))
 
     await waitFor(() => {
       expect(screen.getByRole('spinbutton', { name: 'Shared Indicator' })).toBeInTheDocument()
@@ -290,10 +288,7 @@ describe('StrategyStudio', () => {
       expect(screen.getByRole('spinbutton', { name: 'Entry Period' })).toHaveValue(25)
     })
 
-    expect(screen.getByRole('switch', { name: 'Disable Rule A' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    )
+    expect(screen.getByRole('button', { name: /Rule A/i })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('spinbutton', { name: 'Rule A Offset' })).toHaveValue(0.05)
   })
 

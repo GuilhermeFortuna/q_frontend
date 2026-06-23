@@ -1,6 +1,7 @@
 import { Cpu, Trash2 } from 'lucide-react'
 import { memo, useMemo, useState } from 'react'
 
+import { LibraryCard } from '@/components/backtests/setup/LibraryCard'
 import {
   categoryLabel,
   CUSTOM_STRATEGY_CATEGORY_LABEL,
@@ -194,39 +195,28 @@ function StrategyCard({
   const isTick = strategyEngine(strategy) === 'tick'
 
   return (
-    <button
-      type="button"
-      aria-pressed={selected}
+    <LibraryCard
+      title={strategy.label}
+      tag={categoryLabel(category)}
+      description={strategyCardDescription(strategy)}
+      paramCount={strategy.params.length}
+      selected={selected}
       onClick={onSelect}
-      className={cn(
-        'quant-panel border-carbon-600/50 hover:border-brass-500/30 cubic-bezier(0.16,1,0.3,1) flex flex-col gap-2 rounded-lg border p-3 text-left transition-[transform,border-color,box-shadow] duration-350 hover:-translate-y-0.5 hover:scale-[1.01] active:scale-[0.97]',
-        selected &&
-          'quant-panel--glow quant-panel--active-run border-brass-500/60 bg-brass-600/10 ring-brass-500/20 ring-1',
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-silver-100 text-sm font-semibold">{strategy.label}</span>
-        <span className="bg-carbon-800/80 text-brass-400/90 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
-          {categoryLabel(category)}
-        </span>
-        {isTick ? (
-          <span className="bg-carbon-800/80 text-silver-400 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
-            Tick
-          </span>
-        ) : null}
-        {isCustom ? (
-          <span className="bg-carbon-800/80 text-brass-300 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
-            Custom
-          </span>
-        ) : null}
-      </div>
-      <p className="text-silver-400 line-clamp-2 text-xs leading-relaxed">
-        {strategyCardDescription(strategy)}
-      </p>
-      <p className="text-silver-500 text-[10px]">
-        {strategy.params.length} param{strategy.params.length === 1 ? '' : 's'}
-      </p>
-    </button>
+      badges={
+        <>
+          {isTick ? (
+            <span className="bg-carbon-800/80 text-silver-400 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
+              Tick
+            </span>
+          ) : null}
+          {isCustom ? (
+            <span className="bg-carbon-800/80 text-brass-300 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
+              Custom
+            </span>
+          ) : null}
+        </>
+      }
+    />
   )
 }
 

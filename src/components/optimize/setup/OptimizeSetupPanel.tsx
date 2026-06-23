@@ -50,9 +50,11 @@ export function OptimizeSetupPanel({
           />
           <ExitStrategyCards
             rules={config.applicableExitRules}
+            exitParamSpecs={config.exitParamSpecs}
             isEnabled={(rule) => config.candidateExitRuleIds.has(rule.id)}
             onToggle={(rule) => config.toggleExitRule(rule.id)}
-            heading="Exit Strategies — searched (on/off)"
+            heading="Exit Strategies"
+            subheading="Selected exits are searched (on/off + magnitude)."
           />
         </div>
         <OptimizeStrategyDetailPanel
