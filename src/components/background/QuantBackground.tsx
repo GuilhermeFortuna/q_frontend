@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 const BRANDED_BG_MAP = {
   high: '/high_brightness/Quant_Background_High_Brightness.jpeg',
@@ -503,7 +504,9 @@ function ParticleStars() {
 export function QuantBackground() {
   const activeWorkspace = useAppStore((s) => s.activeWorkspace)
   const resolvedBrightness = useResolvedBrightness()
+  const reducedMotion = usePrefersReducedMotion()
   const isLauncher = activeWorkspace === 'launcher'
+  const showParticleField = isLauncher && !reducedMotion
 
   const brandedBg = BRANDED_BG_MAP[resolvedBrightness]
   const cleanBg = CLEAN_BG_MAP[resolvedBrightness]
@@ -527,17 +530,18 @@ export function QuantBackground() {
         style={{ backgroundImage: `url('${cleanBg}')` }}
       />
 
-      {/* GPU-Accelerated 3D Parallax Starfield overlay */}
-      <div className="absolute inset-0 opacity-85">
-        <Canvas
-          camera={{ position: [0, 0, 15], fov: 60 }}
-          gl={{ antialias: true, alpha: true }}
-          dpr={[1, 1.5]}
-        >
-          <ambientLight intensity={0.5} />
-          <ParticleStars />
-        </Canvas>
-      </div>
+      {showParticleField ? (
+        <div className="absolute inset-0 opacity-85">
+          <Canvas
+            camera={{ position: [0, 0, 15], fov: 60 }}
+            gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
+            dpr={1}
+          >
+            <ambientLight intensity={0.5} />
+            <ParticleStars />
+          </Canvas>
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 
+import { useAppStore } from '@/store/useAppStore'
+
 /**
  * App-wide pointer-reactive lighting.
  *
@@ -12,7 +14,13 @@ import { useEffect } from 'react'
  * Renders nothing; mount once near the app root.
  */
 export function PointerSpotlight() {
+  const activeWorkspace = useAppStore((s) => s.activeWorkspace)
+
   useEffect(() => {
+    if (activeWorkspace !== 'launcher') {
+      return
+    }
+
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return
     }
@@ -73,7 +81,7 @@ export function PointerSpotlight() {
       window.removeEventListener('blur', clear)
       clear()
     }
-  }, [])
+  }, [activeWorkspace])
 
   return null
 }
