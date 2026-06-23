@@ -65,6 +65,10 @@ function strategyForCandidate(candidate: CandidateResult): string {
   return isGeneticCandidate(candidate) ? 'CompositeStrategy' : candidate.strategy
 }
 
+function cleanPayload<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined)) as T
+}
+
 export function buildBacktestRequestFromCandidate(
   candidate: CandidateResult,
   backtest: OptimizationBacktestConfig,
@@ -76,7 +80,7 @@ export function buildBacktestRequestFromCandidate(
     strategyParams.genome = candidate.genome
   }
 
-  return {
+  return cleanPayload({
     symbol: backtest.symbol,
     timeframe: backtest.timeframe,
     start: backtest.start,
@@ -91,7 +95,10 @@ export function buildBacktestRequestFromCandidate(
     day_trade_start_time: backtest.day_trade_start_time,
     day_trade_end_time: backtest.day_trade_end_time,
     day_trade_close_time: backtest.day_trade_close_time,
-  }
+    engine: backtest.engine ?? 'candle',
+    display_timeframe: backtest.display_timeframe,
+    tick_flags: backtest.tick_flags,
+  })
 }
 
 export function buildOptimizationConfigFromCandidate(

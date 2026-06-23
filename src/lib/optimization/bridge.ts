@@ -36,6 +36,10 @@ export function buildPositionSizingFromRiskParams(
  * instrument/window from the study's backtest config and the trial's resolved
  * (unprefixed) strategy + risk params recorded in `user_attrs`.
  */
+function cleanPayload<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined)) as T
+}
+
 export function buildBacktestRequestFromTrial(
   trial: OptimizationTrial,
   backtest: OptimizationBacktestConfig,
@@ -43,7 +47,7 @@ export function buildBacktestRequestFromTrial(
   const strategyParams = trial.user_attrs.strategy_params ?? {}
   const riskParams = trial.user_attrs.risk_params ?? {}
 
-  return {
+  return cleanPayload({
     symbol: backtest.symbol,
     timeframe: backtest.timeframe,
     start: backtest.start,
@@ -54,5 +58,12 @@ export function buildBacktestRequestFromTrial(
     strategy_params: strategyParams,
     position_sizing: buildPositionSizingFromRiskParams(riskParams),
     ...(backtest.costs ? { costs: backtest.costs } : {}),
-  }
+    day_trade: backtest.day_trade,
+    day_trade_start_time: backtest.day_trade_start_time,
+    day_trade_end_time: backtest.day_trade_end_time,
+    day_trade_close_time: backtest.day_trade_close_time,
+    engine: backtest.engine ?? 'candle',
+    display_timeframe: backtest.display_timeframe,
+    tick_flags: backtest.tick_flags,
+  })
 }

@@ -74,6 +74,7 @@ describe('buildBacktestRequestFromTrial', () => {
       strategy: 'MACrossover',
       strategy_params: { short_period: 10, long_period: 50, threshold: 0.5 },
       position_sizing: { type: 'fixed_quantity', quantity: 3 },
+      engine: 'candle',
     })
   })
 
@@ -81,5 +82,32 @@ describe('buildBacktestRequestFromTrial', () => {
     const result = buildBacktestRequestFromTrial(trial({}), backtest)
     expect(result.strategy_params).toEqual({})
     expect(result.position_sizing).toBeUndefined()
+  })
+
+  it('carries over engine, display_timeframe, tick_flags, and day trade parameters', () => {
+    const fullBacktestConfig = {
+      ...backtest,
+      engine: 'tick' as const,
+      display_timeframe: 'M5',
+      tick_flags: 'trade' as const,
+      day_trade: true,
+      day_trade_start_time: '10:00',
+      day_trade_end_time: '15:00',
+      day_trade_close_time: '16:00',
+    }
+    const result = buildBacktestRequestFromTrial(
+      trial({
+        strategy_params: { short_period: 10, long_period: 50, threshold: 0.5 },
+        risk_params: { type: 'fixed_quantity', quantity: 3 },
+      }),
+      fullBacktestConfig,
+    )
+    expect(result.engine).toBe('tick')
+    expect(result.display_timeframe).toBe('M5')
+    expect(result.tick_flags).toBe('trade')
+    expect(result.day_trade).toBe(true)
+    expect(result.day_trade_start_time).toBe('10:00')
+    expect(result.day_trade_end_time).toBe('15:00')
+    expect(result.day_trade_close_time).toBe('16:00')
   })
 })

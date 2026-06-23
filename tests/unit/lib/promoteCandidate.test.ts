@@ -161,4 +161,25 @@ describe('promoteCandidate', () => {
       take_profit_pct: 0.04,
     })
   })
+
+  it('carries over engine, display_timeframe, tick_flags, and day trade parameters', () => {
+    const fullBacktestConfig = {
+      ...backtest,
+      engine: 'tick' as const,
+      display_timeframe: 'M5',
+      tick_flags: 'trade' as const,
+      day_trade: true,
+      day_trade_start_time: '10:00',
+      day_trade_end_time: '15:00',
+      day_trade_close_time: '16:00',
+    }
+    const payload = buildBacktestRequestFromCandidate(registryCandidate, fullBacktestConfig)
+    expect(payload.engine).toBe('tick')
+    expect(payload.display_timeframe).toBe('M5')
+    expect(payload.tick_flags).toBe('trade')
+    expect(payload.day_trade).toBe(true)
+    expect(payload.day_trade_start_time).toBe('10:00')
+    expect(payload.day_trade_end_time).toBe('15:00')
+    expect(payload.day_trade_close_time).toBe('16:00')
+  })
 })
