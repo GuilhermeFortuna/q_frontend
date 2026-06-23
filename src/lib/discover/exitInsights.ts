@@ -10,6 +10,17 @@ export function candidateExitLabel(candidate: CandidateResult): string | null {
   return candidate.exit_preset_label ?? candidate.exit_policy_label ?? null
 }
 
+export function candidateExitDisplayLabel(candidate: CandidateResult): {
+  label: string
+  explicit: boolean
+} {
+  const label = candidateExitLabel(candidate)
+  if (label != null) {
+    return { label, explicit: true }
+  }
+  return { label: 'Signal exit', explicit: false }
+}
+
 export function hasExitInsight(candidate: CandidateResult): boolean {
   return candidateExitLabel(candidate) != null || resolveExitQuality(candidate) != null
 }

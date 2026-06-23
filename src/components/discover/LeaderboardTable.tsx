@@ -6,7 +6,7 @@ import { CandidateDetailPanel } from '@/components/discover/CandidateDetailPanel
 import { ComplexityLine } from '@/components/discover/GenomeViewer'
 import { Button } from '@/components/ui/button'
 import { gateFlagsLabel } from '@/lib/discover/candidateMetrics'
-import { candidateExitLabel } from '@/lib/discover/exitInsights'
+import { candidateExitDisplayLabel } from '@/lib/discover/exitInsights'
 import {
   buildBacktestRequestFromCandidate,
   buildOptimizationConfigFromCandidate,
@@ -202,7 +202,7 @@ export function LeaderboardTable({
               {(
                 [
                   ['rank', 'Rank'],
-                  ['strategy', 'Strategy'],
+                  ['strategy', 'Entry'],
                   ['objective', objectiveHeader],
                   ['efficiency', 'Efficiency'],
                   ['trades', 'OOS trades'],
@@ -219,6 +219,7 @@ export function LeaderboardTable({
                   </button>
                 </th>
               ))}
+              <th className="px-3 py-2 font-semibold">Exit</th>
               {showGenerationFilter ? <th className="px-3 py-2 font-semibold">Gen</th> : null}
               <th className="px-3 py-2 font-semibold">Gate</th>
               <th className="px-3 py-2 font-semibold">Actions</th>
@@ -229,6 +230,7 @@ export function LeaderboardTable({
               const expanded = expandedId === candidate.candidate_id
               const dimmed = isDeemphasized(candidate)
               const canPromote = candidate.status === 'completed' && candidate.best_params != null
+              const exitDisplay = candidateExitDisplayLabel(candidate)
 
               return (
                 <Fragment key={candidate.candidate_id}>
@@ -258,14 +260,6 @@ export function LeaderboardTable({
                                 Evolved
                               </span>
                             ) : null}
-                            {candidateExitLabel(candidate) ? (
-                              <span
-                                className="text-silver-500 hidden max-w-[9rem] truncate text-[10px] sm:inline"
-                                title={`Exit: ${candidateExitLabel(candidate)}`}
-                              >
-                                Exit: {candidateExitLabel(candidate)}
-                              </span>
-                            ) : null}
                           </span>
                           <ComplexityLine
                             genomeNodeCount={candidate.genome_node_count}
@@ -273,6 +267,19 @@ export function LeaderboardTable({
                           />
                         </span>
                       </button>
+                    </td>
+                    <td
+                      className={cn(
+                        'px-3 py-2 text-xs',
+                        exitDisplay.explicit ? 'text-silver-300' : 'text-silver-500',
+                      )}
+                      title={
+                        exitDisplay.explicit
+                          ? undefined
+                          : "Closes on the strategy's own signal — no stop/target overlay."
+                      }
+                    >
+                      {exitDisplay.label}
                     </td>
                     <td className="px-3 py-2 font-mono tabular-nums">
                       {formatObjectiveMetricValue(candidate.objective_value, objectiveMode)}
@@ -319,7 +326,7 @@ export function LeaderboardTable({
                   {expanded ? (
                     <tr className="border-carbon-600/30 border-t">
                       <td
-                        colSpan={showGenerationFilter ? 8 : 7}
+                        colSpan={showGenerationFilter ? 9 : 8}
                         className="bg-carbon-950/40 px-4 py-4"
                       >
                         <CandidateDetailPanel
