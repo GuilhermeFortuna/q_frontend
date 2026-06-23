@@ -204,8 +204,16 @@ function FloatingLauncherPanel({
       event.preventDefault()
       event.stopPropagation()
       interactionRef.current = true
+      const containerRect = readContainerRect(containerRef.current)
+      const layoutBounds = containerRect ? getLauncherPanelBounds(containerRect) : null
+      const defaults = layoutBounds
+        ? getDefaultPanelLayouts(layoutBounds.width, layoutBounds.height)[panel]
+        : layout
+      const safeLayout = layoutBounds
+        ? normalizePanelLayout(layout, layoutBounds, defaults)
+        : layout
       dragStartRef.current = {
-        layout,
+        layout: safeLayout,
         pointerX: event.clientX,
         pointerY: event.clientY,
         mode,
@@ -229,9 +237,10 @@ function FloatingLauncherPanel({
   return (
     <div
       className={cn(
-        'quant-panel bg-espresso-950/80 absolute z-30 flex min-h-0 flex-col overflow-hidden rounded-2xl',
+        'surface-panel quant-panel--spotlight bg-espresso-950/80 absolute z-30 flex min-h-0 flex-col overflow-hidden rounded-2xl',
       )}
       style={{
+        position: 'absolute',
         left: layout.x,
         top: layout.y,
         width: layout.width,
@@ -640,7 +649,7 @@ export function LauncherDashboard() {
 
               {/* Dropdown list */}
               {isFocused && (
-                <div className="border-carbon-800 bg-carbon-950/95 absolute right-0 left-0 z-50 mt-1 flex max-h-[160px] scrollbar-thin flex-col gap-0.5 overflow-y-auto rounded-lg border p-1 shadow-2xl backdrop-blur-md">
+                <div className="surface-overlay border-carbon-800 absolute right-0 left-0 z-50 mt-1 flex max-h-[160px] scrollbar-thin flex-col gap-0.5 overflow-y-auto rounded-lg border p-1">
                   {searchQuery.trim().length > 1 && searchResultsQuery.isLoading && (
                     <div className="text-silver-400 flex items-center justify-center gap-1.5 px-2 py-3 text-center font-mono text-[9px]">
                       <RefreshCw className="text-brass-500 h-3 w-3 animate-spin" />

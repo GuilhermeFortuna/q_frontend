@@ -16,7 +16,15 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'q-app-store',
-      version: 1,
+      version: 2,
+      migrate: (persistedState) => {
+        const state = persistedState as Partial<AppStore> | undefined
+        if (!state) return persistedState
+        return {
+          ...state,
+          launcherSession: { panelLayouts: null },
+        }
+      },
       // Only the active job sessions need to outlive navigation/reload. Everything
       // else is transient UI or sourced from the backend.
       partialize: (state) => ({
