@@ -64,6 +64,11 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
     canSave,
     revisionDiff,
     interpretMutation,
+    selectedModel,
+    setSelectedModel,
+    availableModels,
+    modelsLoading,
+    modelsError,
     submitInterpret,
     handleApplyToSetup,
     handleSaveAiStrategy,
@@ -94,6 +99,42 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
       </div>
 
       <div className="space-y-2">
+        <div className="space-y-1">
+          <label
+            htmlFor="ai-strategy-model"
+            className="text-silver-400 text-[11px] font-semibold tracking-wide uppercase"
+          >
+            Local model
+          </label>
+          <select
+            id="ai-strategy-model"
+            value={selectedModel}
+            onChange={(event) => setSelectedModel(event.target.value)}
+            className={inputClass}
+            disabled={interpretMutation.isPending || modelsLoading || availableModels.length === 0}
+            data-testid="ai-strategy-model"
+          >
+            {availableModels.length === 0 ? (
+              <option value="">No local models configured</option>
+            ) : (
+              availableModels.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.label}
+                  {!model.available ? ' (not loaded)' : ''}
+                </option>
+              ))
+            )}
+          </select>
+          {modelsError ? (
+            <p className="text-[11px] text-rose-400" data-testid="ai-strategy-models-error">
+              {modelsError}
+            </p>
+          ) : availableModels.length === 0 && !modelsLoading ? (
+            <p className="text-silver-500 text-[11px]" data-testid="ai-strategy-models-hint">
+              Start LM Studio local server to enable models.
+            </p>
+          ) : null}
+        </div>
         <label htmlFor="ai-strategy-message" className="sr-only">
           Strategy prompt
         </label>

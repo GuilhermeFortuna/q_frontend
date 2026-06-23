@@ -9,7 +9,7 @@ import { BacktestSetupPanel } from '@/components/backtests/setup/BacktestSetupPa
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { handlers } from '@/mocks/handlers'
 import { mockStrategies } from '@/mocks/data'
-import { MOCK_CAPABILITIES } from '../fixtures/strategyBuilderFixtures'
+import { MOCK_CAPABILITIES, MOCK_MODELS } from '../fixtures/strategyBuilderFixtures'
 import { renderWithQueryClient } from '../testUtils'
 import { http, HttpResponse } from 'msw'
 
@@ -22,6 +22,7 @@ afterAll(() => server.close())
 beforeEach(() => {
   server.use(
     http.get('*/api/v1/strategy-builder/capabilities', () => HttpResponse.json(MOCK_CAPABILITIES)),
+    http.get('*/api/v1/strategy-builder/models', () => HttpResponse.json(MOCK_MODELS)),
   )
 })
 

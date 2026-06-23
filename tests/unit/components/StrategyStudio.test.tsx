@@ -11,7 +11,7 @@ import { handlers } from '@/mocks/handlers'
 import { mockStrategies, resetMockCustomStrategies } from '@/mocks/data'
 import { renderWithQueryClient } from '../testUtils'
 import { mockExitCatalog, mockExitParamSpecs } from '../workspaces/exitConfiguratorFixtures'
-import { MOCK_CAPABILITIES } from '../fixtures/strategyBuilderFixtures'
+import { MOCK_CAPABILITIES, MOCK_MODELS } from '../fixtures/strategyBuilderFixtures'
 import type { CustomStrategy, StrategiesResponse } from '@/types/strategies'
 
 const server = setupServer(...handlers)
@@ -66,6 +66,7 @@ beforeEach(() => {
     http.get('*/api/v1/strategies', () => HttpResponse.json(studioStrategyResponse)),
     http.get('*/api/v1/exit-rules', () => HttpResponse.json(mockExitCatalog)),
     http.get('*/api/v1/strategy-builder/capabilities', () => HttpResponse.json(MOCK_CAPABILITIES)),
+    http.get('*/api/v1/strategy-builder/models', () => HttpResponse.json(MOCK_MODELS)),
   )
 })
 afterEach(() => {

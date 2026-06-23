@@ -1,11 +1,12 @@
 import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import {
   fetchStrategyBuilderCapabilities,
   strategyBuilderKeys,
   useInterpretStrategy,
+  useStrategyBuilderModels,
 } from '@/api/queries/strategyBuilder'
 import { applyCompiledStrategyToConfig } from '@/lib/strategies/applyCompiledStrategy'
 import {
@@ -58,10 +59,12 @@ function extractInterpretError(error: unknown): string {
 export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySessionOptions) {
   const queryClient = useQueryClient()
   const interpretMutation = useInterpretStrategy()
+  const modelsQuery = useStrategyBuilderModels()
   const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
   const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
 
   const [message, setMessage] = useState('')
+  const [selectedModel, setSelectedModel] = useState('')
   const [conversation, setConversation] = useState<ConversationMessage[]>([])
   const [draftSpec, setDraftSpec] = useState<StrategySpec | null>(null)
   const [response, setResponse] = useState<AiStrategyResponse | null>(null)
@@ -73,6 +76,21 @@ export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySes
   const [saveError, setSaveError] = useState<string | null>(null)
   const [revisions, setRevisions] = useState<AiRevisionSnapshot[]>([])
   const [capabilitiesVersion, setCapabilitiesVersion] = useState('q_capabilities.v1')
+
+  const availableModels = modelsQuery.data?.models ?? []
+  const modelsLoading = modelsQuery.isLoading
+  const modelsError = modelsQuery.isError
+    ? modelsQuery.error instanceof Error
+      ? modelsQuery.error.message
+      : 'Unable to load local models.'
+    : null
+
+  useEffect(() => {
+    if (!modelsQuery.data || selectedModel) return
+    const defaultModel = modelsQuery.data.default_model
+    const hasDefault = modelsQuery.data.models.some((model) => model.id === defaultModel)
+    setSelectedModel(hasDefault ? defaultModel : (modelsQuery.data.models[0]?.id ?? ''))
+  }, [modelsQuery.data, selectedModel])
 
   const previewSpec = draftSpec ?? response?.strategy_spec ?? null
   const validationErrors = response?.validation?.errors ?? []
@@ -190,6 +208,7 @@ export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySes
         const nextCapabilitiesVersion = await ensureCapabilitiesVersion()
         const result = await interpretMutation.mutateAsync({
           message: trimmed,
+          model: selectedModel || undefined,
           conversation: nextConversation,
           current_spec: draftSpec ?? response?.strategy_spec ?? null,
           capabilities_version: nextCapabilitiesVersion,
@@ -215,6 +234,7 @@ export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySes
       interpretMutation,
       originalPrompt,
       response?.strategy_spec,
+      selectedModel,
     ],
   )
 
@@ -345,6 +365,11 @@ export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySes
     revisionDiff,
     revisions,
     interpretMutation,
+    selectedModel,
+    setSelectedModel,
+    availableModels,
+    modelsLoading,
+    modelsError,
     submitInterpret,
     handleApplyToSetup,
     handleSaveAiStrategy,

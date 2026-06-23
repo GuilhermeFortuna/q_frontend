@@ -119,3 +119,12 @@ export const MOCK_CAPABILITIES = {
   },
   unsupported: ['live trading'],
 }
+
+export const MOCK_MODELS = {
+  provider: 'openai_compatible',
+  default_model: 'test-model-a',
+  models: [
+    { id: 'test-model-a', label: 'Model A', available: true },
+    { id: 'test-model-b', label: 'Model B', available: false },
+  ],
+}

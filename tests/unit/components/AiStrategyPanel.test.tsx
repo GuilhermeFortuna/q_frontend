@@ -14,6 +14,7 @@ import {
   COMPILED_EMA_CROSS,
   EMA_CROSS_SPEC,
   MOCK_CAPABILITIES,
+  MOCK_MODELS,
   TIMEFRAME_VALIDATION_ERROR,
 } from '../fixtures/strategyBuilderFixtures'
 import { renderWithQueryClient } from '../testUtils'
@@ -95,6 +96,7 @@ beforeEach(() => {
     http.get('*/api/v1/strategies', () => HttpResponse.json(studioStrategyResponse)),
     http.get('*/api/v1/exit-rules', () => HttpResponse.json(mockExitCatalog)),
     http.get('*/api/v1/strategy-builder/capabilities', () => HttpResponse.json(MOCK_CAPABILITIES)),
+    http.get('*/api/v1/strategy-builder/models', () => HttpResponse.json(MOCK_MODELS)),
     http.post('*/api/v1/strategy-builder/interpret', async ({ request }) => {
       interpretRequestBody = (await request.json()) as Record<string, unknown>
       return HttpResponse.json(buildInterpretResponse())
@@ -151,9 +153,31 @@ describe('AiStrategyPanel in StrategyStudio', () => {
     })
     expect(interpretRequestBody).toMatchObject({
       message: 'Create a trend strategy using EMA 20 and EMA 50.',
+      model: 'test-model-a',
       capabilities_version: 'q_capabilities.v1',
     })
     expect(screen.getByTestId('ai-strategy-results')).toBeInTheDocument()
+  })
+
+  it('renders the local model dropdown and sends the selected model', async () => {
+    const user = userEvent.setup()
+    renderWithQueryClient(<StrategyStudioHarness />)
+    await waitForStudioReady()
+
+    const modelSelect = await screen.findByTestId('ai-strategy-model')
+    expect(modelSelect).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Model A' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Model B (not loaded)' })).toBeInTheDocument()
+
+    await user.selectOptions(modelSelect, 'test-model-b')
+    await user.type(screen.getByTestId('ai-strategy-message'), 'Create EMA crossover')
+    await user.click(screen.getByTestId('ai-strategy-submit'))
+
+    await waitFor(() => {
+      expect(interpretRequestBody).toMatchObject({
+        model: 'test-model-b',
+      })
+    })
   })
 
   it('renders assumptions and unsupported requests', async () => {

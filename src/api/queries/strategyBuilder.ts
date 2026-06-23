@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
 import type {
+  AiStrategyModelsResponse,
   AiStrategyResponse,
   CapabilityRegistry,
   CompileStrategySpecResponse,
@@ -11,10 +12,12 @@ import type {
 } from '@/types/strategyBuilder'
 
 const INTERPRET_TIMEOUT_MS = 90_000
+const MODELS_STALE_TIME_MS = 30_000
 
 export const strategyBuilderKeys = {
   all: ['strategy-builder'] as const,
   capabilities: () => [...strategyBuilderKeys.all, 'capabilities'] as const,
+  models: () => [...strategyBuilderKeys.all, 'models'] as const,
 }
 
 export async function fetchStrategyBuilderCapabilities(): Promise<CapabilityRegistry> {
@@ -27,6 +30,20 @@ export function useStrategyBuilderCapabilities(enabled = true) {
     queryKey: strategyBuilderKeys.capabilities(),
     queryFn: fetchStrategyBuilderCapabilities,
     staleTime: Infinity,
+    enabled,
+  })
+}
+
+export async function fetchStrategyBuilderModels(): Promise<AiStrategyModelsResponse> {
+  const { data } = await apiClient.get<AiStrategyModelsResponse>('/api/v1/strategy-builder/models')
+  return data
+}
+
+export function useStrategyBuilderModels(enabled = true) {
+  return useQuery({
+    queryKey: strategyBuilderKeys.models(),
+    queryFn: fetchStrategyBuilderModels,
+    staleTime: MODELS_STALE_TIME_MS,
     enabled,
   })
 }

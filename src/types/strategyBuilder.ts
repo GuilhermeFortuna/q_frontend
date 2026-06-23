@@ -143,10 +143,23 @@ export type ConversationMessage = {
 
 export type StrategyInterpretRequest = {
   message: string
+  model?: string
   conversation?: ConversationMessage[]
   current_spec?: StrategySpec | null
   capabilities_version?: string
   validation_errors?: ValidationErrorDetail[]
+}
+
+export type AiModelOption = {
+  id: string
+  label: string
+  available: boolean
+}
+
+export type AiStrategyModelsResponse = {
+  provider: string
+  default_model: string
+  models: AiModelOption[]
 }
 
 export type AiStrategyResponse = {
