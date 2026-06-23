@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button'
 import { MarketConfigBand } from '@/components/backtests/setup/MarketConfigBand'
 import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
-import { useAiStrategySession } from '@/lib/strategies/useAiStrategySession'
 import type { BacktestRequest } from '@/types/backtesting'
 
 type BacktestConfig = ReturnType<typeof useBacktestConfig>
@@ -12,15 +11,22 @@ type BacktestSetupPanelProps = {
   loading: boolean
   error: string | null
   onSubmit: (request: BacktestRequest) => void
+  onAiWorkflowBlockerChange?: (blocker: string | null) => void
+  aiWorkflowBlocker?: string | null
 }
 
-export function BacktestSetupPanel({ config, loading, error, onSubmit }: BacktestSetupPanelProps) {
-  const aiSession = useAiStrategySession({ config, onRunBacktest: onSubmit })
-
+export function BacktestSetupPanel({
+  config,
+  loading,
+  error,
+  onSubmit,
+  onAiWorkflowBlockerChange,
+  aiWorkflowBlocker = null,
+}: BacktestSetupPanelProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (config.validation.formInvalid) return
-    if (aiSession.workflowBlocker) return
+    if (aiWorkflowBlocker) return
     onSubmit(config.buildRequest())
   }
 
@@ -32,7 +38,11 @@ export function BacktestSetupPanel({ config, loading, error, onSubmit }: Backtes
         validation={config.validation}
       />
 
-      <StrategyStudio config={config} aiSession={aiSession} />
+      <StrategyStudio
+        config={config}
+        onRunBacktest={onSubmit}
+        onAiWorkflowBlockerChange={onAiWorkflowBlockerChange}
+      />
 
       <div className="border-carbon-600/50 shrink-0 border-t pt-4">
         <Button
@@ -41,7 +51,7 @@ export function BacktestSetupPanel({ config, loading, error, onSubmit }: Backtes
             loading ||
             config.validation.formInvalid ||
             config.strategiesLoading ||
-            Boolean(aiSession.workflowBlocker)
+            Boolean(aiWorkflowBlocker)
           }
           variant="brass"
           className="min-w-[12rem]"
@@ -50,12 +60,12 @@ export function BacktestSetupPanel({ config, loading, error, onSubmit }: Backtes
           {loading ? 'Running…' : 'Run Simulation'}
         </Button>
 
-        {aiSession.workflowBlocker ? (
+        {aiWorkflowBlocker ? (
           <div
             className="mt-3 rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100"
             data-testid="run-simulation-ai-blocker"
           >
-            {aiSession.workflowBlocker}
+            {aiWorkflowBlocker}
           </div>
         ) : null}
 

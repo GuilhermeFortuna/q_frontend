@@ -1,14 +1,16 @@
 import { Plus, Save, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 
 import { ExitStrategyCards } from '@/components/backtests/setup/ExitStrategyCards'
-import { AiStrategyPanel } from '@/components/backtests/setup/AiStrategyPanel'
+import { AiStrategyTeaser } from '@/components/backtests/setup/AiStrategyTeaser'
 import { StrategyLibrary } from '@/components/backtests/setup/StrategyLibrary'
 import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
+import { FeatureIslandFallback } from '@/components/islands/FeatureIslandFallback'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import type { AiStrategySession } from '@/lib/strategies/useAiStrategySession'
 import { filterApplicableExitRules } from '@/lib/optimize/exitSearchSpace'
+import type { BacktestRequest } from '@/types/backtesting'
 import type { ExitRuleInfo } from '@/types/strategies'
 import {
   getEnabledExitRules,
@@ -19,11 +21,26 @@ import {
 } from '@/workspaces/strategy/exitRuleSemantics'
 import { EXIT_GROUP_LABELS } from '@/workspaces/strategy/exitWorkbenchGroups'
 
+const LazyAiStrategyIsland = lazy(() =>
+  import('@/components/backtests/setup/AiStrategyIsland').then((module) => ({
+    default: module.AiStrategyIsland,
+  })),
+)
+
+const LazyAiStrategyPanel = lazy(() =>
+  import('@/components/backtests/setup/AiStrategyPanel').then((module) => ({
+    default: module.AiStrategyPanel,
+  })),
+)
+
 type BacktestConfig = ReturnType<typeof useBacktestConfig>
 
 type StrategyStudioProps = {
   config: BacktestConfig
-  aiSession: AiStrategySession
+  /** When provided (tests), renders the AI panel eagerly without lazy loading. */
+  aiSession?: AiStrategySession
+  onRunBacktest?: (request: BacktestRequest) => void
+  onAiWorkflowBlockerChange?: (blocker: string | null) => void
 }
 
 const THESIS_COLLAPSE_THRESHOLD = 160
@@ -37,8 +54,14 @@ function tunableRuleParamSpecs(
   )
 }
 
-export function StrategyStudio({ config, aiSession }: StrategyStudioProps) {
+export function StrategyStudio({
+  config,
+  aiSession,
+  onRunBacktest,
+  onAiWorkflowBlockerChange,
+}: StrategyStudioProps) {
   const [thesisOpen, setThesisOpen] = useState(true)
+  const [aiPanelOpen, setAiPanelOpen] = useState(Boolean(aiSession))
 
   const {
     fields,
@@ -85,15 +108,24 @@ export function StrategyStudio({ config, aiSession }: StrategyStudioProps) {
     setThesisOpen(thesis.length <= THESIS_COLLAPSE_THRESHOLD)
   }, [selectedStrategy?.thesis, fields.strategy])
 
+  useEffect(() => {
+    if (!aiSession) return
+    onAiWorkflowBlockerChange?.(aiSession.workflowBlocker)
+  }, [aiSession, aiSession?.workflowBlocker, onAiWorkflowBlockerChange])
+
   const handleSelectBuiltIn = (name: string) => {
     setters.handleStrategyChange(name)
     authoring.newDraft()
-    aiSession.resetDraft()
+    aiSession?.resetDraft()
   }
 
   const handleSelectCustom = (custom: Parameters<BacktestConfig['authoring']['loadCustom']>[0]) => {
     authoring.loadCustom(custom)
-    aiSession.hydrateFromMetadata(custom.ai_metadata)
+    if (aiSession) {
+      aiSession.hydrateFromMetadata(custom.ai_metadata)
+    } else {
+      setAiPanelOpen(Boolean(custom.ai_metadata))
+    }
   }
 
   const handleToggleExitRule = (rule: ExitRuleInfo) => {
@@ -101,6 +133,41 @@ export function StrategyStudio({ config, aiSession }: StrategyStudioProps) {
   }
 
   const libraryLoading = strategiesLoading || customLoading
+
+  const renderAiSection = () => {
+    if (aiSession) {
+      return (
+        <Suspense
+          fallback={<FeatureIslandFallback variant="inline" label="Loading AI strategy builder" />}
+        >
+          <LazyAiStrategyPanel session={aiSession} />
+        </Suspense>
+      )
+    }
+
+    if (!aiPanelOpen) {
+      return (
+        <AiStrategyTeaser
+          onOpen={() => setAiPanelOpen(true)}
+          hasActiveDraft={Boolean(authoring.loadedCustomName)}
+        />
+      )
+    }
+
+    if (!onRunBacktest) return null
+
+    return (
+      <Suspense
+        fallback={<FeatureIslandFallback variant="inline" label="Loading AI strategy builder" />}
+      >
+        <LazyAiStrategyIsland
+          config={config}
+          onRunBacktest={onRunBacktest}
+          onWorkflowBlockerChange={onAiWorkflowBlockerChange}
+        />
+      </Suspense>
+    )
+  }
 
   return (
     <div
@@ -182,7 +249,7 @@ export function StrategyStudio({ config, aiSession }: StrategyStudioProps) {
           </div>
         ) : null}
 
-        <AiStrategyPanel session={aiSession} />
+        {renderAiSection()}
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
