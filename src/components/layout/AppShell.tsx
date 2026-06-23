@@ -1,16 +1,23 @@
-import { type ReactNode, useState, useEffect } from 'react'
+import { type ReactNode, useState, useEffect, lazy, Suspense } from 'react'
 
-import { QuantBackground } from '@/components/background/QuantBackground'
+import { CinematicScene } from '@/components/cinematic/CinematicScene'
 import { AppDock } from '@/components/dock/AppDock'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
 import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
 import { DigitalClock } from '@/components/layout/DigitalClock'
 import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'
 import { WindowControls } from '@/components/layout/WindowControls'
+import { env } from '@/lib/env'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 
 import { useLocation } from '@tanstack/react-router'
+
+const LazyPerformanceInstrumentation = lazy(() =>
+  import('@/components/performance/PerformanceInstrumentation').then((module) => ({
+    default: module.PerformanceInstrumentation,
+  })),
+)
 
 type AppShellProps = {
   children: ReactNode
@@ -36,14 +43,12 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="relative flex min-h-full flex-col">
-      <QuantBackground />
+      <CinematicScene />
       <PointerSpotlight />
-      <div className="quant-noise-overlay" />
-      <div className="quant-vignette-overlay" />
       {rippleKey > 0 && <div key={rippleKey} className="quant-edge-ripple animate-edge-ripple" />}
       <header
         data-tauri-drag-region
-        className="vt-header border-brass-600/15 bg-espresso-950/75 relative flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] select-none"
+        className="vt-header surface-shell surface-shell--blur border-brass-600/15 relative flex items-center justify-between border-b px-6 py-2.5 select-none"
       >
         <div className="flex items-center gap-2.5" data-tauri-drag-region>
           <img
@@ -77,6 +82,11 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </main>
       <AppDock activeWorkspace={activeWorkspace} />
+      {env.perfHud ? (
+        <Suspense fallback={null}>
+          <LazyPerformanceInstrumentation />
+        </Suspense>
+      ) : null}
     </div>
   )
 }
