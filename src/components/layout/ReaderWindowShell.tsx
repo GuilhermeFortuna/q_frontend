@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 
-import { QuantEmblem } from '@/components/brand/QuantEmblem'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
 import { WindowControls } from '@/components/layout/WindowControls'
 import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
@@ -43,7 +42,6 @@ export function ReaderWindowShell({
         className="vt-header border-brass-600/15 bg-espresso-950/75 relative z-10 flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] select-none"
       >
         <div className="flex items-center gap-2.5" data-tauri-drag-region>
-          <QuantEmblem className="h-10 w-10" />
           <img
             src="/quant-logo-text.png"
             alt="QUANT"

@@ -1,7 +1,6 @@
 import { type ReactNode, useState, useEffect } from 'react'
 
 import { QuantBackground } from '@/components/background/QuantBackground'
-import { QuantEmblem } from '@/components/brand/QuantEmblem'
 import { AppDock } from '@/components/dock/AppDock'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
 import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
@@ -47,7 +46,6 @@ export function AppShell({ children }: AppShellProps) {
         className="vt-header border-brass-600/15 bg-espresso-950/75 relative flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] select-none"
       >
         <div className="flex items-center gap-2.5" data-tauri-drag-region>
-          <QuantEmblem className="h-10 w-10" />
           <img
             src="/quant-logo-text.png"
             alt="QUANT"
