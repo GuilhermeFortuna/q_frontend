@@ -27,7 +27,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: port,
       strictPort: true,
-      host: host ?? false,
+      // Bind dual-stack ('::' accepts both ::1 and 127.0.0.1 when bindv6only=0) so
+      // lazy-loaded chunks resolve whether the client uses the IPv6 or IPv4 loopback.
+      // TAURI_DEV_HOST still wins when set (LAN dev on a physical device).
+      host: host ?? '::',
       hmr: host
         ? {
             protocol: 'ws',
