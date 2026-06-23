@@ -162,16 +162,25 @@ pnpm tauri icon public/quant.svg
 
 ## 🚀 Development Runner Scripts
 
-| Environment          | Command            | Description                                                                            |
-| :------------------- | :----------------- | :------------------------------------------------------------------------------------- |
-| **Web (Browser)**    | `pnpm dev`         | Fast HMR dev server at [http://localhost:1420](http://localhost:1420) (Mocks enabled). |
-| **Desktop (Tauri)**  | `pnpm tauri:dev`   | Compiles the Rust shell and loads the React app inside the local desktop window.       |
-| **Test Suite**       | `pnpm test:run`    | Execute Vitest unit tests in continuous integration mode.                              |
-| **Type Check**       | `pnpm typecheck`   | Run the TypeScript compiler to ensure strict typing correctness.                       |
-| **Formatting**       | `pnpm format`      | Auto-format codebase using Prettier.                                                   |
-| **Linting**          | `pnpm lint`        | Analyze files for code quality issues using ESLint.                                    |
-| **Production Build** | `pnpm build`       | Compiles optimized React assets.                                                       |
-| **Installer Bundle** | `pnpm tauri:build` | Generates a distribution desktop installer (MSI/EXE).                                  |
+| Environment          | Command            | Description                                                                                    |
+| :------------------- | :----------------- | :--------------------------------------------------------------------------------------------- |
+| **Web (Browser)**    | `pnpm dev`         | Fast HMR dev server at [http://localhost:1420](http://localhost:1420) (Mocks enabled).         |
+| **Desktop (Tauri)**  | `pnpm tauri:dev`   | Compiles the Rust shell and loads the React app inside the local desktop window.               |
+| **Test Suite**       | `pnpm test:run`    | Execute Vitest unit tests in continuous integration mode.                                      |
+| **Type Check**       | `pnpm typecheck`   | Run the TypeScript compiler to ensure strict typing correctness.                               |
+| **Formatting**       | `pnpm format`      | Auto-format codebase using Prettier.                                                           |
+| **Linting**          | `pnpm lint`        | Analyze files for code quality issues using ESLint.                                            |
+| **Production Build** | `pnpm build`       | Compiles optimized React assets.                                                               |
+| **Installer Bundle** | `pnpm tauri:build` | Generates a distribution desktop installer (MSI/EXE).                                          |
+| **Perf smoke**       | `pnpm perf:smoke`  | Headless browser route smoke (see [docs/runtime-performance.md](docs/runtime-performance.md)). |
+
+### Runtime performance gates (WO101)
+
+Shell and cinematic PRs must follow [docs/runtime-performance.md](docs/runtime-performance.md):
+
+- Run `pnpm perf:smoke` with `./dev.sh --mocks` or `--web` when touching shell/materials/routing.
+- Run **Tauri/Linux** (`./dev.sh --podman`) for compositor-sensitive changes, or defer with exact manual steps in the PR.
+- Enable `VITE_PERF_HUD=true` to compare FPS, canvas count, query mounts, and long tasks against [budgets](src/lib/performance/budgets.ts).
 
 ---
 
