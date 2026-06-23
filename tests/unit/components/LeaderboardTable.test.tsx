@@ -8,7 +8,25 @@ import { handlers, resetMockStrategySearchDeletes } from '@/mocks/handlers'
 import { mockStrategySearchResults } from '@/mocks/strategySearch'
 import { useAppStore } from '@/store/useAppStore'
 import type { CandidateResult } from '@/types/strategySearch'
+import { VIRTUALIZE_THRESHOLD } from '@/lib/virtualization/constants'
 import { renderWithQueryClient } from '../testUtils'
+
+vi.mock('@tanstack/react-virtual', () => {
+  const useVirtualizer = vi.fn(() => ({
+    getTotalSize: () => 56 * 5,
+    getVirtualItems: () =>
+      Array.from({ length: 5 }, (_, index) => ({
+        key: index,
+        index,
+        start: index * 56,
+        end: (index + 1) * 56,
+        size: 56,
+      })),
+    measureElement: vi.fn(),
+    measure: vi.fn(),
+  }))
+  return { useVirtualizer }
+})
 
 const server = setupServer(...handlers)
 
@@ -147,5 +165,37 @@ describe('LeaderboardTable', () => {
     const pending = useAppStore.getState().pendingBacktestConfig
     expect(pending?.strategy).toBe('MACrossover')
     expect(pending?.strategy_params).toEqual({ short_period: 8, long_period: 21 })
+  })
+
+  it('virtualizes large leaderboards and expands a row without nested tables', async () => {
+    const user = userEvent.setup()
+    const template =
+      results.candidates.find((c) => c.exit_preset_label === 'Chandelier trail') ??
+      results.candidates[0]!
+    const manyCandidates = Array.from({ length: VIRTUALIZE_THRESHOLD + 15 }, (_, index) => ({
+      ...template,
+      candidate_id: `candidate-${index}`,
+      strategy: `Strategy${index}`,
+      rank: index + 1,
+      objective_value: 1.5 - index * 0.01,
+    }))
+    const { container } = renderLeaderboard(manyCandidates)
+
+    expect(container.querySelector('[data-virtualized="true"]')).toBeTruthy()
+    expect(container.querySelectorAll('table')).toHaveLength(1)
+    expect(container.querySelectorAll('tbody table')).toHaveLength(0)
+
+    const bodyRows = container.querySelectorAll('tbody tr')
+    expect(bodyRows.length).toBeLessThan(20)
+    expect(bodyRows.length).toBeGreaterThan(0)
+
+    await user.click(screen.getByRole('button', { name: /Strategy0/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Exit policy')).toBeInTheDocument()
+    })
+
+    const detailCell = screen.getByText('Exit policy').closest('td')!
+    expect(detailCell).toHaveAttribute('colspan', '8')
   })
 })

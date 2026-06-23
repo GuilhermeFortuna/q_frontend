@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 
 import { CollapsedOptimizeResultsTeaser } from '@/components/optimize/focus/CollapsedOptimizeResultsTeaser'
 import { CollapsedOptimizeSetupTeaser } from '@/components/optimize/focus/CollapsedOptimizeSetupTeaser'
@@ -37,8 +37,8 @@ type OptimizeFocusWorkbenchProps = {
 }
 
 /**
- * Focus invariant: exactly one pane is visually expanded; setup and results stay
- * mounted at all times so form state, polling data, and in-pane scroll survive swaps.
+ * Focus invariant: exactly one pane is visually expanded. Inactive panes are
+ * parked (unmounted) while setup fields remain in the parent config hook.
  */
 export function OptimizeFocusWorkbench({
   focus,
@@ -59,24 +59,13 @@ export function OptimizeFocusWorkbench({
   cancelError,
 }: OptimizeFocusWorkbenchProps) {
   const workbenchRef = useRef<HTMLDivElement>(null)
-  const [chartsReady, setChartsReady] = useState(true)
-
-  const handleTransitionEnd = useCallback((event: React.TransitionEvent<HTMLDivElement>) => {
-    if (event.propertyName !== 'grid-template-rows') return
-    if (event.currentTarget !== event.target) return
-    setChartsReady(true)
-    window.dispatchEvent(new Event('resize'))
-  }, [])
 
   const handleFocusChange = useCallback(
     (next: BacktestWorkbenchFocus) => {
       if (next === focus) return
-      if (!reducedMotion) {
-        setChartsReady(false)
-      }
       onFocusChange(next)
     },
-    [focus, onFocusChange, reducedMotion],
+    [focus, onFocusChange],
   )
 
   const handleRunFromTeaser = useCallback(() => {
@@ -103,25 +92,19 @@ export function OptimizeFocusWorkbench({
         reducedMotion && 'focus-workbench--reduce-motion',
       )}
       data-focus={focus}
-      onTransitionEnd={handleTransitionEnd}
     >
       <section className="flex min-h-0 flex-col overflow-hidden" aria-expanded={setupExpanded}>
-        <div
-          className={cn(
-            'flex min-h-0 flex-col overflow-hidden',
-            setupExpanded ? 'flex-1' : 'hidden',
-          )}
-          aria-hidden={!setupExpanded}
-        >
-          <OptimizeSetupPanel
-            config={config}
-            loading={loading}
-            error={error}
-            disabled={disabled}
-            onSubmit={onSubmit}
-          />
-        </div>
-        {!setupExpanded ? (
+        {setupExpanded ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <OptimizeSetupPanel
+              config={config}
+              loading={loading}
+              error={error}
+              disabled={disabled}
+              onSubmit={onSubmit}
+            />
+          </div>
+        ) : (
           <CollapsedOptimizeSetupTeaser
             fields={config.fields}
             strategyInfo={config.selectedStrategy}
@@ -132,56 +115,45 @@ export function OptimizeFocusWorkbench({
             onExpand={() => handleFocusChange('setup')}
             onRun={handleRunFromTeaser}
           />
-        ) : null}
+        )}
       </section>
 
       <section
         className="relative flex min-h-0 flex-col overflow-hidden"
         aria-expanded={resultsExpanded}
       >
-        <div
-          className={cn(
-            'flex min-h-0 flex-col overflow-hidden',
-            resultsExpanded ? 'flex-1' : 'hidden',
-          )}
-          aria-hidden={!resultsExpanded}
-        >
-          {isRunning && status ? (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <OptimizationProgress
-                status={status}
-                onCancel={onCancel}
-                cancelling={cancelling}
-                cancelError={cancelError}
-              />
-            </div>
-          ) : status?.status === 'error' ? (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="max-w-md rounded-md border border-rose-500/20 bg-rose-500/10 p-4 text-sm break-words text-rose-400">
-                Optimization failed: {status.error ?? 'unknown error'}
+        {resultsExpanded ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {isRunning && status ? (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <OptimizationProgress
+                  status={status}
+                  onCancel={onCancel}
+                  cancelling={cancelling}
+                  cancelError={cancelError}
+                />
               </div>
-            </div>
-          ) : hasResults ? (
-            <div
-              className={cn(
-                'flex min-h-0 flex-1 flex-col overflow-hidden',
-                !chartsReady && 'invisible',
-              )}
-            >
-              <OptimizationResultsTabs
-                results={results!}
-                backtest={backtest!}
-                statusLabel={statusLabel}
-              />
-            </div>
-          ) : (
-            <div className="border-carbon-600/60 flex flex-1 items-center justify-center rounded-xl border-2 border-dashed">
-              <p className="text-silver-400 text-sm">Run an optimization to see results here.</p>
-            </div>
-          )}
-        </div>
-
-        {!resultsExpanded ? (
+            ) : status?.status === 'error' ? (
+              <div className="flex flex-1 items-center justify-center">
+                <div className="max-w-md rounded-md border border-rose-500/20 bg-rose-500/10 p-4 text-sm break-words text-rose-400">
+                  Optimization failed: {status.error ?? 'unknown error'}
+                </div>
+              </div>
+            ) : hasResults ? (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <OptimizationResultsTabs
+                  results={results!}
+                  backtest={backtest!}
+                  statusLabel={statusLabel}
+                />
+              </div>
+            ) : (
+              <div className="border-carbon-600/60 flex flex-1 items-center justify-center rounded-xl border-2 border-dashed">
+                <p className="text-silver-400 text-sm">Run an optimization to see results here.</p>
+              </div>
+            )}
+          </div>
+        ) : (
           <CollapsedOptimizeResultsTeaser
             isRunning={isRunning}
             hasResults={hasResults}
@@ -190,7 +162,7 @@ export function OptimizeFocusWorkbench({
             onExpand={() => handleFocusChange('results')}
             onOpenHistory={onOpenHistory}
           />
-        ) : null}
+        )}
       </section>
     </div>
   )

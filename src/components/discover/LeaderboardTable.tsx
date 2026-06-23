@@ -1,12 +1,18 @@
 import { useNavigate } from '@tanstack/react-router'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { CandidateDetailPanel } from '@/components/discover/CandidateDetailPanel'
 import { ComplexityLine } from '@/components/discover/GenomeViewer'
+import { VirtualTableScroller } from '@/components/shared/VirtualTableBody'
+import type { VirtualRowMeta } from '@/components/shared/virtualRowMeta'
 import { Button } from '@/components/ui/button'
 import { gateFlagsLabel } from '@/lib/discover/candidateMetrics'
 import { candidateExitDisplayLabel } from '@/lib/discover/exitInsights'
+import {
+  sortLeaderboardCandidates,
+  type LeaderboardSortKey,
+} from '@/lib/discover/sortLeaderboardCandidates'
 import {
   buildBacktestRequestFromCandidate,
   buildOptimizationConfigFromCandidate,
@@ -26,7 +32,7 @@ import {
   maxCandidateGeneration,
 } from '@/types/strategySearch'
 
-type SortKey = 'rank' | 'strategy' | 'objective' | 'efficiency' | 'trades'
+type SortKey = LeaderboardSortKey
 
 type LeaderboardTableProps = {
   runId: string
@@ -113,42 +119,10 @@ export function LeaderboardTable({
     return candidates.filter((c) => c.generation === gen)
   }, [candidates, generationFilter, isGenetic])
 
-  const sortedCandidates = useMemo(() => {
-    const passing = filteredCandidates.filter((c) => c.passed_gates && c.rank != null)
-    const trailing = filteredCandidates.filter((c) => !c.passed_gates || c.rank == null)
-
-    const sortFn = (list: CandidateResult[]) => {
-      const sorted = [...list]
-      sorted.sort((a, b) => {
-        let cmp = 0
-        switch (sortKey) {
-          case 'rank':
-            cmp = (a.rank ?? 999) - (b.rank ?? 999)
-            break
-          case 'strategy':
-            cmp = a.strategy.localeCompare(b.strategy)
-            break
-          case 'objective':
-            cmp = (a.objective_value ?? -Infinity) - (b.objective_value ?? -Infinity)
-            break
-          case 'efficiency':
-            cmp = (a.efficiency ?? -Infinity) - (b.efficiency ?? -Infinity)
-            break
-          case 'trades':
-            cmp = (candidateTrades(a) ?? -1) - (candidateTrades(b) ?? -1)
-            break
-          default: {
-            const exhaustive: never = sortKey
-            return exhaustive
-          }
-        }
-        return sortAsc ? cmp : -cmp
-      })
-      return sorted
-    }
-
-    return [...sortFn(passing), ...sortFn(trailing)]
-  }, [filteredCandidates, sortKey, sortAsc])
+  const sortedCandidates = useMemo(
+    () => sortLeaderboardCandidates(filteredCandidates, sortKey, sortAsc),
+    [filteredCandidates, sortKey, sortAsc],
+  )
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc((value) => !value)
@@ -171,6 +145,121 @@ export function LeaderboardTable({
 
   const objectiveHeader = `OOS ${objectiveMetricLabel(objectiveMode)} (out-of-sample)`
   const showGenerationFilter = isGenetic && generationOptions.length > 0
+  const columnCount = showGenerationFilter ? 9 : 8
+
+  const renderCandidateRows = (candidate: CandidateResult, meta?: VirtualRowMeta) => {
+    const expanded = expandedId === candidate.candidate_id
+    const dimmed = isDeemphasized(candidate)
+    const canPromote = candidate.status === 'completed' && candidate.best_params != null
+    const exitDisplay = candidateExitDisplayLabel(candidate)
+
+    return (
+      <>
+        <tr
+          ref={meta?.measureRef}
+          data-index={meta?.virtualIndex}
+          className={cn(
+            'border-carbon-600/30 border-t',
+            dimmed ? 'text-silver-500 opacity-70' : 'text-silver-100',
+          )}
+        >
+          <td className="px-3 py-2 font-mono tabular-nums">{candidate.rank ?? '—'}</td>
+          <td className="px-3 py-2">
+            <button
+              type="button"
+              className="hover:text-brass-400 flex items-start gap-1 text-left font-medium transition-colors"
+              onClick={() => setExpandedId(expanded ? null : candidate.candidate_id)}
+            >
+              {expanded ? (
+                <ChevronDown className="mt-0.5 h-4 w-4 shrink-0" />
+              ) : (
+                <ChevronRight className="mt-0.5 h-4 w-4 shrink-0" />
+              )}
+              <span>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  {candidate.strategy}
+                  {isGeneticCandidate(candidate) ? (
+                    <span className="border-brass-500/30 text-brass-400 rounded-full border px-1.5 py-0 text-[9px] font-semibold tracking-wide uppercase">
+                      Evolved
+                    </span>
+                  ) : null}
+                </span>
+                <ComplexityLine
+                  genomeNodeCount={candidate.genome_node_count}
+                  genome={candidate.genome}
+                />
+              </span>
+            </button>
+          </td>
+          <td
+            className={cn(
+              'px-3 py-2 text-xs',
+              exitDisplay.explicit ? 'text-silver-300' : 'text-silver-500',
+            )}
+            title={
+              exitDisplay.explicit
+                ? undefined
+                : "Closes on the strategy's own signal — no stop/target overlay."
+            }
+          >
+            {exitDisplay.label}
+          </td>
+          <td className="px-3 py-2 font-mono tabular-nums">
+            {formatObjectiveMetricValue(candidate.objective_value, objectiveMode)}
+          </td>
+          <td className="px-3 py-2 font-mono tabular-nums">
+            {formatEfficiencyRatio(candidate.efficiency)}
+          </td>
+          <td className="px-3 py-2 font-mono tabular-nums">{candidateTrades(candidate) ?? '—'}</td>
+          {showGenerationFilter ? (
+            <td className="text-silver-400 px-3 py-2 font-mono text-xs tabular-nums">
+              {candidate.generation ?? '—'}
+            </td>
+          ) : null}
+          <td className="px-3 py-2">
+            <GateBadge candidate={candidate} />
+          </td>
+          <td className="px-3 py-2">
+            <div className="flex flex-wrap gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-xs"
+                disabled={!canPromote}
+                onClick={() => handlePromoteBacktest(candidate)}
+              >
+                Send to Backtest
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-xs"
+                disabled={!canPromote || !searchConfig}
+                onClick={() => handlePromoteOptimize(candidate)}
+              >
+                Send to Optimizer
+              </Button>
+            </div>
+          </td>
+        </tr>
+        {expanded ? (
+          <tr className="border-carbon-600/30 border-t">
+            <td colSpan={columnCount} className="bg-carbon-950/40 px-4 py-4">
+              <CandidateDetailPanel
+                runId={runId}
+                candidate={candidate}
+                backtest={backtest}
+                objectiveMode={objectiveMode}
+                searchConfig={searchConfig}
+              />
+            </td>
+          </tr>
+        ) : null}
+      </>
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -196,13 +285,40 @@ export function LeaderboardTable({
       ) : null}
 
       <div className="border-carbon-600/40 overflow-x-auto rounded-lg border">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-carbon-950/60 text-silver-400 text-xs tracking-wide uppercase">
+        <VirtualTableScroller
+          items={sortedCandidates}
+          colSpan={columnCount}
+          rowHeight={56}
+          remeasureKey={expandedId}
+          estimateSize={(index) =>
+            expandedId === sortedCandidates[index]?.candidate_id ? 360 : 56
+          }
+          getItemKey={(index) => sortedCandidates[index]!.candidate_id}
+          className="max-h-[min(70vh,640px)]"
+          tableClassName="min-w-[720px] text-sm"
+          theadClassName="bg-carbon-950/60 text-xs tracking-wide uppercase"
+          header={
             <tr>
               {(
                 [
                   ['rank', 'Rank'],
                   ['strategy', 'Entry'],
+                ] as const
+              ).map(([key, label]) => (
+                <th key={key} className="px-3 py-2 font-semibold">
+                  <button
+                    type="button"
+                    className="hover:text-brass-400 transition-colors"
+                    onClick={() => toggleSort(key)}
+                  >
+                    {label}
+                    {sortKey === key ? (sortAsc ? ' ↑' : ' ↓') : ''}
+                  </button>
+                </th>
+              ))}
+              <th className="px-3 py-2 font-semibold">Exit</th>
+              {(
+                [
                   ['objective', objectiveHeader],
                   ['efficiency', 'Efficiency'],
                   ['trades', 'OOS trades'],
@@ -219,131 +335,13 @@ export function LeaderboardTable({
                   </button>
                 </th>
               ))}
-              <th className="px-3 py-2 font-semibold">Exit</th>
               {showGenerationFilter ? <th className="px-3 py-2 font-semibold">Gen</th> : null}
               <th className="px-3 py-2 font-semibold">Gate</th>
               <th className="px-3 py-2 font-semibold">Actions</th>
             </tr>
-          </thead>
-          <tbody>
-            {sortedCandidates.map((candidate) => {
-              const expanded = expandedId === candidate.candidate_id
-              const dimmed = isDeemphasized(candidate)
-              const canPromote = candidate.status === 'completed' && candidate.best_params != null
-              const exitDisplay = candidateExitDisplayLabel(candidate)
-
-              return (
-                <Fragment key={candidate.candidate_id}>
-                  <tr
-                    className={cn(
-                      'border-carbon-600/30 border-t',
-                      dimmed ? 'text-silver-500 opacity-70' : 'text-silver-100',
-                    )}
-                  >
-                    <td className="px-3 py-2 font-mono tabular-nums">{candidate.rank ?? '—'}</td>
-                    <td className="px-3 py-2">
-                      <button
-                        type="button"
-                        className="hover:text-brass-400 flex items-start gap-1 text-left font-medium transition-colors"
-                        onClick={() => setExpandedId(expanded ? null : candidate.candidate_id)}
-                      >
-                        {expanded ? (
-                          <ChevronDown className="mt-0.5 h-4 w-4 shrink-0" />
-                        ) : (
-                          <ChevronRight className="mt-0.5 h-4 w-4 shrink-0" />
-                        )}
-                        <span>
-                          <span className="flex flex-wrap items-center gap-1.5">
-                            {candidate.strategy}
-                            {isGeneticCandidate(candidate) ? (
-                              <span className="border-brass-500/30 text-brass-400 rounded-full border px-1.5 py-0 text-[9px] font-semibold tracking-wide uppercase">
-                                Evolved
-                              </span>
-                            ) : null}
-                          </span>
-                          <ComplexityLine
-                            genomeNodeCount={candidate.genome_node_count}
-                            genome={candidate.genome}
-                          />
-                        </span>
-                      </button>
-                    </td>
-                    <td
-                      className={cn(
-                        'px-3 py-2 text-xs',
-                        exitDisplay.explicit ? 'text-silver-300' : 'text-silver-500',
-                      )}
-                      title={
-                        exitDisplay.explicit
-                          ? undefined
-                          : "Closes on the strategy's own signal — no stop/target overlay."
-                      }
-                    >
-                      {exitDisplay.label}
-                    </td>
-                    <td className="px-3 py-2 font-mono tabular-nums">
-                      {formatObjectiveMetricValue(candidate.objective_value, objectiveMode)}
-                    </td>
-                    <td className="px-3 py-2 font-mono tabular-nums">
-                      {formatEfficiencyRatio(candidate.efficiency)}
-                    </td>
-                    <td className="px-3 py-2 font-mono tabular-nums">
-                      {candidateTrades(candidate) ?? '—'}
-                    </td>
-                    {showGenerationFilter ? (
-                      <td className="text-silver-400 px-3 py-2 font-mono text-xs tabular-nums">
-                        {candidate.generation ?? '—'}
-                      </td>
-                    ) : null}
-                    <td className="px-3 py-2">
-                      <GateBadge candidate={candidate} />
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-wrap gap-1">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs"
-                          disabled={!canPromote}
-                          onClick={() => handlePromoteBacktest(candidate)}
-                        >
-                          Send to Backtest
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs"
-                          disabled={!canPromote || !searchConfig}
-                          onClick={() => handlePromoteOptimize(candidate)}
-                        >
-                          Send to Optimizer
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                  {expanded ? (
-                    <tr className="border-carbon-600/30 border-t">
-                      <td
-                        colSpan={showGenerationFilter ? 9 : 8}
-                        className="bg-carbon-950/40 px-4 py-4"
-                      >
-                        <CandidateDetailPanel
-                          runId={runId}
-                          candidate={candidate}
-                          backtest={backtest}
-                          objectiveMode={objectiveMode}
-                          searchConfig={searchConfig}
-                        />
-                      </td>
-                    </tr>
-                  ) : null}
-                </Fragment>
-              )
-            })}
-          </tbody>
-        </table>
+          }
+          renderRow={(candidate, _index, meta) => renderCandidateRows(candidate, meta)}
+        />
       </div>
     </div>
   )

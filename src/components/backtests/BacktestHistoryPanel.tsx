@@ -8,6 +8,7 @@ import {
   useBulkDeleteBacktests,
   useSaveBacktestRun,
 } from '@/api/queries/backtests'
+import { VirtualListScroller } from '@/components/shared/VirtualListScroller'
 import {
   BacktestHistoryFilters,
   type BacktestHistoryTab,
@@ -310,42 +311,47 @@ export function BacktestHistoryPanel({
             onSortChange={setSort}
           />
 
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-            {historyQuery.isLoading && (
-              <div className="text-silver-400 flex items-center justify-center gap-2 py-8 text-sm">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading history…
-              </div>
-            )}
+          {historyQuery.isLoading && (
+            <div className="text-silver-400 flex items-center justify-center gap-2 px-3 py-8 text-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading history…
+            </div>
+          )}
 
-            {historyQuery.isError && (
-              <p className="px-1 py-4 text-sm text-rose-400">Failed to load backtest history.</p>
-            )}
+          {historyQuery.isError && (
+            <p className="px-4 py-4 text-sm text-rose-400">Failed to load backtest history.</p>
+          )}
 
-            {!historyQuery.isLoading && runs.length === 0 && (
-              <p className="text-silver-400 px-1 py-8 text-center text-sm">
-                {tab === 'saved'
-                  ? 'No saved runs yet. Star a run to bookmark it.'
-                  : 'No runs match these filters. Run a simulation to build history.'}
-              </p>
-            )}
+          {!historyQuery.isLoading && runs.length === 0 && (
+            <p className="text-silver-400 px-4 py-8 text-center text-sm">
+              {tab === 'saved'
+                ? 'No saved runs yet. Star a run to bookmark it.'
+                : 'No runs match these filters. Run a simulation to build history.'}
+            </p>
+          )}
 
-            {runs.map((run) => (
-              <RunListItem
-                key={run.run_id}
-                run={run}
-                selected={selectedRunId === run.run_id}
-                selectionMode={selection.selectionMode}
-                checked={selection.isSelected(run.run_id)}
-                onSelect={() => onSelectRun(run.run_id)}
-                onToggleCheck={() => selection.toggle(run.run_id)}
-                onToggleSaved={() =>
-                  saveBacktest.mutate({ runId: run.run_id, isSaved: !run.is_saved })
-                }
-                saving={saveBacktest.isPending && saveBacktest.variables?.runId === run.run_id}
-              />
-            ))}
-          </div>
+          {!historyQuery.isLoading && runs.length > 0 ? (
+            <VirtualListScroller
+              className="min-h-0 flex-1 p-3"
+              items={runs}
+              rowHeight={108}
+              getItemKey={(index) => runs[index]!.run_id}
+              renderItem={(run) => (
+                <RunListItem
+                  run={run}
+                  selected={selectedRunId === run.run_id}
+                  selectionMode={selection.selectionMode}
+                  checked={selection.isSelected(run.run_id)}
+                  onSelect={() => onSelectRun(run.run_id)}
+                  onToggleCheck={() => selection.toggle(run.run_id)}
+                  onToggleSaved={() =>
+                    saveBacktest.mutate({ runId: run.run_id, isSaved: !run.is_saved })
+                  }
+                  saving={saveBacktest.isPending && saveBacktest.variables?.runId === run.run_id}
+                />
+              )}
+            />
+          ) : null}
 
           {historyQuery.hasNextPage ? (
             <div className="border-carbon-600/60 shrink-0 border-t p-3">

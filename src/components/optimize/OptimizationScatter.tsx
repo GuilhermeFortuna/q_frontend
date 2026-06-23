@@ -1,4 +1,4 @@
-import { type ReactElement } from 'react'
+import { type ReactElement, useMemo } from 'react'
 import {
   CartesianGrid,
   Cell,
@@ -11,10 +11,12 @@ import {
 } from 'recharts'
 
 import { CHART_COLORS } from '@/components/backtests/chartUtils'
+import {
+  prepareOptimizationScatterData,
+  type ScatterPoint,
+} from '@/lib/optimize/prepareScatterData'
 import { cn } from '@/lib/utils'
 import type { OptimizationResults } from '@/types/optimization'
-
-type ScatterPoint = { x: number; y: number; n: number; fill: string }
 
 const CHART_MIN_HEIGHT_PX = 280
 
@@ -31,94 +33,25 @@ export function OptimizationScatter({
   onSelectTrial,
   className,
 }: OptimizationScatterProps) {
-  const completed = results.trials.filter((t) => t.values && t.values.length > 0)
-
-  if (completed.length === 0) {
-    return null
-  }
-
   const bestNumber = results.best_trial?.number
   const highlightNumber = selectedTrialNumber ?? bestNumber
 
-  if (results.is_multi_objective) {
-    const paretoNumbers = new Set(results.pareto_trials.map((t) => t.number))
-    const points = completed.map((trial) => {
-      const onPareto = paretoNumbers.has(trial.number)
-      const fill =
-        trial.number === highlightNumber
-          ? '#ffd700'
-          : trial.number === bestNumber
-            ? CHART_COLORS.equity
-            : onPareto
-              ? CHART_COLORS.equity
-              : CHART_COLORS.reference
-      return toPoint(trial.values![0], trial.values![1], trial.number, fill)
-    })
+  const scatterData = useMemo(
+    () => prepareOptimizationScatterData(results, highlightNumber),
+    [results, highlightNumber],
+  )
 
-    return (
-      <ChartFrame
-        title="Pareto Front — Return vs Drawdown"
-        interactive={Boolean(onSelectTrial)}
-        className={className}
-        renderChart={() => (
-          <ScatterChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
-            <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-            <XAxis
-              type="number"
-              dataKey="x"
-              name="Return"
-              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-              tickLine={false}
-              axisLine={{ stroke: CHART_COLORS.grid }}
-            />
-            <YAxis
-              type="number"
-              dataKey="y"
-              name="Drawdown"
-              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-              width={56}
-            />
-            <Tooltip {...tooltipProps} />
-            <Scatter
-              data={points}
-              fill={CHART_COLORS.reference}
-              shape="circle"
-              cursor={onSelectTrial ? 'pointer' : undefined}
-              onClick={
-                onSelectTrial
-                  ? (entry) => {
-                      const trialNumber = readTrialNumber(entry)
-                      if (trialNumber == null) return
-                      onSelectTrial(trialNumber === selectedTrialNumber ? null : trialNumber)
-                    }
-                  : undefined
-              }
-            >
-              {points.map((point) => (
-                <Cell key={point.n} fill={point.fill} />
-              ))}
-            </Scatter>
-          </ScatterChart>
-        )}
-      />
-    )
+  if (scatterData.mode === 'empty') {
+    return null
   }
 
-  const points = completed.map((trial) => {
-    const fill =
-      trial.number === highlightNumber
-        ? '#ffd700'
-        : trial.number === bestNumber
-          ? CHART_COLORS.equity
-          : CHART_COLORS.reference
-    return toPoint(trial.number, trial.values![0], trial.number, fill)
-  })
+  const { points, xLabel, yLabel } = scatterData
+  const title =
+    scatterData.mode === 'pareto' ? 'Pareto Front — Return vs Drawdown' : 'Optimization History'
 
   return (
     <ChartFrame
-      title="Optimization History"
+      title={title}
       interactive={Boolean(onSelectTrial)}
       className={className}
       renderChart={() => (
@@ -127,7 +60,7 @@ export function OptimizationScatter({
           <XAxis
             type="number"
             dataKey="x"
-            name="Trial"
+            name={xLabel}
             tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
             tickLine={false}
             axisLine={{ stroke: CHART_COLORS.grid }}
@@ -135,11 +68,11 @@ export function OptimizationScatter({
           <YAxis
             type="number"
             dataKey="y"
-            name="Objective"
+            name={yLabel}
             tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
             tickLine={false}
             axisLine={false}
-            width={72}
+            width={scatterData.mode === 'pareto' ? 56 : 72}
           />
           <Tooltip {...tooltipProps} />
           <Scatter
@@ -165,10 +98,6 @@ export function OptimizationScatter({
       )}
     />
   )
-}
-
-function toPoint(x: number, y: number, trialNumber: number, fill: string): ScatterPoint {
-  return { x, y, n: trialNumber, fill }
 }
 
 function readTrialNumber(entry: unknown): number | undefined {
