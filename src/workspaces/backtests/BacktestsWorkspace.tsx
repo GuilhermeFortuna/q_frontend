@@ -1,18 +1,20 @@
 import axios from 'axios'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useBacktestJob } from '@/api/queries/backtests'
 import { BacktestFocusWorkbench } from '@/components/backtests/focus/BacktestFocusWorkbench'
 import { BacktestHistoryPanel } from '@/components/backtests/BacktestHistoryPanel'
 import { RunComparisonView } from '@/components/backtests/RunComparisonView'
+import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
-import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/performance'
+import { useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
+import { useBacktestPerformanceData } from '@/lib/backtesting/useBacktestPerformanceData'
 import { cn } from '@/lib/utils'
 import type { BacktestWorkflowMode, JobPanelTab } from '@/store/slices/jobSessionsSlice'
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
-import { OptimizeWorkflow } from '@/workspaces/backtests/OptimizeWorkflow'
+import { LazyOptimizeWorkflow } from '@/app/lazyWorkspaces'
 
 const WORKFLOW_MODES: { id: BacktestWorkflowMode; label: string }[] = [
   { id: 'backtest', label: 'Simulation' },
@@ -31,7 +33,9 @@ type BacktestsWorkspaceProps = {
 export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
   const runBacktest = useBacktestJob()
   const backtestConfig = useBacktestConfig()
+  const optimizeConfig = useOptimizeConfig()
   const reducedMotion = usePrefersReducedMotion()
+  const [aiWorkflowBlocker, setAiWorkflowBlocker] = useState<string | null>(null)
 
   const {
     workflowMode: storedWorkflowMode,
@@ -63,15 +67,11 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
     patchBacktestSession({ rightPanelTab: tab })
   }
 
-  const equityCurve = useMemo(() => {
-    if (!runBacktest.data) return []
-    return buildEquityCurve(runBacktest.data.trades, lastCapital)
-  }, [runBacktest.data, lastCapital])
-
-  const monthlyStats = useMemo(() => {
-    if (!runBacktest.data) return []
-    return aggregateMonthlyStats(runBacktest.data.trades)
-  }, [runBacktest.data])
+  const {
+    equityCurve,
+    monthlyStats,
+    computing: performanceComputing,
+  } = useBacktestPerformanceData(runBacktest.data?.trades, lastCapital)
 
   const handleSubmit = (request: BacktestRequest) => {
     patchBacktestSession({
@@ -94,7 +94,7 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
 
   return (
     <div className="text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col overflow-hidden">
-      <div className="quant-panel flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
+      <div className="surface-panel flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
         <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
           {WORKFLOW_MODES.map((mode) => (
             <button
@@ -131,51 +131,58 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
           ))}
         </div>
 
-        <div
-          data-testid="optimize-workflow"
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
-          style={{ display: workflowMode === 'optimize' ? 'flex' : 'none' }}
-        >
-          <OptimizeWorkflow />
-        </div>
+        {workflowMode === 'optimize' ? (
+          <div
+            data-testid="optimize-workflow"
+            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          >
+            <LazyRouteBoundary label="Loading optimization">
+              <LazyOptimizeWorkflow config={optimizeConfig} />
+            </LazyRouteBoundary>
+          </div>
+        ) : null}
 
-        <div
-          data-testid="backtest-workflow"
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
-          style={{ display: workflowMode === 'backtest' ? 'flex' : 'none' }}
-        >
-          {backtestRightPanelTab === 'history' ? (
-            comparisonRuns ? (
-              <RunComparisonView
-                runs={comparisonRuns}
-                onClose={() => patchBacktestSession({ comparisonRuns: null })}
-              />
+        {workflowMode === 'backtest' ? (
+          <div
+            data-testid="backtest-workflow"
+            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          >
+            {backtestRightPanelTab === 'history' ? (
+              comparisonRuns ? (
+                <RunComparisonView
+                  runs={comparisonRuns}
+                  onClose={() => patchBacktestSession({ comparisonRuns: null })}
+                />
+              ) : (
+                <BacktestHistoryPanel
+                  selectedRunId={selectedHistoryRunId}
+                  onSelectRun={(id) => patchBacktestSession({ selectedHistoryRunId: id })}
+                  onReRun={handleSubmit}
+                  onCompare={(runs) => patchBacktestSession({ comparisonRuns: runs })}
+                />
+              )
             ) : (
-              <BacktestHistoryPanel
-                selectedRunId={selectedHistoryRunId}
-                onSelectRun={(id) => patchBacktestSession({ selectedHistoryRunId: id })}
-                onReRun={handleSubmit}
-                onCompare={(runs) => patchBacktestSession({ comparisonRuns: runs })}
+              <BacktestFocusWorkbench
+                focus={focus}
+                onFocusChange={(f) => patchBacktestSession({ focus: f })}
+                onOpenHistory={() => patchBacktestSession({ rightPanelTab: 'history' })}
+                reducedMotion={reducedMotion}
+                config={backtestConfig}
+                loading={runBacktest.isPending}
+                error={errorMessage}
+                onSubmit={handleSubmit}
+                results={runBacktest.data}
+                lastRequest={lastRequest}
+                initialCapital={lastCapital}
+                equityCurve={equityCurve}
+                monthlyStats={monthlyStats}
+                performanceComputing={performanceComputing}
+                aiWorkflowBlocker={aiWorkflowBlocker}
+                onAiWorkflowBlockerChange={setAiWorkflowBlocker}
               />
-            )
-          ) : (
-            <BacktestFocusWorkbench
-              focus={focus}
-              onFocusChange={(f) => patchBacktestSession({ focus: f })}
-              onOpenHistory={() => patchBacktestSession({ rightPanelTab: 'history' })}
-              reducedMotion={reducedMotion}
-              config={backtestConfig}
-              loading={runBacktest.isPending}
-              error={errorMessage}
-              onSubmit={handleSubmit}
-              results={runBacktest.data}
-              lastRequest={lastRequest}
-              initialCapital={lastCapital}
-              equityCurve={equityCurve}
-              monthlyStats={monthlyStats}
-            />
-          )}
-        </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   )

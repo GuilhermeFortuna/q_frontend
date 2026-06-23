@@ -9,6 +9,7 @@ import type {
   CandidateResult,
 } from '@/types/strategySearch'
 import { formatObjectiveMetricValue, objectiveMetricLabel } from '@/lib/walkforward/objectiveMetric'
+import { registerFeature3DSurface } from '@/lib/cinematic/feature3DRegistry'
 
 // WebGL Error Boundary
 class CanvasErrorBoundary extends React.Component<
@@ -478,6 +479,8 @@ export function LiveSwarmVisualizer3D({
   selectedTrialId = null,
   onSelectTrialId,
 }: LiveSwarmVisualizer3DProps) {
+  useEffect(() => registerFeature3DSurface('discover-swarm'), [])
+
   const [resetCounter, setResetCounter] = useState(0)
   const [zMetric, setZMetric] = useState<ZAxisMetric>('complexity')
 
@@ -505,7 +508,7 @@ export function LiveSwarmVisualizer3D({
   const genNum = status?.generation ?? 0
 
   return (
-    <div className="border-carbon-800 bg-carbon-950/40 relative flex h-[480px] w-full flex-col overflow-hidden rounded-xl border backdrop-blur-md md:flex-row">
+    <div className="surface-panel border-carbon-800 relative flex h-[480px] w-full flex-col overflow-hidden rounded-xl border md:flex-row">
       <div className="from-carbon-950 to-carbon-900 relative flex flex-1 flex-col overflow-hidden bg-gradient-to-b">
         <CanvasErrorBoundary
           fallback={
@@ -584,7 +587,7 @@ export function LiveSwarmVisualizer3D({
         </CanvasErrorBoundary>
 
         {isRunning && (
-          <div className="border-carbon-800 bg-carbon-950/80 absolute top-4 left-4 z-10 flex flex-col gap-1 rounded-lg border px-3 py-2 text-xs backdrop-blur-md">
+          <div className="surface-float surface-float--blur absolute top-4 left-4 z-10 flex flex-col gap-1 rounded-lg px-3 py-2 text-xs">
             <span className="text-brass-400 flex items-center gap-1.5 font-bold tracking-wider uppercase">
               <span className="live-status-dot h-1.5 w-1.5 rounded-full bg-emerald-400" />
               Live GA Swarm
@@ -599,7 +602,7 @@ export function LiveSwarmVisualizer3D({
         )}
 
         {!isRunning && activeDetailCandidate && (
-          <div className="border-carbon-800 bg-carbon-950/85 absolute top-4 right-4 z-10 w-64 rounded-lg border p-3.5 text-xs shadow-xl backdrop-blur-md">
+          <div className="surface-float surface-float--blur absolute top-4 right-4 z-10 w-64 rounded-lg p-3.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-silver-100 truncate font-bold">
                 {activeDetailCandidate.strategy.replace(/Strategy$/, '')}
@@ -654,7 +657,7 @@ export function LiveSwarmVisualizer3D({
         )}
 
         {!isRunning && !activeDetailCandidate && (
-          <div className="border-carbon-800 bg-carbon-950/80 text-silver-400 absolute top-4 right-4 z-10 flex max-w-[220px] gap-1.5 rounded-lg border p-3 text-[11px] shadow backdrop-blur-md">
+          <div className="surface-float surface-float--blur text-silver-400 absolute top-4 right-4 z-10 flex max-w-[220px] gap-1.5 rounded-lg p-3 text-[11px]">
             <HelpCircle className="text-silver-500 mt-0.5 h-4 w-4 shrink-0" />
             <span>
               Hover or click on candidate nodes to trace lineage, examine performance details, or
@@ -663,7 +666,7 @@ export function LiveSwarmVisualizer3D({
           </div>
         )}
 
-        <div className="bg-carbon-950/85 text-silver-400 border-carbon-800 absolute bottom-4 left-4 z-10 flex flex-wrap gap-x-4 gap-y-1.5 rounded-lg border px-3 py-2 text-[10px] shadow backdrop-blur-sm">
+        <div className="surface-float text-silver-400 border-carbon-800 absolute bottom-4 left-4 z-10 flex flex-wrap gap-x-4 gap-y-1.5 rounded-lg px-3 py-2 text-[10px]">
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full bg-[#6f7785]" />
             <span>Low Fitness</span>

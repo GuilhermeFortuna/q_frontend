@@ -6,15 +6,18 @@ import {
   redirect,
 } from '@tanstack/react-router'
 
+import {
+  LazyBacktestsWorkspace,
+  LazyDiscoverWorkspace,
+  LazyLauncherWorkspace,
+  LazyMarketDataWorkspace,
+  LazyNewsReaderWorkspace,
+  LazyStorageWorkspace,
+  LazySystemWorkspace,
+  LazyWalkForwardWorkspace,
+} from '@/app/lazyWorkspaces'
+import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
 import { AppShell } from '@/components/layout/AppShell'
-import { BacktestsWorkspace } from '@/workspaces/backtests/BacktestsWorkspace'
-import { DiscoverWorkspace } from '@/workspaces/discover/DiscoverWorkspace'
-import { LauncherWorkspace } from '@/workspaces/launcher/LauncherWorkspace'
-import { MarketDataWorkspace } from '@/workspaces/market-data/MarketDataWorkspace'
-import { NewsReaderWorkspace } from '@/workspaces/news/NewsReaderWorkspace'
-import { StorageWorkspace } from '@/workspaces/storage/StorageWorkspace'
-import { SystemWorkspace } from '@/workspaces/system/SystemWorkspace'
-import { WalkForwardWorkspace } from '@/workspaces/walkforward/WalkForwardWorkspace'
 import { useAppStore } from '@/store/useAppStore'
 import type { WorkspaceId } from '@/types/api'
 
@@ -62,28 +65,44 @@ const indexRoute = createRoute({
     }
     syncWorkspace('launcher')
   },
-  component: LauncherWorkspace,
+  component: () => (
+    <LazyRouteBoundary label="Loading launcher">
+      <LazyLauncherWorkspace />
+    </LazyRouteBoundary>
+  ),
 })
 
 const marketDataRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/market-data',
   beforeLoad: () => syncWorkspace('market-data'),
-  component: MarketDataWorkspace,
+  component: () => (
+    <LazyRouteBoundary label="Loading market data">
+      <LazyMarketDataWorkspace />
+    </LazyRouteBoundary>
+  ),
 })
 
 const storageRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/storage',
   beforeLoad: () => syncWorkspace('storage'),
-  component: StorageWorkspace,
+  component: () => (
+    <LazyRouteBoundary label="Loading storage">
+      <LazyStorageWorkspace />
+    </LazyRouteBoundary>
+  ),
 })
 
 const systemRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/system',
   beforeLoad: () => syncWorkspace('system'),
-  component: SystemWorkspace,
+  component: () => (
+    <LazyRouteBoundary label="Loading system">
+      <LazySystemWorkspace />
+    </LazyRouteBoundary>
+  ),
 })
 
 type BacktestsSearch = {
@@ -104,7 +123,11 @@ const backtestsRoute = createRoute({
   },
   component: () => {
     const search = backtestsRoute.useSearch()
-    return <BacktestsWorkspace initialMode={search.mode} />
+    return (
+      <LazyRouteBoundary label="Loading backtests">
+        <LazyBacktestsWorkspace initialMode={search.mode} />
+      </LazyRouteBoundary>
+    )
   },
 })
 
@@ -121,14 +144,22 @@ const validateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/validate',
   beforeLoad: () => syncWorkspace('validate'),
-  component: WalkForwardWorkspace,
+  component: () => (
+    <LazyRouteBoundary label="Loading validation">
+      <LazyWalkForwardWorkspace />
+    </LazyRouteBoundary>
+  ),
 })
 
 const discoverRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/discover',
   beforeLoad: () => syncWorkspace('discover'),
-  component: DiscoverWorkspace,
+  component: () => (
+    <LazyRouteBoundary label="Loading discovery">
+      <LazyDiscoverWorkspace />
+    </LazyRouteBoundary>
+  ),
 })
 
 const strategyRoute = createRoute({
@@ -152,7 +183,11 @@ const newsReaderRoute = createRoute({
   }),
   component: () => {
     const search = newsReaderRoute.useSearch()
-    return <NewsReaderWorkspace id={search.id} showInlineClose={false} />
+    return (
+      <LazyRouteBoundary label="Loading reader">
+        <LazyNewsReaderWorkspace id={search.id} showInlineClose={false} />
+      </LazyRouteBoundary>
+    )
   },
 })
 

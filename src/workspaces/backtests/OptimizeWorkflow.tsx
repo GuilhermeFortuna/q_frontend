@@ -9,12 +9,17 @@ import {
 import { OptimizeFocusWorkbench } from '@/components/optimize/focus/OptimizeFocusWorkbench'
 import { OptimizationHistoryPanel } from '@/components/optimize/OptimizationHistoryPanel'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
-import { useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
+import type { useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
 import { useAppStore } from '@/store/useAppStore'
 import type { JobStatus, OptimizationConfig } from '@/types/optimization'
 
-export function OptimizeWorkflow() {
-  const optimizeConfig = useOptimizeConfig()
+type OptimizeConfig = ReturnType<typeof useOptimizeConfig>
+
+type OptimizeWorkflowProps = {
+  config: OptimizeConfig
+}
+
+export function OptimizeWorkflow({ config: optimizeConfig }: OptimizeWorkflowProps) {
   const reducedMotion = usePrefersReducedMotion()
 
   const {

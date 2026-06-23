@@ -2,11 +2,11 @@ import { useMemo } from 'react'
 import { RouterProvider } from '@tanstack/react-router'
 
 import { AppProviders } from '@/app/providers'
+import { LazyNewsReaderWorkspace, LazyStandaloneChartWindow } from '@/app/lazyWorkspaces'
 import { router } from '@/app/router'
-import { useGlobalZoom } from '@/hooks/useGlobalZoom'
+import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
 import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'
-import { NewsReaderWorkspace } from '@/workspaces/news/NewsReaderWorkspace'
-import { StandaloneChartWindow } from '@/components/backtests/StandaloneChartWindow'
+import { useGlobalZoom } from '@/hooks/useGlobalZoom'
 
 export function App() {
   useGlobalZoom()
@@ -27,7 +27,9 @@ export function App() {
     return (
       <AppProviders>
         <ReaderWindowShell>
-          <NewsReaderWorkspace id={newsId} showInlineClose={false} />
+          <LazyRouteBoundary label="Loading reader">
+            <LazyNewsReaderWorkspace id={newsId} showInlineClose={false} />
+          </LazyRouteBoundary>
         </ReaderWindowShell>
       </AppProviders>
     )
@@ -36,7 +38,9 @@ export function App() {
   if (runId) {
     return (
       <AppProviders>
-        <StandaloneChartWindow runId={runId} />
+        <LazyRouteBoundary label="Loading chart">
+          <LazyStandaloneChartWindow runId={runId} />
+        </LazyRouteBoundary>
       </AppProviders>
     )
   }

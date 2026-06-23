@@ -4,6 +4,7 @@ import { OrbitControls, Line, Points, PointMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 import { RotateCcw, Eye, EyeOff, Sparkles, HelpCircle, Trophy } from 'lucide-react'
 import type { OptimizationResults } from '@/types/optimization'
+import { registerFeature3DSurface } from '@/lib/cinematic/feature3DRegistry'
 
 // WebGL Canvas error boundary
 class CanvasErrorBoundary extends React.Component<
@@ -91,6 +92,8 @@ export function OptimizationTerrain3D({
   selectedTrialNumber,
   onSelectTrial,
 }: OptimizationTerrain3DProps) {
+  useEffect(() => registerFeature3DSurface('optimization-terrain'), [])
+
   const completedTrials = useMemo(
     () => results.trials.filter((t) => t.values && t.values.length > 0),
     [results.trials],
@@ -289,7 +292,7 @@ export function OptimizationTerrain3D({
   }
 
   return (
-    <div className="border-carbon-800 bg-carbon-950/40 flex h-full w-full flex-col overflow-hidden rounded-xl border backdrop-blur-md md:flex-row">
+    <div className="surface-panel border-carbon-800 flex h-full w-full flex-col overflow-hidden rounded-xl border md:flex-row">
       {/* Controls Sidebar */}
       <div className="border-carbon-800 bg-carbon-950/70 flex w-full shrink-0 flex-col gap-4 border-b p-4 md:w-64 md:border-r md:border-b-0">
         <div>
@@ -536,7 +539,7 @@ export function OptimizationTerrain3D({
         </CanvasErrorBoundary>
 
         {/* Hover / Click Details HUD */}
-        <div className="border-carbon-800 bg-carbon-950/80 pointer-events-none absolute top-4 right-4 z-10 max-w-sm rounded-lg border p-3.5 shadow-lg backdrop-blur-md">
+        <div className="surface-float surface-float--blur pointer-events-none absolute top-4 right-4 z-10 max-w-sm rounded-lg p-3.5">
           {activeDetailTrial ? (
             <div className="flex flex-col gap-1.5 text-xs">
               <div className="flex items-center justify-between gap-4">
@@ -612,7 +615,7 @@ export function OptimizationTerrain3D({
         </div>
 
         {/* Legend */}
-        <div className="bg-carbon-950/80 text-silver-400 border-carbon-800 absolute bottom-4 left-4 z-10 flex gap-4 rounded-md border px-3 py-2 text-[10px] shadow backdrop-blur-sm">
+        <div className="surface-float text-silver-400 border-carbon-800 absolute bottom-4 left-4 z-10 flex gap-4 rounded-md px-3 py-2 text-[10px]">
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full bg-[#8e8e93]" />
             <span>Completed Trial</span>
