@@ -141,11 +141,11 @@ export function useBacktestEquityArtifacts(runIds: string[]) {
   })
 }
 
-export function useBacktestJobStatus(runId: string | null) {
+export function useBacktestJobStatus(runId: string | null, enabled = true) {
   return useQuery({
     queryKey: backtestKeys.jobStatus(runId ?? ''),
     queryFn: () => fetchBacktestJobStatus(runId as string),
-    enabled: !!runId,
+    enabled: enabled && !!runId,
     // Poll while the backtest is still running; stop at a terminal state.
     refetchInterval: (query) => (query.state.data?.status === 'running' ? 1000 : false),
   })
@@ -160,7 +160,9 @@ export function useBacktestJobStatus(runId: string | null) {
 export function useBacktestJob() {
   const queryClient = useQueryClient()
   const runId = useAppStore((s) => s.backtestSession.runId)
+  const workflowMode = useAppStore((s) => s.backtestSession.workflowMode)
   const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
+  const simulationActive = workflowMode === 'backtest'
 
   const start = useMutation({
     mutationKey: backtestKeys.all,
@@ -170,13 +172,13 @@ export function useBacktestJob() {
     },
   })
 
-  const status = useBacktestJobStatus(runId)
+  const status = useBacktestJobStatus(runId, simulationActive)
   const jobStatus = status.data?.status
 
   const result = useQuery({
     queryKey: backtestKeys.jobResult(runId ?? ''),
     queryFn: () => fetchBacktestResult(runId as string),
-    enabled: !!runId && jobStatus === 'completed',
+    enabled: simulationActive && !!runId && jobStatus === 'completed',
     staleTime: Infinity,
   })
 

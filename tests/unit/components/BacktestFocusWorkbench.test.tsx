@@ -124,18 +124,18 @@ describe('BacktestFocusWorkbench', () => {
     expect(resultsRenderCount.current).toBe(0)
   })
 
-  it('does not re-render the results subtree while typing in config fields', async () => {
+  it('keeps results parked while setup is focused and config fields change', async () => {
     const user = userEvent.setup()
     const results = getMockBacktestResponse(mockLastRequest)
 
-    renderWithQueryClient(<WorkbenchHarness results={results} focus="results" />)
+    renderWithQueryClient(<WorkbenchHarness results={results} focus="setup" />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('equity-chart-mock')).toBeInTheDocument()
+      expect(screen.getByDisplayValue('100000')).toBeInTheDocument()
     })
 
+    expect(screen.queryByTestId('equity-chart-mock')).not.toBeInTheDocument()
     const rendersAfterMount = resultsRenderCount.current
-    expect(rendersAfterMount).toBeGreaterThan(0)
 
     const capitalInput = screen.getByDisplayValue('100000')
 

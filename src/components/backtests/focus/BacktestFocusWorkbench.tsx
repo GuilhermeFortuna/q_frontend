@@ -6,6 +6,7 @@ import { BacktestSetupPanel } from '@/components/backtests/setup/BacktestSetupPa
 import { BacktestResultsTabs } from '@/components/backtests/BacktestResultsTabs'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { cn } from '@/lib/utils'
+import { useAppStore } from '@/store/useAppStore'
 import type {
   BacktestRequest,
   BacktestResponse,
@@ -31,11 +32,15 @@ type BacktestFocusWorkbenchProps = {
   initialCapital: number
   equityCurve: EquityPoint[]
   monthlyStats: MonthlyStats[]
+  performanceComputing?: boolean
+  aiWorkflowBlocker?: string | null
+  onAiWorkflowBlockerChange?: (blocker: string | null) => void
 }
 
 /**
- * Focus invariant: exactly one pane is visually expanded; setup and results stay
- * mounted at all times so form state, mutation data, and in-pane scroll survive swaps.
+ * Focus invariant: exactly one pane is visually expanded. Inactive panes are
+ * parked (unmounted) while setup fields remain in the parent config hook and
+ * results stay in React Query / session store.
  */
 export function BacktestFocusWorkbench({
   focus,
@@ -51,21 +56,34 @@ export function BacktestFocusWorkbench({
   initialCapital,
   equityCurve,
   monthlyStats,
+  performanceComputing = false,
+  aiWorkflowBlocker = null,
+  onAiWorkflowBlockerChange,
 }: BacktestFocusWorkbenchProps) {
   const workbenchRef = useRef<HTMLDivElement>(null)
+  const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
+
+  const parkSetupDraft = useCallback(() => {
+    if (config.validation.formInvalid) return
+    setPendingBacktestConfig(config.buildRequest())
+  }, [config, setPendingBacktestConfig])
 
   const handleFocusChange = useCallback(
     (next: BacktestWorkbenchFocus) => {
       if (next === focus) return
+      if (focus === 'setup' && next === 'results') {
+        parkSetupDraft()
+      }
       onFocusChange(next)
     },
-    [focus, onFocusChange],
+    [focus, onFocusChange, parkSetupDraft],
   )
 
   const handleRunFromTeaser = useCallback(() => {
     if (config.validation.formInvalid || config.strategiesLoading || loading) return
+    if (aiWorkflowBlocker) return
     onSubmit(config.buildRequest())
-  }, [config, loading, onSubmit])
+  }, [aiWorkflowBlocker, config, loading, onSubmit])
 
   const setupExpanded = focus === 'setup'
   const resultsExpanded = focus === 'results'
@@ -89,16 +107,18 @@ export function BacktestFocusWorkbench({
       data-focus={focus}
     >
       <section className="flex min-h-0 flex-col overflow-hidden" aria-expanded={setupExpanded}>
-        <div
-          className={cn(
-            'flex min-h-0 flex-col overflow-hidden',
-            setupExpanded ? 'flex-1' : 'hidden',
-          )}
-          aria-hidden={!setupExpanded}
-        >
-          <BacktestSetupPanel config={config} loading={loading} error={error} onSubmit={onSubmit} />
-        </div>
-        {!setupExpanded ? (
+        {setupExpanded ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <BacktestSetupPanel
+              config={config}
+              loading={loading}
+              error={error}
+              onSubmit={onSubmit}
+              onAiWorkflowBlockerChange={onAiWorkflowBlockerChange}
+              aiWorkflowBlocker={aiWorkflowBlocker}
+            />
+          </div>
+        ) : (
           <CollapsedSetupTeaser
             fields={config.fields}
             strategyInfo={config.selectedStrategy}
@@ -108,47 +128,42 @@ export function BacktestFocusWorkbench({
             onExpand={() => handleFocusChange('setup')}
             onRun={handleRunFromTeaser}
           />
-        ) : null}
+        )}
       </section>
 
       <section
         className="relative flex min-h-0 flex-col overflow-hidden"
         aria-expanded={resultsExpanded}
       >
-        <div
-          className={cn(
-            'flex min-h-0 flex-col overflow-hidden',
-            resultsExpanded ? 'flex-1' : 'hidden',
-          )}
-          aria-hidden={!resultsExpanded}
-        >
-          {loading ? (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="flex animate-pulse flex-col items-center">
-                <div className="border-brass-500 mb-4 h-12 w-12 animate-spin rounded-full border-4 border-t-transparent" />
-                <p className="text-silver-400">Simulating strategy over historical data...</p>
+        {resultsExpanded ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {loading ? (
+              <div className="flex flex-1 items-center justify-center">
+                <div className="flex animate-pulse flex-col items-center">
+                  <div className="border-brass-500 mb-4 h-12 w-12 animate-spin rounded-full border-4 border-t-transparent" />
+                  <p className="text-silver-400">Simulating strategy over historical data...</p>
+                </div>
               </div>
-            </div>
-          ) : showResultsContent && resultsExpanded ? (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <BacktestResultsTabs
-                results={results!}
-                request={lastRequest}
-                initialCapital={initialCapital}
-                equityCurve={equityCurve}
-                monthlyStats={monthlyStats}
-                symbol={resultsSymbol}
-                timeframe={resultsTimeframe}
-              />
-            </div>
-          ) : showResultsContent ? null : (
-            <div className="border-carbon-600/60 flex flex-1 items-center justify-center rounded-xl border-2 border-dashed">
-              <p className="text-silver-400 text-sm">Run a simulation to see results here.</p>
-            </div>
-          )}
-        </div>
-
-        {!resultsExpanded ? (
+            ) : showResultsContent ? (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <BacktestResultsTabs
+                  results={results!}
+                  request={lastRequest}
+                  initialCapital={initialCapital}
+                  equityCurve={equityCurve}
+                  monthlyStats={monthlyStats}
+                  performanceComputing={performanceComputing}
+                  symbol={resultsSymbol}
+                  timeframe={resultsTimeframe}
+                />
+              </div>
+            ) : (
+              <div className="border-carbon-600/60 flex flex-1 items-center justify-center rounded-xl border-2 border-dashed">
+                <p className="text-silver-400 text-sm">Run a simulation to see results here.</p>
+              </div>
+            )}
+          </div>
+        ) : (
           <CollapsedResultsTeaser
             isPending={loading}
             hasResults={hasResults}
@@ -157,7 +172,7 @@ export function BacktestFocusWorkbench({
             onExpand={() => handleFocusChange('results')}
             onOpenHistory={onOpenHistory}
           />
-        ) : null}
+        )}
       </section>
     </div>
   )
