@@ -655,6 +655,53 @@ create a new standalone Strategy page. WO95 finishes save/run/export/iteration w
    strategies still load?
 8. Did the agent actually run the stated `uv` / `pnpm` verification commands, or just claim green?
 
+## Phase: Cinematic Performance Architecture
+
+Preserves Q's cinematic direction while changing how the visuals are rendered so the app can scale.
+This is not a "make it plain" performance pass. The goal is equal-or-better visuals with a more
+deliberate rendering architecture: measured performance, one controlled cinematic scene, cheap
+premium DOM materials, lazy feature islands, scalable result surfaces, and Tauri/Linux runtime gates.
+
+| #   | File                                                                                                                             | Repo       | Depends on         |
+| --- | -------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------ |
+| 96  | [WO96-frontend-cinematic-performance-instrumentation.md](WO96-frontend-cinematic-performance-instrumentation.md)                 | q_frontend | —                  |
+| 97  | [WO97-frontend-cinematic-scene-renderer.md](WO97-frontend-cinematic-scene-renderer.md)                                           | q_frontend | WO96               |
+| 98  | [WO98-frontend-premium-shell-material-system.md](WO98-frontend-premium-shell-material-system.md)                                 | q_frontend | WO96               |
+| 99  | [WO99-frontend-feature-islands-code-splitting.md](WO99-frontend-feature-islands-code-splitting.md)                               | q_frontend | WO96               |
+| 100 | [WO100-frontend-large-result-surfaces-workers-virtualization.md](WO100-frontend-large-result-surfaces-workers-virtualization.md) | q_frontend | WO96; WO99 helpful |
+| 101 | [WO101-frontend-tauri-linux-runtime-performance-gates.md](WO101-frontend-tauri-linux-runtime-performance-gates.md)               | q_frontend | WO96; after 97-100 |
+
+### Dispatch order
+
+```
+WO96 ─┬─► WO97 ─┐
+      ├─► WO98 ─┼─► WO101
+      ├─► WO99 ─┤
+      └─► WO100 ┘
+```
+
+WO96 must land first because every later WO needs instrumentation and budget language. WO97 and WO98
+can run in parallel if file ownership is coordinated: WO97 owns the unified cinematic renderer,
+while WO98 owns the reusable material system and repeated DOM surface cost. WO99 can run after WO96
+and is mostly route/module architecture. WO100 can start after WO96, but benefits from WO99 if route
+islands are already in place. WO101 should run after at least one architecture WO lands and then
+become the recurring verification gate for future cinematic shell changes.
+
+### Batch-specific review checklist
+
+1. Does the change preserve or improve the cinematic look? Side-by-side screenshots are required for
+   shell/visual WOs.
+2. Is there at most one always-on app-wide cinematic renderer outside visible feature-specific 3D
+   surfaces?
+3. Are dense cards/tables/panels free of repeated `backdrop-filter`, animated `box-shadow`, and
+   per-frame pointer DOM work?
+4. Do hidden/inactive panes stop polling, fetching, rendering charts, and mounting canvases?
+5. Are large tables/lists virtualized or otherwise bounded before they can grow unbounded?
+6. Does WO96 instrumentation show route/canvas/query/long-task behavior before and after?
+7. Was Tauri/Podman runtime verification run for shell/cinematic work, or explicitly deferred with
+   exact manual steps?
+8. Did the agent actually run `pnpm test:run`, typecheck, and build as specified, or just claim green?
+
 ## Review checklist (apply to every returned PR)
 
 1. Does the compute path still work with Postgres **stopped**? (stop the container, run a backtest / a study)
