@@ -34,7 +34,7 @@ export function WalkForwardProgress({ status, onCancel, cancelling }: WalkForwar
 
   return (
     <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-4">
-      <div className="quant-panel relative w-full max-w-md overflow-hidden rounded-2xl px-6 py-8 shadow-xl">
+      <div className="surface-panel relative w-full max-w-md overflow-hidden rounded-2xl px-6 py-8">
         <ActiveOutline />
         <div className="relative z-20">
           <p className="text-silver-200 mb-1 text-center text-sm font-medium">{headerLabel}</p>

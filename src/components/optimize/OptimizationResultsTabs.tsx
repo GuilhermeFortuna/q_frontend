@@ -4,7 +4,7 @@ import { BestParamsCard } from '@/components/optimize/BestParamsCard'
 import { OptimizationLogs } from '@/components/optimize/OptimizationLogs'
 import { OptimizationMetricsBar } from '@/components/optimize/OptimizationMetricsBar'
 import { OptimizationScatter } from '@/components/optimize/OptimizationScatter'
-import { OptimizationTerrain3D } from '@/components/optimize/OptimizationTerrain3D'
+import { LazyOptimizationTerrain3D } from '@/components/optimize/LazyOptimizationTerrain3D'
 import { TrialsTable } from '@/components/optimize/TrialsTable'
 import { cn } from '@/lib/utils'
 import type { OptimizationBacktestConfig, OptimizationResults } from '@/types/optimization'
@@ -107,7 +107,7 @@ export const OptimizationResultsTabs = memo(function OptimizationResultsTabs({
 
         {activeTab === 'terrain' && (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <OptimizationTerrain3D
+            <LazyOptimizationTerrain3D
               results={results}
               selectedTrialNumber={selectedTrialNumber}
               onSelectTrial={setSelectedTrialNumber}

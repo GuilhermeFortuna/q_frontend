@@ -248,10 +248,10 @@ export function SymbolCommandPalette({
   }
 
   return (
-    <div className="bg-espresso-950/45 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md">
+    <div className="bg-espresso-950/45 surface-overlay-scrim fixed inset-0 z-50 flex items-center justify-center">
       <div
         ref={overlayRef}
-        className="quant-panel bg-carbon-900 border-brass-500/30 flex max-h-[400px] w-[480px] flex-col overflow-hidden rounded-xl border shadow-[0_0_50px_-12px_rgba(196,165,116,0.3)]"
+        className="surface-overlay flex max-h-[400px] w-[480px] flex-col overflow-hidden rounded-xl"
       >
         <div className="border-carbon-700/60 bg-carbon-800/80 flex items-center gap-3 border-b p-4">
           <Search className="text-brass-400 h-4 w-4" />

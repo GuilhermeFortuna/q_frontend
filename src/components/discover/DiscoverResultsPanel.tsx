@@ -12,7 +12,7 @@ import { GeneticVerdictPanel } from '@/components/discover/GeneticVerdictPanel'
 import { DiscoverProgress } from '@/components/discover/DiscoverProgress'
 import { DiscoverLogs } from '@/components/discover/DiscoverLogs'
 import { LeaderboardTable } from '@/components/discover/LeaderboardTable'
-import { LiveSwarmVisualizer3D } from '@/components/discover/LiveSwarmVisualizer3D'
+import { LazyLiveSwarmVisualizer3D } from '@/components/discover/LazyLiveSwarmVisualizer3D'
 import { Button } from '@/components/ui/button'
 import { hasGeneticSummary, isGeneticSearchConfig } from '@/types/strategySearch'
 import { cn } from '@/lib/utils'
@@ -94,7 +94,7 @@ export function DiscoverResultsPanel({
           </>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-            <LiveSwarmVisualizer3D status={status} results={undefined} isRunning={true} />
+            <LazyLiveSwarmVisualizer3D status={status} results={undefined} isRunning={true} />
             <div className="border-carbon-800 bg-carbon-950/40 flex items-center justify-between rounded-xl border p-4 shadow-sm">
               <div className="flex flex-col">
                 <span className="text-silver-100 text-xs font-semibold">
@@ -211,7 +211,7 @@ export function DiscoverResultsPanel({
             searchConfig={results.search_config}
           />
         ) : (
-          <LiveSwarmVisualizer3D
+          <LazyLiveSwarmVisualizer3D
             status={status}
             results={results}
             isRunning={false}

@@ -44,9 +44,10 @@ describe('shell view-transition classes', () => {
 })
 
 describe('quant-panel paint policy', () => {
-  it('uses a compositor overlay for the pointer highlight instead of backdrop-filter', () => {
-    expect(globalsCss).toContain('.quant-panel::after')
-    expect(globalsCss).not.toMatch(/\.quant-panel\s*\{[^}]*backdrop-filter/s)
-    expect(globalsCss).toContain('will-change: opacity')
+  it('uses a compositor overlay for launcher spotlight instead of backdrop-filter', () => {
+    const materialsCss = readFileSync(resolve(process.cwd(), 'src/styles/materials.css'), 'utf8')
+    expect(materialsCss).toContain('.quant-panel--spotlight::after')
+    expect(globalsCss).not.toMatch(/:where\(\.quant-panel\)[^}]*backdrop-filter/s)
+    expect(materialsCss).toContain('will-change: opacity')
   })
 })

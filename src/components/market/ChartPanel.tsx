@@ -157,7 +157,7 @@ export function ChartPanel({
         onAddProfile &&
         onDeleteProfile &&
         onRenameProfile && (
-          <div className="border-brass-600/15 bg-carbon-950/60 absolute bottom-3 left-6 z-15 flex items-center gap-1.5 rounded-lg border p-0.5 shadow-lg backdrop-blur-md">
+          <div className="surface-float surface-float--blur absolute bottom-3 left-6 z-15 flex items-center gap-1.5 rounded-lg p-0.5">
             {profiles.map((profile) => {
               const isActive = profile.id === activeProfileId
               return (

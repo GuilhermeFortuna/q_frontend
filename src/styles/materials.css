@@ -1,0 +1,173 @@
+/**
+ * Premium shell material system — baked depth without per-element compositor tax.
+ *
+ * Roles:
+ * - surface-shell: header, dock, major chrome (blur allowed, few instances)
+ * - surface-panel: workspace shells / primary panels (no blur)
+ * - surface-card: repeated cards, list tiles (no blur, no animated shadows)
+ * - surface-control: buttons, inputs, selects
+ * - surface-overlay: modals, popovers, HUD scrims
+ */
+
+@layer utilities {
+  /* --- Shell (top-level chrome; backdrop blur permitted) --- */
+  .surface-shell {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-espresso-950) 88%, transparent),
+      color-mix(in srgb, var(--color-carbon-950) 90%, transparent)
+    );
+    border-color: color-mix(in srgb, var(--color-brass-600) 15%, transparent);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .surface-shell--blur {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* --- Panel (primary workspace surfaces) --- */
+  .surface-panel,
+  .quant-panel {
+    --spot-x: 50%;
+    --spot-y: 50%;
+    --spot-o: 0;
+    isolation: isolate;
+    position: relative;
+    background: linear-gradient(145deg, rgba(26, 16, 8, 0.72), rgba(17, 19, 21, 0.82));
+    border: 1px solid rgba(168, 139, 82, 0.18);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 8px 28px -10px rgba(0, 0, 0, 0.55);
+    transition:
+      border-color 250ms ease,
+      background-color 250ms ease;
+  }
+
+  .surface-panel:hover,
+  .quant-panel:hover {
+    border-color: rgba(196, 165, 116, 0.28);
+  }
+
+  /* Launcher-only pointer spotlight — opacity overlay, no backdrop-filter. */
+  .surface-panel--spotlight::after,
+  .quant-panel--spotlight::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(
+      circle 340px at var(--spot-x) var(--spot-y),
+      color-mix(in srgb, var(--color-brass-400) 16%, transparent),
+      transparent 72%
+    );
+    opacity: var(--spot-o);
+    will-change: opacity;
+    transition: opacity 350ms ease;
+  }
+
+  .surface-panel--spotlight.is-lit,
+  .quant-panel--spotlight.is-lit {
+    --spot-o: 1;
+    border-color: rgba(217, 158, 34, 0.45);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .surface-panel--spotlight,
+    .quant-panel--spotlight,
+    .surface-panel--spotlight.is-lit,
+    .quant-panel--spotlight.is-lit {
+      --spot-o: 0;
+    }
+
+    .surface-panel--spotlight::after,
+    .quant-panel--spotlight::after {
+      transition: none;
+    }
+  }
+
+  /* --- Card (dense grids; static depth only) --- */
+  .surface-card {
+    isolation: isolate;
+    position: relative;
+    background: linear-gradient(150deg, rgba(24, 27, 31, 0.94), rgba(17, 19, 21, 0.97));
+    border: 1px solid rgba(46, 51, 59, 0.9);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 4px 14px -8px rgba(0, 0, 0, 0.42);
+    transition:
+      border-color 250ms ease,
+      transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .surface-card:hover {
+    border-color: rgba(196, 165, 116, 0.26);
+  }
+
+  /* Static top-edge highlight for metric tiles (no animation). */
+  .surface-card--edge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 202, 71, 0.07) 0%, transparent 42%);
+  }
+
+  /* --- Control (interactive primitives) --- */
+  .surface-control {
+    background: color-mix(in srgb, var(--color-carbon-800) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-carbon-700) 80%, transparent);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+    transition:
+      border-color 200ms ease,
+      background-color 200ms ease,
+      transform 350ms cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 200ms ease;
+  }
+
+  .surface-control:hover {
+    border-color: color-mix(in srgb, var(--color-carbon-600) 90%, transparent);
+  }
+
+  .surface-control:focus-visible {
+    outline: 2px solid var(--color-brass-500);
+    outline-offset: 2px;
+  }
+
+  /* --- Overlay (modals / popovers) --- */
+  .surface-overlay-scrim {
+    background: color-mix(in srgb, var(--color-espresso-950) 72%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .surface-overlay {
+    background: linear-gradient(155deg, rgba(24, 27, 31, 0.98), rgba(17, 19, 21, 0.99));
+    border: 1px solid rgba(168, 139, 82, 0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 0 50px -12px rgba(196, 165, 116, 0.28),
+      0 24px 48px -16px rgba(0, 0, 0, 0.65);
+  }
+
+  .surface-overlay--hud {
+    background: rgba(0, 0, 0, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  /* --- Chart / 3D workspace float (single-instance overlays) --- */
+  .surface-float {
+    background: color-mix(in srgb, var(--color-carbon-950) 78%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-brass-600) 12%, transparent);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .surface-float--blur {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}

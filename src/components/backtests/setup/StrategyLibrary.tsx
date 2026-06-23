@@ -236,9 +236,9 @@ function CustomStrategyCard({
   return (
     <div
       className={cn(
-        'quant-panel border-carbon-600/50 group cubic-bezier(0.16,1,0.3,1) relative flex flex-col gap-2 rounded-lg border p-3 text-left transition-[transform,border-color,box-shadow] duration-350 hover:-translate-y-0.5 hover:scale-[1.01] active:scale-[0.97]',
+        'surface-card border-carbon-600/50 group cubic-bezier(0.16,1,0.3,1) relative flex flex-col gap-2 rounded-lg border p-3 text-left transition-[transform,border-color] duration-350 hover:-translate-y-0.5 hover:scale-[1.01] active:scale-[0.97]',
         selected &&
-          'quant-panel--glow quant-panel--active-run border-brass-500/60 bg-brass-600/10 ring-brass-500/20 ring-1',
+          'surface-card--glow quant-panel--active-run border-brass-500/60 bg-brass-600/10 ring-brass-500/20 ring-1',
       )}
     >
       <button

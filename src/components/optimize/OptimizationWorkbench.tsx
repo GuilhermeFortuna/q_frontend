@@ -46,7 +46,7 @@ export function OptimizationWorkbench({
           aria-label={open ? 'Collapse optimization workbench' : 'Expand optimization workbench'}
           onClick={() => onOpenChange(!open)}
           className={cn(
-            'quant-panel border-carbon-600/60 flex shrink-0 flex-col items-center justify-center gap-2 border-r py-4',
+            'surface-panel border-carbon-600/60 flex shrink-0 flex-col items-center justify-center gap-2 border-r py-4',
             'hover:bg-carbon-800/40 transition-colors',
           )}
           style={{ width: HANDLE_WIDTH }}
@@ -69,7 +69,7 @@ export function OptimizationWorkbench({
           }}
           transition={open ? workbenchTransition : workbenchCollapse}
           className={cn(
-            'border-carbon-600/60 quant-panel shrink-0 overflow-hidden border-r',
+            'border-carbon-600/60 surface-panel shrink-0 overflow-hidden border-r',
             open && 'fixed inset-y-0 left-0 z-20 md:relative md:inset-auto',
           )}
           style={{ maxHeight: '100%' }}

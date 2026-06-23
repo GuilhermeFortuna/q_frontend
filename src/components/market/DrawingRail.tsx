@@ -23,7 +23,7 @@ export function DrawingRail({
   onClearDrawings,
 }: DrawingRailProps) {
   return (
-    <div className="quant-panel flex w-[44px] shrink-0 flex-col items-center gap-3.5 rounded-lg py-4">
+    <div className="surface-panel flex w-[44px] shrink-0 flex-col items-center gap-3.5 rounded-lg py-4">
       <div className="text-silver-400 mb-1 text-[9px] font-semibold tracking-wider uppercase select-none">
         Draw
       </div>

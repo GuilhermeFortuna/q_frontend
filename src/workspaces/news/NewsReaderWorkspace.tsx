@@ -116,7 +116,7 @@ export function NewsReaderWorkspace({
 
       {/* Video or Image Player */}
       {article.videoUrl ? (
-        <div className="quant-panel border-brass-600/15 overflow-hidden rounded-xl border bg-black shadow-2xl">
+        <div className="surface-panel border-brass-600/15 overflow-hidden rounded-xl border bg-black">
           <video
             src={article.videoUrl}
             controls
@@ -126,7 +126,7 @@ export function NewsReaderWorkspace({
           />
         </div>
       ) : article.imageUrl ? (
-        <div className="quant-panel border-brass-600/15 bg-carbon-900 flex max-h-[360px] items-center justify-center overflow-hidden rounded-xl border shadow-2xl">
+        <div className="surface-panel border-brass-600/15 bg-carbon-900 flex max-h-[360px] items-center justify-center overflow-hidden rounded-xl border">
           <img
             src={article.imageUrl}
             alt={article.title}

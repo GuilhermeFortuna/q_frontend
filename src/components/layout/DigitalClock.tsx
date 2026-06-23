@@ -31,13 +31,13 @@ export function DigitalClock() {
   return (
     <div
       data-tauri-no-drag
-      className="border-brass-600/15 bg-espresso-950/70 hover:border-brass-600/35 flex items-center gap-3 rounded-full border px-3.5 py-1.5 shadow-[0_0_12px_rgba(184,131,28,0.03)] transition-colors duration-300"
+      className="surface-shell border-brass-600/15 flex items-center gap-3 rounded-full border px-3.5 py-1.5 transition-colors duration-300"
     >
       <span className="text-silver-300 font-sans text-[10px] font-medium tracking-wider uppercase">
         {formatDate(time)}
       </span>
       <span className="bg-brass-600/20 h-3 w-[1px]" />
-      <span className="text-brass-400 quant-tabular-nums font-mono text-xs font-semibold tracking-wider drop-shadow-[0_0_8px_rgba(240,180,41,0.2)]">
+      <span className="text-brass-400 quant-tabular-nums font-mono text-xs font-semibold tracking-wider [text-shadow:0_0_8px_rgba(240,180,41,0.2)]">
         {formatTime(time)}
       </span>
     </div>

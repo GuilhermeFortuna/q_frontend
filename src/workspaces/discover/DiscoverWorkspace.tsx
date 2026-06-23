@@ -84,7 +84,7 @@ export function DiscoverWorkspace() {
         />
       </OptimizationWorkbench>
 
-      <div className="quant-panel flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6">
+      <div className="surface-panel flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6">
         <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
           {RIGHT_PANEL_TABS.map((tab) => (
             <button

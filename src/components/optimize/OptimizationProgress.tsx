@@ -60,7 +60,7 @@ export function OptimizationProgress({
       {/* Left Column: Progress Card & Best Params Card */}
       <div className="flex w-full min-w-0 shrink-0 flex-col gap-4 lg:w-[380px]">
         {/* Progress Card */}
-        <div className="quant-panel relative w-full overflow-hidden rounded-2xl px-6 py-6 shadow-xl">
+        <div className="surface-panel relative w-full overflow-hidden rounded-2xl px-6 py-6">
           <ActiveOutline />
           <div className="relative z-20">
             {headerLabel ? (

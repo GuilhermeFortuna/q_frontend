@@ -5,7 +5,8 @@ import { useAppStore } from '@/store/useAppStore'
 /**
  * App-wide pointer-reactive lighting.
  *
- * A single rAF-throttled `pointermove` listener finds the `.quant-panel` under
+ * A single rAF-throttled `pointermove` listener finds `.quant-panel--spotlight` /
+ * `.surface-panel--spotlight` under the cursor and writes panel-local coordinates
  * the cursor and writes panel-local coordinates into `--spot-x` / `--spot-y`,
  * toggling `.is-lit` (drives the ::after highlight opacity). The CSS in
  * globals.css keeps the radial highlight on a compositor-promoted overlay so
@@ -34,7 +35,8 @@ export function PointerSpotlight() {
 
     const flush = () => {
       raf = 0
-      const next = target?.closest<HTMLElement>('.quant-panel') ?? null
+      const next =
+        target?.closest<HTMLElement>('.quant-panel--spotlight, .surface-panel--spotlight') ?? null
 
       if (next !== raw) {
         raw = next
@@ -42,7 +44,10 @@ export function PointerSpotlight() {
         // Only light leaf panels. Container panels (the big workspace shells that
         // wrap card panels) would otherwise glow in their dead space when the
         // cursor sits between their children.
-        lit = next && !next.querySelector('.quant-panel') ? next : null
+        lit =
+          next && !next.querySelector('.quant-panel--spotlight, .surface-panel--spotlight')
+            ? next
+            : null
         lit?.classList.add('is-lit')
       }
 

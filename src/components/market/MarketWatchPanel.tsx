@@ -353,7 +353,7 @@ export function MarketWatchPanel({
   }
 
   return (
-    <div className="quant-panel flex h-full flex-col overflow-hidden rounded-lg">
+    <div className="surface-panel flex h-full flex-col overflow-hidden rounded-lg">
       <div className="border-carbon-700 border-b p-2.5">
         <p className="text-silver-300 mb-2 text-xs font-semibold tracking-wider uppercase">
           Market Watch

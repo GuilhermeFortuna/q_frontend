@@ -14,7 +14,7 @@ function countByStatus(trials: OptimizationResults['trials'], status: string) {
 }
 
 const metricCardClass =
-  'quant-panel quant-panel--shimmer rounded-xl p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-all hover:scale-[1.02] hover:border-brass-400/30'
+  'surface-card surface-card--edge rounded-xl p-4 transition-[transform,border-color] duration-350 hover:scale-[1.02] hover:border-brass-400/30'
 
 export function OptimizationMetricsBar({ results }: OptimizationMetricsBarProps) {
   const completed = countByStatus(results.trials, 'complete')
@@ -41,30 +41,15 @@ export function OptimizationMetricsBar({ results }: OptimizationMetricsBarProps)
     >
       {results.is_multi_objective ? (
         <>
-          <div
-            className={cn(
-              metricCardClass,
-              'quant-panel--glow quant-panel--glow-breathing hover:scale-[1.02]',
-            )}
-          >
+          <div className={cn(metricCardClass, 'surface-card--glow quant-panel--glow-hero')}>
             <Metric label="Best Return" value={formatFractionAsPercent(bestReturn)} highlight />
           </div>
-          <div
-            className={cn(
-              metricCardClass,
-              'quant-panel--glow quant-panel--glow-breathing hover:scale-[1.02]',
-            )}
-          >
+          <div className={cn(metricCardClass, 'surface-card--glow quant-panel--glow-hero')}>
             <Metric label="Best Drawdown" value={formatFractionAsPercent(bestDrawdown)} highlight />
           </div>
         </>
       ) : (
-        <div
-          className={cn(
-            metricCardClass,
-            'quant-panel--glow quant-panel--glow-breathing hover:scale-[1.02]',
-          )}
-        >
+        <div className={cn(metricCardClass, 'surface-card--glow quant-panel--glow-hero')}>
           <Metric label="Best Objective" value={bestObjective} highlight />
         </div>
       )}

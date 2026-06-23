@@ -927,7 +927,7 @@ export function IndicatorsModal({
 
   return createPortal(
     <div
-      className="bg-carbon-950/75 animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xs transition-all duration-300"
+      className="surface-overlay-scrim animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
       role="presentation"
       onClick={onClose}
     >
@@ -935,7 +935,7 @@ export function IndicatorsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="indicators-modal-title"
-        className="quant-panel bg-carbon-900 border-brass-600/20 flex h-[580px] w-full max-w-4xl flex-col overflow-hidden rounded-xl border shadow-[0_0_50px_-12px_rgba(196,165,116,0.25)] transition-all duration-300 select-none"
+        className="surface-overlay flex h-[580px] w-full max-w-4xl flex-col overflow-hidden rounded-xl transition-[transform,opacity] duration-300 select-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
