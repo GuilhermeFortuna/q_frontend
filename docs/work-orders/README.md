@@ -662,14 +662,19 @@ This is not a "make it plain" performance pass. The goal is equal-or-better visu
 deliberate rendering architecture: measured performance, one controlled cinematic scene, cheap
 premium DOM materials, lazy feature islands, scalable result surfaces, and Tauri/Linux runtime gates.
 
-| #   | File                                                                                                                             | Repo       | Depends on         |
-| --- | -------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------ |
-| 96  | [WO96-frontend-cinematic-performance-instrumentation.md](WO96-frontend-cinematic-performance-instrumentation.md)                 | q_frontend | —                  |
-| 97  | [WO97-frontend-cinematic-scene-renderer.md](WO97-frontend-cinematic-scene-renderer.md)                                           | q_frontend | WO96               |
-| 98  | [WO98-frontend-premium-shell-material-system.md](WO98-frontend-premium-shell-material-system.md)                                 | q_frontend | WO96               |
-| 99  | [WO99-frontend-feature-islands-code-splitting.md](WO99-frontend-feature-islands-code-splitting.md)                               | q_frontend | WO96               |
-| 100 | [WO100-frontend-large-result-surfaces-workers-virtualization.md](WO100-frontend-large-result-surfaces-workers-virtualization.md) | q_frontend | WO96; WO99 helpful |
-| 101 | [WO101-frontend-tauri-linux-runtime-performance-gates.md](WO101-frontend-tauri-linux-runtime-performance-gates.md)               | q_frontend | WO96; after 97-100 |
+| #   | File                                                                                                                             | Repo       | Depends on          |
+| --- | -------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------- |
+| 96  | [WO96-frontend-cinematic-performance-instrumentation.md](WO96-frontend-cinematic-performance-instrumentation.md)                 | q_frontend | —                   |
+| 97  | [WO97-frontend-cinematic-scene-renderer.md](WO97-frontend-cinematic-scene-renderer.md)                                           | q_frontend | WO96                |
+| 98  | [WO98-frontend-premium-shell-material-system.md](WO98-frontend-premium-shell-material-system.md)                                 | q_frontend | WO96                |
+| 99  | [WO99-frontend-feature-islands-code-splitting.md](WO99-frontend-feature-islands-code-splitting.md)                               | q_frontend | WO96                |
+| 100 | [WO100-frontend-large-result-surfaces-workers-virtualization.md](WO100-frontend-large-result-surfaces-workers-virtualization.md) | q_frontend | WO96; WO99 helpful  |
+| 101 | [WO101-frontend-tauri-linux-runtime-performance-gates.md](WO101-frontend-tauri-linux-runtime-performance-gates.md)               | q_frontend | WO96; after 97-100  |
+| 102 | [WO102-frontend-performance-hud-runtime-fix.md](WO102-frontend-performance-hud-runtime-fix.md)                                   | q_frontend | WO96; WO101         |
+| 103 | [WO103-frontend-backtest-worker-request-correlation.md](WO103-frontend-backtest-worker-request-correlation.md)                   | q_frontend | WO100               |
+| 104 | [WO104-frontend-cinematic-particle-hot-loop-optimization.md](WO104-frontend-cinematic-particle-hot-loop-optimization.md)         | q_frontend | WO97; WO102         |
+| 105 | [WO105-frontend-virtualization-layout-correctness.md](WO105-frontend-virtualization-layout-correctness.md)                       | q_frontend | WO100               |
+| 106 | [WO106-frontend-main-bundle-reduction-gate.md](WO106-frontend-main-bundle-reduction-gate.md)                                     | q_frontend | WO99; WO102 helpful |
 
 ### Dispatch order
 
@@ -678,6 +683,13 @@ WO96 ─┬─► WO97 ─┐
       ├─► WO98 ─┼─► WO101
       ├─► WO99 ─┤
       └─► WO100 ┘
+
+WO101 review follow-ups:
+
+WO102 ─┬─► WO104
+       └─► WO106
+WO100 ─┬─► WO103
+       └─► WO105
 ```
 
 WO96 must land first because every later WO needs instrumentation and budget language. WO97 and WO98
@@ -686,6 +698,11 @@ while WO98 owns the reusable material system and repeated DOM surface cost. WO99
 and is mostly route/module architecture. WO100 can start after WO96, but benefits from WO99 if route
 islands are already in place. WO101 should run after at least one architecture WO lands and then
 become the recurring verification gate for future cinematic shell changes.
+
+WO102-WO106 are follow-ups from the first implementation review. WO102 should land first because it
+unblocks reliable runtime measurements. WO103 and WO105 address WO100 correctness risks. WO104
+optimizes the WO97 cinematic loop without changing the visual direction. WO106 keeps WO99 honest by
+turning the remaining large main chunk into a tracked startup-weight gate.
 
 ### Batch-specific review checklist
 
@@ -701,6 +718,19 @@ become the recurring verification gate for future cinematic shell changes.
 7. Was Tauri/Podman runtime verification run for shell/cinematic work, or explicitly deferred with
    exact manual steps?
 8. Did the agent actually run `pnpm test:run`, typecheck, and build as specified, or just claim green?
+
+### Performance acceptance gates (WO101)
+
+Recurring checklist for shell, cinematic, and routing work. Full procedure: [runtime-performance.md](../runtime-performance.md).
+
+1. **No new always-on canvas** outside feature-specific 3D workspaces without a budget note in the PR and an update to `budgets.ts` if the ceiling changes.
+2. **No app-wide animation loop** outside `CinematicScene` / registered feature renderers — shell chrome stays compositor-driven.
+3. **No repeated `backdrop-filter`** on dense cards/tables; blur belongs on shell chrome, modal scrims, and single-instance chart floats.
+4. **Hidden panes** must not poll, fetch, render charts, or mount heavy lazy islands while collapsed or off-route.
+5. **Browser smoke:** `cd q_frontend && pnpm perf:smoke` with dev server running (`./dev.sh --mocks` or `--web`).
+6. **Tauri smoke:** `./dev.sh --podman` manual checklist with `VITE_PERF_HUD=true`, or explicit deferral with recorded steps.
+7. **WO96 before/after:** paste HUD or `[perf]` readings for `/`, `/backtests`, and one other workspace when claiming perf improvements.
+8. **Visual guardrail:** runtime fixes must use cheaper rendering paths — not visual downgrade.
 
 ## Review checklist (apply to every returned PR)
 
