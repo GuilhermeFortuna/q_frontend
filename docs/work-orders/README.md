@@ -612,6 +612,49 @@ the branch scope clean.
    typecheck/build and visual evidence?
 7. Did the agent actually run the stated `uv` / `pnpm` verification commands, or just claim green?
 
+## Phase: Constrained AI Strategy Builder
+
+Adds a constrained AI authoring layer inside the existing Backtests `StrategyStudio`. The model does
+not generate executable code. It translates natural language into a typed `StrategySpec`, the backend
+validates it against generated capabilities, and a deterministic compiler maps it into Q's existing
+runtime (`CompositeStrategy` genome or built-in strategy config).
+
+| #   | File                                                                                             | Repo                   | Depends on          |
+| --- | ------------------------------------------------------------------------------------------------ | ---------------------- | ------------------- |
+| 90  | [WO90-backend-ai-capability-registry.md](WO90-backend-ai-capability-registry.md)                 | q_backend              | —                   |
+| 91  | [WO91-backend-strategy-spec-schema-validator.md](WO91-backend-strategy-spec-schema-validator.md) | q_backend              | WO90                |
+| 92  | [WO92-backend-strategy-spec-compiler.md](WO92-backend-strategy-spec-compiler.md)                 | q_backend              | WO90 + WO91         |
+| 93  | [WO93-backend-ai-strategy-interpret-endpoint.md](WO93-backend-ai-strategy-interpret-endpoint.md) | q_backend              | WO90 + WO91 + WO92  |
+| 94  | [WO94-frontend-ai-strategy-panel.md](WO94-frontend-ai-strategy-panel.md)                         | q_frontend             | WO90-WO93 contracts |
+| 95  | [WO95-frontend-ai-strategy-save-run-iterate.md](WO95-frontend-ai-strategy-save-run-iterate.md)   | q_frontend + q_backend | WO90-WO94           |
+
+### Dispatch order
+
+```
+WO90 ──► WO91 ──► WO92 ──► WO93 ──► WO94 ──► WO95
+```
+
+WO90 first because every later step consumes generated backend truth. WO91 defines the user-facing
+spec and structured validation. WO92 proves the core architectural claim by compiling valid specs
+into existing runnable strategy payloads. WO93 adds the AI model only after validation and compilation
+exist. WO94 integrates the authoring panel into the current Backtests `StrategyStudio`; it must not
+create a new standalone Strategy page. WO95 finishes save/run/export/iteration with traceability.
+
+### Batch-specific review checklist
+
+1. Is the capability registry generated from backend truth rather than hand-maintained?
+2. Does `StrategySpec` remain a wrapper/subset over existing Q capabilities, not an unbounded second
+   runtime DSL?
+3. Can a valid spec compile deterministically to `CompositeStrategy` or a built-in strategy without
+   generated Python?
+4. Does every model output pass backend validation before compilation, save, or run?
+5. Are unsupported requests visible to the user and explicitly acknowledged before running/saving a
+   closest-supported substitute?
+6. Is the UI inside Backtests `StrategyStudio`, with no new standalone `/strategy` surface?
+7. Do saved AI strategies preserve prompt/spec/capability/compiled-hash metadata while old custom
+   strategies still load?
+8. Did the agent actually run the stated `uv` / `pnpm` verification commands, or just claim green?
+
 ## Review checklist (apply to every returned PR)
 
 1. Does the compute path still work with Postgres **stopped**? (stop the container, run a backtest / a study)
