@@ -2,12 +2,24 @@ import { endOfDay, startOfDay } from 'date-fns'
 
 import type { RiskMode } from '@/components/optimize/optimizeFormShared'
 import {
+  createEntrySlotId,
+  defaultEntryManager,
+  type EntryInstanceState,
+  type EntryManagerState,
+} from '@/lib/backtesting/entryInstances'
+import {
   hydrateTransactionCostFields,
   type TransactionCostFields,
 } from '@/lib/backtesting/transactionCosts'
-import { formatMaxWorkersForInput } from '@/lib/optimize/studyConfig'
 import {
-  defaultSearchSpaceFromSpecs,
+  defaultEntrySearchSpaceFromSpecs,
+  defaultExitSearchSpaceFromSpecs,
+  hydrateEntrySearchSpacesFromPayload,
+} from '@/lib/optimize/multiEntrySearchSpace'
+import { isNamespacedMultiEntryPayload } from '@/lib/optimize/exitSearchSpace'
+import { formatMaxWorkersForInput } from '@/lib/optimize/studyConfig'
+import { withResolvedCustomStrategyParams } from '@/lib/strategies/resolveCustomStrategyParams'
+import {
   hydrateSearchSpaceFromPayload,
   type SearchSpaceFieldState,
 } from '@/lib/strategies/strategyParams'
@@ -22,6 +34,7 @@ import type {
   SearchParam,
 } from '@/types/optimization'
 import type { StrategyInfo } from '@/types/strategies'
+import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
 
 export type OptimizeFormHydration = {
   symbol: string
@@ -38,7 +51,11 @@ export type OptimizeFormHydration = {
   continueOnTrialError: boolean
   maxWorkersInput: string
   strategy: string
-  strategySearchSpace: Record<string, SearchSpaceFieldState>
+  entries: EntryInstanceState[]
+  entryManager: EntryManagerState
+  entrySearchSpaces: Record<string, Record<string, SearchSpaceFieldState>>
+  exitSearchSpace: Record<string, SearchSpaceFieldState>
+  managerSearchSpace: Record<string, SearchSpaceFieldState>
   riskMode: RiskMode
   qtyLow: number
   qtyHigh: number
@@ -98,19 +115,146 @@ function resolveStrategyInfo(
   return strategies.find((entry) => entry.name === strategyName)
 }
 
+function hydrateLegacySingleEntry(
+  config: OptimizationConfig,
+  strategies: StrategyInfo[],
+): Pick<
+  OptimizeFormHydration,
+  'entries' | 'entryManager' | 'entrySearchSpaces' | 'exitSearchSpace' | 'managerSearchSpace'
+> {
+  const strategyParams = config.search_space.strategy_params
+  const strategyName = config.backtest.strategy
+  const strategyInfo = resolveStrategyInfo(strategies, strategyName)
+  const resolved = strategyInfo
+    ? withResolvedCustomStrategyParams(strategyInfo, strategies, [])
+    : undefined
+  const specs = resolved?.params ?? strategyInfo?.params ?? []
+  const { entryParamSpecs, exitParamSpecs } = partitionStrategyParamSpecs(specs)
+
+  const slotId = createEntrySlotId()
+  const mergedSearchSpace = strategyInfo
+    ? hydrateSearchSpaceFromPayload(strategyParams, strategyInfo.params)
+    : hydrateSearchSpaceFromPayload(strategyParams, [])
+
+  const entrySearchSpace: Record<string, SearchSpaceFieldState> = {}
+  for (const spec of entryParamSpecs) {
+    if (mergedSearchSpace[spec.name]) {
+      entrySearchSpace[spec.name] = mergedSearchSpace[spec.name]
+    }
+  }
+
+  const exitSearchSpace: Record<string, SearchSpaceFieldState> = {}
+  for (const spec of exitParamSpecs) {
+    if (mergedSearchSpace[spec.name]) {
+      exitSearchSpace[spec.name] = mergedSearchSpace[spec.name]
+    }
+  }
+
+  return {
+    entries: [
+      {
+        slotId,
+        strategy: strategyName,
+        params: {},
+      },
+    ],
+    entryManager: defaultEntryManager(),
+    entrySearchSpaces: {
+      [slotId]:
+        Object.keys(entrySearchSpace).length > 0
+          ? entrySearchSpace
+          : defaultEntrySearchSpaceFromSpecs(specs),
+    },
+    exitSearchSpace:
+      Object.keys(exitSearchSpace).length > 0
+        ? exitSearchSpace
+        : defaultExitSearchSpaceFromSpecs(specs),
+    managerSearchSpace: {},
+  }
+}
+
+function hydrateMultiEntry(
+  config: OptimizationConfig,
+  strategies: StrategyInfo[],
+): Pick<
+  OptimizeFormHydration,
+  'entries' | 'entryManager' | 'entrySearchSpaces' | 'exitSearchSpace' | 'managerSearchSpace'
+> {
+  const backtestEntries = config.backtest.entries ?? []
+  const entries: EntryInstanceState[] = backtestEntries.map((entry, index) => ({
+    slotId: `slot-${index}`,
+    strategy: entry.strategy,
+    params: (entry.params ?? {}) as EntryInstanceState['params'],
+  }))
+
+  const entryManager: EntryManagerState = config.backtest.entry_manager
+    ? {
+        kind: config.backtest.entry_manager.kind as EntryManagerState['kind'],
+        params: (config.backtest.entry_manager.params ?? {}) as EntryManagerState['params'],
+      }
+    : defaultEntryManager()
+
+  const resolveSpecs = (strategyName: string) => {
+    const info = resolveStrategyInfo(strategies, strategyName)
+    if (!info) return []
+    return withResolvedCustomStrategyParams(info, strategies, []).params
+  }
+
+  const entrySearchSpaces = hydrateEntrySearchSpacesFromPayload(
+    entries,
+    config.search_space.strategy_params,
+    resolveSpecs,
+  )
+
+  const unionExitSpecs = new Map<string, StrategyInfo['params'][number]>()
+  for (const entry of entries) {
+    const specs = resolveSpecs(entry.strategy)
+    for (const spec of partitionStrategyParamSpecs(specs).exitParamSpecs) {
+      unionExitSpecs.set(spec.name, spec)
+    }
+  }
+  const exitParamSpecs = Array.from(unionExitSpecs.values())
+  const exitSearchSpace = hydrateSearchSpaceFromPayload(
+    config.search_space.strategy_params,
+    exitParamSpecs,
+  )
+
+  const managerSearchSpace = hydrateSearchSpaceFromPayload(
+    config.search_space.manager_params ?? {},
+    [],
+  )
+
+  return {
+    entries,
+    entryManager,
+    entrySearchSpaces,
+    exitSearchSpace,
+    managerSearchSpace,
+  }
+}
+
 export function hydrateOptimizeFormFromConfig(
   config: OptimizationConfig,
   strategies: StrategyInfo[] = [],
 ): OptimizeFormHydration {
-  const strategyParams = config.search_space.strategy_params
   const riskParams = config.search_space.risk_params
   const riskMode = readRiskMode(riskParams)
   const strategyName = config.backtest.strategy
 
-  const strategyInfo = resolveStrategyInfo(strategies, strategyName)
-  const strategySearchSpace = strategyInfo
-    ? hydrateSearchSpaceFromPayload(strategyParams, strategyInfo.params)
-    : hydrateSearchSpaceFromPayload(strategyParams, [])
+  const backtestEntries = config.backtest.entries ?? []
+  const entryManager = config.backtest.entry_manager ?? defaultEntryManager()
+  const entryState =
+    backtestEntries.length > 0 &&
+    isNamespacedMultiEntryPayload(
+      backtestEntries.map((entry, index) => ({
+        slotId: `slot-${index}`,
+        strategy: entry.strategy,
+        params: entry.params as EntryInstanceState['params'],
+      })),
+      entryManager,
+    )
+      ? hydrateMultiEntry(config, strategies)
+      : hydrateLegacySingleEntry(config, strategies)
 
   const qtyRange = readFloatRange(riskParams.quantity as FloatParam | undefined) ?? [1, 3]
   const marginRange = readLogFloatRange(
@@ -140,10 +284,7 @@ export function hydrateOptimizeFormFromConfig(
     continueOnTrialError: config.study.continue_on_trial_error ?? false,
     maxWorkersInput: formatMaxWorkersForInput(config.study.max_workers),
     strategy: strategyName,
-    strategySearchSpace:
-      Object.keys(strategySearchSpace).length > 0
-        ? strategySearchSpace
-        : defaultSearchSpaceFromSpecs(strategyInfo?.params ?? []),
+    ...entryState,
     riskMode,
     qtyLow: qtyRange[0],
     qtyHigh: qtyRange[1],

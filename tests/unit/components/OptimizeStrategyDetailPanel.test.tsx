@@ -17,22 +17,38 @@ describe('OptimizeStrategyDetailPanel exit search space', () => {
     ],
   }
 
+  const baseProps = {
+    entries: [{ slotId: 'slot-0', strategy: strategyWithExitParams.name, params: {} }],
+    strategies: [strategyWithExitParams],
+    customStrategies: [],
+    entrySearchSpaces: {
+      'slot-0': defaultSearchSpaceFromSpecs([strategyWithExitParams.params[0]]),
+    },
+    exitSearchSpace: defaultSearchSpaceFromSpecs(strategyWithExitParams.params),
+    managerSearchSpace: {},
+    entryManager: { kind: 'or' as const, params: {} },
+    managerParamSpecs: [],
+    resolveEntryParamSpecs: () => [strategyWithExitParams.params[0]],
+    onEntrySearchSpaceChange: vi.fn(),
+    onExitSearchSpaceChange: vi.fn(),
+    onManagerSearchSpaceChange: vi.fn(),
+    onRemoveEntry: vi.fn(),
+  }
+
   it('shows entry params plus search fields for candidate exits including enable params', () => {
     render(
       <OptimizeStrategyDetailPanel
-        strategy={strategyWithExitParams}
-        entryParamSpecs={[strategyWithExitParams.params[0]]}
+        {...baseProps}
         candidateExitParamSpecs={[
           mockExitParamSpecs[0],
           mockExitParamSpecs[1],
           mockExitParamSpecs[4],
         ]}
         applicableExitRules={mockExitCatalog.exit_rules}
-        searchSpace={defaultSearchSpaceFromSpecs(strategyWithExitParams.params)}
-        onSearchSpaceChange={vi.fn()}
       />,
     )
 
+    expect(screen.getByText(/e0 · Exit Rule Strategy/i)).toBeInTheDocument()
     expect(screen.getByText('Entry Param')).toBeInTheDocument()
     expect(screen.getByText('Rule A Mult')).toBeInTheDocument()
     expect(screen.getByText('Rule A Offset')).toBeInTheDocument()
@@ -42,12 +58,9 @@ describe('OptimizeStrategyDetailPanel exit search space', () => {
   it('shows a hint when applicable exits exist but none are candidates', () => {
     render(
       <OptimizeStrategyDetailPanel
-        strategy={strategyWithExitParams}
-        entryParamSpecs={[strategyWithExitParams.params[0]]}
+        {...baseProps}
         candidateExitParamSpecs={[]}
         applicableExitRules={mockExitCatalog.exit_rules}
-        searchSpace={defaultSearchSpaceFromSpecs(strategyWithExitParams.params)}
-        onSearchSpaceChange={vi.fn()}
       />,
     )
 
@@ -56,5 +69,40 @@ describe('OptimizeStrategyDetailPanel exit search space', () => {
         'Select an exit strategy to include it in the search (on/off and magnitude).',
       ),
     ).toBeInTheDocument()
+  })
+
+  it('surfaces vote_threshold control for majority manager', () => {
+    render(
+      <OptimizeStrategyDetailPanel
+        {...baseProps}
+        entryManager={{ kind: 'majority', params: { vote_threshold: 2 } }}
+        managerParamSpecs={[
+          {
+            name: 'vote_threshold',
+            label: 'Vote Threshold',
+            type: 'int',
+            default: 2,
+            min: 1,
+            max: 2,
+            step: 1,
+          },
+        ]}
+        managerSearchSpace={defaultSearchSpaceFromSpecs([
+          {
+            name: 'vote_threshold',
+            label: 'Vote Threshold',
+            type: 'int',
+            default: 2,
+            min: 1,
+            max: 2,
+            step: 1,
+          },
+        ])}
+        candidateExitParamSpecs={[]}
+        applicableExitRules={[]}
+      />,
+    )
+
+    expect(screen.getByText('Vote Threshold')).toBeInTheDocument()
   })
 })

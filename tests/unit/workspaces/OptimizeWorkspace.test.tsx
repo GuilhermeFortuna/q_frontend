@@ -12,7 +12,11 @@ import type { OptimizationConfig } from '@/types/optimization'
 
 const server = setupServer(...handlers)
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeAll(async () => {
+  server.listen({ onUnhandledRequest: 'error' })
+  // Preload the lazy optimize chunk so the first test does not race Suspense under full-suite load.
+  await import('@/app/lazyWorkspaces')
+})
 beforeEach(() => {
   useAppStore.getState().patchBacktestSession({
     workflowMode: 'backtest',
@@ -64,14 +68,21 @@ vi.mock('@/api/queries/market-data', async (importOriginal) => {
 })
 
 async function waitForStrategyLibrary() {
-  await waitFor(() => {
-    expect(
-      within(screen.getByTestId('optimize-workflow')).getByRole('button', {
-        name: /MA Crossover/i,
-        pressed: true,
-      }),
-    ).toBeInTheDocument()
-  })
+  await waitFor(
+    () => {
+      const workflow = screen.getByTestId('optimize-workflow')
+      expect(
+        within(workflow).queryByTestId('feature-island-fallback-route'),
+      ).not.toBeInTheDocument()
+      expect(
+        within(workflow).getByRole('button', {
+          name: /MA Crossover/i,
+          pressed: true,
+        }),
+      ).toBeInTheDocument()
+    },
+    { timeout: 10_000 },
+  )
 }
 
 function optimizeScope() {

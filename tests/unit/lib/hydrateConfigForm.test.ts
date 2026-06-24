@@ -50,13 +50,15 @@ describe('hydrateOptimizeFormFromConfig', () => {
     expect(hydrated.pruner).toBe('median')
     expect(hydrated.continueOnTrialError).toBe(true)
     expect(hydrated.strategy).toBe('MACrossover')
-    expect(hydrated.strategySearchSpace.short_period).toEqual({
+    const primarySlot = hydrated.entries[0]?.slotId
+    const entrySpace = primarySlot ? hydrated.entrySearchSpaces[primarySlot] : {}
+    expect(entrySpace.short_period).toEqual({
       kind: 'numeric',
       low: 5,
       high: 30,
       step: 1,
     })
-    expect(hydrated.strategySearchSpace.short_ma_type).toEqual({
+    expect(entrySpace.short_ma_type).toEqual({
       kind: 'categorical',
       choices: ['sma', 'ema'],
     })

@@ -65,7 +65,7 @@ describe('OptimizeSetupPanel custom strategies', () => {
     await user.click(screen.getByRole('button', { name: /MyCustomMA/i }))
 
     await waitFor(() => {
-      expect(screen.getByText('Short Period')).toBeInTheDocument()
+      expect(screen.getAllByText('Short Period').length).toBeGreaterThan(0)
       expect(screen.getByRole('heading', { name: 'Exit Strategies' })).toBeInTheDocument()
       expect(
         screen.getByText('Selected exits are searched (on/off + magnitude).'),

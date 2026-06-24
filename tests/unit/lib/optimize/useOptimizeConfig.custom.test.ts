@@ -6,6 +6,7 @@ import {
   type OptimizeConfigFields,
 } from '@/lib/optimize/useOptimizeConfig'
 import { buildStrategyParamsSearchSpacePayload } from '@/lib/optimize/exitSearchSpace'
+import { defaultEntrySearchSpaceFromSpecs } from '@/lib/optimize/multiEntrySearchSpace'
 import { defaultSearchSpaceFromSpecs } from '@/lib/strategies/strategyParams'
 import { withResolvedCustomStrategyParams } from '@/lib/strategies/resolveCustomStrategyParams'
 import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
@@ -17,7 +18,9 @@ import {
 } from '../../fixtures/optimizeCustomStrategyFixtures'
 
 function baseOptimizeFields(
-  strategySearchSpace: OptimizeConfigFields['strategySearchSpace'],
+  entrySearchSpaces: OptimizeConfigFields['entrySearchSpaces'],
+  exitSearchSpace: OptimizeConfigFields['exitSearchSpace'],
+  entries: OptimizeConfigFields['entries'],
 ): OptimizeConfigFields {
   return {
     symbol: 'PETR4',
@@ -41,7 +44,11 @@ function baseOptimizeFields(
     continueOnTrialError: false,
     maxWorkersInput: '',
     strategy: mockOptimizeCustomStrategy.name,
-    strategySearchSpace,
+    entries,
+    entryManager: { kind: 'or', params: {} },
+    entrySearchSpaces,
+    exitSearchSpace,
+    managerSearchSpace: {},
     riskMode: 'fixed_quantity',
     qtyLow: 1,
     qtyHigh: 3,
@@ -88,14 +95,27 @@ describe('useOptimizeConfig custom strategies', () => {
       mockOptimizeCustomSaved,
     ])
     const searchSpace = defaultSearchSpaceFromSpecs(selected.params)
+    const slotId = 'slot-0'
     const { entryParamSpecs, exitParamSpecs } = partitionStrategyParamSpecs(selected.params)
 
     expect(entryParamSpecs.length).toBeGreaterThan(0)
     expect(exitParamSpecs.length).toBeGreaterThan(0)
 
-    const config = buildOptimizationConfig(baseOptimizeFields(searchSpace), selected.name)
+    const entrySearchSpace = defaultEntrySearchSpaceFromSpecs(selected.params)
+    const exitSearchSpace = Object.fromEntries(
+      Object.entries(searchSpace).filter(([name]) =>
+        exitParamSpecs.some((spec) => spec.name === name),
+      ),
+    )
+
+    const config = buildOptimizationConfig(
+      baseOptimizeFields({ [slotId]: entrySearchSpace }, exitSearchSpace, [
+        { slotId, strategy: selected.name, params: {} },
+      ]),
+      selected.name,
+    )
     config.search_space.strategy_params = buildStrategyParamsSearchSpacePayload(
-      searchSpace,
+      { ...entrySearchSpace, ...exitSearchSpace },
       entryParamSpecs,
       exitParamSpecs,
       customExitRules,
@@ -137,5 +157,6 @@ describe('useOptimizeConfig custom strategies', () => {
 
     expect(searchSpace.trailing_stop_pct).toBeDefined()
     expect(searchSpace.short_period).toBeDefined()
+    expect(defaultEntrySearchSpaceFromSpecs(resolved.params).short_period).toBeDefined()
   })
 })

@@ -3,9 +3,17 @@ import { formatConfigSummaryRange } from '@/lib/backtesting/configSummary'
 import type { OptimizeConfigFields } from '@/lib/optimize/useOptimizeConfig'
 import type { StrategyInfo } from '@/types/strategies'
 
+function mergedSearchSpaceDigest(
+  fields: OptimizeConfigFields,
+): OptimizeConfigFields['entrySearchSpaces'][string] {
+  const primarySlot = fields.entries[0]?.slotId
+  const entrySpace = primarySlot ? (fields.entrySearchSpaces[primarySlot] ?? {}) : {}
+  return { ...entrySpace, ...fields.exitSearchSpace }
+}
+
 export function formatOptimizeSearchSpaceDigest(
   strategyInfo: StrategyInfo | undefined,
-  searchSpace: OptimizeConfigFields['strategySearchSpace'],
+  searchSpace: OptimizeConfigFields['entrySearchSpaces'][string],
 ): string {
   if (!strategyInfo) return 'no params'
 
@@ -40,7 +48,10 @@ export function formatOptimizeSetupTeaserSummary(
   capital: string
   studyDigest: string
 } {
-  const strategyLabel = strategyInfo?.label ?? fields.strategy
+  const strategyLabel =
+    fields.entries.length > 1
+      ? `${fields.entries.length} entries (${entryManagerLabel(fields.entryManager.kind)})`
+      : (strategyInfo?.label ?? fields.strategy)
   const timeframe = fields.engine === 'tick' ? fields.displayTimeframe : fields.timeframe
   const capital = fields.capital.toLocaleString('en-US')
   const objectiveLabel =
@@ -48,11 +59,17 @@ export function formatOptimizeSetupTeaserSummary(
 
   return {
     strategyLabel,
-    paramsDigest: formatOptimizeSearchSpaceDigest(strategyInfo, fields.strategySearchSpace),
+    paramsDigest: formatOptimizeSearchSpaceDigest(strategyInfo, mergedSearchSpaceDigest(fields)),
     symbol: fields.symbol,
     timeframe,
     range: formatConfigSummaryRange(fields.startDate, fields.endDate),
     capital,
     studyDigest: `${objectiveLabel} · ${fields.nTrials} trials`,
   }
+}
+
+function entryManagerLabel(kind: string): string {
+  if (kind === 'and') return 'AND'
+  if (kind === 'majority') return 'Majority'
+  return 'OR'
 }

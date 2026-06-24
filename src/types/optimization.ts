@@ -1,7 +1,7 @@
 // TS mirrors of q_backend/src/q_backend/optimization/models.py and the
 // async job payloads exposed by the /api/v1/optimize endpoints.
 
-import type { TransactionCostConfig } from '@/types/backtesting'
+import type { EntryInstance, EntryManagerConfig, TransactionCostConfig } from '@/types/backtesting'
 
 export type IntParam = { type: 'int'; low: number; high: number; step?: number }
 export type FloatParam = { type: 'float'; low: number; high: number; step?: number | null }
@@ -13,6 +13,7 @@ export type SearchParam = IntParam | FloatParam | LogFloatParam | CategoricalPar
 export type SearchSpaceConfig = {
   strategy_params: Record<string, SearchParam>
   risk_params: Record<string, SearchParam>
+  manager_params?: Record<string, SearchParam>
 }
 
 // Matches ObjectiveMode in models.py:10-15
@@ -46,6 +47,9 @@ export type OptimizationBacktestConfig = {
   initial_capital: number
   point_value: number
   strategy: string
+  entries?: EntryInstance[]
+  entry_manager?: EntryManagerConfig
+  exit_params?: Record<string, unknown>
   costs?: TransactionCostConfig
   day_trade?: boolean
   day_trade_start_time?: string

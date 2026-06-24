@@ -1,10 +1,20 @@
 import { endOfDay, startOfDay } from 'date-fns'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useCustomStrategies } from '@/api/queries/customStrategies'
-import { useExitRuleCatalog, useStrategies } from '@/api/queries/strategies'
+import { useExitRuleCatalog, useSignalManagers, useStrategies } from '@/api/queries/strategies'
 import type { RiskMode } from '@/components/optimize/optimizeFormShared'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
+import {
+  createEntrySlotId,
+  defaultEntryManager,
+  entryDefaultsFromSpecs,
+  instanceCountByStrategy,
+  toEntryManagerPayload,
+  toEntryPayload,
+  type EntryInstanceState,
+  type EntryManagerState,
+} from '@/lib/backtesting/entryInstances'
 import {
   buildCostsPayload,
   defaultTransactionCostFields,
@@ -12,28 +22,41 @@ import {
   type TransactionCostFields,
 } from '@/lib/backtesting/transactionCosts'
 import {
+  buildManagerSearchSpacePayload,
+  buildMultiEntryStrategyParamsSearchSpacePayload,
   buildStrategyParamsSearchSpacePayload,
   buildCandidateExitParamSpecs,
   filterApplicableExitRules,
   initialCandidateExitRuleIds,
+  isNamespacedMultiEntryPayload,
 } from '@/lib/optimize/exitSearchSpace'
 import { hydrateOptimizeFormFromConfig } from '@/lib/optimize/hydrateConfigForm'
+import {
+  defaultEntrySearchSpaceFromSpecs,
+  defaultExitSearchSpaceFromSpecs,
+  mergeExitSearchSpaceDefaults,
+} from '@/lib/optimize/multiEntrySearchSpace'
 import { isMaxWorkersInputInvalid, withMaxWorkers } from '@/lib/optimize/studyConfig'
 import { withResolvedCustomStrategyParams } from '@/lib/strategies/resolveCustomStrategyParams'
 import { strategyEngine } from '@/lib/strategies/strategyPresentation'
 import {
   defaultSearchSpaceFromSpecs,
-  searchSpaceToPayload,
   validateSearchSpace,
   type SearchSpaceFieldState,
 } from '@/lib/strategies/strategyParams'
 import { useAppStore } from '@/store/useAppStore'
 import type { ObjectiveMode, OptimizationConfig, Sampler, SearchParam } from '@/types/optimization'
+import type { CustomStrategy, StrategyParamSpec } from '@/types/strategies'
 import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
+
+const EMPTY_MANAGER_PARAM_SPECS: StrategyParamSpec[] = []
+const EMPTY_CUSTOM_STRATEGIES: CustomStrategy[] = []
 
 export type OptimizeEngine = 'candle' | 'tick'
 
 export const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M15', 'H1'] as const
+
+export type { EntryInstanceState, EntryManagerState } from '@/lib/backtesting/entryInstances'
 
 export type OptimizeConfigFields = {
   symbol: string
@@ -57,7 +80,11 @@ export type OptimizeConfigFields = {
   continueOnTrialError: boolean
   maxWorkersInput: string
   strategy: string
-  strategySearchSpace: Record<string, SearchSpaceFieldState>
+  entries: EntryInstanceState[]
+  entryManager: EntryManagerState
+  entrySearchSpaces: Record<string, Record<string, SearchSpaceFieldState>>
+  exitSearchSpace: Record<string, SearchSpaceFieldState>
+  managerSearchSpace: Record<string, SearchSpaceFieldState>
   riskMode: RiskMode
   qtyLow: number
   qtyHigh: number
@@ -95,9 +122,6 @@ export type OptimizeConfigSetters = {
   setContinueOnTrialError: (value: boolean) => void
   setMaxWorkersInput: (value: string) => void
   setStrategy: (value: string) => void
-  setStrategySearchSpace: React.Dispatch<
-    React.SetStateAction<Record<string, SearchSpaceFieldState>>
-  >
   setRiskMode: (value: RiskMode) => void
   setQtyLow: (value: number) => void
   setQtyHigh: (value: number) => void
@@ -113,7 +137,12 @@ export type OptimizeConfigSetters = {
   setCostFields: React.Dispatch<React.SetStateAction<TransactionCostFields>>
   handleEngineChange: (nextEngine: OptimizeEngine) => void
   handleStrategyChange: (nextStrategy: string) => void
-  handleSearchSpaceChange: (name: string, field: SearchSpaceFieldState) => void
+  addEntry: (strategyName: string) => void
+  removeEntry: (slotId: string) => void
+  setEntryManager: (manager: EntryManagerState) => void
+  handleEntrySearchSpaceChange: (slotId: string, name: string, field: SearchSpaceFieldState) => void
+  handleExitSearchSpaceChange: (name: string, field: SearchSpaceFieldState) => void
+  handleManagerSearchSpaceChange: (name: string, field: SearchSpaceFieldState) => void
 }
 
 export type OptimizeConfigValidation = {
@@ -128,6 +157,11 @@ export type OptimizeConfigValidation = {
 export function buildOptimizationConfig(
   fields: OptimizeConfigFields,
   selectedStrategyName: string,
+  options?: {
+    entries?: EntryInstanceState[]
+    entryManager?: EntryManagerState
+    exitParams?: Record<string, unknown>
+  },
 ): OptimizationConfig {
   const {
     symbol,
@@ -137,7 +171,6 @@ export function buildOptimizationConfig(
     endDate,
     capital,
     pointValue,
-    strategySearchSpace,
     riskMode,
     qtyLow,
     qtyHigh,
@@ -200,6 +233,7 @@ export function buildOptimizationConfig(
           }
 
   const costs = buildCostsPayload(costFields)
+  const useMultiEntryPayload = options?.entries && options.entryManager
 
   return {
     study: withMaxWorkers(
@@ -222,6 +256,13 @@ export function buildOptimizationConfig(
       initial_capital: capital,
       point_value: pointValue,
       strategy: selectedStrategyName,
+      ...(useMultiEntryPayload
+        ? {
+            entries: toEntryPayload(options.entries!),
+            entry_manager: toEntryManagerPayload(options.entryManager!),
+            exit_params: options.exitParams ?? {},
+          }
+        : {}),
       ...(costs ? { costs } : {}),
       day_trade: dayTrade,
       day_trade_start_time: dayTradeStartTime,
@@ -236,7 +277,7 @@ export function buildOptimizationConfig(
         : {}),
     },
     search_space: {
-      strategy_params: searchSpaceToPayload(strategySearchSpace, []),
+      strategy_params: {},
       risk_params: riskParams,
     },
   }
@@ -266,7 +307,13 @@ export function useOptimizeConfig() {
   const [maxWorkersInput, setMaxWorkersInput] = useState('')
 
   const [strategy, setStrategy] = useState('MACrossover')
-  const [strategySearchSpace, setStrategySearchSpace] = useState<
+  const [entries, setEntries] = useState<EntryInstanceState[]>([])
+  const [entryManager, setEntryManager] = useState<EntryManagerState>(defaultEntryManager)
+  const [entrySearchSpaces, setEntrySearchSpaces] = useState<
+    Record<string, Record<string, SearchSpaceFieldState>>
+  >({})
+  const [exitSearchSpace, setExitSearchSpace] = useState<Record<string, SearchSpaceFieldState>>({})
+  const [managerSearchSpace, setManagerSearchSpace] = useState<
     Record<string, SearchSpaceFieldState>
   >({})
   const [candidateExitRuleIds, setCandidateExitRuleIds] = useState<Set<string>>(() => new Set())
@@ -287,7 +334,9 @@ export function useOptimizeConfig() {
 
   const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
   const { data: exitCatalog } = useExitRuleCatalog()
-  const { data: customStrategies = [], isLoading: customStrategiesLoading } = useCustomStrategies()
+  const { data: signalManagersData } = useSignalManagers()
+  const { data: customStrategiesData, isLoading: customStrategiesLoading } = useCustomStrategies()
+  const customStrategies = customStrategiesData ?? EMPTY_CUSTOM_STRATEGIES
   const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
   const customStrategyNames = useMemo(
     () => new Set(customStrategies.map((entry) => entry.name)),
@@ -297,15 +346,73 @@ export function useOptimizeConfig() {
     () => strategies.filter((entry) => strategyEngine(entry) === engine),
     [strategies, engine],
   )
-  const selectedStrategy = useMemo(() => {
-    const info = filteredStrategies.find((entry) => entry.name === strategy)
+
+  const installSingleEntry = useCallback(
+    (
+      strategyName: string,
+      strategyInfo = strategies.find((entry) => entry.name === strategyName),
+    ) => {
+      if (!strategyInfo) return
+      const resolved = withResolvedCustomStrategyParams(strategyInfo, strategies, customStrategies)
+      const slotId = createEntrySlotId()
+      setEntries([
+        {
+          slotId,
+          strategy: strategyName,
+          params: entryDefaultsFromSpecs(resolved.params),
+        },
+      ])
+      setEntrySearchSpaces({
+        [slotId]: defaultEntrySearchSpaceFromSpecs(resolved.params),
+      })
+      setExitSearchSpace(defaultExitSearchSpaceFromSpecs(resolved.params))
+      setStrategy(strategyName)
+    },
+    [strategies, customStrategies],
+  )
+
+  const primaryEntryStrategy = useMemo(() => {
+    const primaryName = entries[0]?.strategy ?? strategy
+    const info = strategies.find((entry) => entry.name === primaryName)
     if (!info) return undefined
     return withResolvedCustomStrategyParams(info, strategies, customStrategies)
-  }, [filteredStrategies, strategy, strategies, customStrategies])
-  const { entryParamSpecs, exitParamSpecs } = useMemo(
-    () => partitionStrategyParamSpecs(selectedStrategy?.params ?? []),
-    [selectedStrategy?.params],
+  }, [entries, strategy, strategies, customStrategies])
+
+  const selectedStrategy = primaryEntryStrategy
+
+  const resolveEntryParamSpecs = useCallback(
+    (strategyName: string) => {
+      const info = strategies.find((entry) => entry.name === strategyName)
+      if (!info) return []
+      const resolved = withResolvedCustomStrategyParams(info, strategies, customStrategies)
+      return partitionStrategyParamSpecs(resolved.params).entryParamSpecs
+    },
+    [strategies, customStrategies],
   )
+
+  const { entryParamSpecs, exitParamSpecs } = useMemo(() => {
+    const exitSpecsByName = new Map<string, StrategyParamSpec>()
+    for (const entry of entries) {
+      const info = strategies.find((item) => item.name === entry.strategy)
+      if (!info) continue
+      const resolved = withResolvedCustomStrategyParams(info, strategies, customStrategies)
+      const partitioned = partitionStrategyParamSpecs(resolved.params)
+      for (const spec of partitioned.exitParamSpecs) {
+        exitSpecsByName.set(spec.name, spec)
+      }
+    }
+
+    const primaryPartition = partitionStrategyParamSpecs(primaryEntryStrategy?.params ?? [])
+    if (exitSpecsByName.size === 0) {
+      return primaryPartition
+    }
+
+    return {
+      entryParamSpecs: primaryPartition.entryParamSpecs,
+      exitParamSpecs: Array.from(exitSpecsByName.values()),
+    }
+  }, [entries, primaryEntryStrategy?.params, strategies, customStrategies])
+
   const applicableExitRules = useMemo(
     () => filterApplicableExitRules(exitCatalog?.exit_rules ?? [], exitParamSpecs),
     [exitCatalog?.exit_rules, exitParamSpecs],
@@ -323,6 +430,27 @@ export function useOptimizeConfig() {
       ),
     [candidateExitRules, exitParamSpecs, exitCatalog?.shared_exit_params],
   )
+
+  const managerParamSpecs = useMemo(() => {
+    const manager = signalManagersData?.managers.find((entry) => entry.id === entryManager.kind)
+    return manager?.params ?? EMPTY_MANAGER_PARAM_SPECS
+  }, [signalManagersData?.managers, entryManager.kind])
+
+  const entryInstancesKey = useMemo(
+    () => entries.map((entry) => `${entry.slotId}:${entry.strategy}`).join('|'),
+    [entries],
+  )
+
+  const exitSpecNamesKey = useMemo(
+    () => exitParamSpecs.map((spec) => spec.name).join(','),
+    [exitParamSpecs],
+  )
+
+  const applicableExitRuleIdsKey = useMemo(
+    () => applicableExitRules.map((rule) => rule.id).join(','),
+    [applicableExitRules],
+  )
+
   const searchSpaceInitialized = useRef(false)
 
   const pendingOptimizationConfig = useAppStore((s) => s.pendingOptimizationConfig)
@@ -333,17 +461,33 @@ export function useOptimizeConfig() {
     const pool = strategies.filter((entry) => strategyEngine(entry) === engine)
     const info = pool.find((entry) => entry.name === strategy) ?? pool[0]
     if (!info) return
-    const resolved = withResolvedCustomStrategyParams(info, strategies, customStrategies)
     if (!pool.some((entry) => entry.name === strategy)) {
-      setStrategy(resolved.name)
+      installSingleEntry(info.name, info)
+    } else {
+      installSingleEntry(strategy, info)
     }
-    setStrategySearchSpace(defaultSearchSpaceFromSpecs(resolved.params))
     searchSpaceInitialized.current = true
-  }, [strategies, strategy, engine, customStrategies])
+  }, [strategies, strategy, engine, installSingleEntry])
 
   useEffect(() => {
     setCandidateExitRuleIds(initialCandidateExitRuleIds(applicableExitRules, exitParamSpecs))
-  }, [strategy, applicableExitRules, exitParamSpecs])
+    // Reset candidates when entry instances or applicable exit specs change.
+  }, [entryInstancesKey, exitSpecNamesKey, applicableExitRuleIdsKey])
+
+  useEffect(() => {
+    if (entryManager.kind !== 'majority') return
+    if (managerParamSpecs.length === 0) return
+    setManagerSearchSpace((current) =>
+      Object.keys(current).length > 0 ? current : defaultSearchSpaceFromSpecs(managerParamSpecs),
+    )
+  }, [entryManager.kind, managerParamSpecs])
+
+  const setEntryManagerState = useCallback((manager: EntryManagerState) => {
+    setEntryManager(manager)
+    if (manager.kind !== 'majority') {
+      setManagerSearchSpace({})
+    }
+  }, [])
 
   const toggleExitRule = (ruleId: string) => {
     setCandidateExitRuleIds((current) => {
@@ -375,7 +519,11 @@ export function useOptimizeConfig() {
     setContinueOnTrialError(hydrated.continueOnTrialError)
     setMaxWorkersInput(hydrated.maxWorkersInput)
     setStrategy(hydrated.strategy)
-    setStrategySearchSpace(hydrated.strategySearchSpace)
+    setEntries(hydrated.entries)
+    setEntryManager(hydrated.entryManager)
+    setEntrySearchSpaces(hydrated.entrySearchSpaces)
+    setExitSearchSpace(hydrated.exitSearchSpace)
+    setManagerSearchSpace(hydrated.managerSearchSpace)
     setRiskMode(hydrated.riskMode)
     setQtyLow(hydrated.qtyLow)
     setQtyHigh(hydrated.qtyHigh)
@@ -405,29 +553,98 @@ export function useOptimizeConfig() {
     setEngine(nextEngine)
     const pool = strategies.filter((entry) => strategyEngine(entry) === nextEngine)
     if (pool.length === 0) return
-    const currentValid = pool.some((entry) => entry.name === strategy)
+    const currentValid = entries.some((entry) => pool.some((item) => item.name === entry.strategy))
     if (!currentValid) {
-      const next = withResolvedCustomStrategyParams(pool[0], strategies, customStrategies)
-      setStrategy(next.name)
-      setStrategySearchSpace(defaultSearchSpaceFromSpecs(next.params))
+      installSingleEntry(pool[0].name, pool[0])
     }
   }
 
   const handleStrategyChange = (nextStrategy: string) => {
-    setStrategy(nextStrategy)
     const info = strategies.find((entry) => entry.name === nextStrategy)
-    if (info) {
-      const resolved = withResolvedCustomStrategyParams(info, strategies, customStrategies)
-      setStrategySearchSpace(defaultSearchSpaceFromSpecs(resolved.params))
-    }
+    installSingleEntry(nextStrategy, info)
   }
 
-  const handleSearchSpaceChange = (name: string, field: SearchSpaceFieldState) => {
-    setStrategySearchSpace((current) => ({ ...current, [name]: field }))
-  }
+  const addEntry = useCallback(
+    (strategyName: string) => {
+      const info = strategies.find((entry) => entry.name === strategyName)
+      if (!info) return
+      const resolved = withResolvedCustomStrategyParams(info, strategies, customStrategies)
+      const slotId = createEntrySlotId()
+      setEntries((current) => [
+        ...current,
+        {
+          slotId,
+          strategy: strategyName,
+          params: entryDefaultsFromSpecs(resolved.params),
+        },
+      ])
+      setEntrySearchSpaces((current) => ({
+        ...current,
+        [slotId]: defaultEntrySearchSpaceFromSpecs(resolved.params),
+      }))
+      setExitSearchSpace((current) => mergeExitSearchSpaceDefaults(current, resolved.params))
+      setStrategy((current) => current || strategyName)
+    },
+    [strategies, customStrategies],
+  )
+
+  const removeEntry = useCallback((slotId: string) => {
+    setEntries((current) => {
+      if (current.length <= 1) return current
+      const next = current.filter((entry) => entry.slotId !== slotId)
+      setEntryManager((manager) => {
+        if (manager.kind !== 'majority' || manager.params.vote_threshold == null) {
+          return manager
+        }
+        const vote = Number(manager.params.vote_threshold)
+        return {
+          ...manager,
+          params: {
+            ...manager.params,
+            vote_threshold: Math.min(Math.max(vote, 1), Math.max(next.length, 1)),
+          },
+        }
+      })
+      return next
+    })
+    setEntrySearchSpaces((current) => {
+      if (!(slotId in current)) return current
+      const next = { ...current }
+      delete next[slotId]
+      return next
+    })
+  }, [])
+
+  const handleEntrySearchSpaceChange = useCallback(
+    (slotId: string, name: string, field: SearchSpaceFieldState) => {
+      setEntrySearchSpaces((current) => ({
+        ...current,
+        [slotId]: { ...current[slotId], [name]: field },
+      }))
+    },
+    [],
+  )
+
+  const handleExitSearchSpaceChange = useCallback((name: string, field: SearchSpaceFieldState) => {
+    setExitSearchSpace((current) => ({ ...current, [name]: field }))
+  }, [])
+
+  const handleManagerSearchSpaceChange = useCallback(
+    (name: string, field: SearchSpaceFieldState) => {
+      setManagerSearchSpace((current) => ({ ...current, [name]: field }))
+    },
+    [],
+  )
 
   const dateRangeInvalid = startDate >= endDate
   const costValidation = useMemo(() => validateTransactionCosts(costFields), [costFields])
+
+  const searchSpacesValid = useMemo(() => {
+    const entryValid = Object.values(entrySearchSpaces).every((space) => validateSearchSpace(space))
+    const exitValid = validateSearchSpace(exitSearchSpace)
+    const managerValid = entryManager.kind !== 'majority' || validateSearchSpace(managerSearchSpace)
+    return entryValid && exitValid && managerValid
+  }, [entrySearchSpaces, exitSearchSpace, entryManager.kind, managerSearchSpace])
 
   const rangesInvalid =
     (riskMode === 'fixed_quantity'
@@ -435,7 +652,7 @@ export function useOptimizeConfig() {
       : riskMode === 'fixed_safety_margin'
         ? marginLow > marginHigh || minContractsLow > minContractsHigh
         : targetVolLow > targetVolHigh || inverseMinContractsLow > inverseMinContractsHigh) ||
-    !validateSearchSpace(strategySearchSpace)
+    !searchSpacesValid
 
   const isMultiObjective = objective === 'multi_objective_return_drawdown'
 
@@ -444,7 +661,8 @@ export function useOptimizeConfig() {
     rangesInvalid ||
     nTrials < 1 ||
     !costValidation.valid ||
-    isMaxWorkersInputInvalid(maxWorkersInput)
+    isMaxWorkersInputInvalid(maxWorkersInput) ||
+    entries.length === 0
 
   const fields: OptimizeConfigFields = {
     symbol,
@@ -468,7 +686,11 @@ export function useOptimizeConfig() {
     continueOnTrialError,
     maxWorkersInput,
     strategy,
-    strategySearchSpace,
+    entries,
+    entryManager,
+    entrySearchSpaces,
+    exitSearchSpace,
+    managerSearchSpace,
     riskMode,
     qtyLow,
     qtyHigh,
@@ -506,7 +728,6 @@ export function useOptimizeConfig() {
     setContinueOnTrialError,
     setMaxWorkersInput,
     setStrategy,
-    setStrategySearchSpace,
     setRiskMode,
     setQtyLow,
     setQtyHigh,
@@ -522,7 +743,12 @@ export function useOptimizeConfig() {
     setCostFields,
     handleEngineChange,
     handleStrategyChange,
-    handleSearchSpaceChange,
+    addEntry,
+    removeEntry,
+    setEntryManager: setEntryManagerState,
+    handleEntrySearchSpaceChange,
+    handleExitSearchSpaceChange,
+    handleManagerSearchSpaceChange,
   }
 
   const validation: OptimizeConfigValidation = {
@@ -535,18 +761,55 @@ export function useOptimizeConfig() {
   }
 
   const buildOptimizationConfigPayload = () => {
-    if (!selectedStrategy) {
+    if (!selectedStrategy || entries.length === 0) {
       throw new Error('No strategy selected')
     }
-    const config = buildOptimizationConfig(fields, selectedStrategy.name)
-    config.search_space.strategy_params = buildStrategyParamsSearchSpacePayload(
-      strategySearchSpace,
-      entryParamSpecs,
-      exitParamSpecs,
-      applicableExitRules,
-      candidateExitRuleIds,
-      exitCatalog?.shared_exit_params ?? [],
+
+    const multiEntry = isNamespacedMultiEntryPayload(entries, entryManager)
+    const primaryStrategyName = entries[0].strategy
+
+    const config = buildOptimizationConfig(
+      fields,
+      primaryStrategyName,
+      multiEntry
+        ? {
+            entries,
+            entryManager,
+            exitParams: {},
+          }
+        : undefined,
     )
+
+    if (multiEntry) {
+      config.search_space.strategy_params = buildMultiEntryStrategyParamsSearchSpacePayload(
+        entries,
+        entrySearchSpaces,
+        exitSearchSpace,
+        resolveEntryParamSpecs,
+        exitParamSpecs,
+        applicableExitRules,
+        candidateExitRuleIds,
+        exitCatalog?.shared_exit_params ?? [],
+      )
+      if (entryManager.kind === 'majority' && managerParamSpecs.length > 0) {
+        config.search_space.manager_params = buildManagerSearchSpacePayload(
+          managerSearchSpace,
+          managerParamSpecs,
+        )
+      }
+    } else {
+      const singleSlotId = entries[0].slotId
+      const singleEntrySpace = entrySearchSpaces[singleSlotId] ?? {}
+      config.search_space.strategy_params = buildStrategyParamsSearchSpacePayload(
+        { ...singleEntrySpace, ...exitSearchSpace },
+        resolveEntryParamSpecs(entries[0].strategy),
+        exitParamSpecs,
+        applicableExitRules,
+        candidateExitRuleIds,
+        exitCatalog?.shared_exit_params ?? [],
+      )
+    }
+
     return config
   }
 
@@ -558,11 +821,19 @@ export function useOptimizeConfig() {
     customStrategies,
     customStrategyNames,
     selectedStrategy,
+    entries,
+    entryManager,
+    entrySearchSpaces,
+    exitSearchSpace,
+    managerSearchSpace,
+    instanceCounts: instanceCountByStrategy(entries),
     entryParamSpecs,
     exitParamSpecs,
+    resolveEntryParamSpecs,
     applicableExitRules,
     candidateExitRuleIds,
     candidateExitParamSpecs,
+    managerParamSpecs,
     toggleExitRule,
     strategiesLoading: strategiesLoading || customStrategiesLoading,
     validation,

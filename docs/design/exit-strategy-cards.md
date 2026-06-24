@@ -33,7 +33,7 @@ In both Simulation and Optimization, the strategy library column shows:
 └────────────────────────────┘  └─────────────────────────────┘
 ```
 
-- **Entry cards:** single-select (pick one base strategy) — unchanged.
+- **Entry cards:** multi-select instances (add/remove, duplicates allowed) paired with a signal manager (OR / AND / Majority). See `docs/design/multi-entry-composition.md`.
 - **Exit cards:** multi-select selectable cards (shared `LibraryCard` shell), sourced from the
   exit-rule catalog (`useExitRuleCatalog`), each tagged by `exit_group` (Stop Loss / Trailing /
   Targets / Time), filtered to rules whose params exist on the selected strategy. Click toggles

@@ -75,16 +75,16 @@ depends only on bars `≤ i`).
 - API: `BacktestRequest` gains `entries: list[EntryInstance] | None`,
   `entry_manager: EntryManagerConfig`, and a top-level `exit_params: dict` (shared, position-level
   exits). `entries=None` ⇒ synthesize one instance from `strategy`/`strategy_params` + OR manager.
-  New `GET /api/v1/signal-managers` catalog.
+  New `GET /api/v1/signal-managers` catalog. **(Landed WO109.)**
 - Optimization: per-instance param namespacing (`e{i}__<param>`), manager params searchable;
   `backtest_runner` rebuilds the entries list from trial params.
 
 ### Frontend
 
-- `StrategyStudio` (Simulation) and `OptimizeSetupPanel` (Optimize): entry cards become
+- `StrategyStudio` (Simulation) and `OptimizeSetupPanel` (Optimize): entry cards are
   **multi-select instances** (add/remove, duplicates allowed) reusing the `LibraryCard` shell from
   WO88; a **manager selector** (OR / AND / Majority+threshold); per-instance param (Simulation) or
-  search-range (Optimize) panels stacked on the right.
+  search-range (Optimize) panels stacked on the right. **(Landed WO111 Simulation + WO112 Optimize.)**
 - `useBacktestConfig` holds `entries` + `entryManager`; `buildBacktestRequest` emits the new
   payload (and keeps emitting the legacy single-entry shape when only one instance + OR is set, so
   nothing else has to change at once).

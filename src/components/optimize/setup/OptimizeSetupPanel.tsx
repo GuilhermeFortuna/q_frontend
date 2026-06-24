@@ -1,5 +1,7 @@
 import { ExitStrategyCards } from '@/components/backtests/setup/ExitStrategyCards'
+import { EntryManagerSelector } from '@/components/backtests/setup/EntryManagerSelector'
 import { StrategyLibrary } from '@/components/backtests/setup/StrategyLibrary'
+import { useSignalManagers } from '@/api/queries/strategies'
 import { OptimizeMarketConfigBand } from '@/components/optimize/setup/OptimizeMarketConfigBand'
 import { OptimizeStrategyDetailPanel } from '@/components/optimize/setup/OptimizeStrategyDetailPanel'
 import { OptimizeStudyBand } from '@/components/optimize/setup/OptimizeStudyBand'
@@ -24,9 +26,12 @@ export function OptimizeSetupPanel({
   disabled = false,
   onSubmit,
 }: OptimizeSetupPanelProps) {
+  const { data: signalManagersData } = useSignalManagers()
+  const signalManagers = signalManagersData?.managers ?? []
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (config.validation.formInvalid || disabled || !config.selectedStrategy) return
+    if (config.validation.formInvalid || disabled || config.entries.length === 0) return
     onSubmit(config.buildOptimizationConfig())
   }
 
@@ -44,9 +49,24 @@ export function OptimizeSetupPanel({
             strategies={config.strategies}
             customStrategies={config.customStrategies}
             engine={config.fields.engine}
-            selectedStrategyName={config.selectedStrategy?.name}
-            onSelectBuiltIn={config.setters.handleStrategyChange}
+            multiSelect
+            instanceCounts={config.instanceCounts}
+            onAddEntry={(name) => {
+              if (config.customStrategyNames.has(name)) {
+                config.setters.handleStrategyChange(name)
+                return
+              }
+              config.setters.addEntry(name)
+            }}
+            onSelectCustom={(custom) => config.setters.handleStrategyChange(custom.name)}
             loading={config.strategiesLoading}
+          />
+          <EntryManagerSelector
+            managers={signalManagers}
+            value={config.entryManager}
+            onChange={config.setters.setEntryManager}
+            instanceCount={config.entries.length}
+            showParams={false}
           />
           <ExitStrategyCards
             rules={config.applicableExitRules}
@@ -58,12 +78,21 @@ export function OptimizeSetupPanel({
           />
         </div>
         <OptimizeStrategyDetailPanel
-          strategy={config.selectedStrategy}
-          entryParamSpecs={config.entryParamSpecs}
+          entries={config.entries}
+          strategies={config.strategies}
+          customStrategies={config.customStrategies}
+          entrySearchSpaces={config.entrySearchSpaces}
+          exitSearchSpace={config.exitSearchSpace}
+          managerSearchSpace={config.managerSearchSpace}
+          entryManager={config.entryManager}
+          managerParamSpecs={config.managerParamSpecs}
           candidateExitParamSpecs={config.candidateExitParamSpecs}
           applicableExitRules={config.applicableExitRules}
-          searchSpace={config.fields.strategySearchSpace}
-          onSearchSpaceChange={config.setters.handleSearchSpaceChange}
+          resolveEntryParamSpecs={config.resolveEntryParamSpecs}
+          onEntrySearchSpaceChange={config.setters.handleEntrySearchSpaceChange}
+          onExitSearchSpaceChange={config.setters.handleExitSearchSpaceChange}
+          onManagerSearchSpaceChange={config.setters.handleManagerSearchSpaceChange}
+          onRemoveEntry={config.setters.removeEntry}
         />
       </div>
 

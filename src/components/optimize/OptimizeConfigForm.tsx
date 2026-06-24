@@ -33,6 +33,23 @@ export function OptimizeConfigForm({
   const [advancedOpen, setAdvancedOpen] = useState(false)
 
   const { fields, setters, validation } = config
+  const primarySlotId = fields.entries[0]?.slotId
+  const mergedSearchSpace = {
+    ...(primarySlotId ? (fields.entrySearchSpaces[primarySlotId] ?? {}) : {}),
+    ...fields.exitSearchSpace,
+  }
+
+  const handleLegacySearchSpaceChange = (
+    name: string,
+    field: Parameters<typeof setters.handleExitSearchSpaceChange>[1],
+  ) => {
+    const entrySpecs = config.resolveEntryParamSpecs(fields.strategy)
+    if (entrySpecs.some((spec) => spec.name === name) && primarySlotId) {
+      setters.handleEntrySearchSpaceChange(primarySlotId, name, field)
+      return
+    }
+    setters.handleExitSearchSpaceChange(name, field)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,8 +83,8 @@ export function OptimizeConfigForm({
             tickFlags={fields.tickFlags}
             onTickFlagsChange={setters.setTickFlags}
             displayTimeframeOptions={DISPLAY_TIMEFRAME_OPTIONS}
-            searchSpace={fields.strategySearchSpace}
-            onSearchSpaceChange={setters.handleSearchSpaceChange}
+            searchSpace={mergedSearchSpace}
+            onSearchSpaceChange={handleLegacySearchSpaceChange}
             symbol={fields.symbol}
             setSymbol={setters.setSymbol}
             timeframe={fields.timeframe}

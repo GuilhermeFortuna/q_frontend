@@ -3,6 +3,8 @@ import {
   resolveRuleParamSpecs,
 } from '@/workspaces/strategy/exitRuleSemantics'
 import { searchSpaceToPayload, type SearchSpaceFieldState } from '@/lib/strategies/strategyParams'
+import { entrySearchSpaceToPayload } from '@/lib/optimize/multiEntrySearchSpace'
+import type { EntryInstanceState } from '@/lib/backtesting/entryInstances'
 import type { ExitRuleInfo, StrategyParamSpec } from '@/types/strategies'
 import type { SearchParam } from '@/types/optimization'
 
@@ -131,4 +133,64 @@ export function buildStrategyParamsSearchSpacePayload(
   }
 
   return payload
+}
+
+export function buildMultiEntryStrategyParamsSearchSpacePayload(
+  entries: EntryInstanceState[],
+  entrySearchSpaces: Record<string, Record<string, SearchSpaceFieldState>>,
+  exitSearchSpace: Record<string, SearchSpaceFieldState>,
+  resolveEntryParamSpecs: (strategyName: string) => StrategyParamSpec[],
+  exitParamSpecs: StrategyParamSpec[],
+  applicableExitRules: ExitRuleInfo[],
+  candidateExitRuleIds: Set<string>,
+  sharedExitParams: string[],
+): Record<string, SearchParam> {
+  const payload: Record<string, SearchParam> = {}
+
+  entries.forEach((entry, index) => {
+    const entryParamSpecs = resolveEntryParamSpecs(entry.strategy)
+    const slotSpace = entrySearchSpaces[entry.slotId] ?? {}
+    Object.assign(payload, entrySearchSpaceToPayload(index, slotSpace, entryParamSpecs))
+  })
+
+  const exitPayload = buildStrategyParamsSearchSpacePayload(
+    exitSearchSpace,
+    [],
+    exitParamSpecs,
+    applicableExitRules,
+    candidateExitRuleIds,
+    sharedExitParams,
+  )
+  Object.assign(payload, exitPayload)
+
+  return payload
+}
+
+export function buildManagerSearchSpacePayload(
+  managerSearchSpace: Record<string, SearchSpaceFieldState>,
+  managerParamSpecs: StrategyParamSpec[],
+): Record<string, SearchParam> {
+  return searchSpaceToPayload(managerSearchSpace, managerParamSpecs)
+}
+
+/** Strip `e{i}__` prefixes for single-entry back-compat assertions. */
+export function stripSingleEntrySearchSpacePrefix(
+  payload: Record<string, SearchParam>,
+): Record<string, SearchParam> {
+  const stripped: Record<string, SearchParam> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (key.startsWith('e0__')) {
+      stripped[key.slice(4)] = value
+    } else if (!key.includes('__')) {
+      stripped[key] = value
+    }
+  }
+  return stripped
+}
+
+export function isNamespacedMultiEntryPayload(
+  entries: EntryInstanceState[],
+  entryManager: { kind: string },
+): boolean {
+  return !(entries.length === 1 && entryManager.kind === 'or')
 }
