@@ -1,13 +1,16 @@
 import { Plus, Save, Trash2 } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 
+import { EntryManagerSelector } from '@/components/backtests/setup/EntryManagerSelector'
 import { ExitStrategyCards } from '@/components/backtests/setup/ExitStrategyCards'
 import { AiStrategyTeaser } from '@/components/backtests/setup/AiStrategyTeaser'
 import { StrategyLibrary } from '@/components/backtests/setup/StrategyLibrary'
 import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
 import { FeatureIslandFallback } from '@/components/islands/FeatureIslandFallback'
+import { useSignalManagers } from '@/api/queries/strategies'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
+import { instanceCountByStrategy } from '@/lib/backtesting/entryInstances'
 import type { AiStrategySession } from '@/lib/strategies/useAiStrategySession'
 import { filterApplicableExitRules } from '@/lib/optimize/exitSearchSpace'
 import type { BacktestRequest } from '@/types/backtesting'
@@ -19,7 +22,10 @@ import {
   resolveRuleParamSpecs,
   toggleExitRuleParam,
 } from '@/workspaces/strategy/exitRuleSemantics'
-import { EXIT_GROUP_LABELS } from '@/workspaces/strategy/exitWorkbenchGroups'
+import {
+  EXIT_GROUP_LABELS,
+  partitionStrategyParamSpecs,
+} from '@/workspaces/strategy/exitWorkbenchGroups'
 
 const LazyAiStrategyIsland = lazy(() =>
   import('@/components/backtests/setup/AiStrategyIsland').then((module) => ({
@@ -69,14 +75,21 @@ export function StrategyStudio({
     builtInStrategies,
     selectedStrategy,
     strategiesLoading,
-    entryParamSpecs,
     exitParamSpecs,
     exitCatalog,
     exitCatalogLoading,
     customStrategies,
     customLoading,
     authoring,
+    entries,
+    entryManager,
+    strategies,
   } = config
+
+  const { data: signalManagersData } = useSignalManagers()
+  const signalManagers = signalManagersData?.managers ?? []
+  const instanceCounts = useMemo(() => instanceCountByStrategy(entries), [entries])
+  const isComposite = fields.strategy === 'CompositeStrategy'
 
   const applicableExitRules = useMemo(
     () => filterApplicableExitRules(exitCatalog?.exit_rules ?? [], exitParamSpecs),
@@ -115,6 +128,12 @@ export function StrategyStudio({
 
   const handleSelectBuiltIn = (name: string) => {
     setters.handleStrategyChange(name)
+    authoring.newDraft()
+    aiSession?.resetDraft()
+  }
+
+  const handleAddEntry = (name: string) => {
+    setters.addEntry(name)
     authoring.newDraft()
     aiSession?.resetDraft()
   }
@@ -265,6 +284,9 @@ export function StrategyStudio({
             onSelectCustom={handleSelectCustom}
             onDeleteCustom={authoring.deleteCustom}
             loading={libraryLoading}
+            multiSelect={!isComposite}
+            instanceCounts={instanceCounts}
+            onAddEntry={handleAddEntry}
           />
           {exitCatalogLoading ? (
             <p className="text-silver-500 text-xs italic">Loading exits…</p>
@@ -279,7 +301,7 @@ export function StrategyStudio({
         </div>
 
         <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
-          {selectedStrategy?.thesis ? (
+          {selectedStrategy?.thesis && entries.length <= 1 ? (
             <div className="bg-carbon-900/35 border-carbon-800/60 rounded-lg border px-3 py-2">
               <button
                 type="button"
@@ -299,17 +321,66 @@ export function StrategyStudio({
             </div>
           ) : null}
 
-          {entryParamSpecs.length > 0 ? (
-            <StrategyParamFields
-              params={entryParamSpecs}
-              values={fields.strategyParams}
-              onChange={setters.handleParamChange}
-              className="bg-carbon-900/20 border-carbon-800/40 grid gap-3 rounded-lg border p-3 sm:grid-cols-2"
-              showHints
-              hintMode="compact"
+          {!isComposite && entries.length > 0 ? (
+            <EntryManagerSelector
+              managers={signalManagers}
+              value={entryManager}
+              onChange={setters.setEntryManager}
+              instanceCount={entries.length}
             />
+          ) : null}
+
+          {isComposite ? (
+            <div className="text-silver-500 text-xs italic">
+              Composite genome parameters are managed outside multi-entry instances.
+            </div>
           ) : (
-            <div className="text-silver-500 text-xs italic">No entry parameters to configure.</div>
+            entries.map((entry, index) => {
+              const strategyInfo = strategies.find((item) => item.name === entry.strategy)
+              const { entryParamSpecs: instanceEntrySpecs } = partitionStrategyParamSpecs(
+                strategyInfo?.params ?? [],
+              )
+              const label = strategyInfo?.label ?? entry.strategy
+
+              return (
+                <section
+                  key={entry.slotId}
+                  className="bg-carbon-900/20 border-carbon-800/40 rounded-lg border p-3"
+                  data-testid={`entry-instance-${index}`}
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h5 className="text-silver-400 text-xs font-semibold tracking-wide uppercase">
+                      e{index} · {label}
+                    </h5>
+                    {entries.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setters.removeEntry(entry.slotId)}
+                        className="text-silver-500 rounded p-1 transition-colors hover:text-rose-300"
+                        title={`Remove ${label}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                        <span className="sr-only">Remove {label}</span>
+                      </button>
+                    ) : null}
+                  </div>
+                  {instanceEntrySpecs.length > 0 ? (
+                    <StrategyParamFields
+                      params={instanceEntrySpecs}
+                      values={entry.params}
+                      onChange={(name, value) =>
+                        setters.handleEntryParamChange(entry.slotId, name, value)
+                      }
+                      className="grid gap-3 sm:grid-cols-2"
+                      showHints
+                      hintMode="compact"
+                    />
+                  ) : (
+                    <p className="text-silver-500 text-xs italic">No entry parameters.</p>
+                  )}
+                </section>
+              )
+            })
           )}
 
           {enabledExitRules.map((rule) => {

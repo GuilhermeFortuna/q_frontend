@@ -1,12 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
-import type { ExitRuleCatalogResponse, StrategiesResponse } from '@/types/strategies'
+import type {
+  ExitRuleCatalogResponse,
+  SignalManagerCatalogResponse,
+  StrategiesResponse,
+} from '@/types/strategies'
 
 export const strategyKeys = {
   all: ['strategies'] as const,
   list: () => [...strategyKeys.all, 'list'] as const,
   exitRules: () => [...strategyKeys.all, 'exit-rules'] as const,
+  signalManagers: () => [...strategyKeys.all, 'signal-managers'] as const,
 }
 
 export async function fetchStrategies(): Promise<StrategiesResponse> {
@@ -23,6 +28,19 @@ export function useStrategies() {
   return useQuery({
     queryKey: strategyKeys.list(),
     queryFn: fetchStrategies,
+    staleTime: Infinity,
+  })
+}
+
+export async function fetchSignalManagers(): Promise<SignalManagerCatalogResponse> {
+  const { data } = await apiClient.get<SignalManagerCatalogResponse>('/api/v1/signal-managers')
+  return data
+}
+
+export function useSignalManagers() {
+  return useQuery({
+    queryKey: strategyKeys.signalManagers(),
+    queryFn: fetchSignalManagers,
     staleTime: Infinity,
   })
 }

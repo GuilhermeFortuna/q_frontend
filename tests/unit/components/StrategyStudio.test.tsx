@@ -105,6 +105,9 @@ describe('StrategyStudio', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Exit Strategies' })).toBeInTheDocument()
+      expect(screen.getByTestId('entry-manager-selector')).toBeInTheDocument()
+      expect(screen.getByTestId('entry-instance-0')).toBeInTheDocument()
+      expect(screen.getByTestId('entry-instance-1')).toBeInTheDocument()
     })
   })
 
@@ -220,6 +223,20 @@ describe('StrategyStudio', () => {
         short_period: 50,
         long_period: 200,
       }),
+    })
+  })
+
+  it('selecting two entry cards renders manager selector and per-instance sections', async () => {
+    const user = userEvent.setup()
+    renderWithQueryClient(<StrategyStudioHarness />)
+    await waitForDefaultStrategy()
+
+    await user.click(screen.getByRole('button', { name: /Studio Strategy/i }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('entry-manager-selector')).toBeInTheDocument()
+      expect(screen.getByText(/e0 · MA Crossover/i)).toBeInTheDocument()
+      expect(screen.getByText(/e1 · Studio Strategy/i)).toBeInTheDocument()
     })
   })
 

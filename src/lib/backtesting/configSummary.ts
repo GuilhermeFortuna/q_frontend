@@ -63,10 +63,11 @@ export function formatSetupTeaserSummary(
   const strategyLabel = strategyInfo?.label ?? fields.strategy
   const timeframe = fields.engine === 'tick' ? fields.displayTimeframe : fields.timeframe
   const capital = fields.capital.toLocaleString('en-US')
+  const entryParams = fields.entries?.[0]?.params ?? fields.strategyParams
 
   return {
     strategyLabel,
-    paramsDigest: formatShortParamsDigest(strategyInfo, fields.strategyParams),
+    paramsDigest: formatShortParamsDigest(strategyInfo, entryParams),
     symbol: fields.symbol,
     timeframe,
     range: formatConfigSummaryRange(fields.startDate, fields.endDate),

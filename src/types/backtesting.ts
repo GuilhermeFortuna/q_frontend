@@ -29,6 +29,16 @@ export type TransactionCostConfig = {
   cost_bps: number
 }
 
+export type EntryInstance = {
+  strategy: string
+  params: Record<string, unknown>
+}
+
+export type EntryManagerConfig = {
+  kind: string
+  params?: Record<string, unknown>
+}
+
 export interface BacktestRequest {
   symbol: string
   timeframe?: string
@@ -38,6 +48,9 @@ export interface BacktestRequest {
   point_value?: number
   strategy?: string
   strategy_params?: Record<string, unknown>
+  entries?: EntryInstance[]
+  entry_manager?: EntryManagerConfig
+  exit_params?: Record<string, unknown>
   position_sizing?: PositionSizingConfig
   costs?: TransactionCostConfig
   day_trade?: boolean

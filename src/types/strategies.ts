@@ -80,3 +80,15 @@ export type ExitRuleCatalogResponse = {
   shared_exit_params: string[]
   exit_presets: ExitPreset[]
 }
+
+export type SignalManagerInfo = {
+  id: string
+  label: string
+  description: string
+  param_names: string[]
+  params: StrategyParamSpec[]
+}
+
+export type SignalManagerCatalogResponse = {
+  managers: SignalManagerInfo[]
+}

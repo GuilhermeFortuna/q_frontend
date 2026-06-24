@@ -7,6 +7,23 @@ exports[`buildBacktestRequest > matches candle engine snapshot with fixed_quanti
   "day_trade_end_time": "16:00",
   "day_trade_start_time": "09:00",
   "end": "2026-06-14T02:59:59.999Z",
+  "entries": [
+    {
+      "params": {
+        "long_ma_type": "sma",
+        "long_period": 200,
+        "short_ma_type": "sma",
+        "short_period": 50,
+        "threshold": 0,
+      },
+      "strategy": "MACrossover",
+    },
+  ],
+  "entry_manager": {
+    "kind": "or",
+    "params": {},
+  },
+  "exit_params": {},
   "initial_capital": 100000,
   "point_value": 1,
   "position_sizing": {
@@ -38,6 +55,23 @@ exports[`buildBacktestRequest > matches candle snapshot with safety margin sizin
   "day_trade_end_time": "16:00",
   "day_trade_start_time": "09:00",
   "end": "2026-06-14T02:59:59.999Z",
+  "entries": [
+    {
+      "params": {
+        "long_ma_type": "sma",
+        "long_period": 60,
+        "short_ma_type": "ema",
+        "short_period": 20,
+        "threshold": 0.5,
+      },
+      "strategy": "MACrossover",
+    },
+  ],
+  "entry_manager": {
+    "kind": "or",
+    "params": {},
+  },
+  "exit_params": {},
   "initial_capital": 100000,
   "point_value": 1,
   "position_sizing": {
@@ -69,6 +103,23 @@ exports[`buildBacktestRequest > matches tick engine snapshot with inverse volati
   "display_timeframe": "M5",
   "end": "2026-06-14T02:59:59.999Z",
   "engine": "tick",
+  "entries": [
+    {
+      "params": {
+        "long_period": 200,
+        "short_period": 50,
+        "sl_points": 50,
+        "threshold": 0,
+        "tp_points": 100,
+      },
+      "strategy": "TickMaBreakout",
+    },
+  ],
+  "entry_manager": {
+    "kind": "or",
+    "params": {},
+  },
+  "exit_params": {},
   "initial_capital": 100000,
   "point_value": 1,
   "position_sizing": {

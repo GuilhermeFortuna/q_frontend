@@ -24,6 +24,7 @@ import type {
 import type {
   CustomStrategy,
   ExitRuleCatalogResponse,
+  SignalManagerCatalogResponse,
   StrategiesResponse,
 } from '@/types/strategies'
 
@@ -1028,6 +1029,43 @@ export const mockExitRuleCatalog: ExitRuleCatalogResponse = {
         atr_period: 14,
         chandelier_atr_mult: 3,
       },
+    },
+  ],
+}
+
+export const mockSignalManagers: SignalManagerCatalogResponse = {
+  managers: [
+    {
+      id: 'or',
+      label: 'Any (OR)',
+      description: 'Net LONG when any instance is LONG and none is SHORT.',
+      param_names: [],
+      params: [],
+    },
+    {
+      id: 'and',
+      label: 'All (AND)',
+      description: 'Net LONG only when every non-flat instance agrees on LONG.',
+      param_names: [],
+      params: [],
+    },
+    {
+      id: 'majority',
+      label: 'Majority vote',
+      description: 'Net stance when enough instances vote the same way.',
+      param_names: ['vote_threshold'],
+      params: [
+        {
+          name: 'vote_threshold',
+          label: 'Vote Threshold',
+          type: 'int',
+          default: 2,
+          min: 1,
+          max: 10,
+          step: 1,
+          hint: 'Minimum LONG or SHORT votes required for a net stance.',
+        },
+      ],
     },
   ],
 }

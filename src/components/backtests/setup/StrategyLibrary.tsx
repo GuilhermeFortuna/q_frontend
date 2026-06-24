@@ -1,4 +1,4 @@
-import { Cpu, Trash2 } from 'lucide-react'
+import { Cpu, Plus, Trash2 } from 'lucide-react'
 import { memo, useMemo, useState } from 'react'
 
 import { LibraryCard } from '@/components/backtests/setup/LibraryCard'
@@ -19,12 +19,15 @@ type StrategyLibraryProps = {
   strategyCatalog?: StrategyInfo[]
   customStrategies?: CustomStrategy[]
   engine: 'candle' | 'tick'
-  selectedStrategyName: string | undefined
+  selectedStrategyName?: string | undefined
   selectedCustomName?: string | null
-  onSelectBuiltIn: (name: string) => void
+  onSelectBuiltIn?: (name: string) => void
   onSelectCustom?: (custom: CustomStrategy) => void
   onDeleteCustom?: (name: string) => void
   loading?: boolean
+  multiSelect?: boolean
+  instanceCounts?: Record<string, number>
+  onAddEntry?: (name: string) => void
 }
 
 type CategoryFilter = StrategyCategory | 'all' | 'saved'
@@ -40,6 +43,9 @@ export const StrategyLibrary = memo(function StrategyLibrary({
   onSelectCustom,
   onDeleteCustom,
   loading = false,
+  multiSelect = false,
+  instanceCounts = {},
+  onAddEntry,
 }: StrategyLibraryProps) {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
 
@@ -85,6 +91,9 @@ export const StrategyLibrary = memo(function StrategyLibrary({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <h4 className="text-silver-300 text-xs font-semibold tracking-wider uppercase">
+        Entry Strategies
+      </h4>
       <div className="flex flex-wrap gap-1.5">
         <CategoryChip
           label="All"
@@ -129,7 +138,8 @@ export const StrategyLibrary = memo(function StrategyLibrary({
                     onSelectCustom(custom)
                     return
                   }
-                  onSelectBuiltIn(custom.name)
+                  onAddEntry?.(custom.name)
+                  onSelectBuiltIn?.(custom.name)
                 }}
                 onDelete={onDeleteCustom ? () => onDeleteCustom(custom.name) : undefined}
               />
@@ -144,9 +154,25 @@ export const StrategyLibrary = memo(function StrategyLibrary({
             <StrategyCard
               key={entry.name}
               strategy={entry}
-              selected={!selectedCustomName && entry.name === selectedStrategyName}
+              selected={
+                multiSelect
+                  ? (instanceCounts[entry.name] ?? 0) > 0
+                  : !selectedCustomName && entry.name === selectedStrategyName
+              }
+              instanceCount={instanceCounts[entry.name] ?? 0}
               isCustom={isCustomStrategy(entry.name, customNames)}
-              onSelect={() => onSelectBuiltIn(entry.name)}
+              onSelect={() => {
+                if (multiSelect) {
+                  onAddEntry?.(entry.name)
+                  return
+                }
+                onSelectBuiltIn?.(entry.name)
+              }}
+              onAddAnother={
+                multiSelect && (instanceCounts[entry.name] ?? 0) > 0
+                  ? () => onAddEntry?.(entry.name)
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -183,40 +209,61 @@ function CategoryChip({
 function StrategyCard({
   strategy,
   selected,
+  instanceCount = 0,
   isCustom,
   onSelect,
+  onAddAnother,
 }: {
   strategy: StrategyInfo
   selected: boolean
+  instanceCount?: number
   isCustom: boolean
   onSelect: () => void
+  onAddAnother?: () => void
 }) {
   const category = strategyCategory(strategy)
   const isTick = strategyEngine(strategy) === 'tick'
 
   return (
-    <LibraryCard
-      title={strategy.label}
-      tag={categoryLabel(category)}
-      description={strategyCardDescription(strategy)}
-      paramCount={strategy.params.length}
-      selected={selected}
-      onClick={onSelect}
-      badges={
-        <>
-          {isTick ? (
-            <span className="bg-carbon-800/80 text-silver-400 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
-              Tick
-            </span>
-          ) : null}
-          {isCustom ? (
-            <span className="bg-carbon-800/80 text-brass-300 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
-              Custom
-            </span>
-          ) : null}
-        </>
-      }
-    />
+    <div className="flex flex-col gap-1">
+      <LibraryCard
+        title={strategy.label}
+        tag={categoryLabel(category)}
+        description={strategyCardDescription(strategy)}
+        paramCount={strategy.params.length}
+        selected={selected}
+        onClick={onSelect}
+        badges={
+          <>
+            {instanceCount > 1 ? (
+              <span className="bg-brass-600/20 text-brass-300 rounded px-1.5 py-0.5 text-[10px] font-bold">
+                ×{instanceCount}
+              </span>
+            ) : null}
+            {isTick ? (
+              <span className="bg-carbon-800/80 text-silver-400 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
+                Tick
+              </span>
+            ) : null}
+            {isCustom ? (
+              <span className="bg-carbon-800/80 text-brass-300 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
+                Custom
+              </span>
+            ) : null}
+          </>
+        }
+      />
+      {onAddAnother ? (
+        <button
+          type="button"
+          onClick={onAddAnother}
+          className="text-brass-400 hover:text-brass-300 inline-flex items-center gap-1 self-start px-1 text-[10px] font-semibold tracking-wide uppercase"
+        >
+          <Plus className="h-3 w-3" aria-hidden />
+          Add another {strategy.label}
+        </button>
+      ) : null}
+    </div>
   )
 }
 

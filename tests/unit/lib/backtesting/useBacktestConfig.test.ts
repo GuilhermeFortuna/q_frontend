@@ -10,6 +10,7 @@ import {
   useBacktestConfig,
   type BacktestConfigFields,
 } from '@/lib/backtesting/useBacktestConfig'
+import { defaultEntryManager } from '@/lib/backtesting/entryInstances'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import {
   defaultPositionSizingFields,
@@ -48,6 +49,13 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 function candleFields(overrides: Partial<BacktestConfigFields> = {}): BacktestConfigFields {
+  const entryParams = {
+    short_period: 50,
+    long_period: 200,
+    short_ma_type: 'sma',
+    long_ma_type: 'sma',
+    threshold: 0,
+  }
   return {
     symbol: 'PETR4',
     timeframe: 'D1',
@@ -59,13 +67,15 @@ function candleFields(overrides: Partial<BacktestConfigFields> = {}): BacktestCo
     positionSizingFields: defaultPositionSizingFields(),
     costFields: defaultTransactionCostFields(),
     strategy: 'MACrossover',
-    strategyParams: {
-      short_period: 50,
-      long_period: 200,
-      short_ma_type: 'sma',
-      long_ma_type: 'sma',
-      threshold: 0,
-    },
+    strategyParams: {},
+    entries: [
+      {
+        slotId: 'entry-1',
+        strategy: 'MACrossover',
+        params: entryParams,
+      },
+    ],
+    entryManager: defaultEntryManager(),
     dayTrade: false,
     dayTradeStartTime: '09:00',
     dayTradeEndTime: '16:00',
@@ -97,13 +107,19 @@ describe('buildBacktestRequest', () => {
           maxContractsInput: '10',
         },
         costFields: { costPerContract: 5, costBps: 1.25 },
-        strategyParams: {
-          short_period: 20,
-          long_period: 60,
-          short_ma_type: 'ema',
-          long_ma_type: 'sma',
-          threshold: 0.5,
-        },
+        entries: [
+          {
+            slotId: 'entry-1',
+            strategy: 'MACrossover',
+            params: {
+              short_period: 20,
+              long_period: 60,
+              short_ma_type: 'ema',
+              long_ma_type: 'sma',
+              threshold: 0.5,
+            },
+          },
+        ],
       }),
     )
     expect(payload).toMatchSnapshot()
@@ -121,13 +137,20 @@ describe('buildBacktestRequest', () => {
       candleFields({
         engine: 'tick',
         strategy: 'TickMaBreakout',
-        strategyParams: {
-          short_period: 50,
-          long_period: 200,
-          threshold: 0,
-          sl_points: 50,
-          tp_points: 100,
-        },
+        entries: [
+          {
+            slotId: 'entry-1',
+            strategy: 'TickMaBreakout',
+            params: {
+              short_period: 50,
+              long_period: 200,
+              threshold: 0,
+              sl_points: 50,
+              tp_points: 100,
+            },
+          },
+        ],
+        strategyParams: {},
         displayTimeframe: 'M5',
         tickFlags: 'trade',
         sizingMode: 'inverse_volatility',
@@ -166,6 +189,14 @@ describe('useBacktestConfig', () => {
 
     await waitFor(
       () => {
+        expect(result.current.entries).toHaveLength(1)
+        expect(result.current.entries[0].params).toEqual({
+          short_period: 50,
+          long_period: 200,
+          short_ma_type: 'sma',
+          long_ma_type: 'sma',
+          threshold: 0,
+        })
         expect(result.current.buildRequest().strategy_params).toEqual({
           short_period: 50,
           long_period: 200,
@@ -176,6 +207,88 @@ describe('useBacktestConfig', () => {
       },
       { timeout: 5000 },
     )
+  })
+
+  it('addEntry twice with the same strategy keeps independent params', async () => {
+    const { result } = renderHook(() => useBacktestConfig(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(1)
+    })
+
+    result.current.setters.addEntry('MACrossover')
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(2)
+    })
+
+    result.current.setters.addEntry('MACrossover')
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(3)
+    })
+
+    const third = result.current.entries[2]
+    result.current.setters.handleEntryParamChange(third.slotId, 'short_period', 12)
+
+    await waitFor(() => {
+      expect(result.current.entries[0].params.short_period).toBe(50)
+      expect(result.current.entries[2].params.short_period).toBe(12)
+    })
+
+    const removedSlot = result.current.entries[2].slotId
+    result.current.setters.removeEntry(removedSlot)
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(2)
+      expect(result.current.entries.some((entry) => entry.slotId === removedSlot)).toBe(false)
+    })
+  })
+
+  it('buildBacktestRequest emits multi-entry payload for majority manager', () => {
+    const payload = buildBacktestRequest(
+      candleFields({
+        entries: [
+          {
+            slotId: 'e0',
+            strategy: 'MACrossover',
+            params: { short_period: 5, long_period: 20 },
+          },
+          {
+            slotId: 'e1',
+            strategy: 'RSIMeanReversion',
+            params: { period: 14, oversold: 30, overbought: 70 },
+          },
+        ],
+        entryManager: { kind: 'majority', params: { vote_threshold: 2 } },
+        strategyParams: { stop_loss_pct: 0.02 },
+      }),
+    )
+
+    expect(payload.entries).toEqual([
+      { strategy: 'MACrossover', params: { short_period: 5, long_period: 20 } },
+      {
+        strategy: 'RSIMeanReversion',
+        params: { period: 14, oversold: 30, overbought: 70 },
+      },
+    ])
+    expect(payload.entry_manager).toEqual({ kind: 'majority', params: { vote_threshold: 2 } })
+    expect(payload.exit_params).toEqual({ stop_loss_pct: 0.02 })
+    expect(payload.strategy_params).toEqual({ stop_loss_pct: 0.02 })
+  })
+
+  it('buildBacktestRequest keeps back-compatible payload for single instance OR', () => {
+    const payload = buildBacktestRequest(candleFields())
+    expect(payload.entries).toHaveLength(1)
+    expect(payload.entry_manager).toEqual({ kind: 'or', params: {} })
+    expect(payload.strategy).toBe('MACrossover')
+    expect(payload.strategy_params).toEqual({
+      short_period: 50,
+      long_period: 200,
+      short_ma_type: 'sma',
+      long_ma_type: 'sma',
+      threshold: 0,
+    })
   })
 
   it('preserves genome when hydrating CompositeStrategy from discovery promote', async () => {

@@ -88,7 +88,7 @@ describe('BacktestSetupPanel', () => {
     expect(payload.costs).toBeUndefined()
   })
 
-  it('selects a different strategy from the library and submits its defaults', async () => {
+  it('adds another strategy from the library and submits both entries', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()
     renderSetup(onSubmit)
@@ -98,12 +98,16 @@ describe('BacktestSetupPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
 
     const macd = mockStrategies.strategies.find((s) => s.name === 'MACD')!
-    expect(onSubmit.mock.calls[0][0].strategy).toBe('MACD')
-    expect(onSubmit.mock.calls[0][0].strategy_params).toEqual({
+    const payload = onSubmit.mock.calls[0][0]
+    expect(payload.entries).toHaveLength(2)
+    expect(payload.entries?.[0].strategy).toBe('MACrossover')
+    expect(payload.entries?.[1].strategy).toBe('MACD')
+    expect(payload.entries?.[1].params).toEqual({
       fast_period: macd.params.find((p) => p.name === 'fast_period')!.default,
       slow_period: macd.params.find((p) => p.name === 'slow_period')!.default,
       signal_period: macd.params.find((p) => p.name === 'signal_period')!.default,
     })
+    expect(payload.strategy).toBe('MACrossover')
   })
 
   it('filters strategies by engine and swaps selection when switching to tick', async () => {

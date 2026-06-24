@@ -8,6 +8,16 @@ import {
   useSaveCustomStrategy,
 } from '@/api/queries/customStrategies'
 import { useExitRuleCatalog, useStrategies } from '@/api/queries/strategies'
+import {
+  createEntrySlotId,
+  defaultEntryManager,
+  entryDefaultsFromSpecs,
+  splitParamsByPartition,
+  toEntryManagerPayload,
+  toEntryPayload,
+  type EntryInstanceState,
+  type EntryManagerState,
+} from '@/lib/backtesting/entryInstances'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import {
   buildPositionSizingPayload,
@@ -25,15 +35,13 @@ import {
   type TransactionCostFields,
 } from '@/lib/backtesting/transactionCosts'
 import {
-  defaultParamsFromSpecs,
   hydrateStrategyParamsFromPending,
-  mergeParamValues,
   type StrategyParamValue,
 } from '@/lib/strategies/strategyParams'
 import { strategyEngine } from '@/lib/strategies/strategyPresentation'
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
-import type { CustomStrategy, ExitRuleCatalogResponse } from '@/types/strategies'
+import type { CustomStrategy, ExitRuleCatalogResponse, StrategyParamSpec } from '@/types/strategies'
 import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
 
 export type BacktestEngine = 'candle' | 'tick'
@@ -41,6 +49,8 @@ export type BacktestEngine = 'candle' | 'tick'
 export const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M15', 'H1'] as const
 
 export { strategyEngine } from '@/lib/strategies/strategyPresentation'
+
+export type { EntryInstanceState, EntryManagerState } from '@/lib/backtesting/entryInstances'
 
 export type BacktestConfigFields = {
   symbol: string
@@ -53,7 +63,10 @@ export type BacktestConfigFields = {
   positionSizingFields: PositionSizingFields
   costFields: TransactionCostFields
   strategy: string
+  /** Exit params only — shared across all entry instances. */
   strategyParams: Record<string, StrategyParamValue>
+  entries: EntryInstanceState[]
+  entryManager: EntryManagerState
   dayTrade: boolean
   dayTradeStartTime: string
   dayTradeEndTime: string
@@ -85,6 +98,10 @@ export type BacktestConfigSetters = {
   handleEngineChange: (nextEngine: BacktestEngine) => void
   handleStrategyChange: (nextStrategy: string) => void
   handleParamChange: (name: string, value: StrategyParamValue) => void
+  addEntry: (strategyName: string) => void
+  removeEntry: (slotId: string) => void
+  handleEntryParamChange: (slotId: string, name: string, value: StrategyParamValue) => void
+  setEntryManager: (manager: EntryManagerState) => void
   updateSizingField: <K extends keyof PositionSizingFields>(
     key: K,
     value: PositionSizingFields[K],
@@ -129,7 +146,9 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
     positionSizingFields,
     costFields,
     strategy,
-    strategyParams,
+    strategyParams: exitParams,
+    entries,
+    entryManager,
     dayTrade,
     dayTradeStartTime,
     dayTradeEndTime,
@@ -138,7 +157,7 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
     tickFlags,
   } = fields
 
-  return {
+  const common = {
     symbol,
     ...(engine === 'candle' ? { timeframe } : {}),
     start: startOfDay(startDate).toISOString(),
@@ -150,8 +169,6 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
       const costs = buildCostsPayload(costFields)
       return costs ? { costs } : {}
     })(),
-    strategy,
-    strategy_params: strategyParams,
     day_trade: dayTrade,
     day_trade_start_time: dayTradeStartTime,
     day_trade_end_time: dayTradeEndTime,
@@ -164,6 +181,36 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
         }
       : {}),
   }
+
+  if (strategy === 'CompositeStrategy') {
+    return {
+      ...common,
+      strategy,
+      strategy_params: exitParams,
+    }
+  }
+
+  const entryPayload = toEntryPayload(entries)
+  const payload: BacktestRequest = {
+    ...common,
+    entries: entryPayload,
+    entry_manager: toEntryManagerPayload(entryManager),
+    exit_params: exitParams,
+  }
+
+  const singleOr = entries.length === 1 && entryManager.kind === 'or'
+  if (singleOr) {
+    payload.strategy = entries[0].strategy
+    payload.strategy_params = { ...entries[0].params, ...exitParams }
+  } else if (entries.length > 0) {
+    payload.strategy = entries[0].strategy
+    payload.strategy_params = exitParams
+  } else {
+    payload.strategy = strategy
+    payload.strategy_params = exitParams
+  }
+
+  return payload
 }
 
 export function useBacktestConfig() {
@@ -178,6 +225,8 @@ export function useBacktestConfig() {
   const [costFields, setCostFields] = useState(defaultTransactionCostFields)
   const [strategy, setStrategy] = useState('MACrossover')
   const [strategyParams, setStrategyParams] = useState<Record<string, StrategyParamValue>>({})
+  const [entries, setEntries] = useState<EntryInstanceState[]>([])
+  const [entryManager, setEntryManager] = useState<EntryManagerState>(defaultEntryManager)
   const [dayTrade, setDayTrade] = useState(false)
   const [dayTradeStartTime, setDayTradeStartTime] = useState('09:00')
   const [dayTradeEndTime, setDayTradeEndTime] = useState('16:00')
@@ -201,6 +250,10 @@ export function useBacktestConfig() {
     [strategies, engine],
   )
   const selectedStrategy = filteredStrategies.find((entry) => entry.name === strategy)
+  const primaryEntryStrategy = useMemo(() => {
+    const primaryName = entries[0]?.strategy ?? strategy
+    return strategies.find((entry) => entry.name === primaryName)
+  }, [entries, strategy, strategies])
   const customNames = useMemo(
     () => new Set(customStrategies?.map((entry) => entry.name) ?? []),
     [customStrategies],
@@ -212,11 +265,71 @@ export function useBacktestConfig() {
       ),
     [strategies, customNames],
   )
-  const { entryParamSpecs, exitParamSpecs } = useMemo(
-    () => partitionStrategyParamSpecs(selectedStrategy?.params ?? []),
-    [selectedStrategy?.params],
-  )
+  const { entryParamSpecs, exitParamSpecs } = useMemo(() => {
+    const exitSpecsByName = new Map<string, StrategyParamSpec>()
+    for (const entry of entries) {
+      const info = strategies.find((item) => item.name === entry.strategy)
+      if (!info) continue
+      const partitioned = partitionStrategyParamSpecs(info.params)
+      for (const spec of partitioned.exitParamSpecs) {
+        exitSpecsByName.set(spec.name, spec)
+      }
+    }
+
+    const primaryPartition = partitionStrategyParamSpecs(primaryEntryStrategy?.params ?? [])
+    if (exitSpecsByName.size === 0) {
+      return primaryPartition
+    }
+
+    return {
+      entryParamSpecs: primaryPartition.entryParamSpecs,
+      exitParamSpecs: Array.from(exitSpecsByName.values()),
+    }
+  }, [entries, primaryEntryStrategy?.params, strategies])
   const paramsInitialized = useRef(false)
+
+  const installSingleEntry = useCallback(
+    (
+      strategyName: string,
+      mergedParams?: Record<string, unknown>,
+      strategyInfo = strategies.find((entry) => entry.name === strategyName),
+    ) => {
+      if (strategyName === 'CompositeStrategy') {
+        setStrategy(strategyName)
+        setEntries([])
+        if (mergedParams) {
+          setStrategyParams(mergedParams as Record<string, StrategyParamValue>)
+        }
+        return
+      }
+
+      if (strategyInfo) {
+        const { entryParams, exitParams } = splitParamsByPartition(
+          strategyInfo.params,
+          mergedParams,
+        )
+        setEntries([
+          {
+            slotId: createEntrySlotId(),
+            strategy: strategyName,
+            params: entryParams,
+          },
+        ])
+        setStrategyParams(exitParams)
+      } else {
+        setEntries([
+          {
+            slotId: createEntrySlotId(),
+            strategy: strategyName,
+            params: (mergedParams ?? {}) as Record<string, StrategyParamValue>,
+          },
+        ])
+        setStrategyParams({})
+      }
+      setStrategy(strategyName)
+    },
+    [strategies],
+  )
 
   const pendingBacktestConfig = useAppStore((s) => s.pendingBacktestConfig)
   const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
@@ -227,11 +340,12 @@ export function useBacktestConfig() {
     const info = pool.find((entry) => entry.name === strategy) ?? pool[0]
     if (!info) return
     if (!pool.some((entry) => entry.name === strategy)) {
-      setStrategy(info.name)
+      installSingleEntry(info.name, undefined, info)
+    } else {
+      installSingleEntry(strategy, undefined, info)
     }
-    setStrategyParams(defaultParamsFromSpecs(info.params))
     paramsInitialized.current = true
-  }, [strategies, strategy, engine])
+  }, [strategies, strategy, engine, installSingleEntry])
 
   useEffect(() => {
     if (!pendingBacktestConfig) return
@@ -245,10 +359,53 @@ export function useBacktestConfig() {
     if (cfg.point_value != null) setPointValue(cfg.point_value)
     if (cfg.strategy) setStrategy(cfg.strategy)
 
-    const strategyInfo =
-      strategies.find((entry) => entry.name === (cfg.strategy ?? strategy)) ?? selectedStrategy
-    if (strategyInfo) {
-      setStrategyParams(hydrateStrategyParamsFromPending(strategyInfo.params, cfg.strategy_params))
+    if (cfg.strategy === 'CompositeStrategy') {
+      const strategyInfo = strategies.find((entry) => entry.name === cfg.strategy)
+      if (strategyInfo) {
+        setStrategyParams(
+          hydrateStrategyParamsFromPending(strategyInfo.params, cfg.strategy_params),
+        )
+      } else if (cfg.strategy_params) {
+        setStrategyParams(cfg.strategy_params as Record<string, StrategyParamValue>)
+      }
+      setEntries([])
+      paramsInitialized.current = true
+    } else if (cfg.entries?.length) {
+      setEntries(
+        cfg.entries.map((entry, index) => ({
+          slotId: `slot-${index}`,
+          strategy: entry.strategy,
+          params: entry.params as Record<string, StrategyParamValue>,
+        })),
+      )
+      if (cfg.entry_manager) {
+        setEntryManager({
+          kind: cfg.entry_manager.kind as EntryManagerState['kind'],
+          params: (cfg.entry_manager.params ?? {}) as Record<string, StrategyParamValue>,
+        })
+      } else {
+        setEntryManager(defaultEntryManager())
+      }
+      if (cfg.exit_params) {
+        setStrategyParams(cfg.exit_params as Record<string, StrategyParamValue>)
+      } else if (cfg.strategy_params) {
+        const strategyInfo =
+          strategies.find((entry) => entry.name === (cfg.entries?.[0]?.strategy ?? cfg.strategy)) ??
+          selectedStrategy
+        if (strategyInfo) {
+          const { exitParams } = splitParamsByPartition(strategyInfo.params, cfg.strategy_params)
+          setStrategyParams(exitParams)
+        }
+      }
+      paramsInitialized.current = true
+    } else if (cfg.strategy) {
+      const strategyInfo =
+        strategies.find((entry) => entry.name === cfg.strategy) ?? selectedStrategy
+      installSingleEntry(
+        cfg.strategy,
+        cfg.strategy_params as Record<string, unknown> | undefined,
+        strategyInfo,
+      )
       paramsInitialized.current = true
     } else if (cfg.strategy_params) {
       setStrategyParams(cfg.strategy_params as Record<string, StrategyParamValue>)
@@ -269,7 +426,14 @@ export function useBacktestConfig() {
     if (cfg.tick_flags === 'all' || cfg.tick_flags === 'trade') setTickFlags(cfg.tick_flags)
 
     setPendingBacktestConfig(null)
-  }, [pendingBacktestConfig, setPendingBacktestConfig, strategies, strategy, selectedStrategy])
+  }, [
+    pendingBacktestConfig,
+    setPendingBacktestConfig,
+    strategies,
+    strategy,
+    selectedStrategy,
+    installSingleEntry,
+  ])
 
   const handleEngineChange = useCallback(
     (nextEngine: BacktestEngine) => {
@@ -279,22 +443,55 @@ export function useBacktestConfig() {
       const currentValid = pool.some((entry) => entry.name === strategy)
       if (!currentValid) {
         const next = pool[0]
-        setStrategy(next.name)
-        setStrategyParams(defaultParamsFromSpecs(next.params))
+        installSingleEntry(next.name, undefined, next)
       }
     },
-    [strategies, strategy],
+    [strategies, strategy, installSingleEntry],
   )
 
   const handleStrategyChange = useCallback(
     (nextStrategy: string) => {
-      setStrategy(nextStrategy)
       const info = strategies.find((entry) => entry.name === nextStrategy)
-      if (info) {
-        setStrategyParams(defaultParamsFromSpecs(info.params))
-      }
+      installSingleEntry(nextStrategy, undefined, info)
+    },
+    [strategies, installSingleEntry],
+  )
+
+  const addEntry = useCallback(
+    (strategyName: string) => {
+      const info = strategies.find((entry) => entry.name === strategyName)
+      if (!info) return
+      setEntries((current) => [
+        ...current,
+        {
+          slotId: createEntrySlotId(),
+          strategy: strategyName,
+          params: entryDefaultsFromSpecs(info.params),
+        },
+      ])
+      setStrategy((current) => current || strategyName)
     },
     [strategies],
+  )
+
+  const removeEntry = useCallback((slotId: string) => {
+    setEntries((current) => {
+      if (current.length <= 1) return current
+      return current.filter((entry) => entry.slotId !== slotId)
+    })
+  }, [])
+
+  const handleEntryParamChange = useCallback(
+    (slotId: string, name: string, value: StrategyParamValue) => {
+      setEntries((current) =>
+        current.map((entry) =>
+          entry.slotId === slotId
+            ? { ...entry, params: { ...entry.params, [name]: value } }
+            : entry,
+        ),
+      )
+    },
+    [],
   )
 
   const handleParamChange = useCallback((name: string, value: StrategyParamValue) => {
@@ -321,17 +518,12 @@ export function useBacktestConfig() {
       setLoadedCustomName(custom.name)
       setCustomName(custom.name)
       setDescription(custom.description ?? '')
-      setStrategy(custom.base_strategy)
       const baseInfo = strategies.find((entry) => entry.name === custom.base_strategy)
-      if (baseInfo) {
-        setStrategyParams(mergeParamValues(baseInfo.params, custom.parameters))
-      } else {
-        setStrategyParams(custom.parameters)
-      }
+      installSingleEntry(custom.base_strategy, custom.parameters, baseInfo)
       setAuthoringError(null)
       paramsInitialized.current = true
     },
-    [strategies],
+    [strategies, installSingleEntry],
   )
 
   const saveCustomPayload = useCallback(
@@ -381,15 +573,19 @@ export function useBacktestConfig() {
 
     saveCustomPayload({
       name: trimmedName,
-      base_strategy: strategy,
+      base_strategy: entries[0]?.strategy ?? strategy,
       description: description.trim(),
-      parameters: strategyParams,
+      parameters: {
+        ...(entries[0]?.params ?? {}),
+        ...strategyParams,
+      },
     })
   }, [
     builtInStrategies,
     customName,
     customNames,
     description,
+    entries,
     loadedCustomName,
     saveCustomPayload,
     strategy,
@@ -443,6 +639,8 @@ export function useBacktestConfig() {
     costFields,
     strategy,
     strategyParams,
+    entries,
+    entryManager,
     dayTrade,
     dayTradeStartTime,
     dayTradeEndTime,
@@ -474,6 +672,10 @@ export function useBacktestConfig() {
     handleEngineChange,
     handleStrategyChange,
     handleParamChange,
+    addEntry,
+    removeEntry,
+    handleEntryParamChange,
+    setEntryManager,
     updateSizingField,
   }
 
@@ -510,10 +712,12 @@ export function useBacktestConfig() {
     strategies,
     filteredStrategies,
     builtInStrategies,
-    selectedStrategy,
+    selectedStrategy: primaryEntryStrategy ?? selectedStrategy,
     strategiesLoading,
     entryParamSpecs,
     exitParamSpecs,
+    entries,
+    entryManager,
     exitCatalog: exitCatalog as ExitRuleCatalogResponse | undefined,
     exitCatalogLoading,
     customStrategies: customStrategies ?? [],
