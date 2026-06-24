@@ -50,12 +50,15 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
     <nav
       aria-label="Workspace dock"
       className={cn(
-        'vt-dock surface-shell surface-shell--blur fixed left-1/2 z-20 flex -translate-x-1/2 items-end transition-[transform,opacity] duration-300 ease-in-out',
+        'vt-dock surface-shell--blur fixed left-1/2 z-20 flex -translate-x-1/2 items-end transition-[transform,opacity,border-color,box-shadow,background-color] duration-300 ease-in-out',
         isLauncher
-          ? 'border-brass-500/20 from-espresso-950/92 to-carbon-950/96 bottom-[12%] w-[min(980px,95vw)] justify-evenly gap-2.5 rounded-3xl border bg-gradient-to-b px-6 py-4 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),_0_0_40px_rgba(196,165,116,0.08)]'
-          : 'border-brass-500/20 from-espresso-950/92 to-carbon-950/96 bottom-8 gap-1.5 rounded-2xl border bg-gradient-to-b px-3.5 py-2.5 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8),_0_0_30px_rgba(196,165,116,0.06)]',
+          ? 'border-brass-500/20 border-t-brass-400/50 from-espresso-900/80 via-espresso-950/92 to-carbon-950/96 hover:border-brass-500/30 hover:border-t-brass-400/80 bottom-[12%] w-[min(980px,95vw)] justify-evenly gap-2.5 rounded-3xl border border-b-black/60 bg-gradient-to-b px-6 py-4 shadow-[inset_0_1.5px_0_rgba(255,255,255,0.16),_inset_0_-2px_0_rgba(0,0,0,0.65),_inset_0_0_0_1px_rgba(255,255,255,0.03),_0_25px_60px_-15px_rgba(0,0,0,0.9),_0_0_40px_rgba(196,165,116,0.08)] hover:border-b-black/80 hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.22),_inset_0_-2px_0_rgba(0,0,0,0.75),_inset_0_0_0_1px_rgba(255,255,255,0.05),_0_30px_70px_-10px_rgba(0,0,0,0.95),_0_0_50px_rgba(196,165,116,0.12)]'
+          : 'border-brass-500/20 border-t-brass-400/50 from-espresso-900/80 via-espresso-950/92 to-carbon-950/96 hover:border-brass-500/30 hover:border-t-brass-400/80 bottom-8 gap-1.5 rounded-2xl border border-b-black/60 bg-gradient-to-b px-3.5 py-2.5 shadow-[inset_0_1.5px_0_rgba(255,255,255,0.16),_inset_0_-2px_0_rgba(0,0,0,0.65),_inset_0_0_0_1px_rgba(255,255,255,0.03),_0_20px_50px_-10px_rgba(0,0,0,0.8),_0_0_30px_rgba(196,165,116,0.06)] hover:border-b-black/80 hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.22),_inset_0_-2px_0_rgba(0,0,0,0.75),_inset_0_0_0_1px_rgba(255,255,255,0.05),_0_25px_60px_-5px_rgba(0,0,0,0.85),_0_0_40px_rgba(196,165,116,0.1)]',
       )}
     >
+      {/* 3D Diagonal Specular Glass Reflection */}
+      <div className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] bg-gradient-to-tr from-transparent via-white/[0.03] to-transparent" />
+
       {dockItems.map((item) => {
         const Icon = item.icon
         const isActive = activeWorkspace === item.id

@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { OptimizationProgress } from '@/components/optimize/OptimizationProgress'
 import { OptimizationResultsTabs } from '@/components/optimize/OptimizationResultsTabs'
+import { buildResultsFromStatus } from '@/lib/optimize/buildResultsFromStatus'
 import type {
   OptimizationBacktestConfig,
   OptimizationResults,
@@ -29,6 +30,22 @@ export function OptimizationResultsPanel({
   onOpenWorkbench,
 }: OptimizationResultsPanelProps) {
   if (isRunning && status) {
+    if (status.backtest_config) {
+      return (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <OptimizationResultsTabs
+            results={buildResultsFromStatus(status)}
+            backtest={status.backtest_config}
+            status={status.status}
+            liveStatus={status}
+            onCancel={onCancel}
+            cancelling={cancelling}
+            cancelError={cancelError}
+          />
+        </div>
+      )
+    }
+
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <OptimizationProgress
@@ -56,7 +73,12 @@ export function OptimizationResultsPanel({
       status?.status === 'cancelled' ? 'Study cancelled — showing partial results' : undefined
 
     return (
-      <OptimizationResultsTabs results={results} backtest={backtest} statusLabel={statusLabel} />
+      <OptimizationResultsTabs
+        results={results}
+        backtest={backtest}
+        status={status?.status ?? 'done'}
+        statusLabel={statusLabel}
+      />
     )
   }
 

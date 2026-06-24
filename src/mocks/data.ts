@@ -15,6 +15,7 @@ import type {
   BacktestRunSummary,
 } from '@/types/backtesting'
 import type {
+  OptimizationAnalytics,
   OptimizationBacktestConfig,
   OptimizationConfig,
   OptimizationResults,
@@ -669,6 +670,76 @@ export function getMockOptimizationStatus(studyId: string): OptimizationStatus |
 
 export function getMockOptimizationResults(studyId: string): OptimizationResults | null {
   return mockOptimizationResults[studyId] ?? null
+}
+
+export function getMockOptimizationAnalytics(studyId: string): OptimizationAnalytics | null {
+  const results = getMockOptimizationResults(studyId)
+  const status = getMockOptimizationStatus(studyId)
+  if (!results || !status) return null
+
+  const completed = results.trials.filter((trial) => trial.values && trial.values.length > 0)
+  const objectiveLabels = results.is_multi_objective
+    ? ['return', 'drawdown']
+    : [results.objective_mode]
+
+  const rows = completed.map((trial) => ({
+    number: trial.number,
+    params: Object.fromEntries(
+      Object.entries(trial.params).map(([key, value]) => [
+        key,
+        typeof value === 'number' || typeof value === 'string' ? value : String(value),
+      ]),
+    ),
+    values: trial.values ?? [],
+  }))
+
+  const paretoPoints = (
+    results.is_multi_objective
+      ? results.pareto_trials
+      : results.best_trial
+        ? [results.best_trial]
+        : []
+  )
+    .filter((trial) => trial.values && trial.values.length > 0)
+    .map((trial) => ({
+      number: trial.number,
+      values: trial.values ?? [],
+      params: Object.fromEntries(
+        Object.entries(trial.params).map(([key, value]) => [
+          key,
+          typeof value === 'number' || typeof value === 'string' ? value : String(value),
+        ]),
+      ),
+    }))
+
+  const paramNames = [...new Set(rows.flatMap((row) => Object.keys(row.params)))].sort()
+
+  return {
+    study_id: studyId,
+    status: status.status,
+    is_multi_objective: results.is_multi_objective,
+    n_complete_trials: completed.length,
+    objective_labels: objectiveLabels,
+    param_importances:
+      status.status === 'done' && completed.length >= 30
+        ? {
+            [objectiveLabels[0]]: paramNames.slice(0, 3).map((param, index) => ({
+              param,
+              importance: Math.max(0.1, 0.7 - index * 0.15),
+            })),
+          }
+        : null,
+    parallel_coordinate: {
+      params: paramNames,
+      objectives: objectiveLabels,
+      rows,
+    },
+    pareto_front: {
+      is_multi_objective: results.is_multi_objective,
+      objectives: objectiveLabels,
+      points: paretoPoints,
+    },
+  }
 }
 
 export function getMockBacktestRunDetail(runId: string): BacktestRunDetail | null {

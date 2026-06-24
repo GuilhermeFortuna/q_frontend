@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useHistorySelection } from '@/hooks/useHistorySelection'
 import { formatDisplayDateTime } from '@/lib/formatDate'
+import { buildResultsFromStatus } from '@/lib/optimize/buildResultsFromStatus'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 import type {
@@ -300,6 +301,46 @@ export function OptimizationHistoryPanel({
                 </div>
               )}
             </div>
+          ) : isActiveStudy && status && backtest ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-5">
+              <div className="mb-4 shrink-0">
+                <h3 className="text-silver-100 text-lg font-semibold">
+                  {studies.find((s) => s.study_id === selectedStudyId)?.name ?? selectedStudyId}
+                </h3>
+                <p className="text-silver-400 mt-1 text-sm">
+                  {backtest.symbol} · {backtest.timeframe} ·{' '}
+                  {formatDisplayDateTime(
+                    studies.find((s) => s.study_id === selectedStudyId)?.created_at ??
+                      new Date().toISOString(),
+                  )}
+                </p>
+              </div>
+              <OptimizationResultsTabs
+                results={buildResultsFromStatus(status)}
+                backtest={backtest}
+                status={status.status}
+                statusLabel="Study running — live analytics available"
+              />
+              {canContinue && (
+                <div className="border-carbon-600/40 bg-brass-500/5 mt-4 shrink-0 rounded-lg border p-4">
+                  <p className="text-silver-300 text-sm">
+                    This study is still running. Resume monitoring or adjust the loaded config in
+                    the workbench.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="brass"
+                    className="mt-3"
+                    onClick={() =>
+                      onContinueStudy(selectedStudyId, status.optimization_config!, status.status)
+                    }
+                  >
+                    <Play className="h-4 w-4" />
+                    Resume monitoring
+                  </Button>
+                </div>
+              )}
+            </div>
           ) : resultsQuery.isLoading ? (
             <div className="text-silver-400 flex flex-1 items-center justify-center gap-2 text-sm">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -330,6 +371,7 @@ export function OptimizationHistoryPanel({
               <OptimizationResultsTabs
                 results={resultsQuery.data}
                 backtest={backtest}
+                status={status.status}
                 statusLabel={
                   status.status === 'cancelled'
                     ? 'Study cancelled — showing partial results'

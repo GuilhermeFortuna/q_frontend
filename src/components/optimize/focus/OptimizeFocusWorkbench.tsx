@@ -2,9 +2,9 @@ import { useCallback, useMemo, useRef } from 'react'
 
 import { CollapsedOptimizeResultsTeaser } from '@/components/optimize/focus/CollapsedOptimizeResultsTeaser'
 import { CollapsedOptimizeSetupTeaser } from '@/components/optimize/focus/CollapsedOptimizeSetupTeaser'
-import { OptimizationProgress } from '@/components/optimize/OptimizationProgress'
 import { OptimizationResultsTabs } from '@/components/optimize/OptimizationResultsTabs'
 import { OptimizeSetupPanel } from '@/components/optimize/setup/OptimizeSetupPanel'
+import { buildResultsFromStatus } from '@/lib/optimize/buildResultsFromStatus'
 import type { useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
 import { cn } from '@/lib/utils'
 import type { BacktestWorkbenchFocus } from '@/store/slices/jobSessionsSlice'
@@ -76,13 +76,19 @@ export function OptimizeFocusWorkbench({
 
   const setupExpanded = focus === 'setup'
   const resultsExpanded = focus === 'results'
-  const hasResults = Boolean(results && backtest)
 
   const statusLabel = useMemo(
     () =>
       status?.status === 'cancelled' ? 'Study cancelled — showing partial results' : undefined,
     [status?.status],
   )
+
+  const liveResults = useMemo(() => (status ? buildResultsFromStatus(status) : undefined), [status])
+
+  const activeBacktest = backtest ?? status?.backtest_config ?? null
+  const canShowResults = Boolean((results ?? liveResults) && activeBacktest)
+  const displayResults = results ?? liveResults
+  const hasResults = canShowResults
 
   return (
     <div
@@ -124,16 +130,7 @@ export function OptimizeFocusWorkbench({
       >
         {resultsExpanded ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {isRunning && status ? (
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <OptimizationProgress
-                  status={status}
-                  onCancel={onCancel}
-                  cancelling={cancelling}
-                  cancelError={cancelError}
-                />
-              </div>
-            ) : status?.status === 'error' ? (
+            {status?.status === 'error' ? (
               <div className="flex flex-1 items-center justify-center">
                 <div className="max-w-md rounded-md border border-rose-500/20 bg-rose-500/10 p-4 text-sm break-words text-rose-400">
                   Optimization failed: {status.error ?? 'unknown error'}
@@ -142,9 +139,14 @@ export function OptimizeFocusWorkbench({
             ) : hasResults ? (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <OptimizationResultsTabs
-                  results={results!}
-                  backtest={backtest!}
+                  results={displayResults!}
+                  backtest={activeBacktest!}
+                  status={status?.status ?? 'done'}
                   statusLabel={statusLabel}
+                  liveStatus={isRunning ? status : undefined}
+                  onCancel={onCancel}
+                  cancelling={cancelling}
+                  cancelError={cancelError}
                 />
               </div>
             ) : (

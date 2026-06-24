@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
 import type {
+  OptimizationAnalytics,
   OptimizationConfig,
   OptimizationResults,
   OptimizationStartResponse,
@@ -21,6 +22,7 @@ export const optimizeKeys = {
     [...optimizeKeys.all, 'history', params] as const,
   status: (studyId: string) => [...optimizeKeys.all, 'status', studyId] as const,
   results: (studyId: string) => [...optimizeKeys.all, 'results', studyId] as const,
+  analytics: (studyId: string) => [...optimizeKeys.all, 'analytics', studyId] as const,
 }
 
 export async function startOptimization(
@@ -38,6 +40,17 @@ async function fetchOptimizationStatus(studyId: string): Promise<OptimizationSta
 async function fetchOptimizationResults(studyId: string): Promise<OptimizationResults> {
   const { data } = await apiClient.get<OptimizationResults>(`/api/v1/optimize/${studyId}/results`)
   return data
+}
+
+export async function fetchOptimizationAnalytics(studyId: string): Promise<OptimizationAnalytics> {
+  const { data } = await apiClient.get<OptimizationAnalytics>(
+    `/api/v1/optimize/${studyId}/analytics`,
+  )
+  return data
+}
+
+export function analyticsRefetchInterval(isRunning: boolean): number | false {
+  return isRunning ? 2500 : false
 }
 
 export async function fetchOptimizationHistory(
@@ -106,6 +119,7 @@ export function useBulkDeleteOptimizations() {
       for (const studyId of studyIds) {
         queryClient.removeQueries({ queryKey: optimizeKeys.status(studyId) })
         queryClient.removeQueries({ queryKey: optimizeKeys.results(studyId) })
+        queryClient.removeQueries({ queryKey: optimizeKeys.analytics(studyId) })
       }
       queryClient.invalidateQueries({ queryKey: [...optimizeKeys.all, 'history'] })
     },
@@ -142,5 +156,18 @@ export function useOptimizationResults(studyId: string | null, ready: boolean) {
     queryFn: () => fetchOptimizationResults(studyId as string),
     enabled: !!studyId && ready,
     staleTime: Infinity,
+  })
+}
+
+export function useOptimizationAnalytics(
+  studyId: string | null,
+  { isRunning }: { isRunning: boolean },
+) {
+  return useQuery({
+    queryKey: optimizeKeys.analytics(studyId ?? ''),
+    queryFn: () => fetchOptimizationAnalytics(studyId as string),
+    enabled: !!studyId,
+    staleTime: 1_000,
+    refetchInterval: analyticsRefetchInterval(isRunning),
   })
 }

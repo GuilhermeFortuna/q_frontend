@@ -136,3 +136,41 @@ export type OptimizationStudyListResponse = {
   limit: number
   offset: number
 }
+
+export type ParamImportanceEntry = { param: string; importance: number }
+
+export type ParallelCoordinateRow = {
+  number: number
+  params: Record<string, number | string>
+  values: number[]
+}
+
+export type ParallelCoordinatePayload = {
+  params: string[]
+  objectives: string[]
+  rows: ParallelCoordinateRow[]
+  rows_capped?: boolean
+}
+
+export type ParetoPoint = {
+  number: number
+  values: number[]
+  params: Record<string, number | string>
+}
+
+export type ParetoFrontPayload = {
+  is_multi_objective: boolean
+  objectives: string[]
+  points: ParetoPoint[]
+}
+
+export type OptimizationAnalytics = {
+  study_id: string
+  status: JobStatus
+  is_multi_objective: boolean
+  n_complete_trials: number
+  objective_labels: string[]
+  param_importances: Record<string, ParamImportanceEntry[]> | null
+  parallel_coordinate: ParallelCoordinatePayload
+  pareto_front: ParetoFrontPayload
+}

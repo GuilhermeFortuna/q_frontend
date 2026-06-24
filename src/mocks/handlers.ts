@@ -5,6 +5,7 @@ import { getMockBacktestEquityArtifact } from '@/mocks/backtestEquity'
 import {
   getMockBacktestRunDetail,
   getMockOptimizationResults,
+  getMockOptimizationAnalytics,
   getMockOptimizationStatus,
   getMockOhlcv,
   getMockTicks,
@@ -638,6 +639,70 @@ export const handlers = [
     const staticResults = getMockOptimizationResults(studyId)
     if (staticResults) {
       return HttpResponse.json(staticResults)
+    }
+
+    return new HttpResponse('Study not found', { status: 404 })
+  }),
+
+  http.get('*/api/v1/optimize/:study_id/analytics', ({ params }) => {
+    const studyId = String(params.study_id)
+    if (deletedOptimizationStudyIds.has(studyId)) {
+      return HttpResponse.json({ detail: `Study '${studyId}' not found.` }, { status: 404 })
+    }
+
+    const staticAnalytics = getMockOptimizationAnalytics(studyId)
+    if (staticAnalytics) {
+      return HttpResponse.json(staticAnalytics)
+    }
+
+    const study = getUpdatedStudy(studyId)
+    if (study) {
+      const completed = study.trials
+        .slice(0, study.completed_trials)
+        .filter((trial) => trial.values && trial.values.length > 0)
+      const objectiveLabels =
+        study.objective_mode === 'multi_objective_return_drawdown'
+          ? ['return', 'drawdown']
+          : [study.objective_mode]
+      const rows = completed.map((trial) => ({
+        number: trial.number,
+        params: trial.params,
+        values: trial.values ?? [],
+      }))
+      const paramNames = [...new Set(rows.flatMap((row) => Object.keys(row.params)))].sort()
+      const bestTrial = completed.reduce<OptimizationTrial | null>((best, trial) => {
+        if (!best) return trial
+        const bestVal = best.values?.[0] ?? -Infinity
+        const trialVal = trial.values?.[0] ?? -Infinity
+        return trialVal > bestVal ? trial : best
+      }, null)
+
+      return HttpResponse.json({
+        study_id: study.study_id,
+        status: study.status,
+        is_multi_objective: study.objective_mode === 'multi_objective_return_drawdown',
+        n_complete_trials: completed.length,
+        objective_labels: objectiveLabels,
+        param_importances: null,
+        parallel_coordinate: {
+          params: paramNames,
+          objectives: objectiveLabels,
+          rows,
+        },
+        pareto_front: {
+          is_multi_objective: study.objective_mode === 'multi_objective_return_drawdown',
+          objectives: objectiveLabels,
+          points: bestTrial
+            ? [
+                {
+                  number: bestTrial.number,
+                  values: bestTrial.values ?? [],
+                  params: bestTrial.params,
+                },
+              ]
+            : [],
+        },
+      })
     }
 
     return new HttpResponse('Study not found', { status: 404 })
