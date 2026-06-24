@@ -11,7 +11,11 @@ import type {
   ValidationResult,
 } from '@/types/strategyBuilder'
 
-const INTERPRET_TIMEOUT_MS = 90_000
+// Local-model interpretation on CPU is slow (a 7.5B model takes ~80s+ for this
+// prompt and varies with machine load). Keep this above the backend provider
+// timeout (Q_AI_STRATEGY_TIMEOUT_SECONDS) so the backend's structured timeout
+// error surfaces instead of a generic axios abort.
+const INTERPRET_TIMEOUT_MS = 200_000
 const MODELS_STALE_TIME_MS = 30_000
 
 export const strategyBuilderKeys = {

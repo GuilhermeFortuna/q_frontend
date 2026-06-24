@@ -131,7 +131,7 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
             </p>
           ) : availableModels.length === 0 && !modelsLoading ? (
             <p className="text-silver-500 text-[11px]" data-testid="ai-strategy-models-hint">
-              Start LM Studio local server to enable models.
+              Start the Ollama server (and pull a model) to enable models.
             </p>
           ) : null}
         </div>
