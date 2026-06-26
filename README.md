@@ -52,6 +52,7 @@ The app shell uses a glassmorphic **dock** for workspace navigation. The dock sh
 - **Optimize Workspace:** Configurable Optuna-driven hyperparameter sweeps that support single/multi-objective optimization, real-time job cancellation, log streaming, and interactive Pareto Front / historical trial scatter charts.
 - **Validate Workspace:** Walk-forward analysis — optimize in-sample per window, test out-of-sample, compare IS/OOS metrics, and inspect stitched OOS equity curves.
 - **Discover Workspace:** Strategy search (discovery) — sweep registered candle strategies, walk-forward validate each candidate, and browse an OOS-ranked leaderboard. When the backend sends exit preset/policy labels and `exit_quality` diagnostics, candidate detail panels show exit distribution and path-quality stats; older runs without that metadata render unchanged.
+- **Research Workspace:** Feature intelligence shell at `/research` with three tabs — **Feature Store**, **Feature Scoring**, and **Feature Lab** — backed by a typed react-query layer (`src/api/queries/features.ts`) and MSW fixtures (`src/mocks/features.ts`). Tab selection persists in `?tab=store|scoring|lab` for deep links. Panel UIs land in WO138–141; **Neural Features** is deferred until backend Phase 3/4. See [docs/design/feature-intelligence.md](docs/design/feature-intelligence.md).
 - **System Workspace:** System diagnostics, data-lake sync telemetries, and live FastAPI connection heartbeats.
 
 The former standalone `/strategy` route redirects to **Backtests**; custom strategy authoring lives in Backtests → Simulation (**StrategyStudio**).
@@ -72,6 +73,7 @@ Custom tailored around the **Quant Visual Identity** in `src/styles/globals.css`
 
 - Fully integrated **Mock Service Worker (MSW v2)** intercepting browser network traffic.
 - Enables full, high-speed offline UI iteration without requiring the FastAPI backend, Dramatiq worker, or MetaTrader terminal to be active.
+- Feature Intelligence endpoints (`/api/v1/features`, `/api/v1/feature-eval`, …) are mocked in `src/mocks/features.ts` so the Research workspace batch (WO137–141) can ship UI against stable fixtures before the live API is wired.
 
 ### 4. Global Job Tracking
 
@@ -93,6 +95,7 @@ q_frontend/
 ├── src/
 │   ├── app/             # Router providers, Router tree, and App entry configuration
 │   ├── api/             # Axios API client, query hooks, and TanStack Queries
+│   │   └── queries/     # Per-domain hooks (backtests, optimize, features, …)
 │   ├── hooks/           # Shared hooks (active jobs, global zoom, sparklines, …)
 │   ├── store/           # Zustand global state (layout, job sessions, system status)
 │   ├── styles/          # Custom Tailwind v4 styling variables and theme configurations
@@ -116,8 +119,10 @@ q_frontend/
 │   │   ├── optimize/    # Optuna study runs and Pareto analysis
 │   │   ├── walkforward/ # Walk-forward validation workbench
 │   │   ├── discover/    # Strategy discovery / search workbench
+│   │   ├── research/    # Feature Store · Scoring · Lab (WO137–141)
 │   │   ├── news/        # News reader (standalone window route)
 │   │   └── system/      # Telemetries, diagnostics, and connection endpoints
+│   ├── types/           # Shared TypeScript models (API, features, strategies, …)
 │   ├── mocks/           # Mock Service Worker (MSW) client-side handlers
 │   └── main.tsx         # React bootstrap root
 └── tests/               # Unit testing packages (Vitest + Testing Library)
@@ -255,6 +260,17 @@ The frontend communicates with the following FastAPI endpoints (see `q_backend/R
 - `POST /api/v1/strategy-search/{runId}/cancel` — Cooperative cancellation.
 - `GET /api/v1/strategy-searches` — Paginated history.
 - `GET /api/v1/strategy-search/{runId}/candidates/{candidateId}/artifacts/equity` — Candidate OOS equity.
+
+#### Feature intelligence (Research workspace)
+
+- `GET /api/v1/features` — Feature Store catalog (`category`, `status` filters).
+- `GET /api/v1/features/{name}` — Feature Passport (versions, history, score).
+- `POST /api/v1/features/{name}/{version}/status` — Promote/demote lifecycle status.
+- `GET /api/v1/features/leaderboard` — Latest global scores per feature.
+- `POST /api/v1/feature-eval` — Start a feature evaluation run.
+- `GET /api/v1/feature-eval/{runId}` — Run status, leaderboard, clusters, heatmap.
+
+Frontend hooks: `src/api/queries/features.ts` (`useFeatureList`, `useFeaturePassport`, `useFeatureLeaderboard`, `useFeatureEvalRun`, `useSetFeatureStatus`, `useStartFeatureEval`). With `VITE_ENABLE_MSW=true`, MSW serves the same shapes from `src/mocks/features.ts`.
 
 ---
 
