@@ -27,7 +27,7 @@ const ENTRY_MARKER_SIZE = 8
 const EXIT_MARKER_RADIUS = 6
 const MARKER_STROKE = '#07101c'
 
-function findBarTimestamp(allBars: OhlcvBar[], tradeTime: string): string | null {
+export function findBarTimestamp(allBars: OhlcvBar[], tradeTime: string): string | null {
   const targetMs = new Date(tradeTime).getTime()
   let closest: OhlcvBar | null = null
   let minDist = Infinity
@@ -212,6 +212,26 @@ export function TradeMarkersLayer({
 
             {entryVisible && (
               <>
+                {isHovered && (
+                  <circle
+                    cx={entryX}
+                    cy={entryY}
+                    r={ENTRY_MARKER_SIZE + 6}
+                    fill="var(--color-brass-400)"
+                    className="animate-ping opacity-40"
+                    pointerEvents="none"
+                  />
+                )}
+                {isHovered && (
+                  <circle
+                    cx={entryX}
+                    cy={entryY}
+                    r={ENTRY_MARKER_SIZE + 12}
+                    fill="var(--color-brass-500)"
+                    className="opacity-25 blur-[2px]"
+                    pointerEvents="none"
+                  />
+                )}
                 <circle
                   cx={entryX}
                   cy={entryY}
@@ -225,6 +245,26 @@ export function TradeMarkersLayer({
 
             {exitVisible && exitX != null && exitY != null && (
               <>
+                {isHovered && (
+                  <circle
+                    cx={exitX}
+                    cy={exitY}
+                    r={EXIT_MARKER_RADIUS + 7}
+                    fill="var(--color-brass-400)"
+                    className="animate-ping opacity-40"
+                    pointerEvents="none"
+                  />
+                )}
+                {isHovered && (
+                  <circle
+                    cx={exitX}
+                    cy={exitY}
+                    r={EXIT_MARKER_RADIUS + 13}
+                    fill="var(--color-brass-500)"
+                    className="opacity-25 blur-[2px]"
+                    pointerEvents="none"
+                  />
+                )}
                 <circle
                   cx={exitX}
                   cy={exitY}

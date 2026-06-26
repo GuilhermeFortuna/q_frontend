@@ -50,38 +50,64 @@ function formatPositionSize(quantity: number): string {
 
 const TRADE_ROW_HEIGHT = 44
 
-function TradeHistoryTable({ trades }: { trades: Trade[] }) {
-  const renderTradeRow = (trade: Trade) => (
-    <tr key={trade.id} className="hover:bg-carbon-800/30 transition-all">
-      <td className="text-silver-100 px-4 py-3 font-mono text-xs font-bold">{trade.symbol}</td>
-      <td className="px-4 py-3">
-        <span
-          className={`rounded-md px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase ${trade.action === 'BUY' ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border border-rose-500/20 bg-rose-500/10 text-rose-400'}`}
-        >
-          {trade.action}
-        </span>
-      </td>
-      <td className="text-silver-100 px-4 py-3 text-right font-mono text-xs tabular-nums">
-        {formatPositionSize(trade.quantity)}
-      </td>
-      <td className="px-4 py-3 font-mono text-xs">{formatDisplayDateTime(trade.entry_time)}</td>
-      <td className="px-4 py-3 font-mono text-xs">{formatCurrency(trade.entry_price)}</td>
-      <td className="px-4 py-3 font-mono text-xs">
-        {trade.exit_time ? formatDisplayDateTime(trade.exit_time) : '-'}
-      </td>
-      <td className="px-4 py-3 font-mono text-xs">
-        {trade.exit_price != null ? formatCurrency(trade.exit_price) : '-'}
-      </td>
-      <td className="px-4 py-3 font-mono text-xs">
-        {trade.exit_reason ? formatExitReason(trade.exit_reason) : '-'}
-      </td>
-      <td
-        className={`px-4 py-3 text-right font-mono text-xs font-bold tabular-nums ${trade.pnl && trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+function TradeHistoryTable({
+  trades,
+  focusedTradeId,
+  hoveredTradeId,
+  onHoverTrade,
+  onClickTrade,
+}: {
+  trades: Trade[]
+  focusedTradeId?: string | null
+  hoveredTradeId?: string | null
+  onHoverTrade?: (id: string | null) => void
+  onClickTrade?: (id: string) => void
+}) {
+  const renderTradeRow = (trade: Trade) => {
+    const isHighlighted = focusedTradeId === trade.id || hoveredTradeId === trade.id
+    return (
+      <tr
+        key={trade.id}
+        onClick={() => onClickTrade?.(trade.id)}
+        onMouseEnter={() => onHoverTrade?.(trade.id)}
+        onMouseLeave={() => onHoverTrade?.(null)}
+        className={cn(
+          'cursor-pointer border-l-2 transition-all',
+          isHighlighted
+            ? 'bg-brass-500/10 border-l-brass-500'
+            : 'hover:bg-carbon-800/30 border-l-transparent',
+        )}
       >
-        {trade.pnl != null ? formatSignedCurrency(trade.pnl) : '-'}
-      </td>
-    </tr>
-  )
+        <td className="text-silver-100 px-4 py-3 font-mono text-xs font-bold">{trade.symbol}</td>
+        <td className="px-4 py-3">
+          <span
+            className={`rounded-md px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase ${trade.action === 'BUY' ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border border-rose-500/20 bg-rose-500/10 text-rose-400'}`}
+          >
+            {trade.action}
+          </span>
+        </td>
+        <td className="text-silver-100 px-4 py-3 text-right font-mono text-xs tabular-nums">
+          {formatPositionSize(trade.quantity)}
+        </td>
+        <td className="px-4 py-3 font-mono text-xs">{formatDisplayDateTime(trade.entry_time)}</td>
+        <td className="px-4 py-3 font-mono text-xs">{formatCurrency(trade.entry_price)}</td>
+        <td className="px-4 py-3 font-mono text-xs">
+          {trade.exit_time ? formatDisplayDateTime(trade.exit_time) : '-'}
+        </td>
+        <td className="px-4 py-3 font-mono text-xs">
+          {trade.exit_price != null ? formatCurrency(trade.exit_price) : '-'}
+        </td>
+        <td className="px-4 py-3 font-mono text-xs">
+          {trade.exit_reason ? formatExitReason(trade.exit_reason) : '-'}
+        </td>
+        <td
+          className={`px-4 py-3 text-right font-mono text-xs font-bold tabular-nums ${trade.pnl && trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+        >
+          {trade.pnl != null ? formatSignedCurrency(trade.pnl) : '-'}
+        </td>
+      </tr>
+    )
+  }
 
   if (trades.length === 0) {
     return (
@@ -133,6 +159,9 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   const [activeTab, setActiveTab] = useState<TabId>('performance')
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+
+  const [focusedTradeId, setFocusedTradeId] = useState<string | null>(null)
+  const [hoveredTradeId, setHoveredTradeId] = useState<string | null>(null)
 
   const handleExport = async () => {
     if (exporting) return
@@ -215,6 +244,8 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
               <LazyBacktestPerformanceCharts
                 equityCurve={equityCurve}
                 initialCapital={initialCapital}
+                bars={results.bars}
+                trades={results.trades}
               />
             )}
           </div>
@@ -239,6 +270,9 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
               symbol={symbol}
               timeframe={timeframe}
               runId={results.run_id || undefined}
+              focusedTradeId={focusedTradeId}
+              hoveredTradeId={hoveredTradeId}
+              onHoverTradeChange={setHoveredTradeId}
             />
           </div>
         )}
@@ -246,7 +280,16 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
         {activeTab === 'trades' && (
           <div className="h-full overflow-y-auto">
             <h3 className="text-silver-100 mb-4 text-lg font-semibold">Trade History</h3>
-            <TradeHistoryTable trades={results.trades} />
+            <TradeHistoryTable
+              trades={results.trades}
+              focusedTradeId={focusedTradeId}
+              hoveredTradeId={hoveredTradeId}
+              onHoverTrade={setHoveredTradeId}
+              onClickTrade={(id) => {
+                setFocusedTradeId(id)
+                setActiveTab('trade-chart')
+              }}
+            />
           </div>
         )}
       </div>

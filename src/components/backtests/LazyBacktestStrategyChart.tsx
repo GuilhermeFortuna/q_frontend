@@ -17,6 +17,9 @@ type LazyBacktestStrategyChartProps = {
   symbol: string
   timeframe: string
   runId?: string
+  focusedTradeId?: string | null
+  hoveredTradeId?: string | null
+  onHoverTradeChange?: (id: string | null) => void
 }
 
 export function LazyBacktestStrategyChart(props: LazyBacktestStrategyChartProps) {

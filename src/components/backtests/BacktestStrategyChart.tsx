@@ -12,7 +12,7 @@ import {
   StrategyOscillatorLayer,
 } from '@/components/backtests/StrategyIndicatorLayer'
 import { TradeHoverCard } from '@/components/backtests/TradeHoverCard'
-import { TradeMarkersLayer } from '@/components/backtests/TradeMarkersLayer'
+import { TradeMarkersLayer, findBarTimestamp } from '@/components/backtests/TradeMarkersLayer'
 import {
   processBars,
   applyPriceAxisTransform,
@@ -39,6 +39,10 @@ export type BacktestStrategyChartProps = {
   symbol: string
   timeframe?: string
   runId?: string
+  focusedTradeId?: string | null
+  onFocusTradeChange?: (id: string | null) => void
+  hoveredTradeId?: string | null
+  onHoverTradeChange?: (id: string | null) => void
 }
 
 type BacktestPaneLayout = {
@@ -90,6 +94,9 @@ function ChartInner({
   symbol,
   timeframe = 'D1',
   runId,
+  focusedTradeId,
+  hoveredTradeId,
+  onHoverTradeChange,
 }: BacktestStrategyChartProps & { width: number; height: number }) {
   const processed = useMemo(() => processBars(bars), [bars])
   const hasOscillator = indicators.some((ind) => ind.pane === 'oscillator')
@@ -97,9 +104,29 @@ function ChartInner({
     () => computeBacktestLayout(width, height, hasOscillator),
     [width, height, hasOscillator],
   )
-  const { viewport, resetViewport, fitAll, zoomAt, panBy, stretchXByPixels } = useChartViewport(
-    processed.length,
-  )
+  const { viewport, setViewport, resetViewport, fitAll, zoomAt, panBy, stretchXByPixels } =
+    useChartViewport(processed.length)
+
+  // Auto-focus on focusedTradeId
+  useEffect(() => {
+    if (!focusedTradeId || processed.length === 0) return
+
+    const trade = trades.find((t) => t.id === focusedTradeId)
+    if (!trade) return
+
+    const timestamp = findBarTimestamp(bars, trade.entry_time)
+    if (!timestamp) return
+
+    const index = processed.findIndex((b) => b.timestamp === timestamp)
+    if (index === -1) return
+
+    // Focus viewport window around index (e.g. show 60 bars total, centered)
+    const visibleBarsCount = 60
+    const start = Math.max(0, index - Math.floor(visibleBarsCount / 2))
+    const end = Math.min(processed.length - 1, start + visibleBarsCount - 1)
+
+    setViewport({ startIndex: start, endIndex: end })
+  }, [focusedTradeId, processed, trades, bars, setViewport])
   const { pricePanOffset, priceScaleFactor, resetPriceAxis, stretchPriceByPixels } = usePriceAxis(
     String(processed.length),
   )
@@ -280,18 +307,22 @@ function ChartInner({
     [stretchXByPixels, layout.innerWidth],
   )
 
-  const handleTradeHover = useCallback((trade: Trade | null, event?: React.MouseEvent) => {
-    setHoveredTrade(trade)
-    if (trade && event && chartRef.current) {
-      const bounds = chartRef.current.getBoundingClientRect()
-      setHoverPos({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top,
-      })
-    } else {
-      setHoverPos(null)
-    }
-  }, [])
+  const handleTradeHover = useCallback(
+    (trade: Trade | null, event?: React.MouseEvent) => {
+      setHoveredTrade(trade)
+      onHoverTradeChange?.(trade?.id ?? null)
+      if (trade && event && chartRef.current) {
+        const bounds = chartRef.current.getBoundingClientRect()
+        setHoverPos({
+          x: event.clientX - bounds.left,
+          y: event.clientY - bounds.top,
+        })
+      } else {
+        setHoverPos(null)
+      }
+    },
+    [onHoverTradeChange],
+  )
 
   const activeBar = hoveredBar || visibleBars[visibleBars.length - 1] || null
   const activeIndex = activeBar
@@ -649,7 +680,7 @@ function ChartInner({
           xScale={scales.xScale}
           yScale={scales.priceScale}
           left={CHART_MARGINS.left}
-          hoveredTradeId={hoveredTrade?.id}
+          hoveredTradeId={hoveredTrade?.id || hoveredTradeId || focusedTradeId}
           onTradeHover={handleTradeHover}
         />
 
