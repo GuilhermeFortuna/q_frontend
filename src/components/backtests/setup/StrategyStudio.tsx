@@ -6,9 +6,11 @@ import { EntryManagerSelector } from '@/components/backtests/setup/EntryManagerS
 import { ExitStrategyCards } from '@/components/backtests/setup/ExitStrategyCards'
 import { AiStrategyTeaser } from '@/components/backtests/setup/AiStrategyTeaser'
 import { StrategyLibrary } from '@/components/backtests/setup/StrategyLibrary'
+import { StrategyFlowChart } from '@/components/backtests/setup/StrategyFlowChart'
 import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
 import { FeatureIslandFallback } from '@/components/islands/FeatureIslandFallback'
+import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { useSignalManagers } from '@/api/queries/strategies'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { instanceCountByStrategy } from '@/lib/backtesting/entryInstances'
@@ -69,6 +71,9 @@ export function StrategyStudio({
 }: StrategyStudioProps) {
   const [thesisOpen, setThesisOpen] = useState(true)
   const [aiPanelOpen, setAiPanelOpen] = useState(Boolean(aiSession))
+
+  const activeJobs = useActiveJobs()
+  const hasActiveJobs = Object.keys(activeJobs).length > 0
 
   const {
     fields,
@@ -151,8 +156,6 @@ export function StrategyStudio({
   const handleToggleExitRule = (rule: ExitRuleInfo) => {
     toggleExitRuleParam(rule, fields.strategyParams, setters.handleParamChange, exitParamSpecs)
   }
-
-  const libraryLoading = strategiesLoading || customLoading
 
   const renderAiSection = () => {
     if (aiSession) {
@@ -272,6 +275,15 @@ export function StrategyStudio({
         {renderAiSection()}
       </div>
 
+      <StrategyFlowChart
+        entries={entries}
+        entryManager={entryManager.kind}
+        enabledExitRules={enabledExitRules}
+        isComposite={isComposite}
+        strategies={strategies}
+        hasActiveJobs={hasActiveJobs}
+      />
+
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="flex min-h-0 flex-col gap-4 overflow-y-auto">
           <StrategyLibrary
@@ -284,7 +296,8 @@ export function StrategyStudio({
             onSelectBuiltIn={handleSelectBuiltIn}
             onSelectCustom={handleSelectCustom}
             onDeleteCustom={authoring.deleteCustom}
-            loading={libraryLoading}
+            loading={strategiesLoading}
+            loadingSaved={customLoading}
             multiSelect={!isComposite}
             instanceCounts={instanceCounts}
             onAddEntry={handleAddEntry}

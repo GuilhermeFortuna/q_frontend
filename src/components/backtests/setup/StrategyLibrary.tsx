@@ -29,6 +29,7 @@ type StrategyLibraryProps = {
   onSelectCustom?: (custom: CustomStrategy) => void
   onDeleteCustom?: (name: string) => void
   loading?: boolean
+  loadingSaved?: boolean
   multiSelect?: boolean
   instanceCounts?: Record<string, number>
   onAddEntry?: (name: string) => void
@@ -47,6 +48,7 @@ export const StrategyLibrary = memo(function StrategyLibrary({
   onSelectCustom,
   onDeleteCustom,
   loading = false,
+  loadingSaved = false,
   multiSelect = false,
   instanceCounts = {},
   onAddEntry,
@@ -90,11 +92,11 @@ export const StrategyLibrary = memo(function StrategyLibrary({
     for (const category of availableCategories) {
       options.push({ value: category, label: categoryLabel(category) })
     }
-    if (hasSaved) {
+    if (hasSaved || loadingSaved) {
       options.push({ value: 'saved', label: CUSTOM_STRATEGY_CATEGORY_LABEL })
     }
     return options
-  }, [availableCategories, hasSaved])
+  }, [availableCategories, hasSaved, loadingSaved])
 
   if (loading) {
     return (
@@ -115,7 +117,11 @@ export const StrategyLibrary = memo(function StrategyLibrary({
       />
 
       {categoryFilter === 'saved' ? (
-        savedForEngine.length === 0 ? (
+        loadingSaved ? (
+          <div className="text-silver-400 flex flex-1 items-center justify-center text-sm">
+            Loading saved strategies…
+          </div>
+        ) : savedForEngine.length === 0 ? (
           <p className="text-silver-400 text-sm">No saved strategies yet.</p>
         ) : (
           <div className="grid min-h-0 flex-1 auto-rows-min gap-2 overflow-y-auto p-1.5 pb-4 sm:grid-cols-2 xl:grid-cols-3">

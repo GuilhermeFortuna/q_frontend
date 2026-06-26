@@ -60,6 +60,7 @@ export function OptimizeSetupPanel({
             }}
             onSelectCustom={(custom) => config.setters.handleStrategyChange(custom.name)}
             loading={config.strategiesLoading}
+            loadingSaved={config.customStrategiesLoading}
           />
           <EntryManagerSelector
             managers={signalManagers}
