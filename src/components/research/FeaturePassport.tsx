@@ -35,7 +35,12 @@ type FeaturePassportProps = {
 
 function ReadOnlyValue({ children, mono = false }: { children: ReactNode; mono?: boolean }) {
   return (
-    <p className={cn('text-silver-200 rounded-md border px-3 py-2 text-sm', mono && 'font-mono')}>
+    <p
+      className={cn(
+        'bg-carbon-950/60 border-carbon-800/60 text-silver-200 hover:border-carbon-700/60 rounded-lg border px-3 py-2.5 text-xs leading-relaxed font-medium transition-all duration-200',
+        mono && 'font-mono',
+      )}
+    >
       {children}
     </p>
   )
@@ -262,7 +267,7 @@ export function FeaturePassport({ name, onClose }: FeaturePassportProps) {
               .map((versionRow) => (
                 <div
                   key={versionRow.version}
-                  className="surface-card flex items-center justify-between rounded-md border px-3 py-2"
+                  className="surface-card flex items-center justify-between rounded-lg px-3.5 py-2.5"
                 >
                   <span className="text-silver-200 font-mono text-sm">v{versionRow.version}</span>
                   <span className={statusChipClass(versionRow.status)}>{versionRow.status}</span>
@@ -307,10 +312,7 @@ export function FeaturePassport({ name, onClose }: FeaturePassportProps) {
           ) : (
             <div className="space-y-2">
               {sortedHistory.map((entry) => (
-                <div
-                  key={entry.run_id}
-                  className="surface-card rounded-md border px-3 py-2 text-xs"
-                >
+                <div key={entry.run_id} className="surface-card rounded-lg px-3.5 py-2.5 text-xs">
                   <div className="text-silver-300 flex items-center justify-between gap-2">
                     <span className="font-mono">{entry.run_id}</span>
                     <span>{formatDisplayDateTime(entry.evaluated_at)}</span>

@@ -50,7 +50,7 @@ export function FeatureLeaderboardPanel({ rows, onSelectFeature }: FeatureLeader
               <tr
                 key={row.feature_id}
                 className={cn(
-                  'border-silver-800/60 hover:bg-silver-900/40 border-t transition-colors',
+                  'border-carbon-800/60 hover:bg-carbon-800/35 text-silver-200 border-t transition-all duration-150',
                   onSelectFeature && 'cursor-pointer',
                 )}
                 onClick={() => onSelectFeature?.(row.feature_name)}

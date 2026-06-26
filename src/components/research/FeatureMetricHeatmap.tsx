@@ -41,7 +41,7 @@ export function FeatureMetricHeatmap({ heatmap }: FeatureMetricHeatmapProps) {
           </thead>
           <tbody>
             {heatmap.rows.map((row) => (
-              <tr key={row.feature_id} className="border-silver-800/60 border-t">
+              <tr key={row.feature_id} className="border-carbon-800/60 border-t">
                 <td className="text-cream-100 px-2 py-2 font-mono">{row.feature_name}</td>
                 {metrics.map((metric) => {
                   const value = heatmapCellValue(row, metric)

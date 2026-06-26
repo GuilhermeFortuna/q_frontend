@@ -71,10 +71,10 @@ function FeatureStoreSkeletonRows() {
   return (
     <>
       {Array.from({ length: 5 }, (_, index) => (
-        <tr key={index} className="border-silver-800/60 border-t">
+        <tr key={index} className="border-carbon-800/60 border-t">
           {TABLE_COLUMNS.map((column) => (
             <td key={column.key} className="px-3 py-3">
-              <div className="bg-silver-800/40 h-4 animate-pulse rounded" />
+              <div className="bg-carbon-800/40 h-4 animate-pulse rounded" />
             </td>
           ))}
         </tr>
@@ -175,7 +175,7 @@ export function FeatureStoreTable({
             ? sortedFeatures.map((feature) => (
                 <tr
                   key={feature.name}
-                  className="border-silver-800/60 hover:bg-silver-900/40 cursor-pointer border-t transition-colors"
+                  className="border-carbon-800/60 hover:bg-carbon-800/35 text-silver-200 cursor-pointer border-t transition-all duration-150"
                   onClick={() => onSelectFeature(feature.name)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
