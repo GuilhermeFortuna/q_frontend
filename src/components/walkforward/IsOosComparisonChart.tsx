@@ -11,6 +11,8 @@ import {
 } from 'recharts'
 
 import { CHART_COLORS } from '@/components/backtests/chartUtils'
+import { Panel } from '@/components/ui/Panel'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import {
   formatObjectiveMetricValue,
   objectiveMetricLabel,
@@ -61,10 +63,11 @@ export function IsOosComparisonChart({
   }
 
   return (
-    <div className="border-carbon-600/40 rounded-lg border bg-transparent p-4">
-      <h4 className="text-silver-200 mb-3 text-sm font-medium">
-        In-sample vs out-of-sample — {objectiveMetricLabel(objectiveMode)}
-      </h4>
+    <Panel className="p-4">
+      <SectionHeader
+        title={`In-sample vs out-of-sample — ${objectiveMetricLabel(objectiveMode)}`}
+        className="mb-3"
+      />
       <div className="h-[240px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
@@ -99,6 +102,6 @@ export function IsOosComparisonChart({
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </Panel>
   )
 }

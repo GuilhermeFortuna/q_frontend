@@ -56,9 +56,6 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
           : 'border-brass-500/20 border-t-brass-400/50 from-espresso-900/80 via-espresso-950/92 to-carbon-950/96 hover:border-brass-500/30 hover:border-t-brass-400/80 bottom-8 gap-1.5 rounded-2xl border border-b-black/60 bg-gradient-to-b px-3.5 py-2.5 shadow-[inset_0_1.5px_0_rgba(255,255,255,0.16),_inset_0_-2px_0_rgba(0,0,0,0.65),_inset_0_0_0_1px_rgba(255,255,255,0.03),_0_20px_50px_-10px_rgba(0,0,0,0.8),_0_0_30px_rgba(196,165,116,0.06)] hover:border-b-black/80 hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.22),_inset_0_-2px_0_rgba(0,0,0,0.75),_inset_0_0_0_1px_rgba(255,255,255,0.05),_0_25px_60px_-5px_rgba(0,0,0,0.85),_0_0_40px_rgba(196,165,116,0.1)]',
       )}
     >
-      {/* 3D Diagonal Specular Glass Reflection */}
-      <div className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] bg-gradient-to-tr from-transparent via-white/[0.03] to-transparent" />
-
       {dockItems.map((item) => {
         const Icon = item.icon
         const isActive = activeWorkspace === item.id
@@ -96,9 +93,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
             className={cn(
               'text-cream-300 cubic-bezier(0.16,1,0.3,1) group relative flex flex-col items-center border border-transparent transition-[transform,color,background-color,border-color] duration-350 hover:-translate-y-0.5 hover:scale-105 active:scale-95',
               isLauncher ? 'shrink-0 gap-1.5 rounded-xl px-4 py-3' : 'gap-1 rounded-lg px-4 py-2.5',
-              isActive
-                ? 'text-brass-400 font-bold'
-                : 'hover:text-gold-400 hover:bg-brass-600/5 hover:border-brass-600/15',
+              isActive ? 'text-gold-400 font-bold' : 'text-silver-400 hover:text-silver-200',
             )}
           >
             {isActive ? (
@@ -106,12 +101,12 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
                 <motion.span
                   layoutId="dock-active"
                   className={cn(
-                    'from-brass-500/12 to-brass-600/6 border-brass-500/30 border-t-brass-400/60 absolute inset-0 border bg-gradient-to-b shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(240,180,41,0.15)]',
+                    'accent-state absolute inset-0 border',
                     isLauncher ? 'rounded-xl' : 'rounded-lg',
                   )}
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
-                <span className="bg-brass-400 absolute bottom-1.5 left-1/2 z-10 h-0.5 w-3.5 -translate-x-1/2 animate-pulse rounded-full shadow-[0_0_8px_rgba(240,180,41,0.9)]" />
+                <span className="bg-brass-400 absolute bottom-1.5 left-1/2 z-10 h-0.5 w-3.5 -translate-x-1/2 rounded-full shadow-[0_0_8px_rgba(240,180,41,0.9)]" />
               </>
             ) : null}
             <span className="relative z-10 flex">
@@ -165,7 +160,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
                     key={item.id}
                     to={item.to}
                     title={`${item.label}: ${job.detail}`}
-                    className="bg-carbon-900/40 hover:bg-carbon-800/50 border-carbon-700/30 hover:border-brass-500/30 flex w-40 shrink-0 flex-col gap-1.5 rounded-xl border px-3 py-2 transition-colors"
+                    className="surface-card hover:border-brass-500/30 flex w-40 shrink-0 flex-col gap-1.5 rounded-xl border px-3 py-2 transition-colors"
                   >
                     <div className="flex items-center gap-1.5">
                       <Icon className="text-brass-400 h-3.5 w-3.5 shrink-0" />
@@ -176,9 +171,9 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
                         {job.pct}%
                       </span>
                     </div>
-                    <div className="bg-carbon-950/85 border-brass-600/10 h-1.5 w-full overflow-hidden rounded-full border shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+                    <div className="surface-well h-1.5 w-full overflow-hidden rounded-full">
                       <motion.div
-                        className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r shadow-[0_0_8px_rgba(196,165,116,0.35)]"
+                        className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r"
                         initial={false}
                         animate={{ width: `${job.pct}%` }}
                         transition={{ duration: 0.5, ease: 'easeOut' }}

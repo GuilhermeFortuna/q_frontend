@@ -8,8 +8,9 @@ import {
 import { GenomeViewer, ComplexityLine } from '@/components/discover/GenomeViewer'
 import { ExitInsightPanel } from '@/components/discover/ExitInsightPanel'
 import { WalkForwardResultsView } from '@/components/walkforward/WalkForwardResultsView'
+import { Panel } from '@/components/ui/Panel'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { isSummaryToMetrics } from '@/lib/discover/candidateMetrics'
-import { cn } from '@/lib/utils'
 import type { ObjectiveMode, OptimizationBacktestConfig } from '@/types/optimization'
 import type { CandidateResult, StrategySearchConfig } from '@/types/strategySearch'
 import { isGeneticCandidate, isGeneticSearchConfig } from '@/types/strategySearch'
@@ -45,17 +46,17 @@ export function CandidateDetailPanel({
 
   if (candidate.status === 'no_result' || candidate.status === 'error') {
     return (
-      <div className="border-carbon-600/40 bg-carbon-950/30 rounded-lg border p-4 text-sm text-amber-200">
+      <Panel className="p-4 text-sm text-amber-200">
         {candidate.error ?? 'No walk-forward result for this candidate.'}
-      </div>
+      </Panel>
     )
   }
 
   if (candidate.status === 'unsupported') {
     return (
-      <div className="border-carbon-600/40 bg-carbon-950/30 text-silver-400 rounded-lg border p-4 text-sm">
+      <Panel className="text-silver-400 p-4 text-sm">
         {candidate.error ?? 'This strategy is not supported for candle walk-forward search.'}
-      </div>
+      </Panel>
     )
   }
 
@@ -137,30 +138,15 @@ export function CandidateDetailPanel({
           <span className="text-silver-200 font-mono">{(candidate.dsr * 100).toFixed(0)}%</span>
         </p>
       ) : null}
-      <div className="flex gap-1">
-        {(
-          [
-            ['performance', 'Performance'],
-            ['genome', 'Genome'],
-          ] as const
-        ).map(([tab, label]) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            aria-selected={detailTab === tab}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors',
-              detailTab === tab
-                ? 'bg-brass-500/20 text-brass-300'
-                : 'text-silver-400 hover:text-silver-200',
-            )}
-            onClick={() => setDetailTab(tab)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SegmentedToggle
+        aria-label="Candidate detail"
+        value={detailTab}
+        onChange={setDetailTab}
+        options={[
+          { value: 'performance', label: 'Performance' },
+          { value: 'genome', label: 'Genome' },
+        ]}
+      />
       {detailTab === 'performance' ? performanceView : genomeView}
     </div>
   )

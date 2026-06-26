@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react'
 
 import { StrategySearchSpaceFields } from '@/components/optimize/StrategySearchSpaceFields'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import type { EntryInstanceState, EntryManagerState } from '@/lib/backtesting/entryInstances'
 import type { SearchSpaceFieldState } from '@/lib/strategies/strategyParams'
 import type {
@@ -72,10 +73,10 @@ export function OptimizeStrategyDetailPanel({
     (entryManager.kind === 'majority' && managerParamSpecs.length > 0)
 
   return (
-    <div className="border-carbon-600/50 bg-carbon-950/30 flex h-full min-h-0 flex-col gap-4 overflow-y-auto rounded-xl border p-4">
+    <div className="surface-panel surface-panel--living flex h-full min-h-0 flex-col gap-4 overflow-y-auto rounded-xl p-4">
       {showSearchSpace ? (
         <div className="space-y-4">
-          <h4 className="text-silver-200 text-sm font-medium">Search Space</h4>
+          <SectionHeader title="Search Space" />
 
           {entries.map((entry, index) => {
             const entryParamSpecs = resolveEntryParamSpecs(entry.strategy)

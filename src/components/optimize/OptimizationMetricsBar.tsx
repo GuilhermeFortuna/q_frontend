@@ -3,6 +3,7 @@ import {
   computeBestMultiObjectiveMetrics,
   formatFractionAsPercent,
 } from '@/lib/optimize/multiObjectiveMetrics'
+import { StatTile } from '@/components/ui/StatTile'
 import type { OptimizationResults } from '@/types/optimization'
 
 type OptimizationMetricsBarProps = {
@@ -12,9 +13,6 @@ type OptimizationMetricsBarProps = {
 function countByStatus(trials: OptimizationResults['trials'], status: string) {
   return trials.filter((t) => (t.user_attrs.status ?? t.state.toLowerCase()) === status).length
 }
-
-const metricCardClass =
-  'surface-card surface-card--edge rounded-xl p-4 transition-[transform,border-color] duration-350 hover:scale-[1.02] hover:border-brass-400/30'
 
 export function OptimizationMetricsBar({ results }: OptimizationMetricsBarProps) {
   const completed = countByStatus(results.trials, 'complete')
@@ -41,51 +39,30 @@ export function OptimizationMetricsBar({ results }: OptimizationMetricsBarProps)
     >
       {results.is_multi_objective ? (
         <>
-          <div className={cn(metricCardClass, 'surface-card--glow quant-panel--glow-hero')}>
-            <Metric label="Best Return" value={formatFractionAsPercent(bestReturn)} highlight />
-          </div>
-          <div className={cn(metricCardClass, 'surface-card--glow quant-panel--glow-hero')}>
-            <Metric label="Best Drawdown" value={formatFractionAsPercent(bestDrawdown)} highlight />
-          </div>
+          <StatTile
+            label="Best Return"
+            value={formatFractionAsPercent(bestReturn)}
+            highlight
+            className="quant-panel--glow-hero"
+          />
+          <StatTile
+            label="Best Drawdown"
+            value={formatFractionAsPercent(bestDrawdown)}
+            highlight
+            className="quant-panel--glow-hero"
+          />
         </>
       ) : (
-        <div className={cn(metricCardClass, 'surface-card--glow quant-panel--glow-hero')}>
-          <Metric label="Best Objective" value={bestObjective} highlight />
-        </div>
+        <StatTile
+          label="Best Objective"
+          value={bestObjective}
+          highlight
+          className="quant-panel--glow-hero"
+        />
       )}
-      <div className={metricCardClass}>
-        <Metric label="Completed" value={String(completed)} />
-      </div>
-      <div className={metricCardClass}>
-        <Metric label="Pruned" value={String(pruned)} />
-      </div>
-      <div className={metricCardClass}>
-        <Metric label="Failed" value={String(failed)} />
-      </div>
-    </div>
-  )
-}
-
-function Metric({
-  label,
-  value,
-  highlight = false,
-}: {
-  label: string
-  value: string
-  highlight?: boolean
-}) {
-  return (
-    <div>
-      <p className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">{label}</p>
-      <p
-        className={cn(
-          'mt-1.5 font-mono text-xl font-bold tracking-tight',
-          highlight ? 'text-brass-400' : 'text-silver-100',
-        )}
-      >
-        {value}
-      </p>
+      <StatTile label="Completed" value={String(completed)} />
+      <StatTile label="Pruned" value={String(pruned)} />
+      <StatTile label="Failed" value={String(failed)} />
     </div>
   )
 }

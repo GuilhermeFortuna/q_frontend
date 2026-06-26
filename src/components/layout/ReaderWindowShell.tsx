@@ -4,6 +4,7 @@ import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
 import { WindowControls } from '@/components/layout/WindowControls'
 import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
 import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
+import { cn } from '@/lib/utils'
 
 type ReaderWindowShellProps = {
   children: ReactNode
@@ -15,7 +16,22 @@ type ReaderWindowShellProps = {
 const BLACK_BG_MAP = {
   high: '/high_brightness/Quant_Background_Black_High_Brightness.jpeg',
   mid: '/mid_brightness/Quant_Background_Black_Mid_Brightness.jpeg',
-  low: '/mid_brightness/Quant_Background_Black_Mid_Brightness.jpeg', // Fallback to Mid for now
+  low: '/mid_brightness/Quant_Background_Black_Mid_Brightness.jpeg',
+}
+
+function PhasePill({ label }: { label: string }) {
+  return (
+    <div
+      className={cn(
+        'surface-card accent-state flex items-center gap-1.5 rounded-full border px-3 py-1',
+      )}
+    >
+      <span className="live-status-dot bg-brass-400 h-1 w-1 rounded-full" aria-hidden />
+      <span className="accent-wayfinding font-mono text-[10px] font-semibold tracking-wider uppercase">
+        {label}
+      </span>
+    </div>
+  )
 }
 
 export function ReaderWindowShell({
@@ -39,7 +55,7 @@ export function ReaderWindowShell({
       <div className="quant-vignette-overlay" />
       <header
         data-tauri-drag-region
-        className="vt-header border-brass-600/15 bg-espresso-950/75 relative z-10 flex items-center justify-between border-b px-6 py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] select-none"
+        className="vt-header surface-shell surface-shell--blur relative z-10 flex items-center justify-between border-b px-6 py-2.5 select-none"
       >
         <div className="flex items-center gap-2.5" data-tauri-drag-region>
           <img
@@ -48,16 +64,13 @@ export function ReaderWindowShell({
             className="block h-3.5 w-auto object-contain select-none"
           />
           <div className="bg-brass-600/25 h-5 w-px" />
-          <span className="text-silver-300 font-mono text-[10px] font-semibold tracking-wider uppercase">
+          <span className="accent-wayfinding font-mono text-[10px] font-semibold tracking-wider uppercase">
             {title}
           </span>
         </div>
         <div className="flex h-full items-center gap-6">
           <BrightnessToggle />
-          <div className="border-brass-600/30 bg-brass-600/10 text-brass-400 flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase shadow-[0_0_10px_rgba(196,165,116,0.05)]">
-            <span className="bg-brass-400 h-1 w-1 animate-pulse rounded-full" />
-            {tag}
-          </div>
+          <PhasePill label={tag} />
           <WindowControls />
         </div>
       </header>

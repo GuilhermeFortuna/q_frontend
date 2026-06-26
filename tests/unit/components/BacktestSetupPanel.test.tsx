@@ -146,10 +146,10 @@ describe('BacktestSetupPanel', () => {
     renderSetup()
     await waitForMaCrossoverSelected()
 
-    expect(screen.getByRole('button', { name: 'Trend' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Mean reversion' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Breakout' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Momentum' })).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Trend' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Mean reversion' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Breakout' })).toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: 'Momentum' })).not.toBeInTheDocument()
   })
 
   it('loads all available data range when All is clicked', async () => {

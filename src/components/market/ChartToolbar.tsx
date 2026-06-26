@@ -1,6 +1,8 @@
 import { IndicatorsPopover } from '@/components/charts/IndicatorsPopover'
 import { ChartSettingsPopover } from '@/components/charts/ChartSettingsPopover'
 import type { IndicatorConfig, ChartSettings } from '@/components/charts/types/chart'
+import { LabeledField } from '@/components/ui/LabeledField'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { CHART_TIMEFRAMES } from '@/lib/market/timeframes'
 import type { OhlcvBar } from '@/types/api'
 
@@ -18,6 +20,12 @@ export type ChartToolbarProps = {
   onChartSettingsChange?: (settings: ChartSettings) => void
 }
 
+const CHART_TYPE_OPTIONS = [
+  { value: 'candles' as const, label: 'Candles' },
+  { value: 'line' as const, label: 'Line' },
+  { value: 'area' as const, label: 'Area' },
+]
+
 export function ChartToolbar({
   selectedTimeframe,
   onTimeframeChange,
@@ -32,38 +40,23 @@ export function ChartToolbar({
   onChartSettingsChange,
 }: ChartToolbarProps) {
   return (
-    <div className="border-brass-600/10 bg-carbon-900/80 relative z-10 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
-      <div className="bg-carbon-950/60 border-brass-600/15 flex items-center gap-1 rounded-lg border p-0.5">
-        {CHART_TIMEFRAMES.map((tf) => (
-          <button
-            key={tf}
-            onClick={() => onTimeframeChange(tf)}
-            className={`rounded-md border px-2.5 py-1 font-mono text-[10px] font-bold transition-all duration-150 active:scale-95 ${
-              selectedTimeframe === tf
-                ? 'bg-brass-600/20 text-brass-400 border-brass-500/30 shadow-[0_0_10px_rgba(196,165,116,0.08)]'
-                : 'text-silver-400 hover:text-silver-100 hover:bg-carbon-800/40 border-transparent'
-            }`}
-          >
-            {tf}
-          </button>
-        ))}
-      </div>
+    <div className="surface-well border-brass-600/10 relative z-10 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
+      <SegmentedToggle
+        aria-label="Chart timeframe"
+        value={selectedTimeframe}
+        onChange={onTimeframeChange}
+        options={CHART_TIMEFRAMES.map((tf) => ({ value: tf, label: tf }))}
+      />
 
-      <div className="flex items-center gap-4 text-xs">
-        <div className="border-brass-600/15 flex items-center gap-1.5 border-r pr-4">
-          <span className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
-            Style
-          </span>
-          <select
+      <div className="flex flex-wrap items-center gap-4 text-xs">
+        <LabeledField label="Style" className="border-brass-600/15 border-r pr-4">
+          <SegmentedToggle
+            aria-label="Chart style"
             value={chartType}
-            onChange={(e) => onChartTypeChange(e.target.value as 'candles' | 'line' | 'area')}
-            className="border-brass-600/15 bg-carbon-950/80 text-silver-200 focus:border-brass-500/60 focus:ring-brass-500/15 rounded-lg border px-2.5 py-1 text-xs shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)] transition-all outline-none focus:ring-2"
-          >
-            <option value="candles">Candles</option>
-            <option value="line">Line</option>
-            <option value="area">Area</option>
-          </select>
-        </div>
+            onChange={onChartTypeChange}
+            options={CHART_TYPE_OPTIONS}
+          />
+        </LabeledField>
 
         <IndicatorsPopover indicators={indicators} onChange={onIndicatorsChange} bars={bars} />
 

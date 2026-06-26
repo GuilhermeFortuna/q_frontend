@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button'
 import { WalkForwardProgress } from '@/components/walkforward/WalkForwardProgress'
 import { WalkForwardResultsView } from '@/components/walkforward/WalkForwardResultsView'
+import { Panel } from '@/components/ui/Panel'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import type { OptimizationBacktestConfig } from '@/types/optimization'
 import type { WalkForwardResults, WalkForwardStatus } from '@/types/walkforward'
 
@@ -51,9 +53,9 @@ export function WalkForwardResultsPanel({
   }
 
   return (
-    <div className="border-carbon-600/60 flex min-h-0 flex-1 items-center justify-center rounded-xl border-2 border-dashed bg-transparent">
+    <Panel className="flex min-h-0 flex-1 items-center justify-center border-2 border-dashed bg-transparent">
       <div className="text-center">
-        <h3 className="text-silver-200 text-xl font-medium">No Walk-Forward Run Yet</h3>
+        <SectionHeader title="No Walk-Forward Run Yet" className="justify-center" />
         <p className="text-silver-400 mt-2 max-w-sm text-sm">
           Configure optimizer settings and walk-forward windows, then launch a run to see the
           stitched OOS verdict.
@@ -62,6 +64,6 @@ export function WalkForwardResultsPanel({
           Open Workbench
         </Button>
       </div>
-    </div>
+    </Panel>
   )
 }

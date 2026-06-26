@@ -4,7 +4,6 @@ import { Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import {
   BarChart3,
-  Cpu,
   Database,
   HardDrive,
   GripHorizontal,
@@ -27,6 +26,11 @@ import { useBacktestHistory } from '@/api/queries/backtests'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { useSparklines } from '@/hooks/useSparklines'
 import { FlashOnChange } from '@/components/shared/FlashOnChange'
+import { EntityCard } from '@/components/ui/EntityCard'
+import { Panel } from '@/components/ui/Panel'
+import { SectionHeader } from '@/components/ui/SectionHeader'
+import { StatTile } from '@/components/ui/StatTile'
+import { wellInputClass } from '@/components/ui/wellInputStyles'
 import { closesToPath, sparklineStrokeColor } from '@/lib/market/sparkline'
 import { isTauri } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
@@ -237,7 +241,7 @@ function FloatingLauncherPanel({
   return (
     <div
       className={cn(
-        'surface-panel quant-panel--spotlight bg-espresso-950/80 absolute z-30 flex min-h-0 flex-col overflow-hidden rounded-2xl',
+        'surface-panel quant-panel--spotlight absolute z-30 flex min-h-0 flex-col overflow-hidden rounded-2xl',
       )}
       style={{
         position: 'absolute',
@@ -250,7 +254,7 @@ function FloatingLauncherPanel({
       <div
         role="presentation"
         onMouseDown={startInteraction('drag')}
-        className="border-brass-600/15 bg-carbon-950/50 absolute inset-x-0 top-0 z-20 flex h-9 cursor-grab touch-none items-center justify-center border-b active:cursor-grabbing"
+        className="surface-well border-brass-600/15 absolute inset-x-0 top-0 z-20 flex h-9 cursor-grab touch-none items-center justify-center border-b active:cursor-grabbing"
       >
         <GripHorizontal className="text-silver-400 h-4 w-4" />
       </div>
@@ -504,24 +508,24 @@ export function LauncherDashboard() {
         setLayout={updatePanelLayout}
       >
         <div>
-          <div className="flex items-center gap-2">
-            <BarChart3 className="text-brass-400 h-4.5 w-4.5" />
-            <h2 className="text-silver-100 text-xs font-semibold tracking-wider uppercase">
-              Market Monitor
-            </h2>
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className={cn(
-                'ml-auto flex items-center justify-center rounded-lg border p-1.5 transition-all duration-150',
-                isEditing
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                  : 'border-carbon-800/80 bg-carbon-900/40 text-silver-400 hover:text-brass-400 hover:border-brass-600/30',
-              )}
-              title={isEditing ? 'Done editing' : 'Edit symbols'}
-            >
-              {isEditing ? <Check className="h-3 w-3" /> : <Edit2 className="h-3 w-3" />}
-            </button>
-          </div>
+          <SectionHeader
+            title="Market Monitor"
+            right={
+              <button
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                className={cn(
+                  'surface-control flex items-center justify-center rounded-lg border p-1.5 transition-all duration-150',
+                  isEditing
+                    ? 'border-emerald-500/30 text-emerald-400'
+                    : 'text-silver-400 hover:text-brass-400',
+                )}
+                title={isEditing ? 'Done editing' : 'Edit symbols'}
+              >
+                {isEditing ? <Check className="h-3 w-3" /> : <Edit2 className="h-3 w-3" />}
+              </button>
+            }
+          />
           <p className="text-silver-400 mt-1 text-[11px]">
             {isEditing
               ? 'Add or remove tracked symbols.'
@@ -542,7 +546,7 @@ export function LauncherDashboard() {
               return (
                 <div
                   key={symbol}
-                  className="bg-carbon-900/35 border-carbon-800/60 hover:border-brass-600/30 flex items-center justify-between rounded-xl border p-3 transition-all duration-200"
+                  className="surface-card surface-card--edge flex items-center justify-between p-3 transition-all duration-200"
                 >
                   <div className="flex flex-col">
                     <span className="text-silver-100 font-mono text-xs font-bold tracking-tight">
@@ -603,13 +607,13 @@ export function LauncherDashboard() {
               )
             })
           ) : (
-            <div className="border-carbon-800/40 flex flex-col items-center justify-center rounded-xl border border-dashed py-6 text-center">
+            <Panel className="flex flex-col items-center justify-center border-2 border-dashed py-6 text-center">
               <BarChart3 className="text-silver-500 mb-1.5 h-6 w-6 animate-pulse opacity-30" />
               <span className="text-silver-400 font-mono text-[10px] tracking-wider uppercase">
                 Watchlist Empty
               </span>
               <span className="text-silver-500 mt-0.5 text-[9px]">Add symbols in edit mode.</span>
-            </div>
+            </Panel>
           )}
         </div>
 
@@ -618,11 +622,9 @@ export function LauncherDashboard() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-carbon-900/20 border-carbon-800/60 flex flex-col gap-2 rounded-xl border p-3"
+            className="surface-well flex flex-col gap-2 rounded-xl p-3"
           >
-            <span className="text-silver-400 font-mono text-[10px] font-bold tracking-wider uppercase">
-              Add Symbol
-            </span>
+            <SectionHeader title="Add Symbol" />
             <div className="relative" ref={dropdownRef}>
               <div className="relative flex items-center">
                 <input
@@ -634,7 +636,7 @@ export function LauncherDashboard() {
                     setIsFocused(true)
                   }}
                   onFocus={() => setIsFocused(true)}
-                  className="border-carbon-700 bg-carbon-900 text-silver-200 focus:ring-brass-500/50 placeholder-silver-500 w-full rounded-lg border py-1.5 pr-7 pl-7 font-mono text-xs focus:ring-1 focus:outline-none"
+                  className={cn(wellInputClass, 'py-1.5 pr-7 pl-7 font-mono text-xs')}
                 />
                 <Search className="text-silver-500 absolute left-2.5 h-3.5 w-3.5" />
                 {searchQuery && (
@@ -706,17 +708,17 @@ export function LauncherDashboard() {
 
         {/* Recent Simulations */}
         <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-silver-400 font-mono text-[10px] font-bold tracking-wider uppercase">
-              Recent Simulations
-            </h3>
-            <Link
-              to="/backtests"
-              className="text-brass-400 hover:text-brass-500 flex items-center gap-0.5 font-mono text-[9px] font-bold tracking-wider uppercase transition-colors duration-150"
-            >
-              History <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
+          <SectionHeader
+            title="Recent Simulations"
+            right={
+              <Link
+                to="/backtests"
+                className="text-brass-400 hover:text-brass-500 flex items-center gap-0.5 font-mono text-[9px] font-bold tracking-wider uppercase transition-colors duration-150"
+              >
+                History <ArrowRight className="h-3 w-3" />
+              </Link>
+            }
+          />
 
           <div className="flex flex-col gap-2">
             {historyQuery.isLoading ? (
@@ -729,7 +731,7 @@ export function LauncherDashboard() {
                 return (
                   <div
                     key={run.run_id}
-                    className="bg-carbon-900/35 border-carbon-800/60 hover:border-brass-600/20 flex items-center justify-between rounded-xl border p-2.5 transition-colors duration-200"
+                    className="surface-card surface-card--edge flex items-center justify-between p-2.5 transition-colors duration-200"
                   >
                     <div className="flex min-w-0 flex-col">
                       <span className="text-silver-100 truncate font-mono text-[11px] font-bold">
@@ -764,7 +766,7 @@ export function LauncherDashboard() {
                 )
               })
             ) : (
-              <div className="border-carbon-800/40 flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed py-4 text-center">
+              <Panel className="flex flex-1 flex-col items-center justify-center border-2 border-dashed py-4 text-center">
                 <Clock className="text-silver-500 mb-1.5 h-4.5 w-4.5 opacity-40" />
                 <span className="text-silver-400 font-mono text-[9px] tracking-wider uppercase">
                   No Simulations
@@ -772,7 +774,7 @@ export function LauncherDashboard() {
                 <span className="text-silver-500 mt-0.5 text-[9px]">
                   Simulate a strategy to see history here.
                 </span>
-              </div>
+              </Panel>
             )}
           </div>
         </div>
@@ -788,61 +790,66 @@ export function LauncherDashboard() {
         setLayout={updatePanelLayout}
       >
         <div>
-          <div className="flex items-center gap-2">
-            <Cpu className="text-brass-400 h-4.5 w-4.5" />
-            <h2 className="text-silver-100 text-xs font-semibold tracking-wider uppercase">
-              System Gauge
-            </h2>
-            <span className="bg-carbon-900 text-silver-400 border-carbon-800/80 ml-auto rounded-full border px-2 py-0.5 font-mono text-[9px] tracking-wider uppercase">
-              {env.enableMsw ? 'MSW Mock' : 'Live Mode'}
-            </span>
-          </div>
+          <SectionHeader
+            title="System Gauge"
+            right={
+              <span className="surface-card text-silver-400 rounded-full px-2 py-0.5 font-mono text-[9px] tracking-wider uppercase">
+                {env.enableMsw ? 'MSW Mock' : 'Live Mode'}
+              </span>
+            }
+          />
           <p className="text-silver-400 mt-1 text-[11px]">Engine telemetry, status & news.</p>
         </div>
 
         {/* System Health Status */}
-        <div className="bg-carbon-900/30 border-carbon-800/60 rounded-xl border p-3.5">
-          <div className="flex items-center justify-between">
-            <span className="text-silver-300 font-mono text-xs font-semibold">Backend API</span>
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span
-                  className={cn(
-                    'absolute inline-flex h-full w-full animate-ping rounded-full opacity-75',
-                    health?.status === 'healthy' ? 'bg-emerald-400' : 'bg-rose-400',
-                  )}
-                />
-                <span
-                  className={cn(
-                    'relative inline-flex h-2 w-2 rounded-full',
-                    health?.status === 'healthy' ? 'bg-emerald-500' : 'bg-rose-500',
-                  )}
-                />
-              </span>
-              <span className="text-silver-100 font-mono text-[10px] font-bold uppercase">
-                {health?.status === 'healthy' ? 'Online' : 'Offline'}
-              </span>
-            </div>
+        <Panel className="p-3.5">
+          <SectionHeader
+            title="Backend API"
+            right={
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span
+                    className={cn(
+                      'absolute inline-flex h-full w-full animate-ping rounded-full opacity-75',
+                      health?.status === 'healthy' ? 'bg-emerald-400' : 'bg-rose-400',
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      'live-status-dot relative inline-flex h-2 w-2 rounded-full',
+                      health?.status === 'healthy' ? 'bg-emerald-500' : 'bg-rose-500',
+                    )}
+                  />
+                </span>
+                <span className="text-silver-100 font-mono text-[10px] font-bold uppercase">
+                  {health?.status === 'healthy' ? 'Online' : 'Offline'}
+                </span>
+              </div>
+            }
+          />
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <StatTile
+              className="p-3"
+              label="Data Lake"
+              value={health?.dataLakeStatus ?? 'Offline'}
+              valueTone={health?.dataLakeStatus === 'online' ? 'up' : 'neutral'}
+            />
+            <StatTile
+              className="p-3"
+              label="Engine Version"
+              value={health?.backendVersion ?? '—'}
+            />
           </div>
-          <div className="text-silver-400 mt-2.5 flex flex-col gap-1 font-mono text-[10px]">
-            <div className="flex justify-between">
-              <span>Data Lake:</span>
-              <span className="text-silver-200 capitalize">
-                {health?.dataLakeStatus ?? 'Offline'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Engine Version:</span>
-              <span className="text-silver-200">{health?.backendVersion ?? '—'}</span>
-            </div>
-          </div>
-        </div>
+        </Panel>
 
         {/* Resource Telemetry */}
         <div className="flex flex-col gap-3">
-          <h3 className="text-silver-400 font-mono text-[10px] font-bold tracking-wider uppercase">
-            Performance Metrics
-          </h3>
+          <SectionHeader title="Performance Metrics" />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <StatTile className="p-3" label="CPU Core Load" value={`${cpu}%`} />
+            <StatTile className="p-3" label="Engine Memory" value={`${ram.toFixed(1)}%`} />
+            <StatTile className="p-3" label="Database Disk I/O" value={`${io.toFixed(1)} MB/s`} />
+          </div>
           <div className="flex flex-col gap-2.5">
             {/* CPU Gauge */}
             <div className="flex flex-col gap-1">
@@ -852,9 +859,9 @@ export function LauncherDashboard() {
                 </span>
                 <span className="text-brass-400 font-bold tabular-nums">{cpu}%</span>
               </div>
-              <div className="bg-carbon-950/85 border-brass-600/10 h-1.5 w-full overflow-hidden rounded-full border shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+              <div className="surface-well h-1.5 w-full overflow-hidden rounded-full">
                 <div
-                  className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r transition-all duration-700 ease-out"
+                  className="bg-brass-500 h-full rounded-full transition-all duration-700 ease-out"
                   style={{ width: `${cpu}%` }}
                 />
               </div>
@@ -868,9 +875,9 @@ export function LauncherDashboard() {
                 </span>
                 <span className="text-brass-400 font-bold tabular-nums">{ram.toFixed(1)}%</span>
               </div>
-              <div className="bg-carbon-950/85 border-brass-600/10 h-1.5 w-full overflow-hidden rounded-full border shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+              <div className="surface-well h-1.5 w-full overflow-hidden rounded-full">
                 <div
-                  className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r transition-all duration-700 ease-out"
+                  className="bg-brass-500 h-full rounded-full transition-all duration-700 ease-out"
                   style={{ width: `${ram}%` }}
                 />
               </div>
@@ -885,9 +892,9 @@ export function LauncherDashboard() {
                 </span>
                 <span className="text-brass-400 font-bold tabular-nums">{io.toFixed(1)} MB/s</span>
               </div>
-              <div className="bg-carbon-950/85 border-brass-600/10 h-1.5 w-full overflow-hidden rounded-full border shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+              <div className="surface-well h-1.5 w-full overflow-hidden rounded-full">
                 <div
-                  className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r transition-all duration-700 ease-out"
+                  className="bg-brass-500 h-full rounded-full transition-all duration-700 ease-out"
                   style={{ width: `${Math.min(100, (io / 45) * 100)}%` }}
                 />
               </div>
@@ -901,21 +908,21 @@ export function LauncherDashboard() {
         {runningJobsCount > 0 && (
           <>
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-silver-400 font-mono text-[10px] font-bold tracking-wider uppercase">
-                  Active Workloads
-                </h3>
-                <span className="bg-brass-500/10 text-brass-400 animate-pulse rounded px-1.5 py-0.5 font-mono text-[9px] font-bold">
-                  {runningJobsCount} Running
-                </span>
-              </div>
+              <SectionHeader
+                title="Active Workloads"
+                right={
+                  <span className="bg-brass-500/10 text-brass-400 animate-pulse rounded px-1.5 py-0.5 font-mono text-[9px] font-bold">
+                    {runningJobsCount} Running
+                  </span>
+                }
+              />
               <div className="flex max-h-[120px] flex-col gap-2 overflow-y-auto pr-1">
                 {Object.entries(activeJobs).map(([workspaceId, job]) => {
                   if (!job) return null
                   return (
                     <div
                       key={workspaceId}
-                      className="bg-carbon-900/35 border-carbon-850 hover:border-brass-600/20 flex flex-col gap-1.5 rounded-xl border p-2.5 transition-colors duration-200"
+                      className="surface-card surface-card--edge flex flex-col gap-1.5 p-2.5 transition-colors duration-200"
                     >
                       <div className="flex items-center justify-between font-mono text-[9px] font-bold">
                         <span className="text-silver-200 tracking-wider uppercase">
@@ -923,9 +930,9 @@ export function LauncherDashboard() {
                         </span>
                         <span className="text-brass-400 tabular-nums">{job.pct}%</span>
                       </div>
-                      <div className="bg-carbon-950/85 border-brass-600/10 h-1 w-full overflow-hidden rounded-full border">
+                      <div className="surface-well h-1 w-full overflow-hidden rounded-full">
                         <div
-                          className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r"
+                          className="bg-brass-500 h-full rounded-full"
                           style={{ width: `${job.pct}%` }}
                         />
                       </div>
@@ -941,38 +948,39 @@ export function LauncherDashboard() {
 
         {/* Market News Feed */}
         <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-silver-400 font-mono text-[10px] font-bold tracking-wider uppercase">
-              Market News Feed
-            </h3>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => void refetchNews()}
-                disabled={isNewsPending || isNewsRefetching}
-                className="text-silver-500 hover:text-brass-400 cursor-pointer rounded p-0.5 transition-colors disabled:opacity-50"
-                title="Refresh news feed"
-              >
-                <RefreshCw className={cn('h-3 w-3', isNewsRefetching && 'animate-spin')} />
-              </button>
-              <Newspaper className="text-brass-400 h-3.5 w-3.5" />
-            </div>
-          </div>
+          <SectionHeader
+            title="Market News Feed"
+            right={
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void refetchNews()}
+                  disabled={isNewsPending || isNewsRefetching}
+                  className="text-silver-500 hover:text-brass-400 cursor-pointer rounded p-0.5 transition-colors disabled:opacity-50"
+                  title="Refresh news feed"
+                >
+                  <RefreshCw className={cn('h-3 w-3', isNewsRefetching && 'animate-spin')} />
+                </button>
+                <Newspaper className="text-brass-400 h-3.5 w-3.5" />
+              </div>
+            }
+          />
 
           <div className="flex flex-col gap-2">
             {isNewsPending ? (
-              <div className="border-carbon-800/40 flex flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center">
+              <Panel className="flex flex-col items-center justify-center border-2 border-dashed py-8 text-center">
                 <RefreshCw className="text-brass-400 h-4 w-4 animate-spin opacity-60" />
                 <span className="text-silver-500 mt-2 font-mono text-[9px] tracking-wider uppercase">
                   Loading Feed...
                 </span>
-              </div>
+              </Panel>
             ) : articles.length === 0 ? (
-              <div className="border-carbon-800/40 flex flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center">
+              <Panel className="flex flex-col items-center justify-center border-2 border-dashed py-8 text-center">
                 <Newspaper className="text-silver-600 mb-1 h-4 w-4 opacity-40" />
                 <span className="text-silver-500 font-mono text-[9px] tracking-wider uppercase">
                   No articles available
                 </span>
-              </div>
+              </Panel>
             ) : (
               articles.map((article) => {
                 const formatPublishedAt = (dateStr: string) => {
@@ -986,22 +994,18 @@ export function LauncherDashboard() {
                 }
 
                 return (
-                  <button
+                  <EntityCard
                     key={article.id}
-                    onClick={() => handleOpenArticle(article.id)}
-                    className="bg-carbon-900/35 border-carbon-800/60 hover:border-brass-600/20 group flex cursor-pointer flex-col gap-1 rounded-xl border p-2.5 text-left transition-colors duration-200"
-                  >
-                    <div className="text-silver-500 flex w-full items-center justify-between font-mono text-[9px]">
-                      <span>{article.source}</span>
-                      <span>{formatPublishedAt(article.publishedAt)}</span>
-                    </div>
-                    <span className="text-silver-100 group-hover:text-brass-400 mt-0.5 line-clamp-1 font-sans text-[11px] leading-snug font-semibold transition-colors">
-                      {article.title}
-                    </span>
-                    <span className="text-silver-400 mt-0.5 line-clamp-2 text-[9px] leading-normal">
-                      {article.summary}
-                    </span>
-                  </button>
+                    title={article.title}
+                    description={article.summary}
+                    meta={
+                      <span className="flex w-full items-center justify-between font-mono text-[9px]">
+                        <span>{article.source}</span>
+                        <span>{formatPublishedAt(article.publishedAt)}</span>
+                      </span>
+                    }
+                    onSelect={() => handleOpenArticle(article.id)}
+                  />
                 )
               })
             )}

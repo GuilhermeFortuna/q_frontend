@@ -1,7 +1,7 @@
 import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
@@ -248,14 +248,18 @@ describe('StrategyStudio', () => {
     await waitForDefaultStrategy()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Saved' })).toBeInTheDocument()
+      expect(screen.getByRole('radio', { name: 'Saved' })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: 'Saved' }))
+    await user.click(screen.getByRole('radio', { name: 'Saved' }))
     await waitFor(() => {
       expect(screen.getByTestId(`custom-strategy-card-${savedCustom.name}`)).toBeInTheDocument()
     })
-    await user.click(screen.getByTestId(`custom-strategy-card-${savedCustom.name}`))
+    await user.click(
+      within(screen.getByTestId(`custom-strategy-card-${savedCustom.name}`)).getByRole('button', {
+        name: new RegExp(`^${savedCustom.name} Custom`),
+      }),
+    )
 
     await waitFor(() => {
       expect(screen.getByLabelText('Name')).toHaveValue(savedCustom.name)
@@ -267,14 +271,18 @@ describe('StrategyStudio', () => {
     expect(screen.getByLabelText('Description')).toHaveValue('')
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Saved' })).toBeInTheDocument()
+      expect(screen.getByRole('radio', { name: 'Saved' })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: 'Saved' }))
+    await user.click(screen.getByRole('radio', { name: 'Saved' }))
     await waitFor(() => {
       expect(screen.getByTestId(`custom-strategy-card-${savedCustom.name}`)).toBeInTheDocument()
     })
-    await user.click(screen.getByTestId(`custom-strategy-card-${savedCustom.name}`))
+    await user.click(
+      within(screen.getByTestId(`custom-strategy-card-${savedCustom.name}`)).getByRole('button', {
+        name: new RegExp(`^${savedCustom.name} Custom`),
+      }),
+    )
     await waitFor(() => {
       expect(screen.getByLabelText('Name')).toHaveValue(savedCustom.name)
     })
@@ -295,14 +303,18 @@ describe('StrategyStudio', () => {
     await waitForDefaultStrategy()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Saved' })).toBeInTheDocument()
+      expect(screen.getByRole('radio', { name: 'Saved' })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: 'Saved' }))
+    await user.click(screen.getByRole('radio', { name: 'Saved' }))
     await waitFor(() => {
       expect(screen.getByTestId(`custom-strategy-card-${savedCustom.name}`)).toBeInTheDocument()
     })
-    await user.click(screen.getByTestId(`custom-strategy-card-${savedCustom.name}`))
+    await user.click(
+      within(screen.getByTestId(`custom-strategy-card-${savedCustom.name}`)).getByRole('button', {
+        name: new RegExp(`^${savedCustom.name} Custom`),
+      }),
+    )
 
     await waitFor(() => {
       expect(screen.getByLabelText('Name')).toHaveValue(savedCustom.name)

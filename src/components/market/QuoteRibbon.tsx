@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { FlashOnChange } from '@/components/shared/FlashOnChange'
 import { formatPrice } from '@/lib/market/format'
+import { cn } from '@/lib/utils'
 import type { Instrument, MarketSnapshot, OhlcvBar } from '@/types/api'
 
 import { ChangeBadge } from './ChangeBadge'
@@ -61,8 +62,9 @@ export function QuoteRibbon({
     <div className="border-carbon-700/60 flex flex-wrap items-center justify-between gap-4 border-b pb-3">
       <div className="flex items-center gap-3">
         <button
+          type="button"
           onClick={onToggleSidebar}
-          className="border-carbon-700 bg-carbon-800 text-silver-300 hover:bg-carbon-700 flex h-8 w-8 items-center justify-center rounded border transition-all active:scale-95"
+          className="surface-control text-silver-300 hover:text-silver-100 flex h-8 w-8 items-center justify-center rounded-md transition-all active:scale-95"
           title="Toggle Market Watch Panel"
         >
           {sidebarCollapsed ? (
@@ -74,7 +76,7 @@ export function QuoteRibbon({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-silver-100 font-mono text-xl font-bold tracking-tight">{symbol}</h1>
-            <span className="bg-carbon-800 text-silver-400 border-carbon-700 rounded border px-1.5 py-0.5 font-mono text-[10px] tracking-wider uppercase">
+            <span className="surface-card text-silver-400 rounded px-1.5 py-0.5 font-mono text-[10px] tracking-wider uppercase">
               {instrument?.exchange || 'MT5'}
             </span>
             {connectionStatus === 'live' && (
@@ -85,14 +87,16 @@ export function QuoteRibbon({
             )}
             {connectionStatus === 'offline' && (
               <span
-                className={`flex items-center gap-1 font-mono text-[10px] font-semibold tracking-wider uppercase ${
-                  instrument?.exchange === 'LOCAL' ? 'text-silver-400' : 'text-rose-400'
-                }`}
+                className={cn(
+                  'flex items-center gap-1 font-mono text-[10px] font-semibold tracking-wider uppercase',
+                  instrument?.exchange === 'LOCAL' ? 'text-silver-400' : 'text-rose-400',
+                )}
               >
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    instrument?.exchange === 'LOCAL' ? 'bg-silver-400' : 'bg-rose-400'
-                  }`}
+                  className={cn(
+                    'h-1.5 w-1.5 rounded-full',
+                    instrument?.exchange === 'LOCAL' ? 'bg-silver-400' : 'bg-rose-400',
+                  )}
                 />
                 {instrument?.exchange === 'LOCAL' ? 'Historical' : 'MT5 Offline'}
               </span>
@@ -109,7 +113,7 @@ export function QuoteRibbon({
       </div>
 
       <div className="flex items-center gap-6">
-        <div className="border-brass-600/15 bg-carbon-950/80 text-silver-400 quant-tabular-nums flex flex-wrap items-center gap-x-5 gap-y-1 rounded-full border px-4 py-1.5 font-mono text-xs shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
+        <div className="surface-well quant-tabular-nums text-silver-400 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-full px-4 py-1.5 font-mono text-xs">
           <div>
             <span className="text-silver-500 text-[10px] font-semibold">O</span>{' '}
             <span className="text-silver-200">
@@ -150,21 +154,26 @@ export function QuoteRibbon({
         </div>
 
         {snapshot && (
-          <div className="border-carbon-800 flex items-center gap-3 border-l pl-4">
-            <div className="text-right">
-              <FlashOnChange value={snapshot.last}>
-                <p className="text-silver-100 quant-tabular-nums font-mono text-base font-bold">
-                  {formatPrice(snapshot.last, priceDigits)}
-                </p>
-              </FlashOnChange>
-              <ChangeBadge changePct={snapshot.changePct} className="text-xs font-medium" />
-            </div>
+          <div className="surface-card surface-card--edge border-carbon-800 rounded-xl border-l px-4 py-2">
+            <p className="accent-wayfinding text-[10px] font-bold tracking-wider uppercase">Last</p>
+            <FlashOnChange value={snapshot.last}>
+              <p
+                className={cn(
+                  'quant-tabular-nums mt-1 font-mono text-base font-bold',
+                  snapshot.changeAbs >= 0 ? 'text-emerald-400' : 'text-rose-400',
+                )}
+              >
+                {formatPrice(snapshot.last, priceDigits)}
+              </p>
+            </FlashOnChange>
+            <ChangeBadge changePct={snapshot.changePct} className="mt-1 text-xs font-medium" />
           </div>
         )}
 
         <button
+          type="button"
           onClick={onToggleDetailPanel}
-          className="border-carbon-700 bg-carbon-800 text-silver-300 hover:bg-carbon-700 flex h-8 w-8 items-center justify-center rounded border transition-all active:scale-95"
+          className="surface-control text-silver-300 hover:text-silver-100 flex h-8 w-8 items-center justify-center rounded-md transition-all active:scale-95"
           title="Toggle Quote Panel"
         >
           {detailCollapsed ? (

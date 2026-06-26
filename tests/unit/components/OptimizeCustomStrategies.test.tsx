@@ -158,10 +158,10 @@ describe('OptimizeSetupPanel custom strategies', () => {
     renderWithQueryClient(<OptimizeSetupHarness />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Saved' })).toBeInTheDocument()
+      expect(screen.getByRole('radio', { name: 'Saved' })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: 'Saved' }))
+    await user.click(screen.getByRole('radio', { name: 'Saved' }))
 
     const savedCard = screen.getByRole('button', { name: /MyCustomMA.*Custom/i })
     expect(within(savedCard).getByText('Custom')).toBeInTheDocument()

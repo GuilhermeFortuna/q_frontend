@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { VirtualTableScroller } from '@/components/shared/VirtualTableBody'
+import { Panel } from '@/components/ui/Panel'
 import {
   formatObjectiveMetricValue,
   objectiveMetricLabel,
@@ -97,14 +98,14 @@ export function WalkForwardWindowsTable({ windows, objectiveMode }: WalkForwardW
   }
 
   return (
-    <div className="border-carbon-600/40 overflow-hidden rounded-lg border">
+    <Panel className="overflow-hidden p-0">
       <VirtualTableScroller
         items={windows}
         rowHeight={ROW_HEIGHT}
         colSpan={6}
         className="max-h-[min(60vh,520px)] overflow-x-auto"
         tableClassName="min-w-[720px] text-xs"
-        theadClassName="bg-carbon-900/80 tracking-wide uppercase"
+        theadClassName="surface-well tracking-wide uppercase"
         getItemKey={(index) => windows[index]!.index}
         header={
           <tr>
@@ -118,6 +119,6 @@ export function WalkForwardWindowsTable({ windows, objectiveMode }: WalkForwardW
         }
         renderRow={(window) => renderWindowRow(window)}
       />
-    </div>
+    </Panel>
   )
 }

@@ -1,26 +1,15 @@
 import { FlashOnChange } from '@/components/shared/FlashOnChange'
+import { StatTile } from '@/components/ui/StatTile'
 import { formatDisplayTimeSeconds } from '@/lib/formatDate'
 import { formatPrice } from '@/lib/market/format'
 import { computeDayRangeMarkerPosition } from '@/lib/market/dayRange'
+import { cn } from '@/lib/utils'
 import type { MarketSnapshot } from '@/types/api'
+
+import { SkeletonBar } from './SkeletonBar'
 
 type QuotePanelProps = {
   snapshot: MarketSnapshot | undefined
-}
-
-function SkeletonBar({ className = '' }: { className?: string }) {
-  return <div className={`bg-carbon-800 animate-pulse rounded ${className}`} />
-}
-
-function StatRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-silver-500 font-mono text-[10px] tracking-wider uppercase">
-        {label}
-      </span>
-      <span className="text-silver-200 font-mono text-xs tabular-nums">{value}</span>
-    </div>
-  )
 }
 
 export function QuotePanel({ snapshot }: QuotePanelProps) {
@@ -62,9 +51,10 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
           </p>
         </FlashOnChange>
         <p
-          className={`mt-1 font-mono text-xs font-medium tabular-nums ${
-            isUp ? 'text-emerald-400' : 'text-rose-400'
-          }`}
+          className={cn(
+            'mt-1 font-mono text-xs font-medium tabular-nums',
+            isUp ? 'text-emerald-400' : 'text-rose-400',
+          )}
         >
           {isUp ? '▲ +' : '▼ '}
           {formatPrice(Math.abs(snapshot.changeAbs), digits)} ({isUp ? '+' : ''}
@@ -72,7 +62,7 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
         </p>
       </div>
 
-      <div className="border-brass-600/10 bg-carbon-950/40 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]">
+      <div className="surface-well grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl p-3">
         <div className="text-right">
           <p className="text-silver-500 mb-0.5 font-mono text-[10px] tracking-wider uppercase">
             Bid
@@ -100,7 +90,7 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
       </div>
 
       <div className="space-y-1">
-        <div className="bg-carbon-950/60 border-carbon-800/60 relative h-1.5 overflow-hidden rounded-full border">
+        <div className="surface-well relative h-1.5 overflow-hidden rounded-full">
           <div className="via-brass-500/20 absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/20 to-emerald-500/20" />
         </div>
         <div className="relative -mt-2 h-2.5">
@@ -119,13 +109,27 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
         </div>
       </div>
 
-      <div className="border-brass-600/10 grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-3">
-        <StatRow label="Open" value={formatPrice(snapshot.dayOpen, digits)} />
-        <StatRow label="Prev Close" value={formatPrice(snapshot.prevClose, digits)} />
-        <StatRow label="Day High" value={formatPrice(snapshot.dayHigh, digits)} />
-        <StatRow label="Day Low" value={formatPrice(snapshot.dayLow, digits)} />
-        <StatRow label="Volume" value={snapshot.volume.toLocaleString()} />
-        <StatRow label="Last Update" value={lastUpdate} />
+      <div className="border-brass-600/10 grid grid-cols-2 gap-2 border-t pt-3">
+        <StatTile label="Open" value={formatPrice(snapshot.dayOpen, digits)} className="p-3" />
+        <StatTile
+          label="Prev Close"
+          value={formatPrice(snapshot.prevClose, digits)}
+          className="p-3"
+        />
+        <StatTile
+          label="Day High"
+          value={formatPrice(snapshot.dayHigh, digits)}
+          className="p-3"
+          valueTone="up"
+        />
+        <StatTile
+          label="Day Low"
+          value={formatPrice(snapshot.dayLow, digits)}
+          className="p-3"
+          valueTone="down"
+        />
+        <StatTile label="Volume" value={snapshot.volume.toLocaleString()} className="p-3" />
+        <StatTile label="Last Update" value={lastUpdate} className="p-3" />
       </div>
     </div>
   )

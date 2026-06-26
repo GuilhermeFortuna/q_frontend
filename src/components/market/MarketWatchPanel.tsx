@@ -7,10 +7,13 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { useSearchSymbols } from '@/api/queries/market-data'
 import { formatPrice } from '@/lib/market/format'
 import { closesToPath, sparklineStrokeColor } from '@/lib/market/sparkline'
+import { cn } from '@/lib/utils'
 import type { Instrument, MarketSnapshot } from '@/types/api'
 
 import { ChangeBadge } from './ChangeBadge'
 import { SkeletonBar } from './SkeletonBar'
+import { Panel, PanelHeader } from '@/components/ui/Panel'
+import { wellInputClass } from '@/components/ui/wellInputStyles'
 
 export type MarketWatchPanelProps = {
   watchlist: Instrument[]
@@ -353,11 +356,9 @@ export function MarketWatchPanel({
   }
 
   return (
-    <div className="surface-panel flex h-full flex-col overflow-hidden rounded-lg">
-      <div className="border-carbon-700 border-b p-2.5">
-        <p className="text-silver-300 mb-2 text-xs font-semibold tracking-wider uppercase">
-          Market Watch
-        </p>
+    <Panel className="flex h-full flex-col overflow-hidden p-0">
+      <PanelHeader title="Market Watch" />
+      <div className="border-carbon-700 border-b p-2.5 pt-0">
         <div className="relative">
           <Search className="text-silver-400 absolute top-2 left-2.5 h-3.5 w-3.5" />
           <input
@@ -365,7 +366,7 @@ export function MarketWatchPanel({
             placeholder="Filter symbols..."
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="border-carbon-700 bg-carbon-900 text-silver-100 placeholder-silver-400 focus:border-brass-500 focus:ring-brass-500/20 w-full rounded border py-1.5 pr-3 pl-8 text-xs focus:ring-1 focus:outline-none"
+            className={cn(wellInputClass, 'py-1.5 pr-3 pl-8 text-xs')}
           />
         </div>
       </div>
@@ -506,6 +507,6 @@ export function MarketWatchPanel({
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   )
 }

@@ -10,6 +10,8 @@ import {
   resolveExitQuality,
 } from '@/lib/discover/exitInsights'
 import type { CandidateResult } from '@/types/strategySearch'
+import { SectionHeader } from '@/components/ui/SectionHeader'
+import { StatTile } from '@/components/ui/StatTile'
 
 type ExitInsightPanelProps = {
   candidate: CandidateResult
@@ -53,18 +55,14 @@ export function ExitInsightPanel({ candidate }: ExitInsightPanelProps) {
     <div className="border-carbon-600/30 mt-4 space-y-4 border-t pt-4">
       {exitLabel ? (
         <div>
-          <p className="text-silver-500 text-[10px] font-semibold tracking-wider uppercase">
-            Exit policy
-          </p>
-          <p className="text-silver-200 mt-1 text-sm">{exitLabel}</p>
+          <SectionHeader title="Exit policy" />
+          <p className="text-silver-200 mt-2 text-sm">{exitLabel}</p>
         </div>
       ) : null}
 
       {reasons.length > 0 ? (
         <div>
-          <p className="text-silver-500 text-[10px] font-semibold tracking-wider uppercase">
-            Exit distribution
-          </p>
+          <SectionHeader title="Exit distribution" />
           <ul className="mt-2 space-y-1.5">
             {reasons.map((row) => (
               <li
@@ -90,17 +88,12 @@ export function ExitInsightPanel({ candidate }: ExitInsightPanelProps) {
 
       {pathStats.length > 0 ? (
         <div>
-          <p className="text-silver-500 text-[10px] font-semibold tracking-wider uppercase">
-            Path quality
-          </p>
-          <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+          <SectionHeader title="Path quality" />
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {pathStats.map((stat) => (
-              <div key={stat.label} className="flex items-baseline justify-between gap-2">
-                <dt className="text-silver-500 text-xs">{stat.label}</dt>
-                <dd className="text-silver-200 font-mono text-xs tabular-nums">{stat.value}</dd>
-              </div>
+              <StatTile key={stat.label} label={stat.label} value={stat.value} />
             ))}
-          </dl>
+          </div>
         </div>
       ) : null}
     </div>

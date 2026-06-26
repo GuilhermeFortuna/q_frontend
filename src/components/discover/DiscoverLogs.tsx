@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { cn } from '@/lib/utils'
+import { Panel } from '@/components/ui/Panel'
+import { PanelHeader } from '@/components/ui/Panel'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 
 export interface ParsedTrial {
   timestamp: string
@@ -117,60 +120,43 @@ export function DiscoverLogs({ logs = [] }: DiscoverLogsProps) {
   }, [logs, activeTab, autoScroll])
 
   return (
-    <div className="border-carbon-600/40 bg-carbon-950/80 flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-xl border">
-      {/* Header bar */}
-      <div className="border-carbon-600/40 bg-carbon-900/60 flex shrink-0 items-center justify-between border-b px-4 py-2">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('parsed')}
-            className={cn(
-              'rounded px-3 py-1 text-xs font-semibold tracking-wider uppercase transition-colors',
-              activeTab === 'parsed'
-                ? 'bg-brass-500/20 text-brass-400 border-brass-500/30 border'
-                : 'text-silver-400 hover:text-silver-200 border border-transparent',
-            )}
-          >
-            Parsed Trials
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('console')}
-            className={cn(
-              'rounded px-3 py-1 text-xs font-semibold tracking-wider uppercase transition-colors',
-              activeTab === 'console'
-                ? 'bg-brass-500/20 text-brass-400 border-brass-500/30 border'
-                : 'text-silver-400 hover:text-silver-200 border border-transparent',
-            )}
-          >
-            Raw Stream
-          </button>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {activeTab === 'parsed' && (
+    <Panel className="flex min-h-0 w-full flex-1 flex-col overflow-hidden p-0">
+      <PanelHeader
+        title="Trial logs"
+        right={
+          <div className="flex items-center gap-4">
+            <SegmentedToggle
+              aria-label="Log view"
+              value={activeTab}
+              onChange={setActiveTab}
+              options={[
+                { value: 'parsed', label: 'Parsed Trials' },
+                { value: 'console', label: 'Raw Stream' },
+              ]}
+            />
+            {activeTab === 'parsed' ? (
+              <label className="text-silver-400 flex cursor-pointer items-center gap-1.5 text-xs select-none">
+                <input
+                  type="checkbox"
+                  checked={hidePruned}
+                  onChange={(e) => setHidePruned(e.target.checked)}
+                  className="accent-brass-500 border-carbon-600 bg-carbon-900 h-3.5 w-3.5 rounded"
+                />
+                Hide Pruned
+              </label>
+            ) : null}
             <label className="text-silver-400 flex cursor-pointer items-center gap-1.5 text-xs select-none">
               <input
                 type="checkbox"
-                checked={hidePruned}
-                onChange={(e) => setHidePruned(e.target.checked)}
+                checked={autoScroll}
+                onChange={(e) => setAutoScroll(e.target.checked)}
                 className="accent-brass-500 border-carbon-600 bg-carbon-900 h-3.5 w-3.5 rounded"
               />
-              Hide Pruned
+              Auto Scroll
             </label>
-          )}
-
-          <label className="text-silver-400 flex cursor-pointer items-center gap-1.5 text-xs select-none">
-            <input
-              type="checkbox"
-              checked={autoScroll}
-              onChange={(e) => setAutoScroll(e.target.checked)}
-              className="accent-brass-500 border-carbon-600 bg-carbon-900 h-3.5 w-3.5 rounded"
-            />
-            Auto Scroll
-          </label>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Content area */}
       <div className="min-h-0 flex-1 overflow-auto p-2">
@@ -179,7 +165,7 @@ export function DiscoverLogs({ logs = [] }: DiscoverLogsProps) {
             <p className="text-silver-500 text-sm italic">Waiting for trials to start...</p>
           </div>
         ) : activeTab === 'console' ? (
-          <div className="text-silver-300 bg-carbon-950/80 border-carbon-800/40 h-full space-y-1 overflow-y-auto rounded border p-2 font-mono text-[11px] leading-relaxed">
+          <Panel className="text-silver-300 h-full space-y-1 overflow-y-auto p-2 font-mono text-[11px] leading-relaxed">
             {logs.map((log, index) => (
               <div
                 key={index}
@@ -189,7 +175,7 @@ export function DiscoverLogs({ logs = [] }: DiscoverLogsProps) {
               </div>
             ))}
             <div ref={consoleBottomRef} />
-          </div>
+          </Panel>
         ) : (
           <div className="h-full min-h-0 overflow-auto">
             <table className="w-full border-collapse text-left text-xs">
@@ -262,6 +248,6 @@ export function DiscoverLogs({ logs = [] }: DiscoverLogsProps) {
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   )
 }

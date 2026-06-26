@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ActiveOutline } from '@/components/ui/ActiveOutline'
+import { Panel } from '@/components/ui/Panel'
 import type { StrategySearchStatus } from '@/types/strategySearch'
+import { cn } from '@/lib/utils'
 
 type DiscoverProgressProps = {
   status: StrategySearchStatus
@@ -32,9 +33,6 @@ function formatDuration(ms: number): string {
 
 export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgressProps) {
   const total = Math.max(status.total_candidates, 1)
-  // Genetic discovery reports fractional candidates (completed windows / windows per
-  // candidate) so the bar moves every window; floor for the count, keep the raw value
-  // for a smooth percentage.
   const currentRaw = status.current_candidate
   const current = Math.floor(currentRaw)
   const pct = Math.min(100, Math.round((currentRaw / total) * 100))
@@ -94,9 +92,18 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
 
   return (
     <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-4">
-      <div className="surface-panel relative w-full max-w-md overflow-hidden rounded-2xl px-6 py-8">
-        <ActiveOutline />
+      <Panel
+        className={cn(
+          'quant-panel--active-run relative w-full max-w-md overflow-hidden rounded-2xl px-6 py-8',
+        )}
+      >
         <div className="relative z-20">
+          <div className="mb-4 flex items-center justify-center gap-2">
+            <span className="live-status-dot h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
+            <span className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+              Search running
+            </span>
+          </div>
           {hasGenerationProgress ? (
             <>
               <p className="text-silver-200 mb-1 text-center text-sm font-medium">
@@ -106,7 +113,7 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
                 <span>Generations</span>
                 <span className="text-brass-400">{generationPct}%</span>
               </div>
-              <div className="bg-carbon-950/85 border-brass-600/10 mb-4 h-2 w-full overflow-hidden rounded-full border shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)]">
+              <div className="surface-well mb-4 h-2 w-full overflow-hidden rounded-full">
                 <div
                   className="from-brass-700 to-brass-500 h-full rounded-full bg-gradient-to-r transition-all duration-500"
                   style={{ width: `${generationPct}%` }}
@@ -126,9 +133,9 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
             </span>
             <span className="text-brass-400">{pct}%</span>
           </div>
-          <div className="bg-carbon-950/85 border-brass-600/10 h-2.5 w-full overflow-hidden rounded-full border shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)]">
+          <div className="surface-well h-2.5 w-full overflow-hidden rounded-full">
             <div
-              className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r shadow-[0_0_12px_rgba(196,165,116,0.35)] transition-all duration-500"
+              className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -140,7 +147,7 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
           ) : null}
 
           {status.run_id && (
-            <div className="border-brass-600/10 bg-carbon-950/20 text-silver-400 mt-4 rounded-xl border p-3 text-xs shadow-inner">
+            <Panel className="text-silver-400 mt-4 p-3 text-xs">
               <div className="grid grid-cols-2 gap-2 font-mono">
                 <div className="flex flex-col">
                   <span className="text-silver-500 text-[10px] font-bold tracking-wider uppercase">
@@ -159,7 +166,7 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
                   </span>
                 </div>
               </div>
-            </div>
+            </Panel>
           )}
 
           <div className="mt-6 flex justify-center">
@@ -174,7 +181,7 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
             </Button>
           </div>
         </div>
-      </div>
+      </Panel>
     </div>
   )
 }

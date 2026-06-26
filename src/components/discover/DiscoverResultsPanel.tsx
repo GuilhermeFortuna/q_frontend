@@ -14,8 +14,11 @@ import { DiscoverLogs } from '@/components/discover/DiscoverLogs'
 import { LeaderboardTable } from '@/components/discover/LeaderboardTable'
 import { LazyLiveSwarmVisualizer3D } from '@/components/discover/LazyLiveSwarmVisualizer3D'
 import { Button } from '@/components/ui/button'
+import { Panel } from '@/components/ui/Panel'
+import { SectionHeader } from '@/components/ui/SectionHeader'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
+import { StatTile } from '@/components/ui/StatTile'
 import { hasGeneticSummary, isGeneticSearchConfig } from '@/types/strategySearch'
-import { cn } from '@/lib/utils'
 
 type DiscoverResultsPanelProps = {
   runId: string | null
@@ -51,34 +54,18 @@ export function DiscoverResultsPanel({
   if (isRunning && status) {
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden pr-1">
-        {isGenetic && (
-          <div className="border-carbon-600/60 mb-2 flex shrink-0 gap-1 border-b">
-            <button
-              type="button"
-              onClick={() => setRunningTab('progress')}
-              className={cn(
-                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
-                runningTab === 'progress'
-                  ? 'border-brass-400 text-brass-400 font-semibold'
-                  : 'text-silver-400 hover:text-silver-200 border-transparent',
-              )}
-            >
-              Progress & Logs
-            </button>
-            <button
-              type="button"
-              onClick={() => setRunningTab('swarm')}
-              className={cn(
-                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
-                runningTab === 'swarm'
-                  ? 'border-brass-400 text-brass-400 font-semibold'
-                  : 'text-silver-400 hover:text-silver-200 border-transparent',
-              )}
-            >
-              3D Live Swarm
-            </button>
-          </div>
-        )}
+        {isGenetic ? (
+          <SegmentedToggle
+            aria-label="Running view"
+            className="mb-2 shrink-0"
+            value={runningTab}
+            onChange={setRunningTab}
+            options={[
+              { value: 'progress', label: 'Progress & Logs' },
+              { value: 'swarm', label: '3D Live Swarm' },
+            ]}
+          />
+        ) : null}
 
         {runningTab === 'progress' || !isGenetic ? (
           <>
@@ -86,23 +73,25 @@ export function DiscoverResultsPanel({
               <DiscoverProgress status={status} onCancel={onCancel} cancelling={cancelling} />
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <h4 className="text-silver-300 mb-2 shrink-0 text-xs font-bold tracking-wider uppercase">
-                Live Trial Progress & Logs
-              </h4>
+              <SectionHeader title="Live Trial Progress & Logs" className="mb-2 shrink-0" />
               <DiscoverLogs logs={status.logs} />
             </div>
           </>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
             <LazyLiveSwarmVisualizer3D status={status} results={undefined} isRunning={true} />
-            <div className="border-carbon-800 bg-carbon-950/40 flex items-center justify-between rounded-xl border p-4 shadow-sm">
-              <div className="flex flex-col">
-                <span className="text-silver-100 text-xs font-semibold">
-                  Generation {status.generation ?? 0} / {status.total_generations ?? 0}
-                </span>
-                <span className="text-silver-500 mt-0.5 font-mono text-[10px]">
-                  Evaluated: {Math.floor(status.current_candidate)} / {status.total_candidates}
-                </span>
+            <Panel className="flex items-center justify-between p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                <StatTile
+                  className="p-3"
+                  label="Generation"
+                  value={`${status.generation ?? 0} / ${status.total_generations ?? 0}`}
+                />
+                <StatTile
+                  className="p-3"
+                  label="Evaluated"
+                  value={`${Math.floor(status.current_candidate)} / ${status.total_candidates}`}
+                />
               </div>
               <Button
                 type="button"
@@ -113,7 +102,7 @@ export function DiscoverResultsPanel({
               >
                 {cancelling ? 'Cancelling...' : 'Cancel Search'}
               </Button>
-            </div>
+            </Panel>
           </div>
         )}
       </div>
@@ -147,60 +136,44 @@ export function DiscoverResultsPanel({
         {showGeneticVerdict ? <GeneticVerdictPanel summary={results.summary} best={best} /> : null}
 
         {best && best.status === 'completed' ? (
-          <div className="border-brass-500/30 bg-brass-500/5 shrink-0 rounded-xl border p-4">
-            <p className="text-silver-400 text-xs font-semibold tracking-wider uppercase">
-              Best strategy (ranked on out-of-sample)
-            </p>
-            <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-              <div>
+          <Panel className="border-brass-500/30 bg-brass-500/5 shrink-0 p-4">
+            <SectionHeader title="Best strategy (ranked on out-of-sample)" />
+            <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+              <div className="min-w-0 flex-1">
                 <p className="text-brass-400 text-2xl font-bold">{best.strategy}</p>
-                <p className="text-silver-300 mt-1 text-sm">
-                  OOS {objectiveMetricLabel(objectiveMode)}:{' '}
-                  <span className="text-silver-100 font-mono tabular-nums">
-                    {formatObjectiveMetricValue(best.objective_value, objectiveMode)}
-                  </span>
-                  {' · '}
-                  Efficiency:{' '}
-                  <span className="text-silver-100 font-mono tabular-nums">
-                    {formatEfficiencyRatio(best.efficiency)}
-                  </span>
-                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <StatTile
+                    className="p-3"
+                    label={`OOS ${objectiveMetricLabel(objectiveMode)}`}
+                    value={formatObjectiveMetricValue(best.objective_value, objectiveMode)}
+                    highlight
+                  />
+                  <StatTile
+                    className="p-3"
+                    label="Efficiency"
+                    value={formatEfficiencyRatio(best.efficiency)}
+                  />
+                </div>
               </div>
               <p className="text-silver-300 max-w-lg text-sm">
                 {bestStrategyGloss(best.efficiency)}
               </p>
             </div>
-          </div>
+          </Panel>
         ) : null}
 
-        {isGenetic && (
-          <div className="border-carbon-600/60 mb-2 flex shrink-0 gap-1 border-b">
-            <button
-              type="button"
-              onClick={() => setCompletedTab('leaderboard')}
-              className={cn(
-                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
-                completedTab === 'leaderboard'
-                  ? 'border-brass-400 text-brass-400 font-semibold'
-                  : 'text-silver-400 hover:text-silver-200 border-transparent',
-              )}
-            >
-              Leaderboard Table
-            </button>
-            <button
-              type="button"
-              onClick={() => setCompletedTab('swarm')}
-              className={cn(
-                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
-                completedTab === 'swarm'
-                  ? 'border-brass-400 text-brass-400 font-semibold'
-                  : 'text-silver-400 hover:text-silver-200 border-transparent',
-              )}
-            >
-              Swarm Analysis (3D)
-            </button>
-          </div>
-        )}
+        {isGenetic ? (
+          <SegmentedToggle
+            aria-label="Results view"
+            className="mb-2 shrink-0"
+            value={completedTab}
+            onChange={setCompletedTab}
+            options={[
+              { value: 'leaderboard', label: 'Leaderboard Table' },
+              { value: 'swarm', label: 'Swarm Analysis (3D)' },
+            ]}
+          />
+        ) : null}
 
         {completedTab === 'leaderboard' || !isGenetic ? (
           <LeaderboardTable
@@ -224,9 +197,9 @@ export function DiscoverResultsPanel({
   }
 
   return (
-    <div className="border-carbon-600/60 flex min-h-0 flex-1 items-center justify-center rounded-xl border-2 border-dashed bg-transparent">
+    <Panel className="flex min-h-0 flex-1 items-center justify-center border-2 border-dashed bg-transparent">
       <div className="text-center">
-        <h3 className="text-silver-200 text-xl font-medium">No Strategy Search Yet</h3>
+        <SectionHeader title="No Strategy Search Yet" className="justify-center" />
         <p className="text-silver-400 mt-2 max-w-sm text-sm">
           Configure instrument, walk-forward windows, and strategies, then launch a search to see
           the OOS-ranked leaderboard.
@@ -235,6 +208,6 @@ export function DiscoverResultsPanel({
           Open Workbench
         </Button>
       </div>
-    </div>
+    </Panel>
   )
 }

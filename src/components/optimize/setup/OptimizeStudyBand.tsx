@@ -4,7 +4,9 @@ import {
   PRUNERS,
   SAMPLERS,
 } from '@/components/optimize/optimizeFormShared'
+import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
+import { Panel, PanelHeader } from '@/components/ui/Panel'
 import { normalizeLeadingZero } from '@/lib/numberInput'
 import type {
   OptimizeConfigFields,
@@ -19,27 +21,20 @@ type OptimizeStudyBandProps = {
   validation: OptimizeConfigValidation
 }
 
-function Fieldset({
-  legend,
+function ConfigSection({
+  title,
   children,
   className,
 }: {
-  legend: string
+  title: string
   children: React.ReactNode
   className?: string
 }) {
   return (
-    <fieldset
-      className={cn(
-        'border-carbon-600/40 bg-carbon-950/20 flex flex-col gap-3 rounded-lg border px-3.5 py-3',
-        className,
-      )}
-    >
-      <legend className="text-brass-500/90 px-1 text-[10px] font-bold tracking-wider uppercase">
-        {legend}
-      </legend>
+    <Panel living className={cn('flex flex-col gap-3 px-3.5 py-3', className)}>
+      <PanelHeader title={title} />
       {children}
-    </fieldset>
+    </Panel>
   )
 }
 
@@ -47,14 +42,11 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
   const { isMultiObjective } = validation
 
   return (
-    <div className="border-carbon-600/50 bg-carbon-900/35 shrink-0 space-y-3 rounded-xl border p-4 shadow-lg">
+    <Panel className="shrink-0 space-y-3 p-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Fieldset legend="Optimization Study">
+        <ConfigSection title="Optimization Study">
           <div className="space-y-3">
-            <div className="space-y-1">
-              <label htmlFor="optimize-objective" className="text-silver-300 text-xs font-medium">
-                Objective
-              </label>
+            <LabeledField label="Objective" htmlFor="optimize-objective">
               <select
                 id="optimize-objective"
                 value={fields.objective}
@@ -69,13 +61,14 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
                   </option>
                 ))}
               </select>
-            </div>
+            </LabeledField>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label htmlFor="optimize-sampler" className="text-silver-300 text-xs font-medium">
-                  Sampler
-                </label>
+              <LabeledField
+                label="Sampler"
+                htmlFor="optimize-sampler"
+                hint={isMultiObjective ? 'NSGA-II is used for multi-objective studies.' : undefined}
+              >
                 <select
                   id="optimize-sampler"
                   value={isMultiObjective ? 'nsgaii' : fields.sampler}
@@ -91,17 +84,9 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
                     </option>
                   ))}
                 </select>
-                {isMultiObjective ? (
-                  <p className="text-silver-500 mt-0.5 text-[10px] leading-normal">
-                    NSGA-II is used for multi-objective studies.
-                  </p>
-                ) : null}
-              </div>
+              </LabeledField>
 
-              <div className="space-y-1">
-                <label htmlFor="optimize-trials" className="text-silver-300 text-xs font-medium">
-                  Trials
-                </label>
+              <LabeledField label="Trials" htmlFor="optimize-trials">
                 <NumberInput
                   id="optimize-trials"
                   min="1"
@@ -110,30 +95,24 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
                   onChange={setters.setNTrials}
                   className={inputClass}
                 />
-              </div>
+              </LabeledField>
             </div>
           </div>
-        </Fieldset>
+        </ConfigSection>
 
-        <Fieldset legend="Advanced Settings">
+        <ConfigSection title="Advanced Settings">
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label htmlFor="optimize-seed" className="text-silver-300 text-xs font-medium">
-                  Seed
-                </label>
+              <LabeledField label="Seed" htmlFor="optimize-seed">
                 <NumberInput
                   id="optimize-seed"
                   value={fields.seed}
                   onChange={setters.setSeed}
                   className={inputClass}
                 />
-              </div>
+              </LabeledField>
 
-              <div className="space-y-1">
-                <label htmlFor="optimize-pruner" className="text-silver-300 text-xs font-medium">
-                  Pruner
-                </label>
+              <LabeledField label="Pruner" htmlFor="optimize-pruner">
                 <select
                   id="optimize-pruner"
                   value={fields.pruner}
@@ -148,15 +127,13 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
                     </option>
                   ))}
                 </select>
-              </div>
+              </LabeledField>
 
-              <div className="space-y-1">
-                <label
-                  htmlFor="optimize-max-workers"
-                  className="text-silver-300 text-xs font-medium"
-                >
-                  Worker processes
-                </label>
+              <LabeledField
+                label="Worker processes"
+                htmlFor="optimize-max-workers"
+                hint="Candle studies only. Empty uses all CPU cores."
+              >
                 <input
                   id="optimize-max-workers"
                   type="number"
@@ -171,10 +148,7 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
                   }
                   className={inputClass}
                 />
-                <p className="text-silver-400 text-[10px] leading-normal">
-                  Candle studies only. Empty uses all CPU cores.
-                </p>
-              </div>
+              </LabeledField>
             </div>
 
             <label className="flex cursor-pointer items-center gap-2">
@@ -187,8 +161,8 @@ export function OptimizeStudyBand({ fields, setters, validation }: OptimizeStudy
               <span className="text-silver-200 text-sm font-medium">Continue on Trial Error</span>
             </label>
           </div>
-        </Fieldset>
+        </ConfigSection>
       </div>
-    </div>
+    </Panel>
   )
 }

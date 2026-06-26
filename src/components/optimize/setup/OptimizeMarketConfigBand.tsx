@@ -1,6 +1,8 @@
 import { DateRangePresetsFields, inputClass } from '@/components/shared/InstrumentConfigFields'
 import { RangeRow } from '@/components/optimize/optimizeFormShared'
+import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
+import { Panel, PanelHeader } from '@/components/ui/Panel'
 import { normalizeLeadingZero } from '@/lib/numberInput'
 import {
   DISPLAY_TIMEFRAME_OPTIONS,
@@ -16,27 +18,20 @@ type OptimizeMarketConfigBandProps = {
   validation: OptimizeConfigValidation
 }
 
-function Fieldset({
-  legend,
+function ConfigSection({
+  title,
   children,
   className,
 }: {
-  legend: string
+  title: string
   children: React.ReactNode
   className?: string
 }) {
   return (
-    <fieldset
-      className={cn(
-        'border-carbon-600/40 bg-carbon-950/20 flex flex-col gap-3 rounded-lg border px-3.5 py-3',
-        className,
-      )}
-    >
-      <legend className="text-brass-500/90 px-1 text-[10px] font-bold tracking-wider uppercase">
-        {legend}
-      </legend>
+    <Panel living className={cn('flex flex-col gap-3 px-3.5 py-3', className)}>
+      <PanelHeader title={title} />
       {children}
-    </fieldset>
+    </Panel>
   )
 }
 
@@ -48,9 +43,9 @@ export function OptimizeMarketConfigBand({
   const { costErrors } = validation
 
   return (
-    <div className="border-carbon-600/50 bg-carbon-900/35 shrink-0 space-y-3 rounded-xl border p-4 shadow-lg">
+    <Panel className="shrink-0 space-y-3 p-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Fieldset legend="Instrument & Modeling">
+        <ConfigSection title="Instrument & Modeling">
           <div className="space-y-3">
             <div className="space-y-1">
               <label htmlFor="optimize-engine" className="text-silver-300 text-xs font-medium">
@@ -146,9 +141,9 @@ export function OptimizeMarketConfigBand({
               </div>
             )}
           </div>
-        </Fieldset>
+        </ConfigSection>
 
-        <Fieldset legend="Date Range & Schedule">
+        <ConfigSection title="Date Range & Schedule">
           <div className="space-y-3">
             <DateRangePresetsFields
               startDate={fields.startDate}
@@ -218,9 +213,9 @@ export function OptimizeMarketConfigBand({
               )}
             </div>
           </div>
-        </Fieldset>
+        </ConfigSection>
 
-        <Fieldset legend="Capital & Sizing">
+        <ConfigSection title="Capital & Sizing">
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
@@ -264,7 +259,7 @@ export function OptimizeMarketConfigBand({
               </select>
             </div>
 
-            <div className="bg-carbon-950/30 space-y-3 rounded-lg p-2.5">
+            <div className="surface-well space-y-3 rounded-lg p-2.5">
               {fields.riskMode === 'fixed_quantity' ? (
                 <RangeRow
                   label="Quantity"
@@ -314,10 +309,7 @@ export function OptimizeMarketConfigBand({
                     setHigh={setters.setInverseMinContractsHigh}
                     step="1"
                   />
-                  <div className="space-y-1">
-                    <label className="text-silver-400 text-xs">
-                      Max Contracts (optional, fixed)
-                    </label>
+                  <LabeledField label="Max Contracts (optional, fixed)">
                     <input
                       type="number"
                       step="1"
@@ -331,22 +323,20 @@ export function OptimizeMarketConfigBand({
                       className={inputClass}
                       placeholder="No limit"
                     />
-                  </div>
+                  </LabeledField>
                 </div>
               )}
             </div>
           </div>
-        </Fieldset>
+        </ConfigSection>
 
-        <Fieldset legend="Costs">
+        <ConfigSection title="Costs">
           <div className="space-y-3">
-            <div className="space-y-1">
-              <label
-                htmlFor="optimize-cost-per-contract"
-                className="text-silver-300 text-xs font-medium"
-              >
-                Cost per contract (per side)
-              </label>
+            <LabeledField
+              label="Cost per contract (per side)"
+              htmlFor="optimize-cost-per-contract"
+              error={costErrors.costPerContract}
+            >
               <NumberInput
                 id="optimize-cost-per-contract"
                 step="0.01"
@@ -361,17 +351,13 @@ export function OptimizeMarketConfigBand({
                 emptyOnBlur={0}
                 className={inputClass}
               />
-              {costErrors.costPerContract && (
-                <p className="mt-1 text-xs font-medium text-rose-400">
-                  {costErrors.costPerContract}
-                </p>
-              )}
-            </div>
+            </LabeledField>
 
-            <div className="space-y-1">
-              <label htmlFor="optimize-cost-bps" className="text-silver-300 text-xs font-medium">
-                Cost (bps of notional, per side)
-              </label>
+            <LabeledField
+              label="Cost (bps of notional, per side)"
+              htmlFor="optimize-cost-bps"
+              error={costErrors.costBps}
+            >
               <NumberInput
                 id="optimize-cost-bps"
                 step="0.01"
@@ -386,16 +372,13 @@ export function OptimizeMarketConfigBand({
                 emptyOnBlur={0}
                 className={inputClass}
               />
-              {costErrors.costBps && (
-                <p className="mt-1 text-xs font-medium text-rose-400">{costErrors.costBps}</p>
-              )}
-            </div>
+            </LabeledField>
 
             <div className="border-carbon-600/20 text-silver-400 border-t pt-2 text-[11px] leading-normal">
               Costs apply per side (entry and exit paid once). Leave at 0 for gross-of-costs runs.
             </div>
           </div>
-        </Fieldset>
+        </ConfigSection>
       </div>
 
       {validation.dateRangeInvalid && (
@@ -403,6 +386,6 @@ export function OptimizeMarketConfigBand({
           Start date must be before end date.
         </p>
       )}
-    </div>
+    </Panel>
   )
 }

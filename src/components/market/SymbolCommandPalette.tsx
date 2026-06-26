@@ -253,7 +253,7 @@ export function SymbolCommandPalette({
         ref={overlayRef}
         className="surface-overlay flex max-h-[400px] w-[480px] flex-col overflow-hidden rounded-xl"
       >
-        <div className="border-carbon-700/60 bg-carbon-800/80 flex items-center gap-3 border-b p-4">
+        <div className="surface-well border-carbon-700/60 flex items-center gap-3 border-b p-4">
           <Search className="text-brass-400 h-4 w-4" />
           <input
             ref={searchInputRef}

@@ -13,6 +13,7 @@ import { DrawingRail } from '@/components/market/DrawingRail'
 import { MarketWatchPanel } from '@/components/market/MarketWatchPanel'
 import { QuoteRibbon } from '@/components/market/QuoteRibbon'
 import { SymbolCommandPalette } from '@/components/market/SymbolCommandPalette'
+import { Panel as DesignPanel } from '@/components/ui/Panel'
 import { useWatchlist } from '@/hooks/useWatchlist'
 import { useRecentSymbols } from '@/hooks/useRecentSymbols'
 import { resolveMt5ConnectionStatus } from '@/lib/market/connectionStatus'
@@ -357,7 +358,10 @@ export function MarketDataWorkspace() {
 
         <Panel id="chart-zone" defaultSize={60} minSize={40} className="min-w-0">
           <div className="flex h-full min-h-0 gap-4">
-            <div className="surface-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg">
+            <DesignPanel
+              living
+              className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0"
+            >
               <ChartToolbar
                 selectedTimeframe={selectedTimeframe}
                 onTimeframeChange={(val) => patchMarketDataSession({ selectedTimeframe: val })}
@@ -409,7 +413,7 @@ export function MarketDataWorkspace() {
                 onDeleteProfile={handleDeleteProfile}
                 onRenameProfile={handleRenameProfile}
               />
-            </div>
+            </DesignPanel>
             <DrawingRail
               activeDrawingTool={activeDrawingTool}
               onActiveDrawingToolChange={(val) =>

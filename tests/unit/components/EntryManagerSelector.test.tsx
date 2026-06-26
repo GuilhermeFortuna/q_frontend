@@ -22,7 +22,7 @@ describe('EntryManagerSelector', () => {
 
     expect(screen.queryByRole('spinbutton', { name: 'Vote Threshold' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Majority vote' }))
+    await user.click(screen.getByRole('radio', { name: 'Majority vote' }))
 
     expect(onChange).toHaveBeenCalledWith({
       kind: 'majority',
@@ -69,7 +69,7 @@ describe('EntryManagerSelector', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'All (AND)' }))
+    await user.click(screen.getByRole('radio', { name: 'All (AND)' }))
     rerender(
       <EntryManagerSelector
         managers={mockSignalManagers.managers}

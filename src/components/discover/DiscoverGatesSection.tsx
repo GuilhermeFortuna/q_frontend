@@ -1,4 +1,5 @@
 import { FormSection, inputClass } from '@/components/optimize/optimizeFormShared'
+import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
 import type { GateConfig } from '@/types/strategySearch'
 
@@ -22,10 +23,7 @@ export function DiscoverGatesSection({
         leaderboard but sort below passing candidates.
       </p>
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label htmlFor="gate-min-windows" className="text-silver-300 text-xs font-semibold">
-            Min completed windows
-          </label>
+        <LabeledField label="Min completed windows" htmlFor="gate-min-windows">
           <NumberInput
             id="gate-min-windows"
             min={1}
@@ -34,11 +32,8 @@ export function DiscoverGatesSection({
             onChange={(value) => setGates({ ...gates, min_completed_windows: value })}
             className={inputClass}
           />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="gate-min-trades" className="text-silver-300 text-xs font-semibold">
-            Min OOS trades
-          </label>
+        </LabeledField>
+        <LabeledField label="Min OOS trades" htmlFor="gate-min-trades">
           <NumberInput
             id="gate-min-trades"
             min={0}
@@ -47,11 +42,8 @@ export function DiscoverGatesSection({
             onChange={(value) => setGates({ ...gates, min_oos_trades: value })}
             className={inputClass}
           />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="gate-eff-low" className="text-silver-300 text-xs font-semibold">
-            Efficiency low
-          </label>
+        </LabeledField>
+        <LabeledField label="Efficiency low" htmlFor="gate-eff-low">
           <NumberInput
             id="gate-eff-low"
             step={0.05}
@@ -60,11 +52,8 @@ export function DiscoverGatesSection({
             onChange={(value) => setGates({ ...gates, efficiency_low: value })}
             className={inputClass}
           />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="gate-eff-high" className="text-silver-300 text-xs font-semibold">
-            Efficiency high
-          </label>
+        </LabeledField>
+        <LabeledField label="Efficiency high" htmlFor="gate-eff-high">
           <NumberInput
             id="gate-eff-high"
             step={0.05}
@@ -73,7 +62,7 @@ export function DiscoverGatesSection({
             onChange={(value) => setGates({ ...gates, efficiency_high: value })}
             className={inputClass}
           />
-        </div>
+        </LabeledField>
       </div>
     </FormSection>
   )

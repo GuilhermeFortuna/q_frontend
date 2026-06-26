@@ -1,4 +1,5 @@
 import { LibraryCard } from '@/components/backtests/setup/LibraryCard'
+import { Panel, PanelHeader } from '@/components/ui/Panel'
 import type { ExitGroup, ExitRuleInfo, StrategyParamSpec } from '@/types/strategies'
 import {
   EXIT_GROUP_LABELS,
@@ -33,11 +34,8 @@ export function ExitStrategyCards({
   if (rules.length === 0) return null
 
   return (
-    <section className="border-carbon-600/50 bg-carbon-950/30 flex flex-col gap-3 rounded-xl border p-4">
-      <div>
-        <h4 className="text-silver-200 text-sm font-medium">{heading}</h4>
-        {subheading ? <p className="text-silver-500 mt-1 text-xs">{subheading}</p> : null}
-      </div>
+    <Panel living className="flex flex-col gap-3 p-4">
+      <PanelHeader title={heading} right={subheading} />
       <div className="grid auto-rows-min gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {rules.map((rule) => (
           <LibraryCard
@@ -51,6 +49,6 @@ export function ExitStrategyCards({
           />
         ))}
       </div>
-    </section>
+    </Panel>
   )
 }

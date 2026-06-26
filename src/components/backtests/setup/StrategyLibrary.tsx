@@ -2,6 +2,10 @@ import { Cpu, Plus, Trash2 } from 'lucide-react'
 import { memo, useMemo, useState } from 'react'
 
 import { LibraryCard } from '@/components/backtests/setup/LibraryCard'
+import { EntityCard } from '@/components/ui/EntityCard'
+import { FilterPills } from '@/components/ui/FilterPills'
+import { Panel } from '@/components/ui/Panel'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import {
   categoryLabel,
   CUSTOM_STRATEGY_CATEGORY_LABEL,
@@ -81,6 +85,17 @@ export const StrategyLibrary = memo(function StrategyLibrary({
     return engineFiltered.filter((entry) => strategyCategory(entry) === categoryFilter)
   }, [engineFiltered, categoryFilter])
 
+  const filterOptions = useMemo(() => {
+    const options: { value: CategoryFilter; label: string }[] = [{ value: 'all', label: 'All' }]
+    for (const category of availableCategories) {
+      options.push({ value: category, label: categoryLabel(category) })
+    }
+    if (hasSaved) {
+      options.push({ value: 'saved', label: CUSTOM_STRATEGY_CATEGORY_LABEL })
+    }
+    return options
+  }, [availableCategories, hasSaved])
+
   if (loading) {
     return (
       <div className="text-silver-400 flex flex-1 items-center justify-center text-sm">
@@ -90,32 +105,14 @@ export const StrategyLibrary = memo(function StrategyLibrary({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <h4 className="text-silver-300 text-xs font-semibold tracking-wider uppercase">
-        Entry Strategies
-      </h4>
-      <div className="flex flex-wrap gap-1.5">
-        <CategoryChip
-          label="All"
-          active={categoryFilter === 'all'}
-          onClick={() => setCategoryFilter('all')}
-        />
-        {availableCategories.map((category) => (
-          <CategoryChip
-            key={category}
-            label={categoryLabel(category)}
-            active={categoryFilter === category}
-            onClick={() => setCategoryFilter(category)}
-          />
-        ))}
-        {hasSaved ? (
-          <CategoryChip
-            label={CUSTOM_STRATEGY_CATEGORY_LABEL}
-            active={categoryFilter === 'saved'}
-            onClick={() => setCategoryFilter('saved')}
-          />
-        ) : null}
-      </div>
+    <Panel living className="flex min-h-0 flex-1 flex-col gap-3 p-3">
+      <SectionHeader title="Entry Strategies" />
+      <FilterPills
+        options={filterOptions}
+        value={categoryFilter}
+        onChange={setCategoryFilter}
+        aria-label="Entry strategy categories"
+      />
 
       {categoryFilter === 'saved' ? (
         savedForEngine.length === 0 ? (
@@ -177,34 +174,9 @@ export const StrategyLibrary = memo(function StrategyLibrary({
           ))}
         </div>
       )}
-    </div>
+    </Panel>
   )
 })
-
-function CategoryChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors',
-        active
-          ? 'border-brass-500/50 bg-brass-600/15 text-brass-400'
-          : 'border-carbon-600/40 bg-carbon-900/40 text-silver-300 hover:border-brass-500/30 hover:text-brass-400',
-      )}
-    >
-      {label}
-    </button>
-  )
-}
 
 function StrategyCard({
   strategy,
@@ -282,33 +254,18 @@ function CustomStrategyCard({
 }) {
   return (
     <div
-      className={cn(
-        'surface-card border-carbon-600/50 group cubic-bezier(0.16,1,0.3,1) relative flex flex-col gap-2 rounded-lg border p-3 text-left transition-[transform,border-color] duration-350 hover:-translate-y-0.5 hover:scale-[1.01] active:scale-[0.97]',
-        selected &&
-          'surface-card--glow quant-panel--active-run border-brass-500/60 bg-brass-600/10 ring-brass-500/20 ring-1',
-      )}
+      className="group relative flex flex-col gap-1"
+      data-testid={`custom-strategy-card-${custom.name}`}
     >
-      <button
-        type="button"
-        aria-pressed={selected}
-        data-testid={`custom-strategy-card-${custom.name}`}
-        onClick={onSelect}
-        className="flex flex-col gap-2 text-left"
-      >
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Cpu className="text-brass-400 h-4 w-4 shrink-0" aria-hidden />
-          <span className="text-silver-100 text-sm font-semibold">{custom.name}</span>
-          <span className="bg-brass-600/15 text-brass-400 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
-            Custom
-          </span>
-        </div>
-        <p className="text-silver-500 font-mono text-[10px]">{baseLabel}</p>
-        {custom.description ? (
-          <p className="text-silver-400 line-clamp-2 text-xs leading-relaxed">
-            {custom.description}
-          </p>
-        ) : null}
-      </button>
+      <EntityCard
+        title={custom.name}
+        tag="Custom"
+        description={custom.description ?? `Based on ${baseLabel}`}
+        selected={selected}
+        onSelect={onSelect}
+        badges={<Cpu className="text-brass-400 h-4 w-4 shrink-0" aria-hidden />}
+      />
+      <p className="text-silver-500 px-1 font-mono text-[10px]">{baseLabel}</p>
       <button
         type="button"
         onClick={(event) => {

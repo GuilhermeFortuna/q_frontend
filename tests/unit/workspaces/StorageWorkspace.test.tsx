@@ -89,7 +89,7 @@ describe('StorageWorkspace', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled())
 
     expect(screen.getByText('Timeframes')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Ticks' }))
+    await user.click(screen.getByRole('radio', { name: 'Ticks' }))
     expect(screen.queryByText('Timeframes')).not.toBeInTheDocument()
     expect(screen.getByText(/Tick ranges are very large and ingest slowly/i)).toBeInTheDocument()
 
@@ -285,7 +285,7 @@ describe('SystemWorkspace data source card', () => {
       expect(screen.getByText('local')).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: 'Local' }))
+    await user.click(screen.getByRole('radio', { name: 'Local' }))
 
     await waitFor(() => {
       expect(mockDataSource.source).toBe('local')

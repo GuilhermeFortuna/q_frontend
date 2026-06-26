@@ -12,6 +12,7 @@ import {
 import { DiscoverResultsPanel } from '@/components/discover/DiscoverResultsPanel'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Panel, PanelHeader } from '@/components/ui/Panel'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { formatObjectiveMetricValue, objectiveMetricLabel } from '@/lib/walkforward/objectiveMetric'
 import { cn } from '@/lib/utils'
@@ -108,15 +109,15 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
   return (
     <>
       <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
-        <div className="bg-carbon-900/50 border-carbon-600/60 flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border">
-          <div className="border-carbon-600/60 shrink-0 border-b px-4 py-3">
-            <h3 className="text-silver-100 font-medium">Past Searches</h3>
-            <p className="text-silver-400 mt-0.5 text-xs">
-              {historyQuery.isLoading
+        <Panel className="flex w-72 shrink-0 flex-col overflow-hidden p-0">
+          <PanelHeader
+            title="Past Searches"
+            right={
+              historyQuery.isLoading
                 ? 'Loading…'
-                : `${historyQuery.data?.total ?? runs.length} search${(historyQuery.data?.total ?? runs.length) === 1 ? '' : 'es'}`}
-            </p>
-          </div>
+                : `${historyQuery.data?.total ?? runs.length} search${(historyQuery.data?.total ?? runs.length) === 1 ? '' : 'es'}`
+            }
+          />
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             {historyQuery.isLoading ? (
@@ -141,9 +142,9 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
               />
             ))}
           </div>
-        </div>
+        </Panel>
 
-        <div className="bg-carbon-900/50 border-carbon-600/60 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border">
+        <Panel className="flex min-w-0 flex-1 flex-col overflow-hidden p-0">
           {!selectedRunId ? (
             <div className="text-silver-400 flex flex-1 flex-col items-center justify-center px-6 text-center">
               <RotateCcw className="text-silver-500 mb-3 h-8 w-8" />
@@ -240,7 +241,7 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
               Results unavailable for this search.
             </div>
           )}
-        </div>
+        </Panel>
       </div>
 
       <ConfirmDialog

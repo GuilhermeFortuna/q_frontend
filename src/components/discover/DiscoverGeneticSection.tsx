@@ -1,9 +1,10 @@
 import type { GeneticSearchConfig, LockboxConfig } from '@/types/strategySearch'
 import { DEFAULT_GENETIC_CONFIG, DEFAULT_LOCKBOX_CONFIG } from '@/types/strategySearch'
 
-import { FormSection } from '@/components/optimize/optimizeFormShared'
+import { FormSection, inputClass } from '@/components/optimize/optimizeFormShared'
+import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
-import { cn } from '@/lib/utils'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 
 type DiscoverGeneticSectionProps = {
   geneticOpen: boolean
@@ -25,6 +26,7 @@ function NumberField({
   min,
   max,
   step = 1,
+  id,
 }: {
   label: string
   value: number
@@ -32,19 +34,20 @@ function NumberField({
   min?: number
   max?: number
   step?: number
+  id: string
 }) {
   return (
-    <label className="block text-xs">
-      <span className="text-silver-400 mb-1 block">{label}</span>
+    <LabeledField label={label} htmlFor={id}>
       <NumberInput
-        className="border-carbon-600/60 bg-carbon-950/50 text-silver-100 w-full rounded-md border px-2 py-1.5 font-mono text-sm"
+        id={id}
+        className={inputClass}
         value={value}
         min={min}
         max={max}
         step={step}
         onChange={onChange}
       />
-    </label>
+    </LabeledField>
   )
 }
 
@@ -61,6 +64,7 @@ export function DiscoverGeneticSection({
   lockboxError,
 }: DiscoverGeneticSectionProps) {
   const useLockboxDays = lockbox.lockbox_days != null
+  const lockboxMode = useLockboxDays ? 'days' : 'percent'
 
   return (
     <>
@@ -71,6 +75,7 @@ export function DiscoverGeneticSection({
         </p>
         <div className="grid grid-cols-2 gap-3">
           <NumberField
+            id="genetic-population-size"
             label="Population size"
             value={genetic.population_size}
             min={10}
@@ -78,6 +83,7 @@ export function DiscoverGeneticSection({
             onChange={(value) => setGenetic((current) => ({ ...current, population_size: value }))}
           />
           <NumberField
+            id="genetic-generations"
             label="Generations"
             value={genetic.generations}
             min={2}
@@ -85,18 +91,21 @@ export function DiscoverGeneticSection({
             onChange={(value) => setGenetic((current) => ({ ...current, generations: value }))}
           />
           <NumberField
+            id="genetic-elite-count"
             label="Elite count"
             value={genetic.elite_count}
             min={1}
             onChange={(value) => setGenetic((current) => ({ ...current, elite_count: value }))}
           />
           <NumberField
+            id="genetic-tournament-size"
             label="Tournament size"
             value={genetic.tournament_size}
             min={2}
             onChange={(value) => setGenetic((current) => ({ ...current, tournament_size: value }))}
           />
           <NumberField
+            id="genetic-crossover-rate"
             label="Crossover rate"
             value={genetic.crossover_rate}
             min={0}
@@ -105,6 +114,7 @@ export function DiscoverGeneticSection({
             onChange={(value) => setGenetic((current) => ({ ...current, crossover_rate: value }))}
           />
           <NumberField
+            id="genetic-mutation-rate"
             label="Mutation rate"
             value={genetic.mutation_rate}
             min={0}
@@ -113,18 +123,21 @@ export function DiscoverGeneticSection({
             onChange={(value) => setGenetic((current) => ({ ...current, mutation_rate: value }))}
           />
           <NumberField
+            id="genetic-max-nodes"
             label="Max nodes"
             value={genetic.max_nodes}
             min={4}
             onChange={(value) => setGenetic((current) => ({ ...current, max_nodes: value }))}
           />
           <NumberField
+            id="genetic-max-depth"
             label="Max depth"
             value={genetic.max_depth}
             min={3}
             onChange={(value) => setGenetic((current) => ({ ...current, max_depth: value }))}
           />
           <NumberField
+            id="genetic-init-seed"
             label="Init seed (optional)"
             value={genetic.init_seed ?? DEFAULT_GENETIC_CONFIG.init_seed ?? 42}
             onChange={(value) => setGenetic((current) => ({ ...current, init_seed: value }))}
@@ -132,6 +145,7 @@ export function DiscoverGeneticSection({
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <NumberField
+            id="genetic-complexity-lambda"
             label="Complexity λ (nodes)"
             value={genetic.complexity_lambda}
             min={0}
@@ -141,6 +155,7 @@ export function DiscoverGeneticSection({
             }
           />
           <NumberField
+            id="genetic-complexity-mu"
             label="Complexity μ (params)"
             value={genetic.complexity_mu}
             min={0}
@@ -172,46 +187,34 @@ export function DiscoverGeneticSection({
         </label>
         {lockbox.enabled ? (
           <div className="space-y-3">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className={cn(
-                  'rounded-md px-3 py-1 text-xs font-semibold',
-                  !useLockboxDays
-                    ? 'bg-brass-500/20 text-brass-300'
-                    : 'text-silver-400 hover:text-silver-200',
-                )}
-                onClick={() =>
-                  setLockbox((current) => ({
-                    ...current,
-                    lockbox_pct: current.lockbox_pct ?? DEFAULT_LOCKBOX_CONFIG.lockbox_pct,
-                    lockbox_days: null,
-                  }))
-                }
-              >
-                By percent
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  'rounded-md px-3 py-1 text-xs font-semibold',
-                  useLockboxDays
-                    ? 'bg-brass-500/20 text-brass-300'
-                    : 'text-silver-400 hover:text-silver-200',
-                )}
-                onClick={() =>
-                  setLockbox((current) => ({
-                    ...current,
-                    lockbox_pct: null,
-                    lockbox_days: current.lockbox_days ?? 30,
-                  }))
-                }
-              >
-                By days
-              </button>
-            </div>
+            <LabeledField label="Lockbox sizing">
+              <SegmentedToggle
+                aria-label="Lockbox sizing mode"
+                value={lockboxMode}
+                onChange={(mode) => {
+                  if (mode === 'days') {
+                    setLockbox((current) => ({
+                      ...current,
+                      lockbox_pct: null,
+                      lockbox_days: current.lockbox_days ?? 30,
+                    }))
+                  } else {
+                    setLockbox((current) => ({
+                      ...current,
+                      lockbox_pct: current.lockbox_pct ?? DEFAULT_LOCKBOX_CONFIG.lockbox_pct,
+                      lockbox_days: null,
+                    }))
+                  }
+                }}
+                options={[
+                  { value: 'percent', label: 'By percent' },
+                  { value: 'days', label: 'By days' },
+                ]}
+              />
+            </LabeledField>
             {useLockboxDays ? (
               <NumberField
+                id="lockbox-days"
                 label="Lock-box days"
                 value={lockbox.lockbox_days ?? 30}
                 min={1}
@@ -221,6 +224,7 @@ export function DiscoverGeneticSection({
               />
             ) : (
               <NumberField
+                id="lockbox-pct"
                 label="Lock-box fraction"
                 value={lockbox.lockbox_pct ?? DEFAULT_LOCKBOX_CONFIG.lockbox_pct ?? 0.15}
                 min={0.01}
@@ -237,15 +241,16 @@ export function DiscoverGeneticSection({
             )}
             <div className="grid grid-cols-2 gap-3">
               <NumberField
+                id="lockbox-min-trades"
                 label="Min lock-box trades"
                 value={lockbox.min_trades}
                 min={0}
                 onChange={(value) => setLockbox((current) => ({ ...current, min_trades: value }))}
               />
-              <label className="block text-xs">
-                <span className="text-silver-400 mb-1 block">Max lock-box drawdown (optional)</span>
+              <LabeledField label="Max lock-box drawdown (optional)" htmlFor="lockbox-max-dd">
                 <NumberInput
-                  className="border-carbon-600/60 bg-carbon-950/50 text-silver-100 w-full rounded-md border px-2 py-1.5 font-mono text-sm"
+                  id="lockbox-max-dd"
+                  className={inputClass}
                   nullable
                   value={lockbox.max_drawdown_pct ?? null}
                   min={0}
@@ -259,7 +264,7 @@ export function DiscoverGeneticSection({
                     }))
                   }
                 />
-              </label>
+              </LabeledField>
             </div>
           </div>
         ) : null}
@@ -279,27 +284,15 @@ export function SearchModeToggle({
   onChange: (mode: SearchMode) => void
 }) {
   return (
-    <div className="border-carbon-600/40 bg-carbon-950/40 flex rounded-lg border p-1">
-      {(
-        [
-          ['registry', 'Registry sweep'],
-          ['genetic', 'Genetic synthesis'],
-        ] as const
-      ).map(([value, label]) => (
-        <button
-          key={value}
-          type="button"
-          className={cn(
-            'flex-1 rounded-md px-3 py-2 text-xs font-semibold tracking-wide uppercase transition-colors',
-            mode === value
-              ? 'bg-brass-500/20 text-brass-300'
-              : 'text-silver-400 hover:text-silver-200',
-          )}
-          onClick={() => onChange(value)}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
+    <SegmentedToggle
+      aria-label="Search mode"
+      value={mode}
+      onChange={onChange}
+      className="w-full"
+      options={[
+        { value: 'registry', label: 'Registry sweep' },
+        { value: 'genetic', label: 'Genetic synthesis' },
+      ]}
+    />
   )
 }

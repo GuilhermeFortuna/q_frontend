@@ -1,6 +1,10 @@
 import { FormSection, inputClass } from '@/components/optimize/optimizeFormShared'
+import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
+import { Panel } from '@/components/ui/Panel'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { estimateWalkForwardWindowCount } from '@/lib/walkforward/windowCount'
+import { cn } from '@/lib/utils'
 import type { WalkForwardMode } from '@/types/walkforward'
 
 type WalkForwardWindowsSectionProps = {
@@ -38,10 +42,7 @@ export function WalkForwardWindowsSection({
   return (
     <FormSection title="Walk-forward Windows" open={open} onToggle={onToggle}>
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label htmlFor="wf-train-days" className="text-silver-300 text-xs font-semibold">
-            Train Days
-          </label>
+        <LabeledField label="Train Days" htmlFor="wf-train-days">
           <NumberInput
             id="wf-train-days"
             min={1}
@@ -50,11 +51,8 @@ export function WalkForwardWindowsSection({
             onChange={setTrainDays}
             className={inputClass}
           />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="wf-test-days" className="text-silver-300 text-xs font-semibold">
-            Test Days
-          </label>
+        </LabeledField>
+        <LabeledField label="Test Days" htmlFor="wf-test-days">
           <NumberInput
             id="wf-test-days"
             min={1}
@@ -63,33 +61,29 @@ export function WalkForwardWindowsSection({
             onChange={setTestDays}
             className={inputClass}
           />
-        </div>
+        </LabeledField>
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="wf-mode" className="text-silver-300 text-xs font-semibold">
-          Mode
-        </label>
-        <select
-          id="wf-mode"
-          value={mode}
-          onChange={(e) => setMode(e.target.value as WalkForwardMode)}
-          className={inputClass}
-        >
-          <option value="rolling">Rolling — fixed train window slides forward</option>
-          <option value="anchored">Anchored — train always starts at history start</option>
-        </select>
-        <p className="text-silver-400 text-[11px] leading-normal">
-          {mode === 'rolling'
+      <LabeledField
+        label="Mode"
+        hint={
+          mode === 'rolling'
             ? 'Each window uses a fixed-length in-sample period ending right before the OOS test.'
-            : 'Each window retrains from the start of history up to the next OOS test.'}
-        </p>
-      </div>
+            : 'Each window retrains from the start of history up to the next OOS test.'
+        }
+      >
+        <SegmentedToggle
+          aria-label="Walk-forward mode"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'rolling', label: 'Rolling' },
+            { value: 'anchored', label: 'Anchored' },
+          ]}
+        />
+      </LabeledField>
 
-      <div className="space-y-1">
-        <label htmlFor="wf-min-windows" className="text-silver-300 text-xs font-semibold">
-          Minimum Windows
-        </label>
+      <LabeledField label="Minimum Windows" htmlFor="wf-min-windows">
         <NumberInput
           id="wf-min-windows"
           min={1}
@@ -98,14 +92,13 @@ export function WalkForwardWindowsSection({
           onChange={setMinWindows}
           className={inputClass}
         />
-      </div>
+      </LabeledField>
 
-      <div
-        className={
-          belowMinimum
-            ? 'rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200 shadow-sm'
-            : 'border-carbon-600/35 bg-carbon-950/20 text-silver-300 rounded-md border p-3 text-xs shadow-sm'
-        }
+      <Panel
+        className={cn(
+          'p-3 text-xs',
+          belowMinimum ? 'border-amber-500/20 bg-amber-500/10 text-amber-200' : 'text-silver-300',
+        )}
       >
         <p className="font-medium">
           Implied windows for this range:{' '}
@@ -117,7 +110,7 @@ export function WalkForwardWindowsSection({
             days before launching.
           </p>
         ) : null}
-      </div>
+      </Panel>
     </FormSection>
   )
 }

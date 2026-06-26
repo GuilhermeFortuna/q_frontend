@@ -274,7 +274,7 @@ export function DiscoverConfigForm({
                   Select all candle
                 </button>
               </div>
-              <div className="border-carbon-600/40 max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
+              <div className="surface-well max-h-48 space-y-1 overflow-y-auto rounded-md p-2">
                 {strategiesLoading ? (
                   <p className="text-silver-400 px-2 py-3 text-xs">Loading strategies…</p>
                 ) : (

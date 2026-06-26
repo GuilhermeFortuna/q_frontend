@@ -1,6 +1,8 @@
 import { inputClass, DateRangePresetsFields } from '@/components/shared/InstrumentConfigFields'
 import { PositionSizingModeFields } from '@/components/shared/PositionSizingModeFields'
+import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
+import { Panel, PanelHeader } from '@/components/ui/Panel'
 import type { PositionSizingMode } from '@/lib/backtesting/positionSizing'
 import {
   DISPLAY_TIMEFRAME_OPTIONS,
@@ -16,27 +18,20 @@ type MarketConfigBandProps = {
   validation: BacktestConfigValidation
 }
 
-function Fieldset({
-  legend,
+function ConfigSection({
+  title,
   children,
   className,
 }: {
-  legend: string
+  title: string
   children: React.ReactNode
   className?: string
 }) {
   return (
-    <fieldset
-      className={cn(
-        'border-carbon-600/40 bg-carbon-950/20 flex flex-col gap-3 rounded-lg border px-3.5 py-3',
-        className,
-      )}
-    >
-      <legend className="text-brass-500/90 px-1 text-[10px] font-bold tracking-wider uppercase">
-        {legend}
-      </legend>
+    <Panel living className={cn('flex flex-col gap-3 px-3.5 py-3', className)}>
+      <PanelHeader title={title} />
       {children}
-    </fieldset>
+    </Panel>
   )
 }
 
@@ -44,15 +39,11 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
   const { sizingErrors, costErrors } = validation
 
   return (
-    <div className="border-carbon-600/50 bg-carbon-900/35 shrink-0 space-y-3 rounded-xl border p-4 shadow-lg">
+    <Panel className="shrink-0 space-y-3 p-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* COLUMN 1: INSTRUMENT & MODELING */}
-        <Fieldset legend="Instrument & Modeling">
+        <ConfigSection title="Instrument & Modeling">
           <div className="space-y-3">
-            <div className="space-y-1">
-              <label htmlFor="backtest-engine" className="text-silver-300 text-xs font-medium">
-                Engine
-              </label>
+            <LabeledField label="Engine" htmlFor="backtest-engine">
               <select
                 id="backtest-engine"
                 value={fields.engine}
@@ -62,12 +53,9 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                 <option value="candle">Candle</option>
                 <option value="tick">Tick</option>
               </select>
-            </div>
+            </LabeledField>
 
-            <div className="space-y-1">
-              <label htmlFor="backtest-symbol" className="text-silver-300 text-xs font-medium">
-                Symbol
-              </label>
+            <LabeledField label="Symbol" htmlFor="backtest-symbol">
               <input
                 id="backtest-symbol"
                 type="text"
@@ -77,13 +65,10 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                 placeholder="e.g. PETR4"
                 required
               />
-            </div>
+            </LabeledField>
 
             {fields.engine === 'candle' ? (
-              <div className="space-y-1">
-                <label htmlFor="backtest-timeframe" className="text-silver-300 text-xs font-medium">
-                  Timeframe
-                </label>
+              <LabeledField label="Timeframe" htmlFor="backtest-timeframe">
                 <select
                   id="backtest-timeframe"
                   value={fields.timeframe}
@@ -96,16 +81,10 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                   <option value="H1">1 Hour</option>
                   <option value="D1">1 Day</option>
                 </select>
-              </div>
+              </LabeledField>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label
-                    htmlFor="display-timeframe"
-                    className="text-silver-400 text-[10px] font-bold tracking-wider uppercase"
-                  >
-                    Display TF
-                  </label>
+                <LabeledField label="Display TF" htmlFor="display-timeframe">
                   <select
                     id="display-timeframe"
                     value={fields.displayTimeframe}
@@ -118,14 +97,8 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                       </option>
                     ))}
                   </select>
-                </div>
-                <div className="space-y-1">
-                  <label
-                    htmlFor="tick-source"
-                    className="text-silver-400 text-[10px] font-bold tracking-wider uppercase"
-                  >
-                    Tick Source
-                  </label>
+                </LabeledField>
+                <LabeledField label="Tick Source" htmlFor="tick-source">
                   <select
                     id="tick-source"
                     value={fields.tickFlags}
@@ -135,14 +108,13 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                     <option value="all">All ticks</option>
                     <option value="trade">Trades only</option>
                   </select>
-                </div>
+                </LabeledField>
               </div>
             )}
           </div>
-        </Fieldset>
+        </ConfigSection>
 
-        {/* COLUMN 2: DATE RANGE & SCHEDULE */}
-        <Fieldset legend="Date Range & Schedule">
+        <ConfigSection title="Date Range & Schedule">
           <div className="space-y-3">
             <DateRangePresetsFields
               startDate={fields.startDate}
@@ -165,44 +137,35 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
               </label>
 
               {fields.dayTrade ? (
-                <div className="bg-carbon-950/40 border-carbon-600/35 mt-2 space-y-2 rounded-lg border p-2">
+                <div className="surface-well mt-2 space-y-2 rounded-lg p-2">
                   <div className="grid grid-cols-3 gap-1.5">
-                    <div className="space-y-1 text-center">
-                      <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
-                        Start
-                      </label>
+                    <LabeledField label="Start">
                       <input
                         type="text"
                         placeholder="09:00"
                         value={fields.dayTradeStartTime}
                         onChange={(e) => setters.setDayTradeStartTime(e.target.value)}
-                        className="bg-carbon-950/80 border-brass-600/15 text-silver-100 focus:ring-brass-500/50 w-full rounded border py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                        className={cn(inputClass, 'py-1 text-center text-xs')}
                       />
-                    </div>
-                    <div className="space-y-1 text-center">
-                      <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
-                        End
-                      </label>
+                    </LabeledField>
+                    <LabeledField label="End">
                       <input
                         type="text"
                         placeholder="16:00"
                         value={fields.dayTradeEndTime}
                         onChange={(e) => setters.setDayTradeEndTime(e.target.value)}
-                        className="bg-carbon-950/80 border-brass-600/15 text-silver-100 focus:ring-brass-500/50 w-full rounded border py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                        className={cn(inputClass, 'py-1 text-center text-xs')}
                       />
-                    </div>
-                    <div className="space-y-1 text-center">
-                      <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
-                        Close
-                      </label>
+                    </LabeledField>
+                    <LabeledField label="Close">
                       <input
                         type="text"
                         placeholder="17:00"
                         value={fields.dayTradeCloseTime}
                         onChange={(e) => setters.setDayTradeCloseTime(e.target.value)}
-                        className="bg-carbon-950/80 border-brass-600/15 text-silver-100 focus:ring-brass-500/50 w-full rounded border py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                        className={cn(inputClass, 'py-1 text-center text-xs')}
                       />
-                    </div>
+                    </LabeledField>
                   </div>
                 </div>
               ) : (
@@ -212,14 +175,12 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
               )}
             </div>
           </div>
-        </Fieldset>
+        </ConfigSection>
 
-        {/* COLUMN 3: CAPITAL & SIZING */}
-        <Fieldset legend="Capital & Sizing">
+        <ConfigSection title="Capital & Sizing">
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-silver-300 text-xs font-medium">Capital</label>
+              <LabeledField label="Capital">
                 <NumberInput
                   value={fields.capital}
                   onChange={setters.setCapital}
@@ -227,9 +188,8 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                   min="1000"
                   required
                 />
-              </div>
-              <div className="space-y-1">
-                <label className="text-silver-300 text-xs font-medium">Val/Point</label>
+              </LabeledField>
+              <LabeledField label="Val/Point">
                 <NumberInput
                   step="0.01"
                   value={fields.pointValue}
@@ -238,13 +198,10 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                   min="0.01"
                   required
                 />
-              </div>
+              </LabeledField>
             </div>
 
-            <div className="space-y-1">
-              <label htmlFor="position-sizing" className="text-silver-300 text-xs font-medium">
-                Sizing Mode
-              </label>
+            <LabeledField label="Sizing Mode" htmlFor="position-sizing">
               <select
                 id="position-sizing"
                 value={fields.sizingMode}
@@ -255,7 +212,7 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                 <option value="fixed_safety_margin">Fixed Safety Margin</option>
                 <option value="inverse_volatility">Vol Targeting</option>
               </select>
-            </div>
+            </LabeledField>
 
             <PositionSizingModeFields
               mode={fields.sizingMode}
@@ -278,15 +235,15 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
               errors={sizingErrors}
             />
           </div>
-        </Fieldset>
+        </ConfigSection>
 
-        {/* COLUMN 4: COSTS */}
-        <Fieldset legend="Costs">
+        <ConfigSection title="Costs">
           <div className="space-y-3">
-            <div className="space-y-1">
-              <label htmlFor="cost-per-contract" className="text-silver-300 text-xs font-medium">
-                Cost per contract (per side)
-              </label>
+            <LabeledField
+              label="Cost per contract (per side)"
+              htmlFor="cost-per-contract"
+              error={costErrors.costPerContract}
+            >
               <NumberInput
                 id="cost-per-contract"
                 step="0.01"
@@ -301,17 +258,13 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                 emptyOnBlur={0}
                 className={inputClass}
               />
-              {costErrors.costPerContract && (
-                <p className="mt-1 text-xs font-medium text-rose-400">
-                  {costErrors.costPerContract}
-                </p>
-              )}
-            </div>
+            </LabeledField>
 
-            <div className="space-y-1">
-              <label htmlFor="cost-bps" className="text-silver-300 text-xs font-medium">
-                Cost (bps of notional, per side)
-              </label>
+            <LabeledField
+              label="Cost (bps of notional, per side)"
+              htmlFor="cost-bps"
+              error={costErrors.costBps}
+            >
               <NumberInput
                 id="cost-bps"
                 step="0.01"
@@ -326,17 +279,14 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                 emptyOnBlur={0}
                 className={inputClass}
               />
-              {costErrors.costBps && (
-                <p className="mt-1 text-xs font-medium text-rose-400">{costErrors.costBps}</p>
-              )}
-            </div>
+            </LabeledField>
 
             <div className="border-carbon-600/20 text-silver-400 border-t pt-2 text-[11px] leading-normal">
               Costs apply per side (entry and exit paid once). Leave at 0 for gross-of-costs
               backtests.
             </div>
           </div>
-        </Fieldset>
+        </ConfigSection>
       </div>
 
       {validation.dateRangeInvalid && (
@@ -344,6 +294,6 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
           Start date must be before end date.
         </p>
       )}
-    </div>
+    </Panel>
   )
 }

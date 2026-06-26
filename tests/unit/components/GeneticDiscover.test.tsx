@@ -169,7 +169,7 @@ describe('CandidateDetailPanel genetic', () => {
       />,
     )
 
-    await user.click(screen.getByRole('tab', { name: 'Genome' }))
+    await user.click(screen.getByRole('radio', { name: 'Genome' }))
     expect(screen.getByText('genome-champion-001')).toBeInTheDocument()
     expect(screen.getByText('CrossAbove')).toBeInTheDocument()
   })
@@ -187,7 +187,7 @@ describe('CandidateDetailPanel genetic', () => {
       />,
     )
 
-    await user.click(screen.getByRole('tab', { name: 'Genome' }))
+    await user.click(screen.getByRole('radio', { name: 'Genome' }))
 
     await waitFor(() => {
       const queries = queryClient.getQueryCache().findAll({
@@ -219,7 +219,7 @@ describe('CandidateDetailPanel genetic', () => {
       />,
     )
 
-    expect(screen.queryByRole('tab', { name: 'Genome' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: 'Genome' })).not.toBeInTheDocument()
   })
 })
 

@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
-import { ActiveOutline } from '@/components/ui/ActiveOutline'
+import { Panel } from '@/components/ui/Panel'
 import type { WalkForwardStatus } from '@/types/walkforward'
+import { cn } from '@/lib/utils'
 
 type WalkForwardProgressProps = {
   status: WalkForwardStatus
@@ -20,8 +21,6 @@ export function WalkForwardProgress({ status, onCancel, cancelling }: WalkForwar
   const pct = Math.min(100, Math.round((completed / total) * 100))
   const isParallel = (status.workers ?? 1) > 1
 
-  // In parallel mode many windows run at once, so a single "current window N"
-  // index is meaningless — lead with the parallel-execution status instead.
   const headerLabel = isParallel
     ? status.total_windows > 0
       ? `Optimizing ${status.total_windows} windows · ${status.workers} in parallel`
@@ -34,9 +33,18 @@ export function WalkForwardProgress({ status, onCancel, cancelling }: WalkForwar
 
   return (
     <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-4">
-      <div className="surface-panel relative w-full max-w-md overflow-hidden rounded-2xl px-6 py-8">
-        <ActiveOutline />
+      <Panel
+        className={cn(
+          'quant-panel--active-run relative w-full max-w-md overflow-hidden rounded-2xl px-6 py-8',
+        )}
+      >
         <div className="relative z-20">
+          <div className="mb-4 flex items-center justify-center gap-2">
+            <span className="live-status-dot h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
+            <span className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+              Walk-forward running
+            </span>
+          </div>
           <p className="text-silver-200 mb-1 text-center text-sm font-medium">{headerLabel}</p>
           {!status.phase && status.status === 'running' ? (
             <p className="text-silver-500 mb-3 text-center text-xs">
@@ -49,9 +57,9 @@ export function WalkForwardProgress({ status, onCancel, cancelling }: WalkForwar
             </span>
             <span className="text-brass-400">{pct}%</span>
           </div>
-          <div className="bg-carbon-950/85 border-brass-600/10 h-2.5 w-full overflow-hidden rounded-full border shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)]">
+          <div className="surface-well h-2.5 w-full overflow-hidden rounded-full">
             <div
-              className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r shadow-[0_0_12px_rgba(196,165,116,0.35)] transition-all duration-500"
+              className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -67,7 +75,7 @@ export function WalkForwardProgress({ status, onCancel, cancelling }: WalkForwar
             </Button>
           </div>
         </div>
-      </div>
+      </Panel>
     </div>
   )
 }

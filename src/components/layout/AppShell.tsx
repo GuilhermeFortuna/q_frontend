@@ -5,8 +5,10 @@ import { AppDock } from '@/components/dock/AppDock'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
 import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
 import { DigitalClock } from '@/components/layout/DigitalClock'
+import { MotionToggle } from '@/components/layout/MotionToggle'
 import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'
 import { WindowControls } from '@/components/layout/WindowControls'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { env } from '@/lib/env'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
@@ -23,6 +25,17 @@ type AppShellProps = {
   children: ReactNode
 }
 
+function PhasePill() {
+  return (
+    <div className="surface-card accent-state flex items-center gap-1.5 rounded-full border px-3 py-1">
+      <span className="live-status-dot bg-brass-400 h-1 w-1 rounded-full" aria-hidden />
+      <span className="accent-wayfinding font-mono text-[10px] font-semibold tracking-wider uppercase">
+        Phase 1 · Foundation
+      </span>
+    </div>
+  )
+}
+
 export function AppShell({ children }: AppShellProps) {
   const activeWorkspace = useAppStore((s) => s.activeWorkspace)
   const location = useLocation()
@@ -30,6 +43,13 @@ export function AppShell({ children }: AppShellProps) {
   const isReader = location.pathname === '/news-reader'
 
   const [rippleKey, setRippleKey] = useState(0)
+  const reducedMotion = usePrefersReducedMotion()
+
+  // Drive reduced-motion CSS off a JS-set root attribute (not the @media query directly) so the
+  // motion preference can override WebKitGTK's false `prefers-reduced-motion: reduce`.
+  useEffect(() => {
+    document.documentElement.dataset.reducedMotion = reducedMotion ? 'true' : 'false'
+  }, [reducedMotion])
 
   useEffect(() => {
     if (activeWorkspace) {
@@ -65,11 +85,9 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         <div className="flex h-full items-center gap-6">
+          <MotionToggle />
           <BrightnessToggle />
-          <div className="border-brass-600/30 bg-brass-600/10 text-brass-400 flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase shadow-[0_0_10px_rgba(196,165,116,0.05)]">
-            <span className="bg-brass-400 h-1 w-1 animate-pulse rounded-full" />
-            Phase 1 · Foundation
-          </div>
+          <PhasePill />
           <WindowControls />
         </div>
       </header>

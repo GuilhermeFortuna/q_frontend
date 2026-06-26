@@ -1,9 +1,7 @@
-import {
-  fieldErrorClass,
-  labelClass,
-  panelClass,
-  RangeRow,
-} from '@/components/optimize/optimizeFormShared'
+import { LabeledField } from '@/components/ui/LabeledField'
+import { Panel } from '@/components/ui/Panel'
+import { RangeInput } from '@/components/ui/RangeInput'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import type { SearchSpaceFieldState } from '@/lib/strategies/strategyParams'
 import type { StrategyParamSpec } from '@/types/strategies'
 
@@ -25,7 +23,7 @@ export function StrategySearchSpaceFields({
   if (params.length === 0) return null
 
   return (
-    <div className={panelClass}>
+    <Panel className="space-y-3 p-3">
       {params
         .filter((spec) => spec.searchable !== false)
         .map((spec) => {
@@ -36,68 +34,71 @@ export function StrategySearchSpaceFields({
             const choices = spec.choices ?? []
             const invalid = field.choices.length === 0
             return (
-              <div key={spec.name} className="space-y-1">
-                <label className={labelClass}>{spec.label}</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {choices.map((choice) => (
-                    <button
-                      key={choice}
-                      type="button"
-                      onClick={() =>
-                        onChange(spec.name, {
-                          kind: 'categorical',
-                          choices: toggleChoice(choice, field.choices),
-                        })
-                      }
-                      className={
-                        field.choices.includes(choice)
-                          ? 'text-brass-400 border-brass-500/50 rounded border px-2 py-0.5 text-xs font-medium'
-                          : 'text-silver-300 border-carbon-600/60 hover:border-brass-500/50 rounded border px-2 py-0.5 text-xs font-medium'
-                      }
-                    >
-                      {choice.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-                {invalid && (
-                  <p className={fieldErrorClass}>Select at least one option for {spec.label}.</p>
-                )}
-              </div>
+              <LabeledField
+                key={spec.name}
+                label={spec.label}
+                error={invalid ? `Select at least one option for ${spec.label}.` : undefined}
+              >
+                <SegmentedToggle
+                  mode="multi"
+                  aria-label={spec.label}
+                  options={choices.map((choice) => ({
+                    value: choice,
+                    label: choice.toUpperCase(),
+                  }))}
+                  values={field.choices}
+                  onToggle={(choice) =>
+                    onChange(spec.name, {
+                      kind: 'categorical',
+                      choices: toggleChoice(choice, field.choices),
+                    })
+                  }
+                />
+              </LabeledField>
             )
           }
 
-          const step = spec.search_step ?? spec.step ?? (spec.type === 'int' ? '1' : 'any')
+          const intOnly = spec.type === 'int'
+          const label =
+            spec.search_scale === 'log' ? (
+              <span className="inline-flex items-center gap-1.5">
+                {spec.label}
+                <span className="accent-wayfinding rounded border px-1 py-px text-[10px] font-medium tracking-wide uppercase">
+                  log
+                </span>
+              </span>
+            ) : (
+              spec.label
+            )
+
           return (
-            <RangeRow
+            <LabeledField
               key={spec.name}
-              label={
-                spec.search_scale === 'log' ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    {spec.label}
-                    <span className="text-brass-400/80 border-brass-500/40 rounded border px-1 py-px text-[10px] font-medium tracking-wide uppercase">
-                      log
-                    </span>
+              label={typeof label === 'string' ? label : spec.label}
+              labelEnd={
+                typeof label !== 'string' ? (
+                  <span className="accent-wayfinding rounded border px-1 py-px text-[10px] font-medium tracking-wide uppercase">
+                    log
                   </span>
-                ) : (
-                  spec.label
-                )
+                ) : undefined
               }
-              low={field.low}
-              high={field.high}
-              setLow={(low) => onChange(spec.name, { ...field, kind: 'numeric', low })}
-              setHigh={(high) => onChange(spec.name, { ...field, kind: 'numeric', high })}
-              step={String(step)}
-              stepValue={field.step ?? null}
-              setStepValue={(stepValue) =>
-                onChange(spec.name, { ...field, kind: 'numeric', step: stepValue })
-              }
-            />
+            >
+              <RangeInput
+                min={field.low}
+                max={field.high}
+                step={field.step ?? null}
+                intOnly={intOnly}
+                onChange={({ min, max, step }) =>
+                  onChange(spec.name, { ...field, kind: 'numeric', low: min, high: max, step })
+                }
+              />
+            </LabeledField>
           )
         })}
-      <p className={labelClass}>
+      <p className="text-silver-400 text-xs">
         Step controls the sampling grid for each parameter. Coarser steps keep values clean and
         reduce overfitting; leave a float step blank for a continuous range.
       </p>
-    </div>
+    </Panel>
   )
 }

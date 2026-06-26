@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react'
+
 import { useDataSource, useSetDataSource, useSystemHealth } from '@/api/queries/system'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { LabeledField } from '@/components/ui/LabeledField'
+import { Panel, PanelHeader } from '@/components/ui/Panel'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
+import { StatTile } from '@/components/ui/StatTile'
+import { Button } from '@/components/ui/button'
+import { wellInputClass } from '@/components/ui/wellInputStyles'
 import { env } from '@/lib/env'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { useAppStore } from '@/store/useAppStore'
 import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
 import type { DataSourceMode } from '@/types/storage'
-import { Sun, SunDim, SunMoon } from 'lucide-react'
 
-const presetButtonClass =
-  'text-silver-300 border-brass-600/20 bg-carbon-900/40 hover:bg-carbon-800/80 hover:border-brass-500/40 hover:text-brass-400 rounded-md border px-3 py-1.5 text-xs font-semibold transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1.5'
-
-const presetButtonActiveClass =
-  'text-brass-400 border-brass-500/50 bg-brass-600/15 rounded-md border px-3 py-1.5 text-xs font-semibold shadow-[0_0_10px_rgba(196,165,116,0.08)] cursor-pointer flex items-center gap-1.5'
-
-const inputClass =
-  'w-full bg-carbon-950/80 border border-brass-600/15 rounded-lg px-3 py-2 text-xs text-silver-100 placeholder-silver-500 focus:outline-none focus:border-brass-500/60 focus:ring-2 focus:ring-brass-500/15 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)] cursor-pointer'
+const DATA_SOURCE_OPTIONS: { value: DataSourceMode; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'mt5', label: 'MT5' },
+  { value: 'local', label: 'Local' },
+]
 
 export function SystemWorkspace() {
   const { data: health, isLoading, isError, refetch, isFetching } = useSystemHealth()
@@ -62,60 +64,40 @@ export function SystemWorkspace() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
-        <h1 className="text-silver-100 text-xl font-medium">System</h1>
-        <p className="text-silver-400 text-sm">
+        <h1 className="text-brass-400 text-xl font-bold">System</h1>
+        <p className="text-silver-400 mt-1 text-sm">
           Runtime configuration and backend connectivity (mock API in Phase 1).
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Display & Brightness</CardTitle>
-          <CardDescription>
+      <Panel className="p-0">
+        <PanelHeader title="Display & Brightness" />
+        <div className="space-y-6 px-4 pb-4">
+          <p className="text-silver-400 -mt-1 text-xs">
             Configure the user interface theme, brightness levels, and automatic scheduling.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-silver-300 text-sm font-medium">Brightness Mode</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setBrightnessMode('high')}
-                className={brightnessMode === 'high' ? presetButtonActiveClass : presetButtonClass}
-              >
-                <Sun className="h-3.5 w-3.5" />
-                High
-              </button>
-              <button
-                type="button"
-                onClick={() => setBrightnessMode('mid')}
-                className={brightnessMode === 'mid' ? presetButtonActiveClass : presetButtonClass}
-              >
-                <SunDim className="h-3.5 w-3.5" />
-                Mid
-              </button>
-              <button
-                type="button"
-                onClick={() => setBrightnessMode('auto')}
-                className={brightnessMode === 'auto' ? presetButtonActiveClass : presetButtonClass}
-              >
-                <SunMoon className="h-3.5 w-3.5" />
-                Auto (Time-based)
-              </button>
-            </div>
-          </div>
+          </p>
 
-          {brightnessMode === 'auto' && (
-            <div className="border-brass-600/10 bg-carbon-900/20 grid gap-4 rounded-xl border p-4 sm:grid-cols-3">
-              <div className="flex flex-col gap-2">
-                <label className="text-silver-400 text-[10px] font-semibold tracking-wider uppercase">
-                  High Brightness Start
-                </label>
+          <LabeledField label="Brightness mode">
+            <SegmentedToggle
+              aria-label="Brightness mode"
+              value={brightnessMode}
+              onChange={setBrightnessMode}
+              options={[
+                { value: 'high', label: 'High' },
+                { value: 'mid', label: 'Mid' },
+                { value: 'auto', label: 'Auto' },
+              ]}
+            />
+          </LabeledField>
+
+          {brightnessMode === 'auto' ? (
+            <Panel className="grid gap-4 p-4 sm:grid-cols-3">
+              <LabeledField label="High brightness start" htmlFor="sys-high-start">
                 <select
+                  id="sys-high-start"
                   value={highStart}
                   onChange={(e) => setAutoBrightnessConfig({ highStart: Number(e.target.value) })}
-                  className={inputClass}
+                  className={wellInputClass}
                 >
                   {hours.map((h) => (
                     <option key={h} value={h} className="bg-carbon-950 text-silver-100">
@@ -123,16 +105,14 @@ export function SystemWorkspace() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </LabeledField>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-silver-400 text-[10px] font-semibold tracking-wider uppercase">
-                  Mid Brightness Start
-                </label>
+              <LabeledField label="Mid brightness start" htmlFor="sys-mid-start">
                 <select
+                  id="sys-mid-start"
                   value={midStart}
                   onChange={(e) => setAutoBrightnessConfig({ midStart: Number(e.target.value) })}
-                  className={inputClass}
+                  className={wellInputClass}
                 >
                   {hours.map((h) => (
                     <option key={h} value={h} className="bg-carbon-950 text-silver-100">
@@ -140,16 +120,14 @@ export function SystemWorkspace() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </LabeledField>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-silver-400 text-[10px] font-semibold tracking-wider uppercase">
-                  Low Brightness Start
-                </label>
+              <LabeledField label="Low brightness start" htmlFor="sys-low-start">
                 <select
+                  id="sys-low-start"
                   value={lowStart}
                   onChange={(e) => setAutoBrightnessConfig({ lowStart: Number(e.target.value) })}
-                  className={inputClass}
+                  className={wellInputClass}
                 >
                   {hours.map((h) => (
                     <option key={h} value={h} className="bg-carbon-950 text-silver-100">
@@ -157,73 +135,59 @@ export function SystemWorkspace() {
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
-          )}
+              </LabeledField>
+            </Panel>
+          ) : null}
 
-          <div className="border-brass-600/10 bg-brass-600/5 text-silver-300 flex flex-wrap items-center justify-between gap-3 rounded-lg p-3 text-xs">
-            <div>
-              <span className="text-brass-400 mr-2 font-sans font-semibold">
-                Resolved Active Theme:
-              </span>
-              <span className="text-cream-200 font-mono capitalize">
-                {resolvedBrightness}
-                {brightnessMode === 'auto' ? ' (Auto)' : ''}
-              </span>
-              {resolvedBrightness === 'low' && (
-                <span className="text-silver-500 ml-2">(using Mid backgrounds as fallback)</span>
-              )}
-            </div>
-            <div className="text-silver-400">
-              Local Time:{' '}
-              <span className="text-brass-400 font-mono font-semibold">{localTimeStr}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <Panel className="flex flex-wrap items-center justify-between gap-3 p-3">
+            <StatTile
+              className="min-w-[12rem] flex-1 p-3"
+              label="Resolved active theme"
+              value={`${resolvedBrightness}${brightnessMode === 'auto' ? ' (auto)' : ''}`}
+              highlight
+            />
+            <StatTile className="min-w-[10rem] p-3" label="Local time" value={localTimeStr} />
+          </Panel>
+          {resolvedBrightness === 'low' ? (
+            <p className="text-silver-500 text-xs">
+              Low brightness uses mid backgrounds as fallback.
+            </p>
+          ) : null}
+        </div>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Data Source</CardTitle>
-          <CardDescription>
+      <Panel className="p-0">
+        <PanelHeader title="Data Source" />
+        <div className="space-y-4 px-4 pb-4">
+          <p className="text-silver-400 -mt-1 text-xs">
             Choose where market data comes from. Auto uses MetaTrader 5 when available, otherwise
             the local parquet store.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </p>
           {dataSourceLoading && !dataSource ? (
             <p className="text-silver-400 text-sm">Loading data source…</p>
           ) : (
             <>
-              <div className="flex flex-wrap gap-2">
-                {(['auto', 'mt5', 'local'] as DataSourceMode[]).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    disabled={setDataSource.isPending}
-                    onClick={() => setDataSource.mutate(mode)}
-                    className={
-                      dataSource?.source === mode ? presetButtonActiveClass : presetButtonClass
-                    }
-                  >
-                    {mode === 'auto' ? 'Auto' : mode === 'mt5' ? 'MT5' : 'Local'}
-                  </button>
-                ))}
+              <SegmentedToggle
+                aria-label="Data source"
+                value={dataSource?.source ?? 'auto'}
+                onChange={(mode) => setDataSource.mutate(mode)}
+                options={DATA_SOURCE_OPTIONS.map((option) => ({
+                  ...option,
+                  disabled: setDataSource.isPending,
+                }))}
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <StatTile
+                  className="p-3"
+                  label="MT5 available"
+                  value={dataSource?.mt5_available ? 'yes' : 'no'}
+                />
+                <StatTile
+                  className="p-3"
+                  label="Active provider"
+                  value={dataSource?.active_provider ?? '—'}
+                />
               </div>
-              <dl className="grid gap-3 text-sm sm:grid-cols-2">
-                <div>
-                  <dt className="text-silver-400">MT5 available</dt>
-                  <dd className="text-silver-100 font-mono">
-                    {dataSource?.mt5_available ? 'yes' : 'no'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-silver-400">Active provider</dt>
-                  <dd className="text-silver-100 font-mono capitalize">
-                    {dataSource?.active_provider ?? '—'}
-                  </dd>
-                </div>
-              </dl>
               {dataSource?.source === 'local' && !dataSource.mt5_available ? (
                 <p className="text-silver-400 text-xs">
                   Local mode without MT5 is expected on Linux — candle backtests read the parquet
@@ -232,52 +196,44 @@ export function SystemWorkspace() {
               ) : null}
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Environment</CardTitle>
-          <CardDescription>Frontend runtime targets</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="space-y-3 text-sm">
-            <div className="border-carbon-700 flex justify-between gap-4 border-b pb-2">
-              <dt className="text-silver-400">API base URL</dt>
-              <dd className="text-silver-100 font-mono">{env.apiBaseUrl}</dd>
-            </div>
-            <div className="border-carbon-700 flex justify-between gap-4 border-b pb-2">
-              <dt className="text-silver-400">MSW mocks</dt>
-              <dd className="text-silver-100 font-mono">
-                {env.enableMsw ? 'enabled' : 'disabled'}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-silver-400">Build mode</dt>
-              <dd className="text-silver-100 font-mono">
-                {env.isDev ? 'development' : 'production'}
-              </dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
+      <Panel className="p-0">
+        <PanelHeader title="Environment" />
+        <div className="grid gap-3 px-4 pb-4 sm:grid-cols-3">
+          <StatTile className="p-3" label="API base URL" value={env.apiBaseUrl} />
+          <StatTile
+            className="p-3"
+            label="MSW mocks"
+            value={env.enableMsw ? 'enabled' : 'disabled'}
+          />
+          <StatTile
+            className="p-3"
+            label="Build mode"
+            value={env.isDev ? 'development' : 'production'}
+          />
+        </div>
+      </Panel>
 
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
-          <div>
-            <CardTitle>Backend health</CardTitle>
-            <CardDescription>GET /api/v1/system/health</CardDescription>
-          </div>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            disabled={isFetching}
-            className="text-brass-400 hover:text-brass-500 text-xs disabled:opacity-50"
-          >
-            {isFetching ? 'Refreshing…' : 'Refresh'}
-          </button>
-        </CardHeader>
-        <CardContent>
+      <Panel className="p-0">
+        <PanelHeader
+          title="Backend health"
+          right={
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-brass-400 hover:text-brass-300 h-auto px-0 py-0 text-xs"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? 'Refreshing…' : 'Refresh'}
+            </Button>
+          }
+        />
+        <div className="px-4 pb-4">
+          <p className="text-silver-400 -mt-1 mb-4 text-xs">GET /api/v1/system/health</p>
           {isLoading ? (
             <p className="text-silver-400 text-sm">Loading health…</p>
           ) : isError || !health ? (
@@ -286,40 +242,30 @@ export function SystemWorkspace() {
               .
             </p>
           ) : (
-            <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-silver-400">Status</dt>
-                <dd className="text-silver-100 font-mono capitalize">{health.status}</dd>
-              </div>
-              <div>
-                <dt className="text-silver-400">Version</dt>
-                <dd className="text-silver-100 font-mono">{health.backendVersion}</dd>
-              </div>
-              <div>
-                <dt className="text-silver-400">Data lake</dt>
-                <dd className="text-silver-100 font-mono capitalize">{health.dataLakeStatus}</dd>
-              </div>
-              <div>
-                <dt className="text-silver-400">Last sync</dt>
-                <dd className="text-silver-100 font-mono">
-                  {formatDisplayDateTime(health.lastSyncAt)}
-                </dd>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <StatTile className="p-3" label="Status" value={health.status} />
+              <StatTile className="p-3" label="Version" value={health.backendVersion} />
+              <StatTile className="p-3" label="Data lake" value={health.dataLakeStatus} />
+              <StatTile
+                className="p-3"
+                label="Last sync"
+                value={formatDisplayDateTime(health.lastSyncAt)}
+              />
               {health.market_data_root ? (
-                <div className="sm:col-span-2">
-                  <dt className="text-silver-400">Market data root</dt>
-                  <dd className="text-silver-100 font-mono text-xs break-all">
-                    {health.market_data_root}
-                    {health.market_data_inventory_count != null
+                <StatTile
+                  className="p-3 sm:col-span-2"
+                  label="Market data root"
+                  value={`${health.market_data_root}${
+                    health.market_data_inventory_count != null
                       ? ` · ${health.market_data_inventory_count} series`
-                      : ''}
-                  </dd>
-                </div>
+                      : ''
+                  }`}
+                />
               ) : null}
-            </dl>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
     </div>
   )
 }

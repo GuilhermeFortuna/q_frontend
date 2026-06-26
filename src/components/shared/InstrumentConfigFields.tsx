@@ -3,7 +3,11 @@ import { endOfDay, format, startOfDay } from 'date-fns'
 import { useState } from 'react'
 
 import { fetchOhlcvAvailableRange } from '@/api/queries/market-data'
+import { chipClass } from '@/components/ui/chipStyles'
+import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
+import { RangeChips } from '@/components/ui/RangeChips'
+import { wellInputClass } from '@/components/ui/wellInputStyles'
 import {
   getAllAvailableDateRange,
   getDateRangeFromPreset,
@@ -11,23 +15,22 @@ import {
 } from '@/lib/backtesting/dateRange'
 import { cn } from '@/lib/utils'
 
-export const inputClass =
-  'w-full bg-carbon-950/80 border border-brass-600/15 rounded-lg px-3 py-2 text-sm text-silver-100 placeholder-silver-500 focus:outline-none focus:border-brass-500/60 focus:ring-2 focus:ring-brass-500/15 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]'
+export const inputClass = wellInputClass
 
 export const fieldErrorClass = 'text-xs font-medium text-rose-400 mt-1'
 
-export const presetButtonClass =
-  'text-silver-300 border-brass-600/20 bg-carbon-900/40 hover:bg-carbon-800/80 hover:border-brass-500/40 hover:text-brass-400 rounded-md border px-2.5 py-1 text-xs font-semibold transition-all duration-150 active:scale-95'
+/** @deprecated Use RangeChips — kept for callers not yet migrated. */
+export const presetButtonClass = chipClass(false)
 
-export const presetButtonActiveClass =
-  'text-brass-400 border-brass-500/50 bg-brass-600/15 rounded-md border px-2.5 py-1 text-xs font-semibold shadow-[0_0_10px_rgba(196,165,116,0.08)]'
+/** @deprecated Use RangeChips — kept for callers not yet migrated. */
+export const presetButtonActiveClass = chipClass(true)
 
-const DATE_PRESETS: { label: DatePreset; title: string }[] = [
-  { label: '1M', title: 'Last 1 month' },
-  { label: '3M', title: 'Last 3 months' },
-  { label: '6M', title: 'Last 6 months' },
-  { label: '1Y', title: 'Last 1 year' },
-  { label: 'YTD', title: 'Year to date' },
+const DATE_PRESETS: { value: DatePreset; label: DatePreset; title: string }[] = [
+  { value: '1M', label: '1M', title: 'Last 1 month' },
+  { value: '3M', label: '3M', title: 'Last 3 months' },
+  { value: '6M', label: '6M', title: 'Last 6 months' },
+  { value: '1Y', label: '1Y', title: 'Last 1 year' },
+  { value: 'YTD', label: 'YTD', title: 'Year to date' },
 ]
 
 type InstrumentConfigFieldsProps = {
@@ -112,73 +115,62 @@ export function DateRangePresetsFields({
   }
 
   return (
-    <div className="space-y-2">
-      <label className="text-silver-200 text-sm font-medium">Date Range</label>
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label htmlFor="config-start-date" className="text-silver-400 text-xs">
-            Start
-          </label>
-          <input
-            id="config-start-date"
-            type="date"
-            value={format(startDate, 'yyyy-MM-dd')}
-            onChange={(e) => {
-              setStartDate(startOfDay(new Date(e.target.value + 'T00:00:00')))
-              setActiveDatePreset(null)
-              setAllDataError(null)
-            }}
-            className={inputClass}
-            required
-          />
+    <LabeledField
+      label="Date Range"
+      error={allDataError ?? (dateRangeInvalid ? 'Start date must be before end date.' : undefined)}
+    >
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <LabeledField label="Start" htmlFor="config-start-date">
+            <input
+              id="config-start-date"
+              type="date"
+              value={format(startDate, 'yyyy-MM-dd')}
+              onChange={(e) => {
+                setStartDate(startOfDay(new Date(e.target.value + 'T00:00:00')))
+                setActiveDatePreset(null)
+                setAllDataError(null)
+              }}
+              className={inputClass}
+              required
+            />
+          </LabeledField>
+          <LabeledField label="End" htmlFor="config-end-date">
+            <input
+              id="config-end-date"
+              type="date"
+              value={format(endDate, 'yyyy-MM-dd')}
+              onChange={(e) => {
+                setEndDate(endOfDay(new Date(e.target.value + 'T00:00:00')))
+                setActiveDatePreset(null)
+                setAllDataError(null)
+              }}
+              className={inputClass}
+              required
+            />
+          </LabeledField>
         </div>
-        <div>
-          <label htmlFor="config-end-date" className="text-silver-400 text-xs">
-            End
-          </label>
-          <input
-            id="config-end-date"
-            type="date"
-            value={format(endDate, 'yyyy-MM-dd')}
-            onChange={(e) => {
-              setEndDate(endOfDay(new Date(e.target.value + 'T00:00:00')))
-              setActiveDatePreset(null)
-              setAllDataError(null)
-            }}
-            className={inputClass}
-            required
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          <RangeChips
+            options={DATE_PRESETS}
+            value={activeDatePreset === 'ALL' ? null : activeDatePreset}
+            onSelect={applyPreset}
           />
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-1.5 pt-1">
-        {DATE_PRESETS.map(({ label, title }) => (
           <button
-            key={label}
             type="button"
-            title={title}
-            onClick={() => applyPreset(label)}
-            className={activeDatePreset === label ? presetButtonActiveClass : presetButtonClass}
+            title="Use all OHLCV data available in MetaTrader 5"
+            onClick={() => void applyAllAvailableData()}
+            disabled={allDataLoading || !symbol.trim()}
+            className={cn(
+              chipClass(activeDatePreset === 'ALL'),
+              'disabled:cursor-not-allowed disabled:opacity-50',
+            )}
           >
-            {label}
+            {allDataLoading ? '...' : 'All'}
           </button>
-        ))}
-        <button
-          type="button"
-          title="Use all OHLCV data available in MetaTrader 5"
-          onClick={() => void applyAllAvailableData()}
-          disabled={allDataLoading || !symbol.trim()}
-          className={
-            activeDatePreset === 'ALL'
-              ? presetButtonActiveClass
-              : `${presetButtonClass} disabled:cursor-not-allowed disabled:opacity-50`
-          }
-        >
-          {allDataLoading ? '...' : 'All'}
-        </button>
+        </div>
       </div>
-      {allDataError && <p className={fieldErrorClass}>{allDataError}</p>}
-      {dateRangeInvalid && <p className={fieldErrorClass}>Start date must be before end date.</p>}
-    </div>
+    </LabeledField>
   )
 }
 
@@ -212,10 +204,8 @@ export function InstrumentConfigFields({
 }: InstrumentConfigFieldsProps) {
   return (
     <div className="space-y-4">
-      {/* Group Symbol and Timeframe side-by-side */}
       <div className={cn('grid gap-3', showTimeframe ? 'grid-cols-2' : 'grid-cols-1')}>
-        <div className="space-y-1">
-          <label className="text-silver-300 text-xs font-semibold">Symbol</label>
+        <LabeledField label="Symbol">
           <input
             type="text"
             value={symbol}
@@ -224,11 +214,10 @@ export function InstrumentConfigFields({
             placeholder="e.g. PETR4"
             required
           />
-        </div>
+        </LabeledField>
 
         {showTimeframe ? (
-          <div className="space-y-1">
-            <label className="text-silver-300 text-xs font-semibold">Timeframe</label>
+          <LabeledField label="Timeframe">
             <select
               value={timeframe}
               onChange={(e) => setTimeframe(e.target.value)}
@@ -240,7 +229,7 @@ export function InstrumentConfigFields({
               <option value="H1">1 Hour</option>
               <option value="D1">1 Day</option>
             </select>
-          </div>
+          </LabeledField>
         ) : null}
       </div>
 
@@ -253,10 +242,8 @@ export function InstrumentConfigFields({
         timeframe={timeframe}
       />
 
-      {/* Group Capital and Value per Point side-by-side */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-silver-300 text-xs font-semibold">Initial Capital</label>
+        <LabeledField label="Initial Capital">
           <NumberInput
             value={capital}
             onChange={setCapital}
@@ -264,10 +251,9 @@ export function InstrumentConfigFields({
             min="1000"
             required
           />
-        </div>
+        </LabeledField>
 
-        <div className="space-y-1">
-          <label className="text-silver-300 text-xs font-semibold">Value / Point</label>
+        <LabeledField label="Value / Point">
           <NumberInput
             step="0.01"
             value={pointValue}
@@ -276,7 +262,7 @@ export function InstrumentConfigFields({
             min="0.01"
             required
           />
-        </div>
+        </LabeledField>
       </div>
 
       {setDayTrade ? (
@@ -295,44 +281,35 @@ export function InstrumentConfigFields({
           </p>
 
           {dayTrade && setDayTradeStartTime && setDayTradeEndTime && setDayTradeCloseTime ? (
-            <div className="bg-carbon-950/40 border-carbon-600/35 ml-6 space-y-2 rounded-lg border p-2.5">
+            <div className="surface-well ml-6 space-y-2 rounded-lg p-2.5">
               <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1 text-center">
-                  <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
-                    Start
-                  </label>
+                <LabeledField label="Start">
                   <input
                     type="text"
                     placeholder="09:00"
                     value={dayTradeStartTime}
                     onChange={(e) => setDayTradeStartTime(e.target.value)}
-                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                    className={cn(inputClass, 'text-center text-xs')}
                   />
-                </div>
-                <div className="space-y-1 text-center">
-                  <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
-                    End
-                  </label>
+                </LabeledField>
+                <LabeledField label="End">
                   <input
                     type="text"
                     placeholder="16:00"
                     value={dayTradeEndTime}
                     onChange={(e) => setDayTradeEndTime(e.target.value)}
-                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                    className={cn(inputClass, 'text-center text-xs')}
                   />
-                </div>
-                <div className="space-y-1 text-center">
-                  <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
-                    Close
-                  </label>
+                </LabeledField>
+                <LabeledField label="Close">
                   <input
                     type="text"
                     placeholder="17:00"
                     value={dayTradeCloseTime}
                     onChange={(e) => setDayTradeCloseTime(e.target.value)}
-                    className="bg-carbon-900 border-carbon-600/60 text-silver-100 focus:ring-brass-500/50 w-full rounded border px-2 py-1 text-center text-xs focus:ring-2 focus:outline-none"
+                    className={cn(inputClass, 'text-center text-xs')}
                   />
-                </div>
+                </LabeledField>
               </div>
             </div>
           ) : null}

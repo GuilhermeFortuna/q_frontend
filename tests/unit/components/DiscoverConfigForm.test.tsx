@@ -96,7 +96,7 @@ describe('DiscoverConfigForm', () => {
       expect(screen.getByText(/Will run/i)).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: 'Genetic synthesis' }))
+    await user.click(screen.getByRole('radio', { name: 'Genetic synthesis' }))
 
     expect(screen.getByText(/Genetic algorithm/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Population size/i)).toBeInTheDocument()
@@ -113,7 +113,7 @@ describe('DiscoverConfigForm', () => {
       expect(screen.getByText(/Will run/i)).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: 'Genetic synthesis' }))
+    await user.click(screen.getByRole('radio', { name: 'Genetic synthesis' }))
     await user.click(screen.getByRole('button', { name: 'Run Strategy Search' }))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)

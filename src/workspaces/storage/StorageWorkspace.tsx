@@ -15,12 +15,12 @@ import {
   marketDataKeys,
   useSearchSymbols,
 } from '@/api/queries/market-data'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  inputClass,
-  presetButtonActiveClass,
-  presetButtonClass,
-} from '@/components/shared/InstrumentConfigFields'
+import { inputClass } from '@/components/shared/InstrumentConfigFields'
+import { Button } from '@/components/ui/button'
+import { chipClass } from '@/components/ui/chipStyles'
+import { LabeledField } from '@/components/ui/LabeledField'
+import { Panel, PanelHeader } from '@/components/ui/Panel'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { formatBytes } from '@/lib/formatBytes'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { combineOhlcvAvailableRanges, toStorageDateInputs } from '@/lib/backtesting/dateRange'
@@ -38,7 +38,7 @@ import {
 const SYMBOL_SUGGESTION_LIMIT = 6
 
 const symbolSuggestionItemClass =
-  'w-full rounded-md border px-3 py-2 text-left transition-all duration-150'
+  'surface-card w-full rounded-md border px-3 py-2 text-left transition-all duration-150'
 
 function KindBadge({ kind }: { kind: StorageKind }) {
   const isTicks = kind === 'ticks'
@@ -226,33 +226,28 @@ export function StorageWorkspace() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div>
-        <h1 className="text-silver-100 text-xl font-medium">Storage</h1>
-        <p className="text-silver-400 text-sm">
+        <h1 className="text-brass-400 text-xl font-bold">Storage</h1>
+        <p className="text-silver-400 mt-1 text-sm">
           Download OHLCV bars or tick data from MetaTrader 5 into the local parquet store, then
           serve them in Local data-source mode on Linux.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Download from MT5</CardTitle>
-          <CardDescription>
+      <Panel className="p-0">
+        <PanelHeader title="Download from MT5" />
+        <div className="space-y-5 px-4 pb-4">
+          <p className="text-silver-400 -mt-1 text-xs">
             Fills the portable store under{' '}
             <span className="text-silver-200 font-mono">{inventory?.root ?? 'data/market'}</span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
+          </p>
           {!mt5Available ? (
-            <p className="text-silver-300 border-brass-600/20 bg-carbon-900/40 rounded-lg border px-3 py-2 text-sm">
+            <Panel className="text-silver-300 border-amber-500/20 bg-amber-500/5 px-3 py-2 text-sm">
               Downloading needs MT5 — run this on the Windows machine with MetaTrader connected.
-            </p>
+            </Panel>
           ) : null}
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-1">
-              <label htmlFor="storage-symbol" className="text-silver-300 text-sm font-medium">
-                Symbol
-              </label>
+            <LabeledField label="Symbol" htmlFor="storage-symbol">
               <input
                 id="storage-symbol"
                 type="text"
@@ -283,7 +278,7 @@ export function StorageWorkspace() {
                 <ul
                   id="storage-symbol-suggestions"
                   role="listbox"
-                  className="border-carbon-700 bg-carbon-950/90 max-h-32 overflow-y-auto rounded-lg border p-1 text-xs"
+                  className="surface-overlay max-h-32 overflow-y-auto rounded-lg p-1 text-xs"
                 >
                   {visibleSuggestions.map((item, index) => {
                     const isActive = index === selectedSuggestionIndex
@@ -299,8 +294,8 @@ export function StorageWorkspace() {
                           className={cn(
                             symbolSuggestionItemClass,
                             isActive
-                              ? 'border-brass-500/30 bg-brass-500/10 text-brass-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_0_8px_rgba(196,165,116,0.1)]'
-                              : 'text-silver-200 hover:bg-carbon-800/70 border-transparent',
+                              ? chipClass(true)
+                              : chipClass(false, 'text-silver-200 border-transparent'),
                           )}
                           // Keep the input focused so onBlur doesn't close the list
                           // before this click registers.
@@ -325,60 +320,40 @@ export function StorageWorkspace() {
                   })}
                 </ul>
               ) : null}
-            </div>
+            </LabeledField>
 
-            <div className="space-y-1">
-              <span className="text-silver-300 text-sm font-medium">Data kind</span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className={dataKind === 'bars' ? presetButtonActiveClass : presetButtonClass}
-                  onClick={() => setDataKind('bars')}
-                >
-                  Bars
-                </button>
-                <button
-                  type="button"
-                  className={dataKind === 'ticks' ? presetButtonActiveClass : presetButtonClass}
-                  onClick={() => setDataKind('ticks')}
-                >
-                  Ticks
-                </button>
-              </div>
-            </div>
+            <LabeledField label="Data kind">
+              <SegmentedToggle
+                aria-label="Data kind"
+                value={dataKind}
+                onChange={setDataKind}
+                options={[
+                  { value: 'bars', label: 'Bars' },
+                  { value: 'ticks', label: 'Ticks' },
+                ]}
+              />
+            </LabeledField>
           </div>
 
           {isTicksKind ? (
-            <p className="text-silver-300 rounded-lg border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-sm">
+            <Panel className="text-silver-300 border-violet-500/20 bg-violet-950/20 px-3 py-2 text-sm">
               Tick ranges are very large and ingest slowly (progress advances per month). Start with
               a narrow date range — a few days or one week — before pulling longer history.
-            </p>
+            </Panel>
           ) : (
-            <div className="space-y-2">
-              <span className="text-silver-300 text-sm font-medium">Timeframes</span>
-              <div className="flex flex-wrap gap-2">
-                {STORAGE_TIMEFRAME_OPTIONS.map((tf) => {
-                  const active = selectedTimeframes.includes(tf)
-                  return (
-                    <button
-                      key={tf}
-                      type="button"
-                      onClick={() => toggleTimeframe(tf)}
-                      className={active ? presetButtonActiveClass : presetButtonClass}
-                    >
-                      {tf}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            <LabeledField label="Timeframes">
+              <SegmentedToggle
+                aria-label="Timeframes"
+                mode="multi"
+                values={selectedTimeframes}
+                onToggle={toggleTimeframe}
+                options={STORAGE_TIMEFRAME_OPTIONS.map((tf) => ({ value: tf, label: tf }))}
+              />
+            </LabeledField>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label htmlFor="storage-start" className="text-silver-300 text-sm font-medium">
-                Start
-              </label>
+            <LabeledField label="Start" htmlFor="storage-start">
               <input
                 id="storage-start"
                 type="date"
@@ -389,11 +364,8 @@ export function StorageWorkspace() {
                 }}
                 className={inputClass}
               />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="storage-end" className="text-silver-300 text-sm font-medium">
-                End
-              </label>
+            </LabeledField>
+            <LabeledField label="End" htmlFor="storage-end">
               <input
                 id="storage-end"
                 type="date"
@@ -404,11 +376,11 @@ export function StorageWorkspace() {
                 }}
                 className={inputClass}
               />
-            </div>
+            </LabeledField>
           </div>
 
           {canProbeAvailableRange ? (
-            <div className="border-brass-600/15 bg-carbon-900/30 space-y-2 rounded-lg border px-3 py-2.5">
+            <Panel className="space-y-2 px-3 py-2.5">
               {availableRangeLoading ? (
                 <p className="text-silver-400 text-sm">Checking MT5 history…</p>
               ) : availableRangeErrorMessage ? (
@@ -453,7 +425,7 @@ export function StorageWorkspace() {
                     type="button"
                     title="Set start and end to the full range available in MetaTrader 5"
                     onClick={applyFullAvailableRange}
-                    className={useFullRangeActive ? presetButtonActiveClass : presetButtonClass}
+                    className={chipClass(useFullRangeActive)}
                   >
                     Use full range
                   </button>
@@ -467,33 +439,36 @@ export function StorageWorkspace() {
                   No MT5 history found for this symbol and timeframe selection.
                 </p>
               )}
-            </div>
+            </Panel>
           ) : null}
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
+            <Button
               type="button"
+              variant="brass"
               onClick={handleDownload}
               disabled={downloadDisabled || !canDownload}
-              className={cn(
-                presetButtonActiveClass,
-                'px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50',
-              )}
             >
               {startIngest.isPending ? 'Starting…' : 'Download'}
-            </button>
+            </Button>
             {startError ? <p className="text-sm text-rose-300">{startError}</p> : null}
           </div>
 
           {ingestJob && activeJobId ? (
-            <div className="border-brass-600/15 bg-carbon-900/30 space-y-2 rounded-lg border p-4">
+            <Panel className="quant-panel--active-run space-y-2 p-4">
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-silver-200 capitalize">{ingestJob.status}</span>
+                <span className="text-silver-200 flex items-center gap-2 capitalize">
+                  <span
+                    className="live-status-dot h-1.5 w-1.5 rounded-full bg-emerald-400"
+                    aria-hidden
+                  />
+                  {ingestJob.status}
+                </span>
                 <span className="text-brass-400 font-mono tabular-nums">
                   {Math.round((ingestJob.progress ?? 0) * 100)}%
                 </span>
               </div>
-              <div className="bg-carbon-950/85 border-brass-600/10 h-2 overflow-hidden rounded-full border">
+              <div className="surface-well h-2 overflow-hidden rounded-full">
                 <div
                   className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r transition-all"
                   style={{ width: `${Math.round((ingestJob.progress ?? 0) * 100)}%` }}
@@ -508,17 +483,17 @@ export function StorageWorkspace() {
                 </p>
               ))}
               {ingestJob.error ? <p className="text-sm text-rose-300">{ingestJob.error}</p> : null}
-            </div>
+            </Panel>
           ) : null}
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Inventory</CardTitle>
-          <CardDescription>Stored bars and ticks in the local parquet catalog</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <Panel className="p-0">
+        <PanelHeader title="Inventory" />
+        <div className="px-4 pb-4">
+          <p className="text-silver-400 -mt-1 mb-4 text-xs">
+            Stored bars and ticks in the local parquet catalog
+          </p>
           {inventoryLoading ? (
             <p className="text-silver-400 text-sm">Loading inventory…</p>
           ) : !inventory?.items.length ? (
@@ -527,10 +502,10 @@ export function StorageWorkspace() {
               or ticks for a symbol.
             </p>
           ) : (
-            <div className="overflow-x-auto">
+            <Panel className="overflow-x-auto p-0">
               <table className="w-full min-w-[720px] text-left text-sm">
-                <thead>
-                  <tr className="text-silver-400 border-carbon-700 border-b text-xs tracking-wide uppercase">
+                <thead className="surface-well">
+                  <tr className="text-silver-400 text-xs tracking-wide uppercase">
                     <th className="px-2 py-2 font-medium">Symbol</th>
                     <th className="px-2 py-2 font-medium">Kind</th>
                     <th className="px-2 py-2 font-medium">Timeframe</th>
@@ -588,10 +563,10 @@ export function StorageWorkspace() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </Panel>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
     </div>
   )
 }

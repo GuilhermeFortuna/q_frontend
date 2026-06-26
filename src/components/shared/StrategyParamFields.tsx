@@ -1,4 +1,5 @@
 import { fieldErrorClass, inputClass } from '@/components/shared/InstrumentConfigFields'
+import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
 import { paramHint } from '@/lib/strategies/strategyPresentation'
 import type { StrategyParamValue } from '@/lib/strategies/strategyParams'
@@ -13,10 +14,6 @@ type StrategyParamFieldsProps = {
   showHints?: boolean
   /** How hints render when showHints is true. Default 'paragraph'. */
   hintMode?: 'paragraph' | 'compact'
-}
-
-function ParamHint({ hint }: { hint: string }) {
-  return <p className="text-silver-500 text-xs leading-snug">{hint}</p>
 }
 
 function ParamHintCompact({ hint }: { hint: string }) {
@@ -35,7 +32,7 @@ export function StrategyParamFields({
   params,
   values,
   onChange,
-  className = 'bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3',
+  className = 'surface-panel space-y-3 rounded-lg p-3',
   showHints = false,
   hintMode = 'paragraph',
 }: StrategyParamFieldsProps) {
@@ -51,12 +48,15 @@ export function StrategyParamFields({
         if (spec.type === 'categorical') {
           const choices = spec.choices ?? []
           return (
-            <div key={spec.name} className="space-y-1">
-              <label htmlFor={id} className="text-silver-400 inline-flex items-center text-xs">
-                {spec.label}
-                {hint && hintMode === 'compact' ? <ParamHintCompact hint={hint} /> : null}
-              </label>
-              {hint && hintMode === 'paragraph' ? <ParamHint hint={hint} /> : null}
+            <LabeledField
+              key={spec.name}
+              label={spec.label}
+              htmlFor={id}
+              hint={hint && hintMode === 'paragraph' ? hint : undefined}
+              labelEnd={
+                hint && hintMode === 'compact' ? <ParamHintCompact hint={hint} /> : undefined
+              }
+            >
               <select
                 id={id}
                 value={String(value)}
@@ -69,7 +69,7 @@ export function StrategyParamFields({
                   </option>
                 ))}
               </select>
-            </div>
+            </LabeledField>
           )
         }
 
@@ -79,12 +79,20 @@ export function StrategyParamFields({
         const aboveMax = spec.max != null && numValue > spec.max
 
         return (
-          <div key={spec.name} className="space-y-1">
-            <label htmlFor={id} className="text-silver-400 inline-flex items-center text-xs">
-              {spec.label}
-              {hint && hintMode === 'compact' ? <ParamHintCompact hint={hint} /> : null}
-            </label>
-            {hint && hintMode === 'paragraph' ? <ParamHint hint={hint} /> : null}
+          <LabeledField
+            key={spec.name}
+            label={spec.label}
+            htmlFor={id}
+            hint={hint && hintMode === 'paragraph' ? hint : undefined}
+            labelEnd={hint && hintMode === 'compact' ? <ParamHintCompact hint={hint} /> : undefined}
+            error={
+              belowMin && spec.min != null
+                ? `Must be at least ${spec.min}.`
+                : aboveMax && spec.max != null
+                  ? `Must be at most ${spec.max}.`
+                  : undefined
+            }
+          >
             <NumberInput
               id={id}
               step={step}
@@ -95,16 +103,12 @@ export function StrategyParamFields({
               onChange={(next) => onChange(spec.name, next)}
               className={inputClass}
             />
-            {(belowMin || aboveMax) && (
-              <p className={fieldErrorClass}>
-                {belowMin && spec.min != null
-                  ? `Must be at least ${spec.min}.`
-                  : `Must be at most ${spec.max}.`}
-              </p>
-            )}
-          </div>
+          </LabeledField>
         )
       })}
     </div>
   )
 }
+
+// Re-export for callers that import fieldErrorClass from this module.
+export { fieldErrorClass }

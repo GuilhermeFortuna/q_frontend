@@ -12,7 +12,8 @@ import { DiscoverConfigForm } from '@/components/discover/DiscoverConfigForm'
 import { DiscoverHistoryPanel } from '@/components/discover/DiscoverHistoryPanel'
 import { DiscoverResultsPanel } from '@/components/discover/DiscoverResultsPanel'
 import { OptimizationWorkbench } from '@/components/optimize/OptimizationWorkbench'
-import { cn } from '@/lib/utils'
+import { Panel } from '@/components/ui/Panel'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { useAppStore } from '@/store/useAppStore'
 import type { JobPanelTab } from '@/store/slices/jobSessionsSlice'
 import type { StrategySearchConfig } from '@/types/strategySearch'
@@ -84,24 +85,14 @@ export function DiscoverWorkspace() {
         />
       </OptimizationWorkbench>
 
-      <div className="surface-panel flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6">
-        <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
-          {RIGHT_PANEL_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => patchSession({ rightPanelTab: tab.id })}
-              className={cn(
-                '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
-                rightPanelTab === tab.id
-                  ? 'border-brass-400 text-brass-400'
-                  : 'text-silver-400 hover:text-silver-200 border-transparent',
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <Panel living className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6">
+        <SegmentedToggle
+          aria-label="Discover panel"
+          className="mb-4 shrink-0"
+          value={rightPanelTab}
+          onChange={(tab) => patchSession({ rightPanelTab: tab })}
+          options={RIGHT_PANEL_TABS.map((tab) => ({ value: tab.id, label: tab.label }))}
+        />
 
         {rightPanelTab === 'history' ? (
           <DiscoverHistoryPanel
@@ -120,7 +111,7 @@ export function DiscoverWorkspace() {
             onOpenWorkbench={() => patchSession({ workbenchOpen: true })}
           />
         )}
-      </div>
+      </Panel>
     </div>
   )
 }

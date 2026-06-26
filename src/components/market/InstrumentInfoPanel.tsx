@@ -1,6 +1,7 @@
 import { isAxiosError } from 'axios'
 
 import { useInstrumentInfo } from '@/api/queries/market-data'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 
 import { formatSpecNumber } from './instrumentInfoUtils'
 
@@ -26,21 +27,24 @@ function SkeletonRows() {
 
 function InfoDefinitionList({ rows }: { rows: InfoRow[] }) {
   return (
-    <dl className="flex flex-col gap-1 overflow-y-auto p-3">
-      {rows.map((row) => (
-        <div
-          key={row.label}
-          className="border-carbon-800/20 hover:bg-carbon-800/20 flex items-center justify-between gap-3 rounded-lg border-b px-2.5 py-2 transition-all duration-150 last:border-b-0"
-        >
-          <dt className="text-silver-500 shrink-0 font-mono text-[10px] tracking-wider uppercase">
-            {row.label}
-          </dt>
-          <dd className="text-silver-200 text-right font-mono text-xs font-semibold">
-            {row.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <SectionHeader title="Specifications" className="shrink-0 px-3 pt-3" />
+      <dl className="flex flex-col gap-1 overflow-y-auto p-3">
+        {rows.map((row) => (
+          <div
+            key={row.label}
+            className="surface-card surface-card--edge flex items-center justify-between gap-3 rounded-lg px-2.5 py-2 transition-all duration-150"
+          >
+            <dt className="text-silver-500 shrink-0 font-mono text-[10px] tracking-wider uppercase">
+              {row.label}
+            </dt>
+            <dd className="text-silver-200 text-right font-mono text-xs font-semibold">
+              {row.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   )
 }
 

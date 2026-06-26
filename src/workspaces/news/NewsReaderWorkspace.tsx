@@ -4,6 +4,9 @@ import { formatDistanceToNow } from 'date-fns'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useNewsDetail } from '@/api/queries/news'
 import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
+import { Button } from '@/components/ui/button'
+import { Panel } from '@/components/ui/Panel'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 
 let appWindow: ReturnType<typeof getCurrentWindow> | null = null
 try {
@@ -15,7 +18,7 @@ try {
 const POSTER_MAP = {
   high: '/high_brightness/Quant_Background_Clean_High_Brightness.png',
   mid: '/mid_brightness/Quant_Background_Clean_Mid_Brightness.jpeg',
-  low: '/mid_brightness/Quant_Background_Clean_Mid_Brightness.jpeg', // Fallback
+  low: '/mid_brightness/Quant_Background_Clean_Mid_Brightness.jpeg',
 }
 
 export function NewsReaderWorkspace({
@@ -38,7 +41,6 @@ export function NewsReaderWorkspace({
       }
     } catch (err) {
       console.error('Failed to close window:', err)
-      // Browser fallback if window.close() is blocked
       window.history.back()
     }
   }
@@ -55,56 +57,52 @@ export function NewsReaderWorkspace({
 
   if (isPending) {
     return (
-      <div className="bg-carbon-950/20 border-carbon-800/80 flex min-h-[300px] flex-col items-center justify-center rounded-xl border p-6 text-center">
+      <Panel className="flex min-h-[300px] flex-col items-center justify-center p-6 text-center">
         <RefreshCw className="text-brass-400 h-8 w-8 animate-spin opacity-85" />
         <span className="text-silver-300 mt-4 animate-pulse font-mono text-[10px] tracking-wider uppercase">
           Fetching Article Content...
         </span>
-      </div>
+      </Panel>
     )
   }
 
   if (!article) {
     return (
-      <div className="bg-carbon-950/20 border-carbon-800/80 flex min-h-[300px] flex-col items-center justify-center rounded-xl border p-6 text-center">
+      <Panel className="flex min-h-[300px] flex-col items-center justify-center p-6 text-center">
         <Newspaper className="text-silver-500 mb-3 h-12 w-12 animate-pulse opacity-30" />
-        <span className="text-silver-300 font-mono text-sm tracking-wider uppercase">
-          Article Not Found
-        </span>
+        <SectionHeader title="Article not found" className="justify-center" />
         <p className="text-silver-500 mt-2 text-xs">
           The requested article could not be located in our feed database.
         </p>
-        <button
-          onClick={handleClose}
-          className="border-carbon-700 bg-carbon-900 hover:text-brass-400 hover:border-brass-600/30 text-silver-300 mt-6 flex items-center gap-2 rounded-lg border px-4 py-2 text-xs transition-colors"
-        >
+        <Button type="button" variant="ghost" className="mt-6 gap-2" onClick={handleClose}>
           <X className="h-4 w-4" /> Close Reader
-        </button>
-      </div>
+        </Button>
+      </Panel>
     )
   }
 
   return (
     <div className="animate-fade-in-up mx-auto flex max-w-2xl flex-col gap-6 py-4">
-      {/* Top Controls Bar */}
-      <div className="border-carbon-800 flex items-center justify-between border-b pb-3">
-        <div className="text-silver-400 flex items-center gap-2 font-mono text-[11px] tracking-wider uppercase">
-          <span>{article.source}</span>
-          <span>·</span>
-          <span>{formatPublishedAt(article.publishedAt)}</span>
-        </div>
-        {showInlineClose && (
-          <button
+      <Panel className="flex items-center justify-between border-b-0 px-0 py-0 pb-3">
+        <SectionHeader
+          title={`${article.source} · ${formatPublishedAt(article.publishedAt)}`}
+          className="flex-1"
+        />
+        {showInlineClose ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 shrink-0 p-0"
             onClick={handleClose}
-            className="border-carbon-800 bg-carbon-900/50 hover:bg-carbon-800 hover:text-silver-100 text-silver-400 flex items-center justify-center rounded-lg border p-1.5 transition-colors"
             title="Close Reader"
+            aria-label="Close Reader"
           >
             <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+          </Button>
+        ) : null}
+      </Panel>
 
-      {/* Main Heading */}
       <div className="flex flex-col gap-3">
         <h1 className="text-silver-100 font-sans text-2xl leading-tight font-medium tracking-tight md:text-3xl">
           {article.title}
@@ -114,9 +112,8 @@ export function NewsReaderWorkspace({
         </p>
       </div>
 
-      {/* Video or Image Player */}
       {article.videoUrl ? (
-        <div className="surface-panel border-brass-600/15 overflow-hidden rounded-xl border bg-black">
+        <Panel className="overflow-hidden bg-black p-0">
           <video
             src={article.videoUrl}
             controls
@@ -124,21 +121,22 @@ export function NewsReaderWorkspace({
             className="aspect-video w-full object-contain"
             poster={posterPath}
           />
-        </div>
+        </Panel>
       ) : article.imageUrl ? (
-        <div className="surface-panel border-brass-600/15 bg-carbon-900 flex max-h-[360px] items-center justify-center overflow-hidden rounded-xl border">
+        <Panel className="surface-card flex max-h-[360px] items-center justify-center overflow-hidden p-0">
           <img
             src={article.imageUrl}
             alt={article.title}
             className="max-h-[360px] max-w-full rounded-xl object-cover"
           />
-        </div>
+        </Panel>
       ) : null}
 
-      {/* Content Text */}
-      <div className="text-silver-200 space-y-4 font-sans text-sm leading-relaxed whitespace-pre-wrap md:text-base">
-        {article.content}
-      </div>
+      <Panel className="p-5">
+        <div className="text-silver-200 space-y-4 font-sans text-sm leading-relaxed whitespace-pre-wrap md:text-base">
+          {article.content}
+        </div>
+      </Panel>
     </div>
   )
 }

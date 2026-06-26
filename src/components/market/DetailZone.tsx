@@ -1,14 +1,20 @@
 import { useState } from 'react'
 
 import type { MarketSnapshot } from '@/types/api'
+import { Panel } from '@/components/ui/Panel'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 
 import { InstrumentInfoPanel } from './InstrumentInfoPanel'
 import { QuotePanel } from './QuotePanel'
 import { TimeAndSalesPanel } from './TimeAndSalesPanel'
 
-const DETAIL_TABS = ['QUOTE', 'TAPE', 'INFO'] as const
+const DETAIL_TABS = [
+  { value: 'QUOTE' as const, label: 'Quote' },
+  { value: 'TAPE' as const, label: 'Tape' },
+  { value: 'INFO' as const, label: 'Info' },
+]
 
-type DetailTab = (typeof DETAIL_TABS)[number]
+type DetailTab = (typeof DETAIL_TABS)[number]['value']
 
 export type DetailZoneProps = {
   symbol: string
@@ -19,22 +25,14 @@ export function DetailZone({ symbol, snapshot }: DetailZoneProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>('QUOTE')
 
   return (
-    <div className="surface-panel flex h-full flex-col overflow-hidden rounded-xl">
-      <div className="border-brass-600/15 bg-carbon-950/40 flex items-center gap-1 border-b px-3 py-2">
-        {DETAIL_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`rounded-md border px-3 py-1 font-mono text-[10px] font-bold tracking-wider uppercase transition-all duration-200 active:scale-95 ${
-              activeTab === tab
-                ? 'bg-brass-600/20 text-brass-400 border-brass-500/30 shadow-[0_0_10px_rgba(196,165,116,0.08)]'
-                : 'text-silver-400 hover:text-silver-200 hover:bg-carbon-800/40 border-transparent'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+    <Panel className="flex h-full flex-col overflow-hidden p-0">
+      <div className="surface-well border-brass-600/15 flex items-center gap-1 border-b px-3 py-2">
+        <SegmentedToggle
+          aria-label="Detail panel"
+          value={activeTab}
+          onChange={setActiveTab}
+          options={DETAIL_TABS}
+        />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
@@ -50,6 +48,6 @@ export function DetailZone({ symbol, snapshot }: DetailZoneProps) {
           <InstrumentInfoPanel symbol={symbol} enabled={activeTab === 'INFO'} />
         )}
       </div>
-    </div>
+    </Panel>
   )
 }

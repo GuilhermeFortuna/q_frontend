@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
+import { LabeledField } from '@/components/ui/LabeledField'
+import { Panel } from '@/components/ui/Panel'
+import { RangeInput } from '@/components/ui/RangeInput'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import { fieldErrorClass, inputClass } from '@/components/shared/InstrumentConfigFields'
 import { NumberInput } from '@/components/ui/number-input'
 import { cn } from '@/lib/utils'
@@ -32,7 +36,7 @@ export type RiskMode = 'fixed_quantity' | 'fixed_safety_margin' | 'inverse_volat
 
 export const labelClass = 'text-silver-400 text-xs'
 export const sectionTitleClass = 'text-silver-200 text-sm font-medium'
-export const panelClass = 'bg-carbon-900/50 border-carbon-600/40 space-y-3 rounded-lg border p-3'
+export const panelClass = 'surface-panel space-y-3 rounded-lg p-3'
 
 export function RangeRow({
   label,
@@ -50,25 +54,47 @@ export function RangeRow({
   setLow: (v: number) => void
   setHigh: (v: number) => void
   step?: string
-  /** Current sampling step. `null` means a continuous float range. */
   stepValue?: number | null
-  /** When provided, an editable "Step" input is rendered alongside low/high. */
   setStepValue?: (v: number | null) => void
 }) {
   const editableStep = typeof setStepValue === 'function'
+  const intOnly = step === '1'
+
+  if (editableStep) {
+    return (
+      <LabeledField label={typeof label === 'string' ? label : 'Range'}>
+        {typeof label !== 'string' ? <div className="mb-1">{label}</div> : null}
+        <RangeInput
+          min={low}
+          max={high}
+          step={stepValue ?? null}
+          intOnly={intOnly}
+          onChange={({ min, max, step: nextStep }) => {
+            setLow(min)
+            setHigh(max)
+            setStepValue(nextStep)
+          }}
+        />
+      </LabeledField>
+    )
+  }
+
   const rangeInvalid = low > high
-  const stepInvalid = stepValue != null && stepValue <= 0
+
   return (
-    <div className="space-y-1">
-      <label className={labelClass}>{label}</label>
-      <div className={cn('grid gap-2', editableStep ? 'grid-cols-3' : 'grid-cols-2')}>
+    <LabeledField
+      label={typeof label === 'string' ? label : 'Range'}
+      error={rangeInvalid ? 'Low must be ≤ high.' : undefined}
+    >
+      {typeof label !== 'string' ? <div className="mb-1">{label}</div> : null}
+      <div className="grid grid-cols-2 gap-2">
         <NumberInput
           step={step}
           value={low}
           onChange={setLow}
           className={inputClass}
           placeholder="Low"
-          aria-label={`${label} low`}
+          aria-label={`${typeof label === 'string' ? label : 'Range'} low`}
         />
         <NumberInput
           step={step}
@@ -76,24 +102,10 @@ export function RangeRow({
           onChange={setHigh}
           className={inputClass}
           placeholder="High"
-          aria-label={`${label} high`}
+          aria-label={`${typeof label === 'string' ? label : 'Range'} high`}
         />
-        {editableStep && (
-          <NumberInput
-            min="0"
-            step={step}
-            nullable
-            value={stepValue ?? null}
-            onChange={setStepValue}
-            className={inputClass}
-            placeholder="Step"
-            aria-label={`${label} step`}
-          />
-        )}
       </div>
-      {rangeInvalid && <p className={fieldErrorClass}>Low must be ≤ high.</p>}
-      {stepInvalid && <p className={fieldErrorClass}>Step must be greater than 0.</p>}
-    </div>
+    </LabeledField>
   )
 }
 
@@ -106,13 +118,13 @@ type FormSectionProps = {
 
 export function FormSection({ title, open, onToggle, children }: FormSectionProps) {
   return (
-    <div className="border-carbon-600/40 overflow-hidden rounded-lg border">
+    <Panel living className="overflow-hidden p-0">
       <button
         type="button"
         onClick={onToggle}
         className="hover:bg-carbon-800/30 flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors"
       >
-        <span className={sectionTitleClass}>{title}</span>
+        <SectionHeader title={title} />
         <ChevronDown
           className={cn(
             'text-silver-400 h-4 w-4 shrink-0 transition-transform',
@@ -120,7 +132,9 @@ export function FormSection({ title, open, onToggle, children }: FormSectionProp
           )}
         />
       </button>
-      {open && <div className="border-carbon-600/40 space-y-3 border-t px-3 py-3">{children}</div>}
-    </div>
+      {open ? (
+        <div className="border-carbon-600/40 space-y-3 border-t px-3 py-3">{children}</div>
+      ) : null}
+    </Panel>
   )
 }

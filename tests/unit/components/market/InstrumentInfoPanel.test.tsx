@@ -22,7 +22,7 @@ describe('InstrumentInfoPanel via DetailZone', () => {
 
     renderWithQueryClient(<DetailZone symbol="PETR4" snapshot={snapshot} />)
 
-    await user.click(screen.getByRole('button', { name: 'INFO' }))
+    await user.click(screen.getByRole('radio', { name: 'Info' }))
 
     await waitFor(() => {
       expect(screen.getByText(info.description)).toBeInTheDocument()
@@ -37,7 +37,7 @@ describe('InstrumentInfoPanel via DetailZone', () => {
 
     renderWithQueryClient(<DetailZone symbol="UNKNOWN" snapshot={undefined} />)
 
-    await user.click(screen.getByRole('button', { name: 'INFO' }))
+    await user.click(screen.getByRole('radio', { name: 'Info' }))
 
     await waitFor(() => {
       expect(screen.getByText('No instrument info available.')).toBeInTheDocument()

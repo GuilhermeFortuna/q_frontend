@@ -26,9 +26,9 @@ describe('ChartToolbar', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: '1D' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '1D' })).toBeInTheDocument()
 
-    await user.selectOptions(screen.getByRole('combobox'), 'line')
+    await user.click(screen.getByRole('radio', { name: 'Line' }))
     expect(onChartTypeChange).toHaveBeenCalledWith('line')
   })
 })

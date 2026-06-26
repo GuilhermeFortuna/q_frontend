@@ -7,6 +7,9 @@ import { ComplexityLine } from '@/components/discover/GenomeViewer'
 import { VirtualTableScroller } from '@/components/shared/VirtualTableBody'
 import type { VirtualRowMeta } from '@/components/shared/virtualRowMeta'
 import { Button } from '@/components/ui/button'
+import { LabeledField } from '@/components/ui/LabeledField'
+import { Panel } from '@/components/ui/Panel'
+import { inputClass } from '@/components/optimize/optimizeFormShared'
 import { gateFlagsLabel } from '@/lib/discover/candidateMetrics'
 import { candidateExitDisplayLabel } from '@/lib/discover/exitInsights'
 import {
@@ -278,27 +281,26 @@ export function LeaderboardTable({
   return (
     <div className="space-y-3">
       {showGenerationFilter ? (
-        <div className="flex items-center justify-end gap-2">
-          <label className="text-silver-500 text-xs" htmlFor="generation-filter">
-            Generation
-          </label>
-          <select
-            id="generation-filter"
-            value={generationFilter}
-            onChange={(event) => setGenerationFilter(event.target.value)}
-            className="border-brass-600/20 bg-carbon-950/50 text-silver-200 h-8 rounded-md border px-2 text-xs"
-          >
-            <option value={ALL_GENERATIONS}>All generations</option>
-            {generationOptions.map((g) => (
-              <option key={g} value={String(g)}>
-                Generation {g}
-              </option>
-            ))}
-          </select>
+        <div className="flex justify-end">
+          <LabeledField label="Generation" htmlFor="generation-filter" className="w-auto">
+            <select
+              id="generation-filter"
+              value={generationFilter}
+              onChange={(event) => setGenerationFilter(event.target.value)}
+              className={inputClass}
+            >
+              <option value={ALL_GENERATIONS}>All generations</option>
+              {generationOptions.map((g) => (
+                <option key={g} value={String(g)}>
+                  Generation {g}
+                </option>
+              ))}
+            </select>
+          </LabeledField>
         </div>
       ) : null}
 
-      <div className="border-carbon-600/40 overflow-x-auto rounded-lg border">
+      <Panel className="overflow-x-auto p-0">
         <VirtualTableScroller
           items={sortedCandidates}
           colSpan={columnCount}
@@ -356,7 +358,7 @@ export function LeaderboardTable({
           }
           renderRow={(candidate, _index, meta) => renderCandidateRows(candidate, meta)}
         />
-      </div>
+      </Panel>
     </div>
   )
 }

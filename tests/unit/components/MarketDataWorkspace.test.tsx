@@ -72,7 +72,7 @@ describe('MarketDataWorkspace', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Market Watch')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: '1D' })).toBeInTheDocument()
+      expect(screen.getByRole('radio', { name: '1D' })).toBeInTheDocument()
       expect(screen.getByText('Draw')).toBeInTheDocument()
       expect(
         screen.getAllByText(formatPrice(petrSnapshot.last, petrSnapshot.digits)).length,

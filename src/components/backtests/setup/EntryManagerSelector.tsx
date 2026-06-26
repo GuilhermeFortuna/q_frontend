@@ -1,5 +1,6 @@
 import { StrategyParamFields } from '@/components/shared/StrategyParamFields'
-import { cn } from '@/lib/utils'
+import { Panel, PanelHeader } from '@/components/ui/Panel'
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import type { EntryManagerState } from '@/lib/backtesting/entryInstances'
 import type { StrategyParamValue } from '@/lib/strategies/strategyParams'
 import type { SignalManagerInfo } from '@/types/strategies'
@@ -58,29 +59,17 @@ export function EntryManagerSelector({
   }
 
   return (
-    <section
-      className="bg-carbon-900/20 border-carbon-800/40 space-y-3 rounded-lg border p-3"
-      data-testid="entry-manager-selector"
-    >
-      <h5 className="text-silver-400 text-xs font-semibold tracking-wide uppercase">Manager</h5>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Entry manager">
-        {managers.map((manager) => (
-          <button
-            key={manager.id}
-            type="button"
-            aria-pressed={value.kind === manager.id}
-            onClick={() => handleKindChange(manager.id as EntryManagerState['kind'])}
-            className={cn(
-              'rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors',
-              value.kind === manager.id
-                ? 'border-brass-500/50 bg-brass-600/15 text-brass-400'
-                : 'border-carbon-600/40 bg-carbon-900/40 text-silver-300 hover:border-brass-500/30 hover:text-brass-400',
-            )}
-          >
-            {manager.label}
-          </button>
-        ))}
-      </div>
+    <Panel living className="space-y-3 p-3" data-testid="entry-manager-selector">
+      <PanelHeader title="Manager" />
+      <SegmentedToggle
+        aria-label="Entry manager"
+        options={managers.map((manager) => ({
+          value: manager.id as EntryManagerState['kind'],
+          label: manager.label,
+        }))}
+        value={value.kind}
+        onChange={handleKindChange}
+      />
       {showParams && majoritySpecs.length > 0 ? (
         <StrategyParamFields
           params={majoritySpecs}
@@ -91,6 +80,6 @@ export function EntryManagerSelector({
           hintMode="compact"
         />
       ) : null}
-    </section>
+    </Panel>
   )
 }

@@ -2,6 +2,8 @@ import type { LucideIcon } from 'lucide-react'
 import { Eraser, Layers, Minus, MousePointer, TrendingUp, Type } from 'lucide-react'
 
 import type { DrawingTool } from '@/components/charts/types/chart'
+import { SectionHeader } from '@/components/ui/SectionHeader'
+import { cn } from '@/lib/utils'
 
 const DRAWING_TOOLS: Array<{ tool: DrawingTool; icon: LucideIcon; title: string }> = [
   { tool: 'cursor', icon: MousePointer, title: 'Crosshair Cursor Pointer' },
@@ -23,34 +25,39 @@ export function DrawingRail({
   onClearDrawings,
 }: DrawingRailProps) {
   return (
-    <div className="surface-panel flex w-[44px] shrink-0 flex-col items-center gap-3.5 rounded-lg py-4">
-      <div className="text-silver-400 mb-1 text-[9px] font-semibold tracking-wider uppercase select-none">
-        Draw
-      </div>
+    <div className="surface-well flex w-[44px] shrink-0 flex-col items-center gap-3.5 rounded-lg py-4">
+      <SectionHeader title="Draw" className="mb-1 select-none" />
 
-      {DRAWING_TOOLS.map(({ tool, icon: Icon, title }) => (
-        <button
-          key={tool}
-          onClick={() => onActiveDrawingToolChange(tool)}
-          className={`flex h-8 w-8 items-center justify-center rounded transition-all duration-200 ${
-            activeDrawingTool === tool
-              ? 'from-brass-400 to-brass-500 text-carbon-950 scale-105 bg-gradient-to-br font-bold shadow-[0_0_12px_rgba(196,165,116,0.4)]'
-              : 'text-silver-400 hover:text-silver-100 hover:bg-carbon-800/50 hover:scale-105'
-          }`}
-          title={title}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      ))}
+      {DRAWING_TOOLS.map(({ tool, icon: Icon, title }) => {
+        const selected = activeDrawingTool === tool
+        return (
+          <button
+            key={tool}
+            type="button"
+            onClick={() => onActiveDrawingToolChange(tool)}
+            className={cn(
+              'flex h-8 w-8 items-center justify-center rounded-md transition-all duration-150',
+              'focus-visible:outline-brass-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
+              selected
+                ? 'accent-state text-gold-400'
+                : 'surface-control text-silver-400 hover:border-brass-500/40 hover:text-silver-100 active:scale-95',
+            )}
+            title={title}
+          >
+            <Icon className="h-4 w-4" />
+          </button>
+        )
+      })}
 
       <div className="border-carbon-700 my-2 w-8 border-t" />
 
       <button
+        type="button"
         onClick={() => {
           onClearDrawings()
           onActiveDrawingToolChange('cursor')
         }}
-        className="text-silver-400 hover:bg-carbon-700/60 flex h-8 w-8 items-center justify-center rounded transition-all hover:text-red-400 active:scale-90"
+        className="surface-control text-silver-400 flex h-8 w-8 items-center justify-center rounded-md transition-all hover:text-rose-400 active:scale-90"
         title="Clear all drawings"
         aria-label="Clear all drawings"
       >

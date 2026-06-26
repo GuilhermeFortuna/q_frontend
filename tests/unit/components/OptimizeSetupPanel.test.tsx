@@ -96,7 +96,7 @@ describe('OptimizeStrategyDetailPanel majority manager', () => {
     })
 
     await user.click(screen.getByRole('button', { name: /RSI Mean Reversion/i }))
-    await user.click(screen.getByRole('button', { name: /Majority vote/i }))
+    await user.click(screen.getByRole('radio', { name: /Majority vote/i }))
 
     await waitFor(() => {
       expect(screen.getAllByText('Vote Threshold').length).toBeGreaterThan(0)
