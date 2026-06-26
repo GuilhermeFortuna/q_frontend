@@ -26,6 +26,7 @@ export const particleVertexShader = `
 `
 
 export const particleFragmentShader = `
+  uniform float uGlow;
   varying vec3 vColor;
   varying float vTwinkle;
   varying float vGlint;
@@ -50,6 +51,7 @@ export const particleFragmentShader = `
     float alpha = min(1.0, (intensity + halo + core + spikes) * vTwinkle * 1.35);
 
     vec3 finalColor = mix(vColor, vec3(1.0, 0.9, 0.62), smoothstep(0.06, 0.0, dist) * 0.7);
+    finalColor = mix(finalColor, vec3(0.94, 0.62, 0.15), uGlow * 0.5);
 
     gl_FragColor = vec4(finalColor, alpha);
   }

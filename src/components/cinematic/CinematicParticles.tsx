@@ -2,6 +2,7 @@ import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
+import { useActiveJobs } from '@/hooks/useActiveJobs'
 import {
   particleFragmentShader,
   particleVertexShader,
@@ -227,21 +228,65 @@ export function CinematicParticles() {
     return () => window.removeEventListener('mousemove', handleMouseMove)
   }, [])
 
+  const activeJobs = useActiveJobs()
+  const hasActiveJobs = Object.keys(activeJobs).length > 0
+
+  const accumulatedTimeRef = useRef(0)
+  const currentSpeedRef = useRef(1.0)
+  const lastHasActiveJobsRef = useRef(false)
+  const glowRef = useRef(0.0)
+
   const scratch = useMemo(() => createParticleScratch(), [])
 
   // Shader Uniforms
-  const uniformsBg = useMemo(() => ({ uTime: { value: 0 } }), [])
-  const uniformsMid = useMemo(() => ({ uTime: { value: 0 } }), [])
-  const uniformsFg = useMemo(() => ({ uTime: { value: 0 } }), [])
+  const uniformsBg = useMemo(() => ({ uTime: { value: 0 }, uGlow: { value: 0 } }), [])
+  const uniformsMid = useMemo(() => ({ uTime: { value: 0 }, uGlow: { value: 0 } }), [])
+  const uniformsFg = useMemo(() => ({ uTime: { value: 0 }, uGlow: { value: 0 } }), [])
 
   useFrame((state) => {
-    const time = state.clock.getElapsedTime()
     const delta = Math.min(state.clock.getDelta(), MAX_DELTA)
 
-    // Update uTime uniform for shaders to trigger GPU twinkling animations
-    if (bgMaterialRef.current) bgMaterialRef.current.uniforms.uTime.value = time
-    if (midMaterialRef.current) midMaterialRef.current.uniforms.uTime.value = time
-    if (fgMaterialRef.current) fgMaterialRef.current.uniforms.uTime.value = time
+    // Smoothly interpolate speed factor based on active job states
+    const targetSpeed = hasActiveJobs ? 3.0 : 1.0
+    currentSpeedRef.current = THREE.MathUtils.lerp(
+      currentSpeedRef.current,
+      targetSpeed,
+      delta * 2.0,
+    )
+    accumulatedTimeRef.current += delta * currentSpeedRef.current
+
+    const time = accumulatedTimeRef.current
+
+    // Trigger success glow flash if a job transitions to complete (hasActiveJobs goes true -> false)
+    if (lastHasActiveJobsRef.current && !hasActiveJobs) {
+      glowRef.current = 1.0
+    }
+    lastHasActiveJobsRef.current = hasActiveJobs
+
+    // Decay the success glow flash
+    if (glowRef.current > 0.0) {
+      glowRef.current = Math.max(0.0, glowRef.current - delta * 0.4) // fades out over ~2.5s
+    }
+
+    // Gentle pulse glow during active jobs
+    const activePulse = hasActiveJobs
+      ? 0.2 + 0.1 * Math.sin(state.clock.getElapsedTime() * 4.0)
+      : 0.0
+    const finalGlow = Math.max(glowRef.current, activePulse)
+
+    // Update uniforms for shaders
+    if (bgMaterialRef.current) {
+      bgMaterialRef.current.uniforms.uTime.value = time
+      bgMaterialRef.current.uniforms.uGlow.value = finalGlow
+    }
+    if (midMaterialRef.current) {
+      midMaterialRef.current.uniforms.uTime.value = time
+      midMaterialRef.current.uniforms.uGlow.value = finalGlow
+    }
+    if (fgMaterialRef.current) {
+      fgMaterialRef.current.uniforms.uTime.value = time
+      fgMaterialRef.current.uniforms.uGlow.value = finalGlow
+    }
 
     // Smoothly lerp mouse coordinates to keep transitions soft
     lerpedMouse.current.x = THREE.MathUtils.lerp(lerpedMouse.current.x, mouse.current.x, MOUSE_LERP)
