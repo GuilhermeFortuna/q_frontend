@@ -96,6 +96,10 @@ export type FeatureEvalResultSummary = {
   cluster_count?: number
   top_global_score?: number | null
   matrix_id?: string
+  // Live progress while status === 'running' (overwritten by the final summary).
+  stage?: 'loading_data' | 'evaluating' | 'scoring'
+  processed_features?: number
+  total_features?: number
 }
 
 export type FeatureEvalRun = {
@@ -108,6 +112,7 @@ export type FeatureEvalRun = {
   feature_count: number
   matrix_id?: string
   result_summary?: FeatureEvalResultSummary | null
+  started_at?: string | null
   error_message?: string | null
   leaderboard: FeatureScoreRow[]
   clusters: FeatureEvalCluster[]

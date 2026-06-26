@@ -72,6 +72,11 @@ exploitable headroom a latent space could capture? If the evaluation says the cl
 its ceiling, the neural phases are deferred. The roadmap's Phase 3/4 are hypotheses, not committed
 work.
 
+**Neural latents (WO144):** trained encoder latents now flow through the same evaluation pipeline and
+appear in the Feature Scoring leaderboard via `feature_score_rows` — no separate UI. The Phase-2
+headroom question is answered empirically per model: `neural/gate.py` compares each latent's `|IC|`
+against the best classical baseline on the same target and OOS window. See `neural-features.md`.
+
 ## Architecture (Phase 1 + 2)
 
 ```

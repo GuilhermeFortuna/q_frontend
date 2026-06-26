@@ -13,7 +13,11 @@ import type { BacktestRequest } from '@/types/backtesting'
 
 const server = setupServer(...handlers)
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeAll(async () => {
+  server.listen({ onUnhandledRequest: 'error' })
+  // Preload the lazy optimize chunk so tests do not race Suspense under full-suite load.
+  await import('@/app/lazyWorkspaces')
+})
 beforeEach(() => {
   useAppStore.getState().patchBacktestSession({
     workflowMode: 'backtest',
@@ -70,16 +74,22 @@ describe('BacktestsWorkspace — workflow mode', () => {
 
     await user.click(screen.getByRole('button', { name: 'Optimization' }))
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Run Optimization' })).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByRole('button', { name: 'Run Optimization' })).toBeInTheDocument()
+      },
+      { timeout: 10000 },
+    )
   })
 
   it('opens in Optimization mode when initialMode is optimize', async () => {
     renderWithQueryClient(<BacktestsWorkspace initialMode="optimize" />)
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Run Optimization' })).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByRole('button', { name: 'Run Optimization' })).toBeInTheDocument()
+      },
+      { timeout: 10000 },
+    )
   })
 })
 

@@ -52,10 +52,9 @@ describe('BacktestSetupPanel — hydration from pending config', () => {
     renderWithQueryClient(<SetupPanelHarness />)
 
     const symbolInput = screen.getByPlaceholderText('e.g. PETR4') as HTMLInputElement
-    expect(symbolInput.value).toBe('VALE3')
-    expect(screen.getByDisplayValue('250000')).toBeInTheDocument()
-
     await waitFor(() => {
+      expect(symbolInput.value).toBe('VALE3')
+      expect(screen.getByDisplayValue('250000')).toBeInTheDocument()
       expect(screen.getByDisplayValue('12')).toBeInTheDocument()
       expect(screen.getByDisplayValue('48')).toBeInTheDocument()
       expect(useAppStore.getState().pendingBacktestConfig).toBeNull()

@@ -335,7 +335,7 @@ export function useBacktestConfig() {
   const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
 
   useEffect(() => {
-    if (strategies.length === 0 || paramsInitialized.current) return
+    if (strategies.length === 0 || paramsInitialized.current || pendingBacktestConfig) return
     const pool = strategies.filter((entry) => strategyEngine(entry) === engine)
     const info = pool.find((entry) => entry.name === strategy) ?? pool[0]
     if (!info) return
@@ -345,10 +345,10 @@ export function useBacktestConfig() {
       installSingleEntry(strategy, undefined, info)
     }
     paramsInitialized.current = true
-  }, [strategies, strategy, engine, installSingleEntry])
+  }, [strategies, strategy, engine, installSingleEntry, pendingBacktestConfig])
 
   useEffect(() => {
-    if (!pendingBacktestConfig) return
+    if (!pendingBacktestConfig || strategies.length === 0) return
     const cfg = pendingBacktestConfig
 
     if (cfg.symbol) setSymbol(cfg.symbol)

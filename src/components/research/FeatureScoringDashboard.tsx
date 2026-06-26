@@ -18,7 +18,59 @@ import { SectionHeader } from '@/components/ui/SectionHeader'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { StatTile } from '@/components/ui/StatTile'
 import { cn } from '@/lib/utils'
-import type { FeatureScoreRow } from '@/types/features'
+import type { FeatureEvalRun, FeatureScoreRow } from '@/types/features'
+
+const EVAL_STAGE_LABEL: Record<string, string> = {
+  loading_data: 'Loading market data',
+  evaluating: 'Evaluating features',
+  scoring: 'Scoring & clustering',
+}
+
+function evalProgress(run: FeatureEvalRun) {
+  const total = run.result_summary?.total_features ?? run.feature_count ?? 0
+  const processed = run.result_summary?.processed_features ?? 0
+  const pct = total > 0 ? Math.round((processed / total) * 100) : 0
+  return { total, processed, pct, stage: run.result_summary?.stage }
+}
+
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
+
+function EvalProgress({ run }: { run: FeatureEvalRun }) {
+  const { total, processed, pct, stage } = evalProgress(run)
+  const label = stage ? (EVAL_STAGE_LABEL[stage] ?? 'Evaluating') : 'Starting evaluation'
+  const elapsed = run.started_at
+    ? formatElapsed(Date.now() - new Date(run.started_at).getTime())
+    : null
+
+  return (
+    <Panel className="flex shrink-0 flex-col gap-2 p-4" data-testid="feature-scoring-progress">
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="text-cream-100 flex items-center gap-2">
+          <Loader2 className="text-brass-400 h-4 w-4 animate-spin" />
+          {label}…
+        </span>
+        <span className="text-silver-400 font-mono text-xs">
+          {processed} / {total} features{elapsed ? ` · ${elapsed}` : ''}
+        </span>
+      </div>
+      <div className="bg-carbon-800 h-2 w-full overflow-hidden rounded-full">
+        <div
+          className="bg-brass-500 h-full rounded-full transition-[width] duration-500 ease-out"
+          style={{ width: `${Math.max(pct, stage ? 4 : 0)}%` }}
+          role="progressbar"
+          aria-valuenow={processed}
+          aria-valuemin={0}
+          aria-valuemax={total}
+        />
+      </div>
+    </Panel>
+  )
+}
 
 export type FeatureScoringSource = 'latest' | 'eval'
 
@@ -51,7 +103,13 @@ function EmptyRunState({ onGoToLab }: { onGoToLab?: () => void }) {
   )
 }
 
-function LatestScoresPanel({ onSelectFeature }: { onSelectFeature?: (name: string) => void }) {
+function LatestScoresPanel({
+  onSelectFeature,
+  onGoToLab,
+}: {
+  onSelectFeature?: (name: string) => void
+  onGoToLab?: () => void
+}) {
   const leaderboardQuery = useFeatureLeaderboard()
 
   if (leaderboardQuery.isLoading) {
@@ -69,6 +127,11 @@ function LatestScoresPanel({ onSelectFeature }: { onSelectFeature?: (name: strin
         Failed to load latest feature scores.
       </div>
     )
+  }
+
+  // Genuinely no scores yet (fresh install) → point at the Lab.
+  if (leaderboardQuery.data.features.length === 0) {
+    return <EmptyRunState onGoToLab={onGoToLab} />
   }
 
   const rows: FeatureScoreRow[] = leaderboardQuery.data.features.map((item, index) => ({
@@ -148,13 +211,22 @@ function EvalRunDashboard({
             )}
             data-testid="feature-scoring-live-badge"
           >
-            Live · {run.leaderboard.length} feature{run.leaderboard.length === 1 ? '' : 's'}
+            Live · {evalProgress(run).processed} / {evalProgress(run).total}
           </span>
         ) : null}
       </div>
 
+      {isRunning ? <EvalProgress run={run} /> : null}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Features evaluated" value={String(run.leaderboard.length)} />
+        <StatTile
+          label="Features evaluated"
+          value={
+            isRunning
+              ? `${evalProgress(run).processed} / ${evalProgress(run).total}`
+              : String(run.leaderboard.length)
+          }
+        />
         <StatTile label="Target" value={`${run.target_name}:${run.target_horizon}`} />
         <StatTile label="Clusters" value={String(clusterCount)} />
         <StatTile label="Top score" value={formatFeatureScore(topScore)} highlight />
@@ -221,12 +293,10 @@ export function FeatureScoringDashboard({
         />
       </div>
 
-      {source === 'latest' ? (
-        <LatestScoresPanel onSelectFeature={onSelectFeature} />
-      ) : runId ? (
+      {source === 'eval' && runId ? (
         <EvalRunDashboard runId={runId} onSelectFeature={onSelectFeature} />
       ) : (
-        <EmptyRunState onGoToLab={onGoToLab} />
+        <LatestScoresPanel onSelectFeature={onSelectFeature} onGoToLab={onGoToLab} />
       )}
     </Panel>
   )

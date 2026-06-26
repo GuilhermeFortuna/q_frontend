@@ -89,7 +89,9 @@ function FeatureLabTab({ recentRuns, onEvalStarted, onOpenRun }: FeatureLabTabPr
 
 export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
   const navigate = useNavigate({ from: '/research' })
-  const [scoringSource, setScoringSource] = useState<FeatureScoringSource>('eval')
+  // Default to the aggregate "Latest scores" leaderboard so the Scoring tab shows
+  // persisted results on load; a started eval switches this to 'eval' + a runId.
+  const [scoringSource, setScoringSource] = useState<FeatureScoringSource>('latest')
   // Start with no run selected — the Scoring tab shows its "run an evaluation" empty
   // state until a real eval is started from the Lab (no mock run id seeded).
   const [scoringRunId, setScoringRunId] = useState<string | null>(null)

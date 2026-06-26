@@ -457,7 +457,8 @@ export function useOptimizeConfig() {
   const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
 
   useEffect(() => {
-    if (strategies.length === 0 || searchSpaceInitialized.current) return
+    if (strategies.length === 0 || searchSpaceInitialized.current || pendingOptimizationConfig)
+      return
     const pool = strategies.filter((entry) => strategyEngine(entry) === engine)
     const info = pool.find((entry) => entry.name === strategy) ?? pool[0]
     if (!info) return
@@ -467,7 +468,7 @@ export function useOptimizeConfig() {
       installSingleEntry(strategy, info)
     }
     searchSpaceInitialized.current = true
-  }, [strategies, strategy, engine, installSingleEntry])
+  }, [strategies, strategy, engine, installSingleEntry, pendingOptimizationConfig])
 
   useEffect(() => {
     setCandidateExitRuleIds(initialCandidateExitRuleIds(applicableExitRules, exitParamSpecs))
@@ -502,7 +503,7 @@ export function useOptimizeConfig() {
   }
 
   useEffect(() => {
-    if (!pendingOptimizationConfig) return
+    if (!pendingOptimizationConfig || strategies.length === 0) return
     const hydrated = hydrateOptimizeFormFromConfig(pendingOptimizationConfig, strategies)
 
     setSymbol(hydrated.symbol)
@@ -835,7 +836,8 @@ export function useOptimizeConfig() {
     candidateExitParamSpecs,
     managerParamSpecs,
     toggleExitRule,
-    strategiesLoading: strategiesLoading || customStrategiesLoading,
+    strategiesLoading,
+    customStrategiesLoading,
     validation,
     buildOptimizationConfig: buildOptimizationConfigPayload,
   }

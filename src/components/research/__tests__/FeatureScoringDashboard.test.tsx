@@ -1,4 +1,5 @@
 import { setupServer } from 'msw/node'
+import { http, HttpResponse } from 'msw'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
@@ -145,13 +146,27 @@ describe('FeatureScoringDashboard', () => {
     expect(screen.queryByTestId('redundancy-cluster-panel')).toBeInTheDocument()
   })
 
-  it('shows the Feature Lab pointer when runId is empty', async () => {
+  it('shows live progress (bar + N/total) while an evaluation is running', async () => {
+    renderDashboard({ runId: MOCK_RUNNING_EVAL_RUN_ID })
+
+    const progress = await screen.findByTestId('feature-scoring-progress')
+    expect(progress).toBeInTheDocument()
+    // A progressbar with the evaluated/total bounds.
+    const bar = within(progress).getByRole('progressbar')
+    expect(bar).toHaveAttribute('aria-valuemax', '4')
+    // The live badge reflects processed / total rather than a feature label.
+    expect(screen.getByTestId('feature-scoring-live-badge')).toHaveTextContent('1 / 4')
+  })
+
+  it('shows the Feature Lab pointer only when there are no scores yet', async () => {
     const user = userEvent.setup()
     const onGoToLab = vi.fn()
+    // Latest-scores view with a genuinely empty leaderboard (fresh install).
+    server.use(http.get('*/api/v1/features/leaderboard', () => HttpResponse.json({ features: [] })))
 
     renderWithQueryClient(
       <FeatureScoringDashboard
-        source="eval"
+        source="latest"
         runId={null}
         onSourceChange={vi.fn()}
         onRunIdChange={vi.fn()}
@@ -160,11 +175,31 @@ describe('FeatureScoringDashboard', () => {
       />,
     )
 
-    expect(screen.getByTestId('feature-scoring-empty')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('feature-scoring-empty')).toBeInTheDocument()
+    })
     expect(screen.getByText(/Run a feature evaluation in the Feature Lab/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Open Feature Lab' }))
     expect(onGoToLab).toHaveBeenCalled()
+  })
+
+  it('renders the latest-scores leaderboard when a run is not selected', async () => {
+    renderWithQueryClient(
+      <FeatureScoringDashboard
+        source="latest"
+        runId={null}
+        onSourceChange={vi.fn()}
+        onRunIdChange={vi.fn()}
+        runOptions={runOptions}
+        onGoToLab={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('feature-leaderboard-panel')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('feature-scoring-empty')).not.toBeInTheDocument()
   })
 
   it('opens the passport drill-in when a leaderboard row is clicked', async () => {

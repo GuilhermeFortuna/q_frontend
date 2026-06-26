@@ -382,6 +382,20 @@ export function featureEvalRunFromJob(job: MockEvalJob): FeatureEvalRun {
     .filter((row) => row.is_representative)
     .map((row) => row.feature_id)
   const topScore = Math.max(...fullLeaderboard.map((row) => row.global_score ?? 0))
+  const isActive = job.status === 'running' || job.status === 'pending'
+
+  const result_summary = isActive
+    ? {
+        stage: 'evaluating' as const,
+        processed_features: Math.min(1, featureNames.length),
+        total_features: featureNames.length,
+      }
+    : {
+        recommended_feature_ids: recommended,
+        cluster_count: clusters.length,
+        top_global_score: topScore,
+        matrix_id: 'matrix_mock_59df0155',
+      }
 
   return {
     run_id: job.run_id,
@@ -392,12 +406,8 @@ export function featureEvalRunFromJob(job: MockEvalJob): FeatureEvalRun {
     target_horizon: job.request.target.horizon,
     feature_count: featureNames.length,
     matrix_id: 'matrix_mock_59df0155',
-    result_summary: {
-      recommended_feature_ids: recommended,
-      cluster_count: clusters.length,
-      top_global_score: topScore,
-      matrix_id: 'matrix_mock_59df0155',
-    },
+    result_summary,
+    started_at: new Date(job.start_time).toISOString(),
     leaderboard,
     clusters,
     heatmap: buildHeatmap(leaderboard),
