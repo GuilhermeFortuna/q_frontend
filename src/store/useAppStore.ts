@@ -42,6 +42,7 @@ export const useAppStore = create<AppStore>()(
         autoBrightnessHighStart: state.autoBrightnessHighStart,
         autoBrightnessMidStart: state.autoBrightnessMidStart,
         autoBrightnessLowStart: state.autoBrightnessLowStart,
+        motionMode: state.motionMode,
       }),
     },
   ),

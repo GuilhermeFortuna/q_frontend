@@ -37,6 +37,30 @@
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
+
+  /* Neutral-black surface fills (elevation ladder — warmth lives in accents + light, not fill) */
+  --surface-base-1: #181613;
+  --surface-base-2: #0e0e0d;
+  --surface-raised-1: #1a1916;
+  --surface-raised-2: #121211;
+  --surface-well-top: #0a0a09;
+  --surface-well-bottom: #0d0d0c;
+  --surface-well: #0a0a09;
+
+  /* Warm edge-light highlights (raised surfaces read via light, not lightness) */
+  --edge-warm: rgba(255, 224, 170, 0.13);
+  --edge-warm-strong: rgba(255, 240, 210, 0.12);
+
+  /* Frosted panel glass (WO121) */
+  --panel-blur: 11px;
+
+  /* Living panel tunables (WO120 + WO121) — grain removed in WO121 Rev 1 (sandpaper on glass) */
+  --panel-light-strength: 1.8;
+  --panel-top-light: color-mix(
+    in srgb,
+    rgba(255, 240, 224, 0.085) calc(var(--panel-light-strength) * 100%),
+    transparent
+  );
 }
 
 @layer base {
@@ -97,6 +121,23 @@
   initial-value: 0;
 }
 
+/* Pointer position for living-panel sheen + launcher spotlight. MUST be registered:
+   WebKit (Tauri/WebKitGTK, Safari) does NOT repaint a gradient whose center is driven by an
+   *unregistered* custom property, so the sheen froze at the 50% default while --spot-x updated
+   (Chromium repaints either way). Typed registration makes WebKit re-rasterize on change.
+   `inherits: true` so each panel's inline value reaches its ::before/::after. */
+@property --spot-x {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 50%;
+}
+
+@property --spot-y {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 50%;
+}
+
 /* Registered glow angle property for GPU-accelerated gradient animations */
 @property --glow-angle {
   syntax: '<angle>';
@@ -132,6 +173,17 @@
   .price-flash-down {
     animation: price-flash-down 600ms ease-out;
     border-radius: var(--radius-sm);
+  }
+
+  .number-input--steppers {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .number-input--steppers::-webkit-outer-spin-button,
+  .number-input--steppers::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 
   .market-panel-resize-handle {
@@ -198,7 +250,7 @@
     transition: none;
   }
 
-  /* Shimmer sweep effect for premium card hover highlighting */
+  /* Shimmer sweep — hero-only; calm default for dense grids (keyframes kept for migration WOs). */
   .quant-panel--shimmer {
     position: relative;
     overflow: hidden;
@@ -221,13 +273,16 @@
     );
     transform: rotate(-15deg) translate(-100%, -100%);
     pointer-events: none;
+    opacity: 0;
   }
 
-  .quant-panel--shimmer:hover::after {
+  .quant-panel--shimmer.quant-panel--glow-hero:hover::after {
+    opacity: 1;
     animation: quant-shimmer-sweep 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
   }
 
-  .quant-panel--shimmer-loop::after {
+  .quant-panel--shimmer-loop.quant-panel--glow-hero::after {
+    opacity: 1;
     animation: quant-shimmer-sweep 8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
   }
 
@@ -241,10 +296,14 @@
     }
   }
 
-  /* Glow backplate + gradient border for active highlights (static; no breathing in grids) */
+  /* Glow backplate — calm by default; full bloom only on single hero surfaces. */
   .quant-panel--glow,
   .surface-card--glow {
     position: relative;
+  }
+
+  .quant-panel--glow.quant-panel--glow-hero,
+  .surface-card--glow.quant-panel--glow-hero {
     box-shadow:
       0 1px 0 rgba(212, 176, 106, 0.08) inset,
       0 8px 28px -10px rgba(0, 0, 0, 0.55),
@@ -252,8 +311,8 @@
     border-color: rgba(217, 158, 34, 0.25) !important;
   }
 
-  .quant-panel--glow::before,
-  .surface-card--glow::before {
+  .quant-panel--glow.quant-panel--glow-hero::before,
+  .surface-card--glow.quant-panel--glow-hero::before {
     content: '';
     position: absolute;
     inset: -1px;
@@ -276,8 +335,8 @@
     z-index: 0;
   }
 
-  .quant-panel--glow:hover::before,
-  .surface-card--glow:hover::before {
+  .quant-panel--glow.quant-panel--glow-hero:hover::before,
+  .surface-card--glow.quant-panel--glow-hero:hover::before {
     opacity: 1;
     background: linear-gradient(
       135deg,
@@ -470,6 +529,28 @@
 
   .animate-edge-ripple {
     animation: edge-ripple-sweep 850ms cubic-bezier(0.1, 0.8, 0.15, 1) forwards;
+  }
+
+  /* --- Accent ladder utilities (compose with surface-* roles) --- */
+  .accent-wayfinding {
+    color: var(--color-brass-600);
+  }
+
+  .accent-interactive {
+    transition: border-color 200ms ease;
+  }
+
+  .accent-interactive:hover,
+  .accent-interactive:focus-visible {
+    border-color: var(--color-brass-500);
+  }
+
+  .accent-state {
+    background: linear-gradient(165deg, var(--surface-raised-1), var(--surface-raised-2) 75%);
+    border-top-color: rgba(255, 210, 120, 0.5);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 210, 120, 0.5),
+      0 0 18px -4px rgba(217, 158, 34, 0.35);
   }
 }
 

@@ -1,28 +1,28 @@
 import { useEffect } from 'react'
 
+import {
+  SPOTLIGHT_SELECTOR,
+  writeLivingSpotVars,
+  writeSpotVars,
+} from '@/components/effects/pointerSpotlightUtils'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useAppStore } from '@/store/useAppStore'
 
 /**
- * App-wide pointer-reactive lighting.
+ * App-wide pointer-reactive lighting for living panels and launcher spotlights.
  *
- * A single rAF-throttled `pointermove` listener finds `.quant-panel--spotlight` /
- * `.surface-panel--spotlight` under the cursor and writes panel-local coordinates
- * the cursor and writes panel-local coordinates into `--spot-x` / `--spot-y`,
- * toggling `.is-lit` (drives the ::after highlight opacity). The CSS in
- * globals.css keeps the radial highlight on a compositor-promoted overlay so
- * panel content does not repaint on pointer move.
+ * One rAF-throttled `pointermove` listener writes panel-local `--spot-x` / `--spot-y`
+ * to every `.surface-panel--living` ancestor of the pointer target, and toggles `.is-lit`
+ * on leaf launcher spotlight panels.
  *
  * Renders nothing; mount once near the app root.
  */
 export function PointerSpotlight() {
   const activeWorkspace = useAppStore((s) => s.activeWorkspace)
+  const reducedMotion = usePrefersReducedMotion()
 
   useEffect(() => {
-    if (activeWorkspace !== 'launcher') {
-      return
-    }
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (reducedMotion) {
       return
     }
 
@@ -30,31 +30,28 @@ export function PointerSpotlight() {
     let clientX = 0
     let clientY = 0
     let target: Element | null = null
-    let raw: Element | null = null
-    let lit: HTMLElement | null = null
+    let spotlightRaw: HTMLElement | null = null
+    let spotlightLit: HTMLElement | null = null
 
     const flush = () => {
       raf = 0
-      const next =
-        target?.closest<HTMLElement>('.quant-panel--spotlight, .surface-panel--spotlight') ?? null
 
-      if (next !== raw) {
-        raw = next
-        lit?.classList.remove('is-lit')
-        // Only light leaf panels. Container panels (the big workspace shells that
-        // wrap card panels) would otherwise glow in their dead space when the
-        // cursor sits between their children.
-        lit =
-          next && !next.querySelector('.quant-panel--spotlight, .surface-panel--spotlight')
-            ? next
-            : null
-        lit?.classList.add('is-lit')
+      if (target) {
+        writeLivingSpotVars(target, clientX, clientY)
       }
 
-      if (lit) {
-        const rect = lit.getBoundingClientRect()
-        lit.style.setProperty('--spot-x', `${clientX - rect.left}px`)
-        lit.style.setProperty('--spot-y', `${clientY - rect.top}px`)
+      if (activeWorkspace === 'launcher') {
+        const nextSpotlight = target?.closest<HTMLElement>(SPOTLIGHT_SELECTOR) ?? null
+        if (nextSpotlight !== spotlightRaw) {
+          spotlightRaw = nextSpotlight
+          spotlightLit?.classList.remove('is-lit')
+          spotlightLit =
+            nextSpotlight && !nextSpotlight.querySelector(SPOTLIGHT_SELECTOR) ? nextSpotlight : null
+          spotlightLit?.classList.add('is-lit')
+        }
+        if (spotlightLit) {
+          writeSpotVars(spotlightLit, clientX, clientY)
+        }
       }
     }
 
@@ -70,9 +67,9 @@ export function PointerSpotlight() {
         cancelAnimationFrame(raf)
         raf = 0
       }
-      lit?.classList.remove('is-lit')
-      lit = null
-      raw = null
+      spotlightLit?.classList.remove('is-lit')
+      spotlightLit = null
+      spotlightRaw = null
       target = null
     }
 
@@ -86,7 +83,7 @@ export function PointerSpotlight() {
       window.removeEventListener('blur', clear)
       clear()
     }
-  }, [activeWorkspace])
+  }, [activeWorkspace, reducedMotion])
 
   return null
 }

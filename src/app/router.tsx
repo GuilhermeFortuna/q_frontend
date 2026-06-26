@@ -16,6 +16,7 @@ import {
   LazySystemWorkspace,
   LazyWalkForwardWorkspace,
 } from '@/app/lazyWorkspaces'
+import { LazyDevUiGallery } from '@/app/lazyDev'
 import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
 import { AppShell } from '@/components/layout/AppShell'
 import { useAppStore } from '@/store/useAppStore'
@@ -202,6 +203,19 @@ const routeTree = rootRoute.addChildren([
   discoverRoute,
   newsReaderRoute,
   strategyRoute,
+  ...(import.meta.env.DEV
+    ? [
+        createRoute({
+          getParentRoute: () => rootRoute,
+          path: '/dev/ui',
+          component: () => (
+            <LazyRouteBoundary label="Loading UI gallery">
+              <LazyDevUiGallery />
+            </LazyRouteBoundary>
+          ),
+        }),
+      ]
+    : []),
 ])
 
 export const router = createRouter({

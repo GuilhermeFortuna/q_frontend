@@ -1,24 +1,25 @@
 /**
  * Premium shell material system — baked depth without per-element compositor tax.
  *
- * Roles:
+ * Roles (elevation ladder):
+ * - surface-well (−2): recessed inputs, segmented tracks, select wells
+ * - surface-panel (0): workspace shells / primary panels (frosted glass)
+ * - surface-card (+1): repeated cards, list tiles (no blur, no animated shadows)
+ * - surface-control (+1): buttons, inputs, selects
+ * - surface-overlay (+2): modals, popovers, HUD scrims
+ * - surface-float (+2): chart / 3D workspace float overlays
  * - surface-shell: header, dock, major chrome (blur allowed, few instances)
- * - surface-panel: workspace shells / primary panels (no blur)
- * - surface-card: repeated cards, list tiles (no blur, no animated shadows)
- * - surface-control: buttons, inputs, selects
- * - surface-overlay: modals, popovers, HUD scrims
  */
 
 @layer utilities {
   /* --- Shell (top-level chrome; backdrop blur permitted) --- */
   .surface-shell {
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-espresso-950) 88%, transparent),
-      color-mix(in srgb, var(--color-carbon-950) 90%, transparent)
-    );
+    background: linear-gradient(180deg, var(--surface-base-1), var(--surface-base-2));
     border-color: color-mix(in srgb, var(--color-brass-600) 15%, transparent);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+    border-top-color: var(--edge-warm);
+    box-shadow:
+      inset 0 1px 0 var(--edge-warm),
+      0 4px 30px rgba(0, 0, 0, 0.4);
   }
 
   .surface-shell--blur {
@@ -26,7 +27,23 @@
     -webkit-backdrop-filter: blur(16px);
   }
 
-  /* --- Panel (primary workspace surfaces) --- */
+  /* --- Well (−2 recessed: inputs, segmented tracks, select wells) --- */
+  .surface-well {
+    background: linear-gradient(180deg, var(--surface-well-top), var(--surface-well-bottom));
+    border: 1px solid rgba(146, 120, 74, 0.34);
+    box-shadow:
+      inset 0 3px 5px rgba(0, 0, 0, 0.7),
+      inset 0 -1px 0 rgba(255, 228, 180, 0.13);
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .surface-well:hover {
+    border-color: rgba(217, 158, 34, 0.35);
+  }
+
+  /* --- Panel (0 reference plane; frosted translucent workspace surfaces) --- */
   .surface-panel,
   .quant-panel {
     --spot-x: 50%;
@@ -34,19 +51,89 @@
     --spot-o: 0;
     isolation: isolate;
     position: relative;
-    background: linear-gradient(145deg, rgba(26, 16, 8, 0.72), rgba(17, 19, 21, 0.82));
-    border: 1px solid rgba(168, 139, 82, 0.18);
+    background: linear-gradient(
+      158deg,
+      color-mix(in srgb, var(--surface-base-1) 72%, transparent),
+      color-mix(in srgb, var(--surface-base-2) 78%, transparent)
+    );
+    backdrop-filter: blur(var(--panel-blur)) saturate(1.04);
+    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.04);
+    border: 1px solid rgba(150, 124, 78, 0.3);
+    border-top-color: rgba(214, 178, 120, 0.34);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      0 8px 28px -10px rgba(0, 0, 0, 0.55);
+      inset 0 1px 0 rgba(255, 236, 200, 0.1),
+      0 18px 40px -24px rgba(0, 0, 0, 0.78);
     transition:
       border-color 250ms ease,
-      background-color 250ms ease;
+      box-shadow 250ms ease;
   }
 
   .surface-panel:hover,
   .quant-panel:hover {
-    border-color: rgba(196, 165, 116, 0.28);
+    border-color: rgba(196, 165, 116, 0.36);
+    border-top-color: rgba(214, 178, 120, 0.4);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 236, 200, 0.12),
+      0 20px 44px -22px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Opt-in living panels: lit-from-above volume at rest, cursor sheen on hover.
+     No grain/texture — it inherits the frosted `surface-panel` glass; grain blew up into
+     sandpaper on the lightened glass (overlay/soft-light has high contrast on mid-gray). */
+
+  .surface-panel--living::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(
+          in srgb,
+          rgba(255, 240, 224, 0.05) calc(var(--panel-light-strength) * 100%),
+          transparent
+        ),
+        transparent 60%
+      ),
+      radial-gradient(150% 80% at 50% -20%, var(--panel-top-light), transparent 55%),
+      radial-gradient(130% 90% at 50% 120%, rgba(0, 0, 0, 0.34), transparent 60%);
+  }
+
+  .surface-panel--living::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(
+      420px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+      rgba(255, 198, 96, 0.1),
+      rgba(217, 158, 34, 0.035) 45%,
+      transparent 68%
+    );
+    opacity: 0;
+    transition: opacity 400ms ease;
+    will-change: opacity;
+  }
+
+  .surface-panel--living:hover::after {
+    opacity: 1;
+  }
+
+  .surface-panel--living > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Reduced motion is driven by a JS-set root attribute (not the @media query directly) so the
+     app-level motion preference can override WebKitGTK's false `prefers-reduced-motion: reduce`. */
+  :root[data-reduced-motion='true'] .surface-panel--living::after {
+    opacity: 0;
+    transition: none;
   }
 
   /* Launcher-only pointer spotlight — opacity overlay, no backdrop-filter. */
@@ -74,36 +161,41 @@
     border-color: rgba(217, 158, 34, 0.45);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .surface-panel--spotlight,
-    .quant-panel--spotlight,
-    .surface-panel--spotlight.is-lit,
-    .quant-panel--spotlight.is-lit {
-      --spot-o: 0;
-    }
-
-    .surface-panel--spotlight::after,
-    .quant-panel--spotlight::after {
-      transition: none;
-    }
+  :root[data-reduced-motion='true'] .surface-panel--spotlight,
+  :root[data-reduced-motion='true'] .quant-panel--spotlight,
+  :root[data-reduced-motion='true'] .surface-panel--spotlight.is-lit,
+  :root[data-reduced-motion='true'] .quant-panel--spotlight.is-lit {
+    --spot-o: 0;
   }
 
-  /* --- Card (dense grids; static depth only) --- */
+  :root[data-reduced-motion='true'] .surface-panel--spotlight::after,
+  :root[data-reduced-motion='true'] .quant-panel--spotlight::after {
+    transition: none;
+  }
+
+  /* --- Card (+1 raised; dense grids — static depth only) --- */
   .surface-card {
     isolation: isolate;
     position: relative;
-    background: linear-gradient(150deg, rgba(24, 27, 31, 0.94), rgba(17, 19, 21, 0.97));
-    border: 1px solid rgba(46, 51, 59, 0.9);
+    background: linear-gradient(165deg, var(--surface-raised-1), var(--surface-raised-2) 75%);
+    border: 1px solid rgba(0, 0, 0, 0.55);
+    border-top-color: var(--edge-warm);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.04),
-      0 4px 14px -8px rgba(0, 0, 0, 0.42);
+      inset 0 1px 0 rgba(255, 224, 170, 0.11),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+      0 7px 16px -7px rgba(0, 0, 0, 0.78);
     transition:
       border-color 250ms ease,
+      box-shadow 250ms ease,
       transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .surface-card:hover {
-    border-color: rgba(196, 165, 116, 0.26);
+    border-top-color: rgba(255, 228, 180, 0.18);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 224, 170, 0.14),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+      0 9px 20px -7px rgba(0, 0, 0, 0.82);
   }
 
   /* Static top-edge highlight for metric tiles (no animation). */
@@ -116,20 +208,28 @@
     background: linear-gradient(180deg, rgba(255, 202, 71, 0.07) 0%, transparent 42%);
   }
 
-  /* --- Control (interactive primitives) --- */
+  /* --- Control (+1 raised; interactive primitives) --- */
   .surface-control {
-    background: color-mix(in srgb, var(--color-carbon-800) 92%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-carbon-700) 80%, transparent);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+    background: linear-gradient(165deg, var(--surface-raised-1), var(--surface-raised-2) 75%);
+    border: 1px solid rgba(0, 0, 0, 0.55);
+    border-top-color: var(--edge-warm);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 224, 170, 0.09),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+      0 4px 12px -6px rgba(0, 0, 0, 0.65);
     transition:
       border-color 200ms ease,
-      background-color 200ms ease,
+      box-shadow 200ms ease,
       transform 350ms cubic-bezier(0.16, 1, 0.3, 1),
       opacity 200ms ease;
   }
 
   .surface-control:hover {
-    border-color: color-mix(in srgb, var(--color-carbon-600) 90%, transparent);
+    border-top-color: rgba(255, 228, 180, 0.16);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 224, 170, 0.12),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+      0 5px 14px -6px rgba(0, 0, 0, 0.7);
   }
 
   .surface-control:focus-visible {
@@ -137,7 +237,7 @@
     outline-offset: 2px;
   }
 
-  /* --- Overlay (modals / popovers) --- */
+  /* --- Overlay (+2 floats; modals / popovers) --- */
   .surface-overlay-scrim {
     background: color-mix(in srgb, var(--color-espresso-950) 72%, transparent);
     backdrop-filter: blur(12px);
@@ -145,12 +245,13 @@
   }
 
   .surface-overlay {
-    background: linear-gradient(155deg, rgba(24, 27, 31, 0.98), rgba(17, 19, 21, 0.99));
+    background: linear-gradient(165deg, #1d1814, #120f0b 72%);
     border: 1px solid rgba(168, 139, 82, 0.22);
+    border-top-color: rgba(214, 178, 120, 0.3);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      0 0 50px -12px rgba(196, 165, 116, 0.28),
-      0 24px 48px -16px rgba(0, 0, 0, 0.65);
+      inset 0 1px 0 var(--edge-warm-strong),
+      0 0 40px -10px rgba(196, 165, 116, 0.25),
+      0 26px 50px -18px rgba(0, 0, 0, 0.85);
   }
 
   .surface-overlay--hud {
@@ -159,11 +260,15 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   }
 
-  /* --- Chart / 3D workspace float (single-instance overlays) --- */
+  /* --- Chart / 3D workspace float (+2; single-instance overlays) --- */
   .surface-float {
-    background: color-mix(in srgb, var(--color-carbon-950) 78%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-brass-600) 12%, transparent);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    background: linear-gradient(165deg, #1d1814, #120f0b 72%);
+    border: 1px solid rgba(168, 139, 82, 0.22);
+    border-top-color: rgba(214, 178, 120, 0.3);
+    box-shadow:
+      inset 0 1px 0 var(--edge-warm-strong),
+      0 0 40px -10px rgba(196, 165, 116, 0.25),
+      0 26px 50px -18px rgba(0, 0, 0, 0.85);
   }
 
   .surface-float--blur {

@@ -26,7 +26,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="bg-carbon-950/70 fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="surface-overlay-scrim fixed inset-0 z-50 flex items-center justify-center p-4"
       role="presentation"
       onClick={onCancel}
     >
@@ -35,9 +35,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        className={cn(
-          'border-carbon-600/60 bg-carbon-900 w-full max-w-md rounded-xl border p-5 shadow-xl',
-        )}
+        className={cn('surface-overlay w-full max-w-md rounded-xl p-5')}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="confirm-dialog-title" className="text-silver-100 text-lg font-semibold">

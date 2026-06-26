@@ -23,16 +23,18 @@ describe('material system roles', () => {
     expect(materialsCss).toContain('.surface-overlay')
   })
 
-  it('restricts backdrop-filter to shell, overlay scrims, and float overlays', () => {
+  it('restricts backdrop-filter to shell, panels, overlay scrims, and float overlays', () => {
     const blurBlocks = materialsCss.match(/backdrop-filter/g) ?? []
-    expect(blurBlocks.length).toBeGreaterThanOrEqual(3)
+    expect(blurBlocks.length).toBeGreaterThanOrEqual(4)
     expect(materialsCss).not.toMatch(/\.surface-card\s*\{[^}]*backdrop-filter/s)
-    expect(materialsCss).not.toMatch(/\.surface-panel\s*\{[^}]*backdrop-filter/s)
+    expect(materialsCss).not.toMatch(/\.surface-well\s*\{[^}]*backdrop-filter/s)
+    expect(materialsCss).toMatch(/\.surface-panel,\s*\n\s*\.quant-panel[\s\S]*backdrop-filter/)
   })
 
-  it('removed global quant-panel backdrop blur', () => {
+  it('uses tunable frosted glass on panels, not a global quant-panel rule (WO121)', () => {
+    expect(globalsCss).toContain('--panel-blur')
+    expect(materialsCss).toMatch(/backdrop-filter:\s*blur\(var\(--panel-blur\)\)/)
     expect(globalsCss).not.toMatch(/:where\(\.quant-panel\)[^}]*backdrop-filter/s)
-    expect(materialsCss).not.toMatch(/\.quant-panel\s*\{[^}]*backdrop-filter/s)
   })
 
   it('scopes pointer spotlight to spotlight modifier classes', () => {
@@ -43,15 +45,15 @@ describe('material system roles', () => {
 })
 
 describe('repeated card paint policy', () => {
-  it('uses surface-card without filter drop-shadow in LibraryCard', () => {
-    expect(libraryCardSource).toContain('surface-card')
+  it('uses surface-card via EntityCard in LibraryCard', () => {
+    expect(libraryCardSource).toContain('EntityCard')
     expect(libraryCardSource).not.toMatch(/'quant-panel /)
     expect(libraryCardSource).not.toMatch(/drop-shadow|filter:/)
     expect(libraryCardSource).not.toContain('box-shadow')
   })
 
-  it('uses surface-card in StrategyLibrary custom strategy tiles', () => {
-    expect(strategyLibrarySource).toContain('surface-card')
+  it('uses EntityCard for custom strategy tiles in StrategyLibrary', () => {
+    expect(strategyLibrarySource).toContain('EntityCard')
     expect(strategyLibrarySource).not.toMatch(/transition-\[transform,border-color,box-shadow\]/)
   })
 })

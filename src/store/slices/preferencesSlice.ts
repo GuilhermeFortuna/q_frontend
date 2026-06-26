@@ -2,6 +2,17 @@ import type { StateCreator } from 'zustand'
 
 export type BrightnessMode = 'high' | 'mid' | 'low' | 'auto'
 
+/**
+ * Ambient-motion preference for decorative effects (cinematic particles, panel sheen).
+ * 'full'   — always animate (default; premium look).
+ * 'system' — honor `prefers-reduced-motion`.
+ * Default is 'full' because WebKitGTK (Tauri desktop) reports `prefers-reduced-motion: reduce`
+ * from the GTK "enable animations" setting, which falsely disabled all ambient effects on the
+ * desktop app while Chromium (web) reported `no-preference`. The toggle lets reduced-motion
+ * users opt back to 'system'.
+ */
+export type MotionMode = 'full' | 'system'
+
 export type PreferencesSlice = {
   sidebarCollapsed: boolean
   toggleSidebar: () => void
@@ -15,6 +26,8 @@ export type PreferencesSlice = {
     midStart?: number
     lowStart?: number
   }) => void
+  motionMode: MotionMode
+  setMotionMode: (mode: MotionMode) => void
 }
 
 export const createPreferencesSlice: StateCreator<PreferencesSlice> = (set) => ({
@@ -34,4 +47,6 @@ export const createPreferencesSlice: StateCreator<PreferencesSlice> = (set) => (
       autoBrightnessMidStart: config.midStart ?? state.autoBrightnessMidStart,
       autoBrightnessLowStart: config.lowStart ?? state.autoBrightnessLowStart,
     })),
+  motionMode: 'full',
+  setMotionMode: (mode) => set({ motionMode: mode }),
 })

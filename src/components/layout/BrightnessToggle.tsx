@@ -1,6 +1,7 @@
 import { Sun, SunDim, SunMoon } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { useResolvedBrightness } from '@/hooks/useResolvedBrightness'
+import { cn } from '@/lib/utils'
 
 export function BrightnessToggle() {
   const brightnessMode = useAppStore((s) => s.brightnessMode)
@@ -44,7 +45,10 @@ export function BrightnessToggle() {
   return (
     <button
       onClick={handleToggle}
-      className="border-brass-600/30 bg-brass-600/5 hover:border-brass-500/60 hover:bg-brass-600/15 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border shadow-[0_0_10px_rgba(196,165,116,0.02)] transition-all duration-300 hover:shadow-[0_0_12px_rgba(196,165,116,0.1)] focus:outline-none active:scale-95"
+      className={cn(
+        'surface-control accent-interactive flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border',
+        'focus-visible:outline-brass-500 transition-[transform,box-shadow] duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95',
+      )}
       title={getTitle()}
       aria-label="Toggle brightness mode"
     >
