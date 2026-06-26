@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { Loader2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import { useFeatureList, useStartFeatureEval } from '@/api/queries/features'
+import { useFeatureLeaderboard, useFeatureList, useStartFeatureEval } from '@/api/queries/features'
 import { FeatureLabCompareView } from '@/components/research/FeatureLabCompareView'
 import { FeatureLabFeaturePicker } from '@/components/research/FeatureLabFeaturePicker'
 import { FeatureLabInstrumentFields } from '@/components/research/FeatureLabInstrumentFields'
@@ -16,7 +16,6 @@ import {
   type FeatureLabFormState,
   type TargetFamily,
 } from '@/components/research/featureLabUtils'
-import { mockRecommendedFeatureNames } from '@/mocks/features'
 import { Button } from '@/components/ui/button'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
@@ -61,7 +60,7 @@ export function FeatureLab({ onEvalStarted, onOpenRun, recentRuns }: FeatureLabP
     startDate: defaultBacktestStart,
     endDate: defaultBacktestEnd,
     targetName: 'fwd_return',
-    horizon: 0,
+    horizon: 5,
     selectedFeatures: new Set(),
   })
   const [savedSetA, setSavedSetA] = useState<FeatureLabConfigSnapshot | null>(null)
@@ -70,6 +69,7 @@ export function FeatureLab({ onEvalStarted, onOpenRun, recentRuns }: FeatureLabP
   const [formError, setFormError] = useState<string | null>(null)
 
   const featureListQuery = useFeatureList()
+  const leaderboardQuery = useFeatureLeaderboard()
   const startEval = useStartFeatureEval()
 
   const features = featureListQuery.data?.features ?? []
@@ -81,7 +81,21 @@ export function FeatureLab({ onEvalStarted, onOpenRun, recentRuns }: FeatureLabP
     setFormError(null)
   }
 
-  const recommendedFeatureNames = useMemo(() => mockRecommendedFeatureNames, [])
+  // The "recommended" shortcut reflects whatever the latest leaderboard has scored.
+  // Empty until at least one evaluation has run — no recommendation is fabricated.
+  const recommendedFeatureNames = useMemo(
+    () => (leaderboardQuery.data?.features ?? []).map((item) => item.feature_name),
+    [leaderboardQuery.data],
+  )
+
+  const missingFields = useMemo(() => {
+    const missing: string[] = []
+    if (formState.symbol.trim().length === 0) missing.push('symbol')
+    if (!(formState.startDate < formState.endDate)) missing.push('a valid date range')
+    if (formState.horizon < 1) missing.push('a horizon ≥ 1')
+    if (formState.selectedFeatures.size === 0) missing.push('at least one feature')
+    return missing
+  }, [formState])
 
   const handleEvaluate = async () => {
     if (!isValid || !featureListQuery.data) {
@@ -236,6 +250,12 @@ export function FeatureLab({ onEvalStarted, onOpenRun, recentRuns }: FeatureLabP
             </p>
           </div>
         )}
+
+        {!isValid && missingFields.length > 0 ? (
+          <p className="text-silver-400 text-xs" data-testid="feature-lab-missing-fields">
+            Set {missingFields.join(', ')} to enable evaluation.
+          </p>
+        ) : null}
 
         {formError ? (
           <p className="text-sm text-rose-400" data-testid="feature-lab-error">

@@ -7,7 +7,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import { FeatureLab } from '@/components/research/FeatureLab'
 import { handlers } from '@/mocks/handlers'
-import { mockRecommendedFeatureNames, resetMockFeatureState } from '@/mocks/features'
+import { mockFeatureLeaderboard, resetMockFeatureState } from '@/mocks/features'
 import { renderWithQueryClient } from '../../../../tests/unit/testUtils'
 
 const server = setupServer(...handlers)
@@ -108,7 +108,7 @@ describe('FeatureLab', () => {
     expect((capturedBodies[0] as { start: string; end: string }).end).toBeTruthy()
   })
 
-  it('preselects exactly the recommended feature set', async () => {
+  it('preselects exactly the scored features from the latest leaderboard', async () => {
     const user = userEvent.setup()
     renderFeatureLab()
 
@@ -118,8 +118,12 @@ describe('FeatureLab', () => {
 
     await user.click(screen.getByTestId('feature-lab-recommended-only'))
 
+    const expected = mockFeatureLeaderboard
+      .map((item) => item.feature_name)
+      .sort()
+      .join(', ')
     const selected = screen.getByTestId('feature-lab-selected-count')
-    expect(selected).toHaveTextContent(mockRecommendedFeatureNames.sort().join(', '))
+    expect(selected).toHaveTextContent(expected)
   })
 
   it('runs compare mode and shows both leaderboards', async () => {

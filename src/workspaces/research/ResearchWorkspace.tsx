@@ -9,7 +9,6 @@ import {
 } from '@/components/research/FeatureScoringDashboard'
 import { FeatureStorePanel } from '@/components/research/FeatureStoreTable'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
-import { MOCK_COMPLETED_EVAL_RUN_ID, mockRecentEvalRuns } from '@/mocks/features'
 import type { ResearchTab } from '@/types/features'
 
 // Neural Features tab is intentionally deferred until backend Phase 3/4 lands.
@@ -91,13 +90,10 @@ function FeatureLabTab({ recentRuns, onEvalStarted, onOpenRun }: FeatureLabTabPr
 export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
   const navigate = useNavigate({ from: '/research' })
   const [scoringSource, setScoringSource] = useState<FeatureScoringSource>('eval')
-  const [scoringRunId, setScoringRunId] = useState<string | null>(MOCK_COMPLETED_EVAL_RUN_ID)
-  const [recentRuns, setRecentRuns] = useState<FeatureLabRecentRun[]>(() =>
-    mockRecentEvalRuns.map((run) => ({
-      runId: run.run_id,
-      label: run.label,
-    })),
-  )
+  // Start with no run selected — the Scoring tab shows its "run an evaluation" empty
+  // state until a real eval is started from the Lab (no mock run id seeded).
+  const [scoringRunId, setScoringRunId] = useState<string | null>(null)
+  const [recentRuns, setRecentRuns] = useState<FeatureLabRecentRun[]>([])
 
   const scoringRunOptions = useMemo(
     () =>
