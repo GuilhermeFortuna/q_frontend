@@ -57,6 +57,7 @@ describe('CinematicScene', () => {
 
   it('disables the animation loop when reduced motion is preferred', () => {
     setReducedMotion(true)
+    useAppStore.setState({ motionMode: 'system' })
 
     render(<CinematicScene />)
 

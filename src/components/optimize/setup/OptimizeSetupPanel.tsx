@@ -5,7 +5,7 @@ import { useSignalManagers } from '@/api/queries/strategies'
 import { OptimizeMarketConfigBand } from '@/components/optimize/setup/OptimizeMarketConfigBand'
 import { OptimizeStrategyDetailPanel } from '@/components/optimize/setup/OptimizeStrategyDetailPanel'
 import { OptimizeStudyBand } from '@/components/optimize/setup/OptimizeStudyBand'
-import { Button } from '@/components/ui/button'
+import { Button, Callout } from '@/components/ui'
 import type { useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
 import type { OptimizationConfig } from '@/types/optimization'
 
@@ -121,9 +121,9 @@ export function OptimizeSetupPanel({
         ) : null}
 
         {error ? (
-          <div className="mt-4 rounded-md border border-rose-500/20 bg-rose-500/10 p-3 text-xs break-words text-rose-400">
+          <Callout type="error" title="Optimization Failed" className="mt-4">
             {error}
-          </div>
+          </Callout>
         ) : null}
       </div>
     </form>

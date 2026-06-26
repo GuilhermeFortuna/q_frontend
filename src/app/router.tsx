@@ -12,6 +12,7 @@ import {
   LazyLauncherWorkspace,
   LazyMarketDataWorkspace,
   LazyNewsReaderWorkspace,
+  LazyResearchWorkspace,
   LazyStorageWorkspace,
   LazySystemWorkspace,
   LazyWalkForwardWorkspace,
@@ -21,6 +22,7 @@ import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
 import { AppShell } from '@/components/layout/AppShell'
 import { useAppStore } from '@/store/useAppStore'
 import type { WorkspaceId } from '@/types/api'
+import type { ResearchTab } from '@/types/features'
 
 let initialRedirectDone = false
 
@@ -43,11 +45,7 @@ const indexRoute = createRoute({
   beforeLoad: () => {
     if (!initialRedirectDone) {
       initialRedirectDone = true
-      let active = useAppStore.getState().activeWorkspace
-      if ((active as string) === 'research') {
-        useAppStore.getState().setActiveWorkspace('launcher')
-        active = 'launcher'
-      }
+      const active = useAppStore.getState().activeWorkspace
       if (active && active !== 'launcher') {
         if (active === 'validate') {
           throw redirect({ to: '/validate' })
@@ -163,6 +161,32 @@ const discoverRoute = createRoute({
   ),
 })
 
+type ResearchSearch = {
+  tab?: ResearchTab
+}
+
+function parseResearchTab(value: unknown): ResearchTab {
+  if (value === 'scoring' || value === 'lab' || value === 'store') return value
+  return 'store'
+}
+
+const researchRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/research',
+  validateSearch: (search: Record<string, unknown>): ResearchSearch => ({
+    tab: parseResearchTab(search.tab),
+  }),
+  beforeLoad: () => syncWorkspace('research'),
+  component: () => {
+    const search = researchRoute.useSearch()
+    return (
+      <LazyRouteBoundary label="Loading research">
+        <LazyResearchWorkspace tab={search.tab ?? 'store'} />
+      </LazyRouteBoundary>
+    )
+  },
+})
+
 const strategyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/strategy',
@@ -201,6 +225,7 @@ const routeTree = rootRoute.addChildren([
   optimizeRoute,
   validateRoute,
   discoverRoute,
+  researchRoute,
   newsReaderRoute,
   strategyRoute,
   ...(import.meta.env.DEV

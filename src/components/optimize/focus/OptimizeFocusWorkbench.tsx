@@ -7,6 +7,7 @@ import { OptimizeSetupPanel } from '@/components/optimize/setup/OptimizeSetupPan
 import { buildResultsFromStatus } from '@/lib/optimize/buildResultsFromStatus'
 import type { useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
 import { cn } from '@/lib/utils'
+import { Callout } from '@/components/ui'
 import type { BacktestWorkbenchFocus } from '@/store/slices/jobSessionsSlice'
 import type {
   OptimizationBacktestConfig,
@@ -131,10 +132,10 @@ export function OptimizeFocusWorkbench({
         {resultsExpanded ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {status?.status === 'error' ? (
-              <div className="flex flex-1 items-center justify-center">
-                <div className="max-w-md rounded-md border border-rose-500/20 bg-rose-500/10 p-4 text-sm break-words text-rose-400">
+              <div className="flex flex-1 items-center justify-center p-4">
+                <Callout type="error" title="Optimization Failed" className="max-w-md">
                   Optimization failed: {status.error ?? 'unknown error'}
-                </div>
+                </Callout>
               </div>
             ) : hasResults ? (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

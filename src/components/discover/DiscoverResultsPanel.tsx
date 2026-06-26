@@ -13,8 +13,7 @@ import { DiscoverProgress } from '@/components/discover/DiscoverProgress'
 import { DiscoverLogs } from '@/components/discover/DiscoverLogs'
 import { LeaderboardTable } from '@/components/discover/LeaderboardTable'
 import { LazyLiveSwarmVisualizer3D } from '@/components/discover/LazyLiveSwarmVisualizer3D'
-import { Button } from '@/components/ui/button'
-import { Panel } from '@/components/ui/Panel'
+import { Button, Panel, Callout } from '@/components/ui'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { StatTile } from '@/components/ui/StatTile'
@@ -111,10 +110,10 @@ export function DiscoverResultsPanel({
 
   if (status?.status === 'failed') {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <div className="max-w-md rounded-md border border-rose-500/20 bg-rose-500/10 p-4 text-sm break-words text-rose-400">
+      <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+        <Callout type="error" title="Search Failed" className="max-w-md">
           Strategy search failed: {status.error ?? 'unknown error'}
-        </div>
+        </Callout>
       </div>
     )
   }

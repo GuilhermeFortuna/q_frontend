@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { Button, Callout } from '@/components/ui'
 import { OptimizationProgress } from '@/components/optimize/OptimizationProgress'
 import { OptimizationResultsTabs } from '@/components/optimize/OptimizationResultsTabs'
 import { buildResultsFromStatus } from '@/lib/optimize/buildResultsFromStatus'
@@ -60,10 +60,10 @@ export function OptimizationResultsPanel({
 
   if (status?.status === 'error') {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <div className="max-w-md rounded-md border border-rose-500/20 bg-rose-500/10 p-4 text-sm break-words text-rose-400">
+      <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+        <Callout type="error" title="Optimization Failed" className="max-w-md">
           Optimization failed: {status.error ?? 'unknown error'}
-        </div>
+        </Callout>
       </div>
     )
   }

@@ -13,8 +13,7 @@ import {
   formatBulkDeleteDescription,
   HistorySelectionToolbar,
 } from '@/components/shared/HistorySelectionToolbar'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button, ConfirmDialog, Callout, HistoryCard } from '@/components/ui'
 import { useHistorySelection } from '@/hooks/useHistorySelection'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { buildResultsFromStatus } from '@/lib/optimize/buildResultsFromStatus'
@@ -62,65 +61,40 @@ function StudyListItem({
   onSelect: () => void
   onToggleCheck: () => void
 }) {
-  const handleRowClick = () => {
-    if (selectionMode) {
-      onToggleCheck()
-      return
-    }
-    onSelect()
-  }
-
-  return (
-    <div
-      className={cn(
-        'border-carbon-600/60 hover:border-brass-500/40 relative w-full rounded-lg border transition-colors',
-        selected && !selectionMode ? 'border-brass-500/60 bg-brass-500/5' : 'bg-carbon-900/30',
-        selectionMode && checked ? 'border-brass-500/40 bg-brass-500/5' : null,
-      )}
-    >
-      <div className="flex items-start gap-2 p-3">
-        {selectionMode ? (
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={onToggleCheck}
-            onClick={(e) => e.stopPropagation()}
-            className="border-carbon-500 text-brass-500 mt-1 h-3.5 w-3.5 shrink-0 rounded"
-            aria-label={`Select study ${study.name}`}
-          />
-        ) : null}
-
-        <button
-          type="button"
-          onClick={handleRowClick}
-          className="min-w-0 flex-1 text-left"
-          aria-label={`Select study ${study.name}`}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-silver-100 truncate text-sm font-medium">{study.name}</p>
-              <p className="text-silver-400 mt-0.5 text-xs">
-                {study.completed_trials}/{study.n_trials} trials ·{' '}
-                {formatDistanceToNow(new Date(study.created_at), { addSuffix: true })}
-              </p>
-            </div>
-            <span
-              className={cn(
-                'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize',
-                statusStyles[study.status],
-              )}
-            >
-              {study.status}
-            </span>
-          </div>
-
-          <div className="text-silver-300 mt-2 text-xs tabular-nums">
-            Best objective{' '}
-            <span className="text-brass-400">{formatBestValue(study.best_value)}</span>
-          </div>
-        </button>
+  const metricsContent = (
+    <div className="flex items-center justify-between text-[10px]">
+      <div className="flex flex-col">
+        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+          Trials Progress
+        </span>
+        <span className="text-silver-200 mt-0.5 text-[11px] font-semibold">
+          {study.completed_trials} / {study.n_trials} trials
+        </span>
+      </div>
+      <div className="flex flex-col items-end">
+        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+          Best Objective
+        </span>
+        <span className="text-brass-400 mt-0.5 font-mono text-[11px] font-bold">
+          {formatBestValue(study.best_value)}
+        </span>
       </div>
     </div>
+  )
+
+  return (
+    <HistoryCard
+      title={study.name}
+      subtitle={formatDistanceToNow(new Date(study.created_at), { addSuffix: true })}
+      status={study.status}
+      statusClassName={statusStyles[study.status]}
+      selectionMode={selectionMode}
+      checked={checked}
+      onToggleCheck={onToggleCheck}
+      selected={selected}
+      onSelect={onSelect}
+      metrics={metricsContent}
+    />
   )
 }
 
@@ -278,27 +252,29 @@ export function OptimizationHistoryPanel({
                   error
                 </span>
               </div>
-              <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-400">
+              <Callout type="error" title="Study Failed" className="mb-4">
                 {status.error ?? 'Optimization failed.'}
-              </div>
+              </Callout>
               {canContinue && (
-                <div className="border-carbon-600/40 bg-brass-500/5 mt-4 rounded-lg border p-4">
-                  <p className="text-silver-300 text-sm">
-                    The saved configuration has been loaded into the optimizer form. Adjust
-                    parameters and run again to retry this study.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="brass"
-                    className="mt-3"
-                    onClick={() =>
-                      onContinueStudy(selectedStudyId, status.optimization_config!, status.status)
-                    }
-                  >
-                    <Play className="h-4 w-4" />
-                    Continue optimization
-                  </Button>
-                </div>
+                <Callout
+                  type="info"
+                  title="Optimizer Config Loaded"
+                  action={
+                    <Button
+                      type="button"
+                      variant="brass"
+                      onClick={() =>
+                        onContinueStudy(selectedStudyId, status.optimization_config!, status.status)
+                      }
+                    >
+                      <Play className="h-4 w-4" />
+                      Continue optimization
+                    </Button>
+                  }
+                >
+                  The saved configuration has been loaded into the optimizer form. Adjust parameters
+                  and run again to retry this study.
+                </Callout>
               )}
             </div>
           ) : isActiveStudy && status && backtest ? (
@@ -322,23 +298,26 @@ export function OptimizationHistoryPanel({
                 statusLabel="Study running — live analytics available"
               />
               {canContinue && (
-                <div className="border-carbon-600/40 bg-brass-500/5 mt-4 shrink-0 rounded-lg border p-4">
-                  <p className="text-silver-300 text-sm">
-                    This study is still running. Resume monitoring or adjust the loaded config in
-                    the workbench.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="brass"
-                    className="mt-3"
-                    onClick={() =>
-                      onContinueStudy(selectedStudyId, status.optimization_config!, status.status)
-                    }
-                  >
-                    <Play className="h-4 w-4" />
-                    Resume monitoring
-                  </Button>
-                </div>
+                <Callout
+                  type="info"
+                  title="Study In Progress"
+                  className="mt-4 shrink-0"
+                  action={
+                    <Button
+                      type="button"
+                      variant="brass"
+                      onClick={() =>
+                        onContinueStudy(selectedStudyId, status.optimization_config!, status.status)
+                      }
+                    >
+                      <Play className="h-4 w-4" />
+                      Resume monitoring
+                    </Button>
+                  }
+                >
+                  This study is still running. Resume monitoring or adjust the loaded config in the
+                  workbench.
+                </Callout>
               )}
             </div>
           ) : resultsQuery.isLoading ? (
@@ -379,24 +358,27 @@ export function OptimizationHistoryPanel({
                 }
               />
               {canContinue && (
-                <div className="border-carbon-600/40 bg-brass-500/5 mt-4 shrink-0 rounded-lg border p-4">
-                  <p className="text-silver-300 text-sm">
-                    {isActiveStudy
-                      ? 'This study is still running. Resume monitoring or adjust the loaded config in the workbench.'
-                      : 'The saved configuration has been loaded into the optimizer form. Adjust trial count or search space, then run again to continue exploring.'}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="brass"
-                    className="mt-3"
-                    onClick={() =>
-                      onContinueStudy(selectedStudyId, status.optimization_config!, status.status)
-                    }
-                  >
-                    <Play className="h-4 w-4" />
-                    {isActiveStudy ? 'Resume monitoring' : 'Continue optimization'}
-                  </Button>
-                </div>
+                <Callout
+                  type="info"
+                  title={isActiveStudy ? 'Study In Progress' : 'Optimizer Config Loaded'}
+                  className="mt-4 shrink-0"
+                  action={
+                    <Button
+                      type="button"
+                      variant="brass"
+                      onClick={() =>
+                        onContinueStudy(selectedStudyId, status.optimization_config!, status.status)
+                      }
+                    >
+                      <Play className="h-4 w-4" />
+                      {isActiveStudy ? 'Resume monitoring' : 'Continue optimization'}
+                    </Button>
+                  }
+                >
+                  {isActiveStudy
+                    ? 'This study is still running. Resume monitoring or adjust the loaded config in the workbench.'
+                    : 'The saved configuration has been loaded into the optimizer form. Adjust trial count or search space, then run again to continue exploring.'}
+                </Callout>
               )}
             </div>
           )}

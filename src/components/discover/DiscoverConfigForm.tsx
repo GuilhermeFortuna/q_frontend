@@ -13,7 +13,7 @@ import { OptimizeStudySection } from '@/components/optimize/OptimizeStudySection
 import { FormSection } from '@/components/optimize/optimizeFormShared'
 import { InstrumentConfigFields } from '@/components/shared/InstrumentConfigFields'
 import { WalkForwardWindowsSection } from '@/components/walkforward/WalkForwardWindowsSection'
-import { Button } from '@/components/ui/button'
+import { Button, Callout } from '@/components/ui'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import { estimateWalkForwardWindowCount } from '@/lib/walkforward/windowCount'
 import { validateGeneticConfig, validateLockboxConfig } from '@/lib/discover/geneticConfigSchema'
@@ -397,9 +397,9 @@ export function DiscoverConfigForm({
           ) : null}
 
           {error ? (
-            <div className="mt-3 rounded-md border border-rose-500/20 bg-rose-500/10 p-3 text-xs break-words text-rose-400">
+            <Callout type="error" title="Search Failed" className="mt-3">
               {error}
-            </div>
+            </Callout>
           ) : null}
         </div>
       </form>

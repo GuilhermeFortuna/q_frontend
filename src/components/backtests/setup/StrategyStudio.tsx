@@ -1,5 +1,6 @@
 import { Plus, Save, Trash2 } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { Callout } from '@/components/ui'
 
 import { EntryManagerSelector } from '@/components/backtests/setup/EntryManagerSelector'
 import { ExitStrategyCards } from '@/components/backtests/setup/ExitStrategyCards'
@@ -263,9 +264,9 @@ export function StrategyStudio({
         </div>
 
         {authoring.authoringError ? (
-          <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+          <Callout type="error" title="Strategy Code Error" className="mb-2">
             {authoring.authoringError}
-          </div>
+          </Callout>
         ) : null}
 
         {renderAiSection()}

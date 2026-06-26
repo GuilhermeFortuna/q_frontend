@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { Button, Callout } from '@/components/ui'
 import { MarketConfigBand } from '@/components/backtests/setup/MarketConfigBand'
 import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
@@ -61,18 +61,20 @@ export function BacktestSetupPanel({
         </Button>
 
         {aiWorkflowBlocker ? (
-          <div
-            className="mt-3 rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100"
+          <Callout
+            type="warning"
+            title="Simulation Blocked"
+            className="mt-3"
             data-testid="run-simulation-ai-blocker"
           >
             {aiWorkflowBlocker}
-          </div>
+          </Callout>
         ) : null}
 
         {error ? (
-          <div className="mt-4 rounded-md border border-rose-500/20 bg-rose-500/10 p-3 text-xs break-words text-rose-400">
+          <Callout type="error" title="Simulation Failed" className="mt-4">
             {error}
-          </div>
+          </Callout>
         ) : null}
       </div>
     </form>

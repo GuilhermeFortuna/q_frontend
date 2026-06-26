@@ -10,12 +10,9 @@ import {
   useWalkForwardStatus,
 } from '@/api/queries/walkforward'
 import { WalkForwardResultsView } from '@/components/walkforward/WalkForwardResultsView'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Panel, PanelHeader } from '@/components/ui/Panel'
+import { Button, ConfirmDialog, Panel, PanelHeader, Callout, HistoryCard } from '@/components/ui'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { formatEfficiencyRatio } from '@/lib/walkforward/objectiveMetric'
-import { cn } from '@/lib/utils'
 import type { WalkForwardJobStatus, WalkForwardRunSummary } from '@/types/walkforward'
 import { shouldFetchWalkForwardResults } from '@/types/walkforward'
 
@@ -41,36 +38,37 @@ function RunListItem({
   selected: boolean
   onSelect: () => void
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'border-carbon-600/60 hover:border-brass-500/40 w-full rounded-lg border p-3 text-left transition-colors',
-        selected ? 'border-brass-500/60 bg-brass-500/5' : 'bg-carbon-900/30',
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-silver-100 truncate text-sm font-medium">{run.name}</p>
-          <p className="text-silver-400 mt-0.5 text-xs">
-            {run.symbol ?? '—'} · {run.strategy ?? '—'} · {run.window_count} windows ·{' '}
-            {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
-          </p>
-        </div>
-        <span
-          className={cn(
-            'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize',
-            statusStyles[run.status],
-          )}
-        >
-          {run.status}
+  const metricsContent = (
+    <div className="flex items-center justify-between text-[10px]">
+      <div className="flex flex-col">
+        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+          Objective Metrics
+        </span>
+        <span className="text-silver-200 mt-0.5 text-[11px] font-semibold">
+          {run.symbol ?? '—'} · {run.strategy ?? '—'} · {run.window_count} windows
         </span>
       </div>
-      <div className="text-silver-300 mt-2 text-xs tabular-nums">
-        Efficiency <span className="text-brass-400">{formatEfficiencyRatio(run.efficiency)}</span>
+      <div className="flex flex-col items-end">
+        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+          Efficiency
+        </span>
+        <span className="text-brass-400 mt-0.5 font-mono text-[11px] font-bold">
+          {formatEfficiencyRatio(run.efficiency)}
+        </span>
       </div>
-    </button>
+    </div>
+  )
+
+  return (
+    <HistoryCard
+      title={run.name}
+      subtitle={formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
+      status={run.status}
+      statusClassName={statusStyles[run.status]}
+      selected={selected}
+      onSelect={onSelect}
+      metrics={metricsContent}
+    />
   )
 }
 
@@ -189,9 +187,9 @@ export function WalkForwardHistoryPanel({
                   Delete
                 </Button>
               </div>
-              <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-400">
+              <Callout type="error" title="Run Failed">
                 {status.error ?? 'Walk-forward run failed.'}
-              </div>
+              </Callout>
             </div>
           ) : resultsQuery.isLoading || equityArtifactQuery.isLoading ? (
             <div className="text-silver-400 flex flex-1 items-center justify-center gap-2 text-sm">

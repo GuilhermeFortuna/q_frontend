@@ -477,7 +477,6 @@ export function DiscoverIcon({ className }: DockIconProps) {
         }
       `}</style>
 
-      {/* Compass face */}
       <circle cx="12" cy="12" r="9" stroke="url(#gold-grad-discover)" strokeWidth="1.25" />
       <circle
         cx="12"
@@ -488,13 +487,11 @@ export function DiscoverIcon({ className }: DockIconProps) {
         strokeOpacity="0.3"
       />
 
-      {/* Compass directions ticks */}
       <line x1="12" y1="3" x2="12" y2="4.5" stroke="#f5d08f" strokeWidth="1" />
       <line x1="12" y1="19.5" x2="12" y2="21" stroke="#f5d08f" strokeWidth="1" />
       <line x1="3" y1="12" x2="4.5" y2="12" stroke="#f5d08f" strokeWidth="1" />
       <line x1="19.5" y1="12" x2="21" y2="12" stroke="#f5d08f" strokeWidth="1" />
 
-      {/* Dial needle */}
       <path
         d="M12 5L14 12L12 19L10 12L12 5Z"
         fill="url(#gold-grad-discover)"
@@ -503,8 +500,58 @@ export function DiscoverIcon({ className }: DockIconProps) {
         strokeLinejoin="round"
         className="compass-pointer"
       />
-      {/* Pivot point */}
       <circle cx="12" cy="12" r="1.5" fill="#f5d08f" stroke="#8c6a38" strokeWidth="0.5" />
+    </svg>
+  )
+}
+
+export function ResearchIcon({ className }: DockIconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn('h-6 w-6 overflow-visible', className)}
+    >
+      <defs>
+        <linearGradient
+          id="gold-grad-research"
+          x1="4"
+          y1="4"
+          x2="20"
+          y2="20"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#f5d08f" />
+          <stop offset="100%" stopColor="#8c6a38" />
+        </linearGradient>
+      </defs>
+      <style>{`
+        .research-flask {
+          transform-origin: 12px 14px;
+          transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .group:hover .research-flask {
+          transform: translateY(-1px) rotate(-4deg);
+        }
+      `}</style>
+
+      <path
+        d="M10 3H14V8L18.5 16.5C19.3 18 18.2 19.5 16.5 19.5H7.5C5.8 19.5 4.7 18 5.5 16.5L10 8V3Z"
+        stroke="url(#gold-grad-research)"
+        strokeWidth="1.25"
+        strokeLinejoin="round"
+        className="research-flask"
+      />
+      <path
+        d="M9 6H15"
+        stroke="url(#gold-grad-research)"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+      />
+      <circle cx="10" cy="14" r="1" fill="#f5d08f" />
+      <circle cx="13.5" cy="16" r="0.8" fill="#cfab6c" />
+      <circle cx="11.5" cy="17.5" r="0.7" fill="#f5d08f" />
     </svg>
   )
 }

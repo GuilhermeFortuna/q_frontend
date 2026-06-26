@@ -10,12 +10,9 @@ import {
   useCancelStrategySearch,
 } from '@/api/queries/strategySearch'
 import { DiscoverResultsPanel } from '@/components/discover/DiscoverResultsPanel'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Panel, PanelHeader } from '@/components/ui/Panel'
+import { Button, ConfirmDialog, Panel, PanelHeader, Callout, HistoryCard } from '@/components/ui'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { formatObjectiveMetricValue, objectiveMetricLabel } from '@/lib/walkforward/objectiveMetric'
-import { cn } from '@/lib/utils'
 import type { StrategySearchJobStatus, StrategySearchRunSummary } from '@/types/strategySearch'
 import { shouldFetchStrategySearchResults } from '@/types/strategySearch'
 
@@ -41,42 +38,41 @@ function RunListItem({
   selected: boolean
   onSelect: () => void
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'border-carbon-600/60 hover:border-brass-500/40 w-full rounded-lg border p-3 text-left transition-colors',
-        selected ? 'border-brass-500/60 bg-brass-500/5' : 'bg-carbon-900/30',
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-silver-100 truncate text-sm font-medium">{run.name}</p>
-          <p className="text-silver-400 mt-0.5 text-xs">
-            {run.symbol ?? '—'} · {run.candidate_count} candidates ·{' '}
-            {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
-          </p>
-        </div>
-        <span
-          className={cn(
-            'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize',
-            statusStyles[run.status],
-          )}
-        >
-          {run.status}
+  const metricsContent = (
+    <div className="flex items-center justify-between text-[10px]">
+      <div className="flex flex-col">
+        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+          Objective Metrics
+        </span>
+        <span className="text-silver-200 mt-0.5 text-[11px] font-semibold">
+          {run.symbol ?? '—'} · {run.candidate_count} candidates
         </span>
       </div>
-      <div className="text-silver-300 mt-2 text-xs">
-        Best: <span className="text-brass-400">{run.best_strategy ?? '—'}</span>
-        {run.best_objective_value != null ? (
-          <>
-            {' · OOS '}
-            <span className="font-mono tabular-nums">{run.best_objective_value.toFixed(3)}</span>
-          </>
-        ) : null}
+      <div className="flex flex-col items-end">
+        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+          Best Strategy
+        </span>
+        <span
+          className="text-brass-400 mt-0.5 max-w-[8rem] truncate text-[11px] font-bold"
+          title={run.best_strategy ?? '—'}
+        >
+          {run.best_strategy ?? '—'}
+          {run.best_objective_value != null ? ` (${run.best_objective_value.toFixed(3)})` : ''}
+        </span>
       </div>
-    </button>
+    </div>
+  )
+
+  return (
+    <HistoryCard
+      title={run.name}
+      subtitle={formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
+      status={run.status}
+      statusClassName={statusStyles[run.status]}
+      selected={selected}
+      onSelect={onSelect}
+      metrics={metricsContent}
+    />
   )
 }
 
@@ -181,9 +177,9 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
                   Delete
                 </Button>
               </div>
-              <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-400">
+              <Callout type="error" title="Search Failed">
                 {status.error ?? 'Strategy search failed.'}
-              </div>
+              </Callout>
             </div>
           ) : resultsQuery.isLoading ? (
             <div className="text-silver-400 flex flex-1 items-center justify-center gap-2 text-sm">

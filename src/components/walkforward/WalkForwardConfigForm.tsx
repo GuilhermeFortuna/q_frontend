@@ -7,7 +7,7 @@ import { OptimizeRiskSection } from '@/components/optimize/OptimizeRiskSection'
 import { OptimizeStrategySection } from '@/components/optimize/OptimizeStrategySection'
 import { OptimizeStudySection } from '@/components/optimize/OptimizeStudySection'
 import { WalkForwardWindowsSection } from '@/components/walkforward/WalkForwardWindowsSection'
-import { Button } from '@/components/ui/button'
+import { Button, Callout } from '@/components/ui'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import {
   buildCostsPayload,
@@ -375,9 +375,9 @@ export function WalkForwardConfigForm({
           )}
 
           {error && (
-            <div className="mt-3 rounded-md border border-rose-500/20 bg-rose-500/10 p-3 text-xs break-words text-rose-400">
+            <Callout type="error" title="Walk-Forward Failed" className="mt-3">
               {error}
-            </div>
+            </Callout>
           )}
         </div>
       </form>

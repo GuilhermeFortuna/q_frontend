@@ -4,7 +4,7 @@ import { OptimizeAdvancedSection } from '@/components/optimize/OptimizeAdvancedS
 import { OptimizeRiskSection } from '@/components/optimize/OptimizeRiskSection'
 import { OptimizeStrategySection } from '@/components/optimize/OptimizeStrategySection'
 import { OptimizeStudySection } from '@/components/optimize/OptimizeStudySection'
-import { Button } from '@/components/ui/button'
+import { Button, Callout } from '@/components/ui'
 import { DISPLAY_TIMEFRAME_OPTIONS, useOptimizeConfig } from '@/lib/optimize/useOptimizeConfig'
 import type { OptimizationConfig } from '@/types/optimization'
 
@@ -188,9 +188,9 @@ export function OptimizeConfigForm({
           )}
 
           {error && (
-            <div className="mt-3 rounded-md border border-rose-500/20 bg-rose-500/10 p-3 text-xs break-words text-rose-400">
+            <Callout type="error" title="Optimization Failed" className="mt-3">
               {error}
-            </div>
+            </Callout>
           )}
         </div>
       </form>

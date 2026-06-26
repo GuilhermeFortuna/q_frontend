@@ -19,8 +19,14 @@ import {
   formatBulkDeleteDescription,
   HistorySelectionToolbar,
 } from '@/components/shared/HistorySelectionToolbar'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import {
+  Button,
+  ConfirmDialog,
+  Callout,
+  KeyValueGrid,
+  KeyValueItem,
+  HistoryCard,
+} from '@/components/ui'
 import { useHistorySelection } from '@/hooks/useHistorySelection'
 import { COMPARISON_MAX_RUNS } from '@/lib/backtesting/comparison'
 import { formatDisplayDateTime } from '@/lib/formatDate'
@@ -69,108 +75,59 @@ function RunListItem({
   const pnl = run.summary?.total_pnl
   const winRate = run.summary?.win_rate
 
-  const handleRowClick = () => {
-    if (selectionMode) {
-      onToggleCheck()
-      return
-    }
-    onSelect()
-  }
-
-  return (
-    <div
-      className={cn(
-        'border-carbon-600/60 hover:border-brass-500/40 relative w-full rounded-lg border transition-colors',
-        selected && !selectionMode ? 'border-brass-500/60 bg-brass-500/5' : 'bg-carbon-900/30',
-        selectionMode && checked ? 'border-brass-500/40 bg-brass-500/5' : null,
-      )}
-    >
-      <div className="flex items-start gap-2 p-3">
-        {selectionMode ? (
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={onToggleCheck}
-            onClick={(e) => e.stopPropagation()}
-            className="border-carbon-500 text-brass-500 mt-1 h-3.5 w-3.5 shrink-0 rounded"
-            aria-label={`Select run ${run.symbol} ${run.strategy}`}
-          />
-        ) : null}
-
-        <button
-          type="button"
-          onClick={handleRowClick}
-          className="min-w-0 flex-1 pr-7 text-left"
-          aria-label={`Select run ${run.symbol} ${run.strategy}`}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-silver-100 truncate text-sm font-medium">
-                {run.symbol} · {run.strategy}
-              </p>
-              <p className="text-silver-400 mt-0.5 text-xs">
-                {run.timeframe} ·{' '}
-                {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
-              </p>
-            </div>
-            <span
-              className={cn(
-                'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize',
-                statusStyles[run.status],
-              )}
-            >
-              {run.status}
-            </span>
-          </div>
-
-          {run.summary ? (
-            <div className="text-silver-300 mt-2 flex gap-3 text-xs tabular-nums">
-              <span>
-                PnL{' '}
-                <span className={pnl != null && pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
-                  {pnl != null ? formatSignedCurrency(pnl) : '—'}
-                </span>
-              </span>
-              <span>
-                Win{' '}
-                <span className="text-silver-100">
-                  {winRate != null ? `${(winRate * 100).toFixed(1)}%` : '—'}
-                </span>
-              </span>
-              <span>
-                Trades <span className="text-silver-100">{run.summary.total_trades}</span>
-              </span>
-            </div>
-          ) : (
-            <p className="text-silver-500 mt-2 text-xs">
-              {run.status === 'failed'
-                ? 'Failed — metrics were not stored.'
-                : 'No stored metrics yet.'}
-            </p>
+  const metricsContent = run.summary ? (
+    <div className="flex items-center justify-between text-[10px]">
+      <div className="flex flex-col">
+        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">PnL</span>
+        <span
+          className={cn(
+            'mt-0.5 font-mono text-[11px] font-bold',
+            pnl != null && pnl >= 0 ? 'text-emerald-400' : 'text-rose-400',
           )}
-        </button>
-
-        {!selectionMode ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onToggleSaved()
-            }}
-            disabled={saving}
-            className={cn(
-              'absolute top-2 right-2 rounded p-1 transition-colors disabled:opacity-50',
-              run.is_saved
-                ? 'text-brass-400 hover:bg-brass-500/10'
-                : 'text-silver-500 hover:bg-brass-500/10 hover:text-brass-400',
-            )}
-            aria-label={run.is_saved ? 'Unsave run' : 'Save run'}
-          >
-            <Star className={cn('h-3.5 w-3.5', run.is_saved ? 'fill-current' : null)} />
-          </button>
-        ) : null}
+        >
+          {pnl != null ? formatSignedCurrency(pnl) : '—'}
+        </span>
+      </div>
+      <div className="flex flex-col">
+        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+          Win Rate
+        </span>
+        <span className="text-silver-200 mt-0.5 font-mono text-[11px] font-semibold">
+          {winRate != null ? `${(winRate * 100).toFixed(1)}%` : '—'}
+        </span>
+      </div>
+      <div className="flex flex-col items-end">
+        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+          Trades
+        </span>
+        <span className="text-silver-200 mt-0.5 font-mono text-[11px] font-semibold">
+          {run.summary.total_trades}
+        </span>
       </div>
     </div>
+  ) : (
+    <p className="text-silver-500 text-[10px] italic">
+      {run.status === 'failed' ? 'Failed — metrics were not stored.' : 'No stored metrics yet.'}
+    </p>
+  )
+
+  return (
+    <HistoryCard
+      title={`${run.symbol} · ${run.strategy}`}
+      subtitle={`${run.timeframe} · ${formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}`}
+      status={run.status}
+      statusClassName={statusStyles[run.status]}
+      selectionMode={selectionMode}
+      checked={checked}
+      onToggleCheck={onToggleCheck}
+      showSaved
+      isSaved={run.is_saved}
+      onToggleSaved={onToggleSaved}
+      saving={saving}
+      selected={selected}
+      onSelect={onSelect}
+      metrics={metricsContent}
+    />
   )
 }
 
@@ -441,55 +398,47 @@ export function BacktestHistoryPanel({
               {detail.result_summary ? (
                 <BacktestMetricsBar metrics={detail.result_summary} />
               ) : (
-                <div className="border-carbon-600/60 bg-carbon-900/30 mb-4 rounded-lg border p-4">
-                  <p className="text-silver-300 text-sm">
-                    {detail.status === 'failed'
-                      ? 'This run failed before metrics could be stored.'
-                      : 'No stored metrics for this run.'}
-                    {detail.error_message ? ` ${detail.error_message}` : ''}
-                  </p>
-                </div>
+                <Callout
+                  type={detail.status === 'failed' ? 'error' : 'info'}
+                  title={detail.status === 'failed' ? 'Run Failed' : 'No Metrics Available'}
+                  className="mb-4"
+                >
+                  {detail.status === 'failed'
+                    ? 'This run failed before metrics could be stored.'
+                    : 'No stored metrics for this run.'}
+                  {detail.error_message ? ` ${detail.error_message}` : ''}
+                </Callout>
               )}
 
-              <div className="border-carbon-600/60 bg-carbon-900/20 mb-4 rounded-lg border p-4">
-                <h4 className="text-silver-200 mb-2 text-sm font-medium">Saved configuration</h4>
-                <dl className="text-silver-400 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                  <div>
-                    <dt>Capital</dt>
-                    <dd className="text-silver-200">
-                      {detail.config.initial_capital?.toLocaleString() ?? '—'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Point value</dt>
-                    <dd className="text-silver-200">{detail.config.point_value ?? '—'}</dd>
-                  </div>
-                  <div>
-                    <dt>Day trading</dt>
-                    <dd className="text-silver-200">
-                      {detail.config.day_trade
-                        ? `Yes (${detail.config.day_trade_start_time}-${detail.config.day_trade_end_time}, close ${detail.config.day_trade_close_time})`
-                        : 'No'}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
+              <KeyValueGrid title="Saved configuration" cols={3} className="mb-4">
+                <KeyValueItem
+                  label="Capital"
+                  value={detail.config.initial_capital?.toLocaleString() ?? '—'}
+                />
+                <KeyValueItem label="Point value" value={detail.config.point_value ?? '—'} />
+                <KeyValueItem
+                  label="Day trading"
+                  value={
+                    detail.config.day_trade
+                      ? `Yes (${detail.config.day_trade_start_time}-${detail.config.day_trade_end_time}, close ${detail.config.day_trade_close_time})`
+                      : 'No'
+                  }
+                />
+              </KeyValueGrid>
 
-              <div className="border-carbon-600/40 bg-brass-500/5 rounded-lg border p-4">
-                <p className="text-silver-300 text-sm">
-                  Trade charts and indicator series are not persisted. The config has been loaded
-                  into the form — re-run the simulation to regenerate the full results.
-                </p>
-                <Button
-                  type="button"
-                  variant="brass"
-                  className="mt-3"
-                  onClick={() => onReRun(detail.config)}
-                >
-                  <Play className="h-4 w-4" />
-                  Re-run simulation
-                </Button>
-              </div>
+              <Callout
+                type="warning"
+                title="Simulation Results Not Persisted"
+                action={
+                  <Button type="button" variant="brass" onClick={() => onReRun(detail.config)}>
+                    <Play className="h-4 w-4" />
+                    Re-run simulation
+                  </Button>
+                }
+              >
+                Trade charts and indicator series are not persisted. The config has been loaded into
+                the form — re-run the simulation to regenerate the full results.
+              </Callout>
             </div>
           )}
         </div>

@@ -1,7 +1,6 @@
-import { Button } from '@/components/ui/button'
+import { Button, Panel, Callout } from '@/components/ui'
 import { WalkForwardProgress } from '@/components/walkforward/WalkForwardProgress'
 import { WalkForwardResultsView } from '@/components/walkforward/WalkForwardResultsView'
-import { Panel } from '@/components/ui/Panel'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import type { OptimizationBacktestConfig } from '@/types/optimization'
 import type { WalkForwardResults, WalkForwardStatus } from '@/types/walkforward'
@@ -35,10 +34,10 @@ export function WalkForwardResultsPanel({
 
   if (status?.status === 'failed') {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <div className="max-w-md rounded-md border border-rose-500/20 bg-rose-500/10 p-4 text-sm break-words text-rose-400">
+      <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+        <Callout type="error" title="Walk-Forward Failed" className="max-w-md">
           Walk-forward failed: {status.error ?? 'unknown error'}
-        </div>
+        </Callout>
       </div>
     )
   }

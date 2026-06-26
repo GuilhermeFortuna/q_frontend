@@ -1,5 +1,6 @@
 import { Copy, Download, Loader2, Play, RotateCcw, Save, Sparkles, Wand2, Zap } from 'lucide-react'
 import { type ReactNode } from 'react'
+import { Callout } from '@/components/ui'
 
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
 import {
@@ -282,30 +283,21 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
       ) : null}
 
       {serviceError ? (
-        <div
-          className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-300"
-          data-testid="ai-strategy-service-error"
-        >
+        <Callout type="error" title="AI Service Error" data-testid="ai-strategy-service-error">
           {serviceError}
-        </div>
+        </Callout>
       ) : null}
 
       {saveError ? (
-        <div
-          className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-300"
-          data-testid="ai-strategy-save-error"
-        >
+        <Callout type="error" title="Save Failed" data-testid="ai-strategy-save-error">
           {saveError}
-        </div>
+        </Callout>
       ) : null}
 
       {workflowBlocker ? (
-        <div
-          className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
-          data-testid="ai-strategy-workflow-blocker"
-        >
+        <Callout type="warning" title="Workflow Blocked" data-testid="ai-strategy-workflow-blocker">
           {workflowBlocker}
-        </div>
+        </Callout>
       ) : null}
 
       {response ? (

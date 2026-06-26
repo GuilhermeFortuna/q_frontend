@@ -9,6 +9,7 @@ import {
   BacktestsIcon,
   ValidateIcon,
   DiscoverIcon,
+  ResearchIcon,
   SystemIcon,
 } from '@/components/dock/DockIcons'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
@@ -30,6 +31,7 @@ const dockItems: DockItem[] = [
   { id: 'backtests', label: 'Backtests', to: '/backtests', icon: BacktestsIcon, enabled: true },
   { id: 'validate', label: 'Validate', to: '/validate', icon: ValidateIcon, enabled: true },
   { id: 'discover', label: 'Discover', to: '/discover', icon: DiscoverIcon, enabled: true },
+  { id: 'research', label: 'Research', to: '/research', icon: ResearchIcon, enabled: true },
   { id: 'system', label: 'System', to: '/system', icon: SystemIcon, enabled: true },
 ]
 

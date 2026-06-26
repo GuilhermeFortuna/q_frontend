@@ -1,5 +1,15 @@
 ﻿import { http, HttpResponse } from 'msw'
 
+import {
+  createMockEvalJob,
+  featureEvalRunFromJob,
+  getMockFeatureList,
+  getUpdatedMockEvalJob,
+  mockFeatureLeaderboard,
+  mockFeaturePassports,
+  resetMockFeatureState,
+  setMockFeatureStatus,
+} from '@/mocks/features'
 import { getMockBacktestResponse } from '@/mocks/backtest'
 import { getMockBacktestEquityArtifact } from '@/mocks/backtestEquity'
 import {
@@ -77,6 +87,10 @@ export function resetMockWalkForwardDeletes() {
 
 export function resetMockStrategySearchDeletes() {
   resetMockStrategySearchState()
+}
+
+export function resetMockFeatureDeletes() {
+  resetMockFeatureState()
 }
 
 export function resetMockStorageDeletes() {
@@ -992,6 +1006,71 @@ export const handlers = [
     deletedStrategySearchRunIds.add(runId)
     mockStrategySearchJobs.delete(runId)
     return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('*/api/v1/features/leaderboard', () =>
+    HttpResponse.json({ features: mockFeatureLeaderboard }),
+  ),
+
+  http.get('*/api/v1/features', ({ request }) => {
+    const url = new URL(request.url)
+    const category = url.searchParams.get('category') ?? undefined
+    const status = url.searchParams.get('status') ?? undefined
+    return HttpResponse.json({
+      features: getMockFeatureList({ category, status }),
+    })
+  }),
+
+  http.get('*/api/v1/features/:name', ({ params }) => {
+    const name = String(params.name)
+    const passport = mockFeaturePassports[name]
+    if (!passport) {
+      return HttpResponse.json({ detail: `Feature '${name}' not found.` }, { status: 404 })
+    }
+    return HttpResponse.json(passport)
+  }),
+
+  http.post('*/api/v1/features/:name/:version/status', async ({ params, request }) => {
+    const name = String(params.name)
+    const version = Number(params.version)
+    const body = (await request.json()) as { status?: string }
+    if (!body.status) {
+      return HttpResponse.json({ detail: 'Invalid status.' }, { status: 422 })
+    }
+    const passport = setMockFeatureStatus(
+      name,
+      version,
+      body.status as 'experimental' | 'candidate' | 'production',
+    )
+    if (!passport) {
+      return HttpResponse.json(
+        { detail: `FeatureVersion '${name}' v${version} not found` },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(passport)
+  }),
+
+  http.post('*/api/v1/feature-eval', async ({ request }) => {
+    const body = (await request.json()) as {
+      symbol: string
+      timeframe: string
+      start: string
+      end: string
+      target: { name: string; horizon: number }
+      features: Array<{ name: string }>
+    }
+    const job = createMockEvalJob(body)
+    return HttpResponse.json({ run_id: job.run_id, status: job.status })
+  }),
+
+  http.get('*/api/v1/feature-eval/:runId', ({ params }) => {
+    const runId = String(params.runId)
+    const job = getUpdatedMockEvalJob(runId)
+    if (!job) {
+      return HttpResponse.json({ detail: `Evaluation run '${runId}' not found.` }, { status: 404 })
+    }
+    return HttpResponse.json(featureEvalRunFromJob(job))
   }),
 ]
 

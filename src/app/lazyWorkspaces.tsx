@@ -36,6 +36,12 @@ export const LazyDiscoverWorkspace = lazy(() =>
   })),
 )
 
+export const LazyResearchWorkspace = lazy(() =>
+  import('@/workspaces/research/ResearchWorkspace').then((module) => ({
+    default: module.ResearchWorkspace,
+  })),
+)
+
 export const LazyWalkForwardWorkspace = lazy(() =>
   import('@/workspaces/walkforward/WalkForwardWorkspace').then((module) => ({
     default: module.WalkForwardWorkspace,
