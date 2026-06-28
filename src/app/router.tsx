@@ -166,7 +166,9 @@ type ResearchSearch = {
 }
 
 function parseResearchTab(value: unknown): ResearchTab {
-  if (value === 'scoring' || value === 'lab' || value === 'store') return value
+  if (value === 'scoring' || value === 'lab' || value === 'store' || value === 'neural') {
+    return value
+  }
   return 'store'
 }
 
@@ -245,6 +247,31 @@ const routeTree = rootRoute.addChildren([
 
 export const router = createRouter({
   routeTree,
+  defaultViewTransition: {
+    types: ({ fromLocation, toLocation }) => {
+      const PATH_ORDER = [
+        '/',
+        '/market-data',
+        '/storage',
+        '/backtests',
+        '/validate',
+        '/discover',
+        '/research',
+        '/system',
+      ]
+      const fromIndex = fromLocation ? PATH_ORDER.indexOf(fromLocation.pathname) : -1
+      const toIndex = toLocation ? PATH_ORDER.indexOf(toLocation.pathname) : -1
+
+      if (fromIndex !== -1 && toIndex !== -1) {
+        if (toIndex > fromIndex) {
+          return ['forward']
+        } else if (toIndex < fromIndex) {
+          return ['backward']
+        }
+      }
+      return []
+    },
+  },
 })
 
 declare module '@tanstack/react-router' {
