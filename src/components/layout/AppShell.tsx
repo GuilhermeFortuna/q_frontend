@@ -68,7 +68,7 @@ export function AppShell({ children }: AppShellProps) {
       {rippleKey > 0 && <div key={rippleKey} className="quant-edge-ripple animate-edge-ripple" />}
       <header
         data-tauri-drag-region
-        className="vt-header surface-shell surface-shell--blur border-brass-600/15 relative flex items-center justify-between border-b px-6 py-2.5 select-none"
+        className="vt-header surface-shell surface-shell--blur border-brass-600/15 relative z-40 flex items-center justify-between border-b px-6 py-2.5 select-none"
       >
         <div className="flex items-center gap-2.5" data-tauri-drag-region>
           <img

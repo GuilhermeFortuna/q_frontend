@@ -1,58 +1,97 @@
-// Reflective dust motes: mostly dim with brief specular glints (+ diffraction spikes).
+// Waving Financial Manifold Surface Shaders
 export const particleVertexShader = `
   uniform float uTime;
-  attribute float aSize;
-  attribute float aPhase;
-  attribute vec3 aColor;
-  varying vec3 vColor;
-  varying float vTwinkle;
-  varying float vGlint;
+  uniform vec3 uMouse;
+  uniform float uMouseStrength;
+  uniform vec3 uShockwaveOrigin;
+  uniform float uShockwaveTime;
+
+  varying vec3 vWorldPosition;
+  varying float vElevation;
 
   void main() {
-    vColor = aColor;
+    vec3 pos = position;
 
-    float speed = 0.5 + aPhase * 0.12;
-    float wave = 0.5 + 0.5 * sin(uTime * speed + aPhase * 7.0);
-    float glint = pow(wave, 24.0);
-    vGlint = glint;
+    // 1. Slow, organic wave math (financial topology waves)
+    float waveX = sin(pos.x * 0.08 + uTime * 0.45) * cos(pos.y * 0.12 + uTime * 0.35);
+    float waveY = sin(pos.y * 0.07 + uTime * 0.4) * cos(pos.x * 0.06 - uTime * 0.25);
+    float elevation = (waveX + waveY) * 2.2;
 
-    vTwinkle = 0.12 + 1.15 * glint;
+    // 2. Localized cursor repulsion (gravity well displacement)
+    float distToMouse = distance(pos.xy, uMouse.xy);
+    float mouseInfluence = exp(-distToMouse * distToMouse * 0.012);
+    elevation -= mouseInfluence * uMouseStrength * 4.2;
 
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    float depth = max(0.1, -mvPosition.z);
-    gl_PointSize = aSize * (1350.0 / depth);
+    // 3. Propagating click shockwave ripple
+    if (uShockwaveTime > 0.0 && uShockwaveTime < 2.0) {
+      float distToClick = distance(pos.xy, uShockwaveOrigin.xy);
+      float waveSpeed = 26.0;
+      float front = uShockwaveTime * waveSpeed;
+      float diff = abs(distToClick - front);
+      float shockInfluence = exp(-diff * diff * 0.07) * exp(-uShockwaveTime * 1.5);
+      float shockRipple = sin(diff * 1.2 - uTime * 4.0) * shockInfluence * 4.0;
+      elevation += shockRipple;
+    }
+
+    pos.z += elevation;
+    vElevation = elevation;
+    vWorldPosition = pos;
+
+    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mvPosition;
+
+    // Scale node point sizes based on camera depth (elegant sharp node dots)
+    float depth = max(0.1, -mvPosition.z);
+    gl_PointSize = 0.18 * (650.0 / depth);
   }
 `
 
 export const particleFragmentShader = `
+  uniform vec3 uColor;
   uniform float uGlow;
-  varying vec3 vColor;
-  varying float vTwinkle;
-  varying float vGlint;
+  varying vec3 vWorldPosition;
+  varying float vElevation;
 
   void main() {
     vec2 center = gl_PointCoord - vec2(0.5);
     float dist = length(center);
-
     if (dist > 0.5) discard;
 
-    float intensity = exp(-dist * 8.0);
+    // Fade edges of the grid so it disappears at the borders
+    float fadeX = smoothstep(30.0, 16.0, abs(vWorldPosition.x));
+    float fadeY = smoothstep(18.0, 10.0, abs(vWorldPosition.y));
+    float edgeFade = fadeX * fadeY;
 
-    float aura = max(0.0, 1.0 - dist * 2.0);
-    float halo = 0.18 * aura * aura;
+    // Soft glow drop-off
+    float glow = exp(-dist * 5.0);
 
-    float core = smoothstep(0.09, 0.0, dist) * 0.75;
+    // Fade color based on elevation height
+    float heightNorm = (vElevation + 3.0) / 6.0;
+    vec3 heightColor = mix(uColor * 0.6, vec3(1.0, 0.95, 0.8), clamp(heightNorm, 0.0, 1.0) * 0.45);
+    vec3 finalColor = mix(uColor, heightColor, 0.5);
+    finalColor = mix(finalColor, vec3(1.0, 0.9, 0.6), uGlow * 0.35);
 
-    float spikeH = smoothstep(0.5, 0.0, abs(center.y) * 6.0) * smoothstep(0.5, 0.0, abs(center.x));
-    float spikeV = smoothstep(0.5, 0.0, abs(center.x) * 6.0) * smoothstep(0.5, 0.0, abs(center.y));
-    float spikes = (spikeH + spikeV) * vGlint * 0.45;
+    gl_FragColor = vec4(finalColor, glow * edgeFade * 0.45);
+  }
+`
 
-    float alpha = min(1.0, (intensity + halo + core + spikes) * vTwinkle * 1.35);
+export const wireframeFragmentShader = `
+  uniform vec3 uColor;
+  uniform float uGlow;
+  varying vec3 vWorldPosition;
+  varying float vElevation;
 
-    vec3 finalColor = mix(vColor, vec3(1.0, 0.9, 0.62), smoothstep(0.06, 0.0, dist) * 0.7);
-    finalColor = mix(finalColor, vec3(0.94, 0.62, 0.15), uGlow * 0.5);
+  void main() {
+    // Fade edges of the grid
+    float fadeX = smoothstep(30.0, 16.0, abs(vWorldPosition.x));
+    float fadeY = smoothstep(18.0, 10.0, abs(vWorldPosition.y));
+    float edgeFade = fadeX * fadeY;
 
-    gl_FragColor = vec4(finalColor, alpha);
+    // Higher lines are brighter
+    float heightNorm = (vElevation + 3.0) / 6.0;
+    vec3 heightColor = mix(uColor * 0.35, uColor * 1.45, clamp(heightNorm, 0.0, 1.0));
+    vec3 finalColor = mix(heightColor, vec3(1.0, 0.92, 0.65), uGlow * 0.45);
+
+    gl_FragColor = vec4(finalColor, edgeFade * 0.12);
   }
 `

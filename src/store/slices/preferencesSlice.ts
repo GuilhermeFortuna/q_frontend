@@ -13,6 +13,9 @@ export type BrightnessMode = 'high' | 'mid' | 'low' | 'auto'
  */
 export type MotionMode = 'full' | 'system'
 
+export type ParticleSpeedMode = 'zero-g' | 'normal' | 'hyper' | 'reverse'
+export type ParticleColorMode = 'gold' | 'cyan' | 'violet' | 'silver'
+
 export type PreferencesSlice = {
   sidebarCollapsed: boolean
   toggleSidebar: () => void
@@ -28,6 +31,10 @@ export type PreferencesSlice = {
   }) => void
   motionMode: MotionMode
   setMotionMode: (mode: MotionMode) => void
+  particleSpeedMode: ParticleSpeedMode
+  particleColorMode: ParticleColorMode
+  setParticleSpeedMode: (mode: ParticleSpeedMode) => void
+  setParticleColorMode: (mode: ParticleColorMode) => void
 }
 
 export const createPreferencesSlice: StateCreator<PreferencesSlice> = (set) => ({
@@ -49,4 +56,8 @@ export const createPreferencesSlice: StateCreator<PreferencesSlice> = (set) => (
     })),
   motionMode: 'full',
   setMotionMode: (mode) => set({ motionMode: mode }),
+  particleSpeedMode: 'normal',
+  particleColorMode: 'gold',
+  setParticleSpeedMode: (mode) => set({ particleSpeedMode: mode }),
+  setParticleColorMode: (mode) => set({ particleColorMode: mode }),
 })

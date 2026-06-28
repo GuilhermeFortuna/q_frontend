@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import { Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
+import type { Target, Transition } from 'motion/react'
 import {
   BarChart3,
   Database,
@@ -129,6 +130,10 @@ type FloatingLauncherPanelProps = {
   layout: LauncherPanelLayout
   panel: PanelKey
   setLayout: (panel: PanelKey, layout: LauncherPanelLayout) => void
+  initial?: Target
+  animate?: Target
+  exit?: Target
+  transition?: Transition
 }
 
 function FloatingLauncherPanel({
@@ -139,6 +144,10 @@ function FloatingLauncherPanel({
   layout,
   panel,
   setLayout,
+  initial,
+  animate,
+  exit,
+  transition,
 }: FloatingLauncherPanelProps) {
   const dragStartRef = useRef<{
     layout: LauncherPanelLayout
@@ -239,7 +248,7 @@ function FloatingLauncherPanel({
     }
 
   return (
-    <div
+    <motion.div
       className={cn(
         'surface-panel quant-panel--spotlight absolute z-30 flex min-h-0 flex-col overflow-hidden rounded-2xl',
       )}
@@ -250,6 +259,10 @@ function FloatingLauncherPanel({
         width: layout.width,
         height: layout.height,
       }}
+      initial={initial}
+      animate={animate}
+      exit={exit}
+      transition={transition}
     >
       <div
         role="presentation"
@@ -293,7 +306,7 @@ function FloatingLauncherPanel({
         onMouseDown={startInteraction('resize-se')}
         className="border-brass-500/40 absolute right-0 bottom-0 z-30 h-5 w-5 cursor-nwse-resize touch-none rounded-br-2xl border-r-2 border-b-2"
       />
-    </div>
+    </motion.div>
   )
 }
 
