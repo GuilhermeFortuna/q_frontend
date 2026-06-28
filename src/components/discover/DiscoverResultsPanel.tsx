@@ -56,7 +56,7 @@ export function DiscoverResultsPanel({
         {isGenetic ? (
           <SegmentedToggle
             aria-label="Running view"
-            className="mb-2 shrink-0"
+            className="mb-2 shrink-0 self-start"
             value={runningTab}
             onChange={setRunningTab}
             options={[
@@ -164,7 +164,7 @@ export function DiscoverResultsPanel({
         {isGenetic ? (
           <SegmentedToggle
             aria-label="Results view"
-            className="mb-2 shrink-0"
+            className="mb-2 shrink-0 self-start"
             value={completedTab}
             onChange={setCompletedTab}
             options={[

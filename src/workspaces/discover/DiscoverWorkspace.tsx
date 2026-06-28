@@ -88,7 +88,7 @@ export function DiscoverWorkspace() {
       <Panel living className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6">
         <SegmentedToggle
           aria-label="Discover panel"
-          className="mb-4 shrink-0"
+          className="mb-4 shrink-0 self-start"
           value={rightPanelTab}
           onChange={(tab) => patchSession({ rightPanelTab: tab })}
           options={RIGHT_PANEL_TABS.map((tab) => ({ value: tab.id, label: tab.label }))}
