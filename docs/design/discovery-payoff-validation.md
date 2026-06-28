@@ -70,23 +70,19 @@ exists.** This is the only behavioural change discovery itself receives; default
 normal run unchanged. See `tests/optimization/test_latents_enabled_seam.py`. Next: **WO154**
 (Discovery A/B job consumes this seam).
 
-### WO154 — Discovery A/B job + endpoint (backend)
+### WO154 — Discovery A/B job + endpoint (backend) ✅ implemented
 
 `api/discovery_ab_jobs.py` + `tasks/actors.py::run_discovery_ab` + `routers/experiments.py`
-(`POST /api/v1/experiments/discovery-ab`, `GET .../discovery-ab/{job_id}`), mirroring
-`neural_jobs`/`routers/neural.py`. Input: one `StrategySearchConfig` + a list of `seeds` (N). The
-parent actor submits **2×N child discovery runs** through the existing strategy-search job manager —
-per seed, a control run (`latents_enabled=False`) and a treatment run (`latents_enabled=True`) with
-the same `init_seed` (paired design: identical base population, latents the only difference). It
-tracks child run_ids, polls their terminal status (reuse the orphan-reconcile discipline), then reads
-each run's **best-candidate lockbox OOS objective** (fall back to best OOS objective when lockbox is
-disabled) from the persisted results. Verdict: paired deltas (treatment − control) per seed → mean
-delta, Cohen's d, and a simple paired significance check (paired t-test / sign test via `scipy.stats`,
-already a dependency — no new deps). Output payload: per-arm distribution, paired deltas, effect size,
-significance, and a `verdict ∈ {helps, no_effect, hurts}`. Persisted as a report (JSON; reuse the lake
-artifact pattern) keyed by job_id.
+(`POST /api/v1/experiments/discovery-ab`, `GET .../discovery-ab/{job_id}`). Input: one
+`StrategySearchConfig` + a list of `seeds` (N). The parent actor submits **2×N child discovery runs**
+through the existing strategy-search job manager — per seed, a control run (`latents_enabled=False`)
+and a treatment run (`latents_enabled=True`) with the same `init_seed`. Tracks child run_ids, polls
+terminal status, reads each run's best-candidate lockbox objective (OOS fallback when lockbox disabled).
+Output: paired deltas, Cohen's d, p-value, `verdict ∈ {helps, no_effect, hurts}`; persisted as
+`experiments/discovery_ab/{job_id}/result.json`. See `api/schemas/experiments.py::DiscoveryAbRequest`
+and `tests/api/test_discovery_ab_jobs.py`. Next: **WO156** (A/B panel consumes this).
 
-### WO155 — Encoder ablation job + endpoint (backend)
+### WO155 — Encoder ablation job + endpoint (backend) ✅ implemented
 
 `api/encoder_ablation_jobs.py` + `tasks/actors.py::run_encoder_ablation` + endpoints on
 `routers/experiments.py` (`POST .../encoder-ablation`, `GET .../encoder-ablation/{job_id}`). Input:
@@ -94,10 +90,12 @@ instrument (`symbol`, `timeframe`), target/horizon, train window, and a **list o
 (e.g. `pca`, `ae:default`, `ae:variantA`). For each config the actor runs the existing
 `run_train_encoder_pipeline` + gate, collecting `recon_r2`, `best_latent_ic`, baseline IC, `passed`,
 and the model hash. **No promotion side effects** (every model lands TRAINED, never auto-PRODUCTION).
-Output: one comparison table (one row per config) + the per-config gate verdict, persisted as a report.
-Reuses the "gate failure keeps the model + returns `gate_error`" behaviour already in the pipeline.
+Output: `EncoderAblationResult` — one comparison table (one row per config) + `best_label`, persisted
+as a lake report keyed by `job_id`. Reuses the "gate failure keeps the model + returns `gate_error`"
+behaviour already in the pipeline. Cross-links: the CCM\$ H1 PCA>AE result this operationalizes
+(`neural-features-batch` memory) and **WO157** (frontend ablation panel).
 
-### WO156 — Research tab foundation + A/B panel (frontend)
+### WO156 — Research tab foundation + A/B panel (frontend) ✅ implemented
 
 Register `'experiments'` in `ResearchTab` (`src/types/features.ts`) + `TAB_OPTIONS`
 (`ResearchWorkspace.tsx`) + the `?tab=` route allow-list. `src/api/queries/experiments.ts` hooks +
@@ -106,13 +104,16 @@ Register `'experiments'` in `ResearchTab` (`src/types/features.ts`) + `TAB_OPTIO
 (reuses the backtests symbol/timeframe/date pickers + a seed-count field), a distribution plot of the
 two arms (our recharts/visx stack, mirroring `OptimizationAnalyticsTab`), and a verdict badge
 (_helps / no effect / hurts_ with mean delta + d + p). Live-poll while the job runs; distinguish
-loading vs errored vs genuinely-empty (the bug class flagged in prior frontend WOs).
+loading vs errored vs genuinely-empty (the bug class flagged in prior frontend WOs). Consumes **WO154**
+(`POST/GET .../discovery-ab`). Encoder ablation slot in the same tab is **WO157**.
 
-### WO157 — Encoder ablation panel (frontend)
+### WO157 — Encoder ablation panel (frontend) ✅ implemented — batch complete
 
 Second sub-panel in the Experiments tab: an ablation launch form (config list builder) + the
 comparison table (config × `recon_r2` × `best_latent_ic` vs baseline × pass/fail badge), live-polling.
-Reuses the WO156 query/poll plumbing and result-schema types.
+Reuses the WO156 query/poll plumbing and result-schema types. Consumes **WO155**
+(`POST/GET .../encoder-ablation`) inside the **WO156** Experiments tab shell. **WO153–157 batch
+complete.**
 
 ## Guardrails (batch-wide)
 
