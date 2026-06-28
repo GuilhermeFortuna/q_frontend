@@ -1,8 +1,9 @@
 # Neural Features — design (roadmap Phase 3, autoencoder slice)
 
 Source roadmap: `Q_Neural_Representation_Learning.md`. This doc designs the **autoencoder latent**
-slice only. The Transformer encoder (Phase 4), Latent Space Explorer, Market Similarity Search, and
-the Research **Neural Features** frontend tab remain deferred (see "Out of scope").
+slice only. The Transformer encoder (Phase 4), Latent Space Explorer, and Market Similarity Search
+remain deferred (see "Out of scope"). The Research **Neural Features** tab is fully live (WO148
+read+promote, WO149 training launch).
 
 This is the work that `feature-intelligence.md` §"Go/no-go gate" gated. **The gate is cleared:** the
 Phase-2 evaluation on CCM\$ H1 (`fwd_return`, h=5) shows the classical engine near a low ceiling — best
@@ -100,11 +101,59 @@ Passing models are promoted to `CANDIDATE` only; production promotion stays huma
 protocol. Shared contract tests parametrize over PCA and autoencoder; WO143 compute and WO144 gate
 required zero downstream changes.
 
+**Landed (WO146):** operator REST surface + promotion CLI. Status transitions are validated in
+`neural/promotion.py` — the legal graph is:
+
+| From         | To                                  |
+| ------------ | ----------------------------------- |
+| `trained`    | `candidate`, `archived`             |
+| `candidate`  | `production`, `archived`, `trained` |
+| `production` | `archived`, `candidate`             |
+| `archived`   | _(terminal — re-train to revive)_   |
+
+Promoting to `production` demotes any other `production` version of the same `(symbol, timeframe)` to
+`candidate` so production is single-occupancy per instrument. The gate (WO144) still tops out at
+`candidate`; **production promotion is explicit human action only**:
+
+- `GET /api/v1/neural/models` — list versions (optional `?status=`)
+- `GET /api/v1/neural/models/{model_hash}` — detail + persisted latest gate result (no recompute)
+- `POST /api/v1/neural/models/{model_hash}/status` body `{ "status": "production" }` — 409 on illegal transition
+- CLI: `q-promote-encoder --model-hash <hash> --to production`
+
+**Landed (WO147):** training runs on the Dramatiq worker pool. Both the CLI (`q-train-encoder`) and the
+API funnel through `neural/training_pipeline.py` — build the classical input window via
+`build_feature_matrix`, call `train_encoder`, then optionally `evaluate_latents`. Job lifecycle:
+
+| Phase (`progress`) | Meaning                                                  |
+| ------------------ | -------------------------------------------------------- |
+| `queued`           | Accepted, waiting for a worker                           |
+| `building_window`  | Building the classical feature matrix                    |
+| `training`         | Fitting the encoder + persisting registry/lake artifacts |
+| `evaluating`       | Optional IC gate (same as CLI `--evaluate`)              |
+| `done`             | Terminal success                                         |
+
+Status payload shape: `{ job_id, status, progress, model_hash?, val_metrics?, gate?, error? }` with
+`status` in `queued | running | completed | failed`. Launch + poll:
+
+- `POST /api/v1/neural/models/train` → `{ job_id, status: "queued" }`
+- `GET /api/v1/neural/models/train/{job_id}` → progress until `completed`, then includes `model_hash`
+
+**Landed (WO149):** training launch form in the Research Neural Features tab. Mirrors Feature Lab
+launch + poll: `POST /api/v1/neural/models/train` → poll `GET .../train/{job_id}` until
+`completed|failed`, then refresh the models list and open the new version's gate verdict. Operator
+can train PCA or autoencoder encoders with the CLI default feature set, optional IC gate, and promote
+via WO148 — no terminal required.
+
+See also: [[neural-features-batch]], [[visual-design-system-batch]] (Research list/detail/badge primitives reused from Feature Store/Passport).
+
 ## Out of scope (deferred, consistent with the existing deferral)
 
 - **Transformer encoder** (roadmap Phase 4) — gated on this slice's evidence.
 - **Latent Space Explorer** + **Market Similarity Search** — need a vector index (not present) and net-
   new frontend; pure scope risk until latents earn their keep.
-- **Research "Neural Features" frontend tab** — stays deferred (WO137–141 omitted it deliberately);
-  latents surface in the existing Feature Store/Scoring tables via the shared `feature_score_rows`.
+- **Research "Neural Features" frontend tab** — **fully landed (WO148 + WO149).** Read + promote UI
+  (`?tab=neural`) plus the in-app training launch form: train an encoder, poll job progress, inspect
+  the new version's gate verdict, and promote lifecycle status — the full train → monitor → inspect →
+  promote loop without the terminal. Latents also surface in the existing Feature Store/Scoring tables
+  via shared `feature_score_rows`.
 - **Walk-forward rolling refit** — fixed train split first.
