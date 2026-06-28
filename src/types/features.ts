@@ -1,6 +1,6 @@
 export type FeatureStatus = 'experimental' | 'candidate' | 'production'
 
-export type ResearchTab = 'store' | 'scoring' | 'lab' | 'neural'
+export type ResearchTab = 'store' | 'scoring' | 'lab' | 'neural' | 'experiments'
 
 export type FeatureListItem = {
   name: string

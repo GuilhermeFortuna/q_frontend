@@ -1,4 +1,4 @@
-﻿import { http, HttpResponse } from 'msw'
+import { http, HttpResponse } from 'msw'
 
 import {
   createMockEvalJob,
@@ -72,9 +72,24 @@ import {
   setMockNeuralModelStatus,
   trainingRunFromJob,
 } from '@/mocks/neural'
+import {
+  createMockDiscoveryAbJob,
+  createMockEncoderAblationJob,
+  getDiscoveryAbResult,
+  getEncoderAblationResult,
+  getUpdatedMockDiscoveryAbJob,
+  getUpdatedMockEncoderAblationJob,
+  resetMockExperimentsState,
+} from '@/mocks/experiments'
 import type { BacktestRequest } from '@/types/backtesting'
 import type { NeuralModelStatus, NeuralTrainRequest } from '@/types/neural'
 import type { OptimizationTrial } from '@/types/optimization'
+import type {
+  DiscoveryAbRequest,
+  DiscoveryAbStatusResponse,
+  EncoderAblationRequest,
+  EncoderAblationStatusResponse,
+} from '@/types/experiments'
 
 const deletedBacktestRunIds = new Set<string>()
 const deletedOptimizationStudyIds = new Set<string>()
@@ -102,6 +117,7 @@ export function resetMockStrategySearchDeletes() {
 export function resetMockFeatureDeletes() {
   resetMockFeatureState()
   resetMockNeuralState()
+  resetMockExperimentsState()
 }
 
 export function resetMockStorageDeletes() {
@@ -1139,6 +1155,65 @@ export const handlers = [
       return HttpResponse.json({ detail: result.error }, { status: result.status })
     }
     return HttpResponse.json(result)
+  }),
+
+  // Discovery A/B
+  http.post('*/api/v1/experiments/discovery-ab', async ({ request }) => {
+    const body = (await request.json()) as DiscoveryAbRequest
+    if (!body.config || !body.seeds?.length) {
+      return HttpResponse.json({ detail: 'Invalid Discovery A/B request.' }, { status: 422 })
+    }
+    const job = createMockDiscoveryAbJob(body)
+    return HttpResponse.json({ job_id: job.job_id, status: job.status })
+  }),
+
+  http.get('*/api/v1/experiments/discovery-ab/:jobId', ({ params }) => {
+    const jobId = String(params.jobId)
+    const job = getUpdatedMockDiscoveryAbJob(jobId)
+    if (!job) {
+      return HttpResponse.json(
+        { detail: `Discovery A/B job '${jobId}' not found.` },
+        { status: 404 },
+      )
+    }
+    const resultPayload: DiscoveryAbStatusResponse = {
+      job_id: job.job_id,
+      status: job.status,
+      progress: job.progress,
+      detail: job.error ? null : `Processing seed evaluations...`,
+      result: job.status === 'completed' ? getDiscoveryAbResult(job.request) : null,
+      error: job.error ?? null,
+    }
+    return HttpResponse.json(resultPayload)
+  }),
+
+  // Encoder Ablation
+  http.post('*/api/v1/experiments/encoder-ablation', async ({ request }) => {
+    const body = (await request.json()) as EncoderAblationRequest
+    if (!body.symbol || !body.timeframe || !body.configs?.length) {
+      return HttpResponse.json({ detail: 'Invalid Encoder Ablation request.' }, { status: 422 })
+    }
+    const job = createMockEncoderAblationJob(body)
+    return HttpResponse.json({ job_id: job.job_id, status: job.status })
+  }),
+
+  http.get('*/api/v1/experiments/encoder-ablation/:jobId', ({ params }) => {
+    const jobId = String(params.jobId)
+    const job = getUpdatedMockEncoderAblationJob(jobId)
+    if (!job) {
+      return HttpResponse.json(
+        { detail: `Encoder ablation job '${jobId}' not found.` },
+        { status: 404 },
+      )
+    }
+    const resultPayload: EncoderAblationStatusResponse = {
+      job_id: job.job_id,
+      status: job.status,
+      progress: job.progress,
+      result: job.status === 'completed' ? getEncoderAblationResult(job.request) : null,
+      error: job.error ?? null,
+    }
+    return HttpResponse.json(resultPayload)
   }),
 ]
 

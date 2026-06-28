@@ -166,7 +166,13 @@ type ResearchSearch = {
 }
 
 function parseResearchTab(value: unknown): ResearchTab {
-  if (value === 'scoring' || value === 'lab' || value === 'store' || value === 'neural') {
+  if (
+    value === 'scoring' ||
+    value === 'lab' ||
+    value === 'store' ||
+    value === 'neural' ||
+    value === 'experiments'
+  ) {
     return value
   }
   return 'store'

@@ -28,13 +28,14 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 describe('ResearchWorkspace', () => {
-  it('renders the four research tabs', async () => {
+  it('renders the five research tabs', async () => {
     renderWithQueryClient(<ResearchWorkspace />)
 
     expect(screen.getByRole('radio', { name: 'Feature Store' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Feature Scoring' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Feature Lab' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Neural Features' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Experiments' })).toBeInTheDocument()
     await waitFor(() => {
       expect(screen.getByTestId('research-tab-store')).toBeInTheDocument()
     })
@@ -76,6 +77,9 @@ describe('ResearchWorkspace', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Neural Features' }))
     expect(navigateMock).toHaveBeenCalledWith({ search: { tab: 'neural' } })
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Experiments' }))
+    expect(navigateMock).toHaveBeenCalledWith({ search: { tab: 'experiments' } })
   })
 
   it('opens the scoring tab when deep-linked via tab prop', () => {
@@ -96,6 +100,15 @@ describe('ResearchWorkspace', () => {
     await waitFor(() => {
       expect(screen.getByTestId('neural-model-list')).toBeInTheDocument()
     })
+  })
+
+  it('opens the experiments tab when deep-linked via tab prop', () => {
+    renderWithQueryClient(<ResearchWorkspace tab="experiments" />)
+
+    expect(screen.getByTestId('research-tab-experiments')).toBeInTheDocument()
+    expect(screen.queryByTestId('research-tab-store')).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Experiments' })).toHaveClass('accent-state')
+    expect(screen.getByTestId('discovery-ab-panel')).toBeInTheDocument()
   })
 
   it('tracks an active neural training job after launch', async () => {

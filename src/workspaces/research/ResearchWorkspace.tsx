@@ -10,6 +10,7 @@ import {
 import { NeuralFeaturesTab } from '@/components/research/neural/NeuralFeaturesTab'
 import { FeatureStorePanel } from '@/components/research/FeatureStoreTable'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
+import { ExperimentsWorkspace } from '@/workspaces/research/ExperimentsWorkspace'
 import type { ResearchTab } from '@/types/features'
 
 const TAB_OPTIONS: { value: ResearchTab; label: string }[] = [
@@ -17,6 +18,7 @@ const TAB_OPTIONS: { value: ResearchTab; label: string }[] = [
   { value: 'scoring', label: 'Feature Scoring' },
   { value: 'lab', label: 'Feature Lab' },
   { value: 'neural', label: 'Neural Features' },
+  { value: 'experiments', label: 'Experiments' },
 ]
 
 type ResearchWorkspaceProps = {
@@ -148,7 +150,7 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
         <div>
           <h1 className="text-cream-100 font-mono text-lg font-semibold tracking-wide">Research</h1>
           <p className="text-silver-400 text-sm">
-            Feature intelligence workspace — store, scoring, lab, and neural models.
+            Feature intelligence workspace — store, scoring, lab, neural models, and experiments.
           </p>
         </div>
         <SegmentedToggle
@@ -185,6 +187,7 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
             onClearTrainingJob={() => setNeuralTrainingJobId(null)}
           />
         ) : null}
+        {tab === 'experiments' ? <ExperimentsWorkspace /> : null}
       </div>
     </div>
   )

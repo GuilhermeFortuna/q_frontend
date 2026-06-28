@@ -22,7 +22,7 @@ describe('research route', () => {
   it('validates the tab search param for deep links', () => {
     expect(routerSource).toContain('parseResearchTab')
     expect(routerSource).toMatch(
-      /value === 'scoring' \|\| value === 'lab' \|\| value === 'store' \|\| value === 'neural'/,
+      /value === 'scoring' \|\|\s*value === 'lab' \|\|\s*value === 'store' \|\|\s*value === 'neural' \|\|\s*value === 'experiments'/,
     )
   })
 
