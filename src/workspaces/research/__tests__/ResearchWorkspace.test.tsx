@@ -28,12 +28,13 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 describe('ResearchWorkspace', () => {
-  it('renders the three research tabs', async () => {
+  it('renders the four research tabs', async () => {
     renderWithQueryClient(<ResearchWorkspace />)
 
     expect(screen.getByRole('radio', { name: 'Feature Store' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Feature Scoring' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Feature Lab' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Neural Features' })).toBeInTheDocument()
     await waitFor(() => {
       expect(screen.getByTestId('research-tab-store')).toBeInTheDocument()
     })
@@ -72,6 +73,9 @@ describe('ResearchWorkspace', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Feature Lab' }))
     expect(navigateMock).toHaveBeenCalledWith({ search: { tab: 'lab' } })
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Neural Features' }))
+    expect(navigateMock).toHaveBeenCalledWith({ search: { tab: 'neural' } })
   })
 
   it('opens the scoring tab when deep-linked via tab prop', () => {
@@ -80,5 +84,40 @@ describe('ResearchWorkspace', () => {
     expect(screen.getByTestId('research-tab-scoring')).toBeInTheDocument()
     expect(screen.queryByTestId('research-tab-store')).not.toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Feature Scoring' })).toHaveClass('accent-state')
+  })
+
+  it('opens the neural tab when deep-linked via tab prop', async () => {
+    renderWithQueryClient(<ResearchWorkspace tab="neural" />)
+
+    expect(screen.getByTestId('research-tab-neural')).toBeInTheDocument()
+    expect(screen.queryByTestId('research-tab-store')).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Neural Features' })).toHaveClass('accent-state')
+
+    await waitFor(() => {
+      expect(screen.getByTestId('neural-model-list')).toBeInTheDocument()
+    })
+  })
+
+  it('tracks an active neural training job after launch', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    renderWithQueryClient(<ResearchWorkspace tab="neural" />)
+
+    await user.type(screen.getByLabelText('Symbol'), 'EURUSD')
+    await user.click(screen.getByTestId('neural-train-submit'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('neural-training-progress')).toBeInTheDocument()
+    })
+
+    await vi.advanceTimersByTimeAsync(3_500)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('neural-training-completed')).toBeInTheDocument()
+      expect(screen.getByTestId('neural-model-detail')).toBeInTheDocument()
+    })
+
+    vi.useRealTimers()
   })
 })

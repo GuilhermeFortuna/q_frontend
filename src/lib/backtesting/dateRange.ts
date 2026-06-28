@@ -30,6 +30,12 @@ export function getDateRangeFromPreset(preset: DatePreset): { start: Date; end: 
 export const defaultBacktestStart = startOfDay(subMonths(new Date(), 12))
 export const defaultBacktestEnd = endOfDay(new Date())
 
+// Neural training needs out-of-sample bars *after* train_end for the IC gate
+// (the backend requires >=100). Default the train window to end well before today
+// so a first run leaves room to gate, instead of failing with "0 OOS bars".
+export const defaultNeuralTrainStart = startOfDay(subMonths(new Date(), 24))
+export const defaultNeuralTrainEnd = endOfDay(subMonths(new Date(), 6))
+
 /** Map backend earliest bar to a backtest range ending today. */
 export function getAllAvailableDateRange(earliestAvailable: string | Date): {
   start: Date

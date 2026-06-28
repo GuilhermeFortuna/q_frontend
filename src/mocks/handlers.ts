@@ -63,7 +63,17 @@ import {
   strategySearchResultsFromJob,
   strategySearchStatusFromJob,
 } from '@/mocks/strategySearch'
+import {
+  createMockTrainingJob,
+  getMockNeuralDetail,
+  getMockNeuralModels,
+  getUpdatedMockTrainingJob,
+  resetMockNeuralState,
+  setMockNeuralModelStatus,
+  trainingRunFromJob,
+} from '@/mocks/neural'
 import type { BacktestRequest } from '@/types/backtesting'
+import type { NeuralModelStatus, NeuralTrainRequest } from '@/types/neural'
 import type { OptimizationTrial } from '@/types/optimization'
 
 const deletedBacktestRunIds = new Set<string>()
@@ -91,6 +101,7 @@ export function resetMockStrategySearchDeletes() {
 
 export function resetMockFeatureDeletes() {
   resetMockFeatureState()
+  resetMockNeuralState()
 }
 
 export function resetMockStorageDeletes() {
@@ -1071,6 +1082,63 @@ export const handlers = [
       return HttpResponse.json({ detail: `Evaluation run '${runId}' not found.` }, { status: 404 })
     }
     return HttpResponse.json(featureEvalRunFromJob(job))
+  }),
+
+  http.get('*/api/v1/neural/models', ({ request }) => {
+    const url = new URL(request.url)
+    const status = url.searchParams.get('status') ?? undefined
+    return HttpResponse.json({
+      models: getMockNeuralModels({ status: status ?? undefined }),
+    })
+  }),
+
+  http.post('*/api/v1/neural/models/train', async ({ request }) => {
+    const body = (await request.json()) as NeuralTrainRequest
+    if (!body.symbol || !body.timeframe || !body.input_features?.length) {
+      return HttpResponse.json({ detail: 'Invalid training request.' }, { status: 422 })
+    }
+    if (new Date(body.train_end) <= new Date(body.train_start)) {
+      return HttpResponse.json({ detail: 'train_end must be after train_start' }, { status: 422 })
+    }
+    const job = createMockTrainingJob(body)
+    return HttpResponse.json({ job_id: job.job_id, status: job.status })
+  }),
+
+  http.get('*/api/v1/neural/models/train/:jobId', ({ params }) => {
+    const jobId = String(params.jobId)
+    const job = getUpdatedMockTrainingJob(jobId)
+    if (!job) {
+      return HttpResponse.json(
+        { detail: `Neural training job '${jobId}' not found.` },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(trainingRunFromJob(job))
+  }),
+
+  http.get('*/api/v1/neural/models/:modelHash', ({ params }) => {
+    const modelHash = String(params.modelHash)
+    const detail = getMockNeuralDetail(modelHash)
+    if (!detail) {
+      return HttpResponse.json(
+        { detail: `Neural model version '${modelHash}' not found.` },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(detail)
+  }),
+
+  http.post('*/api/v1/neural/models/:modelHash/status', async ({ params, request }) => {
+    const modelHash = String(params.modelHash)
+    const body = (await request.json()) as { status?: string }
+    if (!body.status) {
+      return HttpResponse.json({ detail: 'Invalid status.' }, { status: 422 })
+    }
+    const result = setMockNeuralModelStatus(modelHash, body.status as NeuralModelStatus)
+    if ('error' in result) {
+      return HttpResponse.json({ detail: result.error }, { status: result.status })
+    }
+    return HttpResponse.json(result)
   }),
 ]
 

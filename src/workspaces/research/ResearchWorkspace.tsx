@@ -7,16 +7,16 @@ import {
   FeatureScoringDashboard,
   type FeatureScoringSource,
 } from '@/components/research/FeatureScoringDashboard'
+import { NeuralFeaturesTab } from '@/components/research/neural/NeuralFeaturesTab'
 import { FeatureStorePanel } from '@/components/research/FeatureStoreTable'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import type { ResearchTab } from '@/types/features'
-
-// Neural Features tab is intentionally deferred until backend Phase 3/4 lands.
 
 const TAB_OPTIONS: { value: ResearchTab; label: string }[] = [
   { value: 'store', label: 'Feature Store' },
   { value: 'scoring', label: 'Feature Scoring' },
   { value: 'lab', label: 'Feature Lab' },
+  { value: 'neural', label: 'Neural Features' },
 ]
 
 type ResearchWorkspaceProps = {
@@ -96,6 +96,7 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
   // state until a real eval is started from the Lab (no mock run id seeded).
   const [scoringRunId, setScoringRunId] = useState<string | null>(null)
   const [recentRuns, setRecentRuns] = useState<FeatureLabRecentRun[]>([])
+  const [neuralTrainingJobId, setNeuralTrainingJobId] = useState<string | null>(null)
 
   const scoringRunOptions = useMemo(
     () =>
@@ -134,6 +135,10 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
     void navigate({ search: { tab: 'scoring' } })
   }
 
+  const handleNeuralTrainingStarted = (jobId: string) => {
+    setNeuralTrainingJobId(jobId)
+  }
+
   return (
     <div
       className="text-silver-100 flex h-[calc(100dvh-4.5rem-7rem)] w-full flex-col gap-4 overflow-hidden px-4 py-4"
@@ -143,7 +148,7 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
         <div>
           <h1 className="text-cream-100 font-mono text-lg font-semibold tracking-wide">Research</h1>
           <p className="text-silver-400 text-sm">
-            Feature intelligence workspace — store, scoring, and lab.
+            Feature intelligence workspace — store, scoring, lab, and neural models.
           </p>
         </div>
         <SegmentedToggle
@@ -171,6 +176,13 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
             recentRuns={recentRuns}
             onEvalStarted={handleEvalStarted}
             onOpenRun={handleOpenRunInScoring}
+          />
+        ) : null}
+        {tab === 'neural' ? (
+          <NeuralFeaturesTab
+            activeTrainingJobId={neuralTrainingJobId}
+            onTrainingStarted={handleNeuralTrainingStarted}
+            onClearTrainingJob={() => setNeuralTrainingJobId(null)}
           />
         ) : null}
       </div>
