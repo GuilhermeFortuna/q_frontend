@@ -460,7 +460,12 @@ frontend against that message and must degrade cleanly against a pre-WO40 backen
    `pendingBacktestConfig` / `pendingOptimizationConfig` seams?
 10. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
 
-## Phase: Feature Engine (next batch)
+## Phase: Feature Engine (historical plan; superseded by WO158-WO162)
+
+> **Current status:** WO42-WO46 captured the original feature-engine direction but were not implemented
+> against the later Feature Store, neural-latent, score-biased, and adaptive-GA architecture. Do not
+> dispatch these documents as written. WO158-WO162 supersede their implementation details while
+> preserving the causal-feature and leakage-boundary intent.
 
 Turns Generative Discovery from "recombine the ~8 indicators we wrote" into "**invent the features**
 edge actually lives in." A genetic algorithm can only rearrange the primitives the grammar exposes
@@ -731,6 +736,73 @@ Recurring checklist for shell, cinematic, and routing work. Full procedure: [run
 6. **Tauri smoke:** `./dev.sh --podman` manual checklist with `VITE_PERF_HUD=true`, or explicit deferral with recorded steps.
 7. **WO96 before/after:** paste HUD or `[perf]` readings for `/`, `/backtests`, and one other workspace when claiming perf improvements.
 8. **Visual guardrail:** runtime fixes must use cheaper rendering paths — not visual downgrade.
+
+## Phase: Instrument-Specific Alpha Research
+
+Moves Q from broad capability-building to three focused research programs whose terminal goal is a
+**statistically credible candidate ready for paper trading**: CCM$ H1 swing, WIN$ H1 swing, and WDO$
+M15 day trade. Each instrument may use a different strategy. The batch widens the causal information
+set, admits features before strategy search, starts from named economic hypotheses, and applies a
+separate repeated-seed/parameter-plateau/DSR/one-shot-lock-box acceptance contract. It does not claim
+live profitability. Full design: [`../design/instrument-specific-alpha-research.md`](../design/instrument-specific-alpha-research.md).
+
+This batch supersedes the stale implementation assumptions in WO42-WO46. WDO$ M5 remains deferred
+until its historical cache gap is repaired; transaction-cost plumbing remains supported but is not
+the critical path for this research batch.
+
+| #   | File                                                                                                       | Repo                   | Depends on                     |
+| --- | ---------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------------------ |
+| 158 | [WO158-backend-feature-primitive-substrate-v2.md](WO158-backend-feature-primitive-substrate-v2.md)         | q_backend              | current genome + Feature Store |
+| 159 | [WO159-backend-b3-context-multitimeframe-features.md](WO159-backend-b3-context-multitimeframe-features.md) | q_backend              | WO158                          |
+| 160 | [WO160-backend-cross-instrument-context.md](WO160-backend-cross-instrument-context.md)                     | q_backend              | WO158                          |
+| 161 | [WO161-backend-instrument-hypothesis-catalog.md](WO161-backend-instrument-hypothesis-catalog.md)           | q_backend              | WO159 + WO160                  |
+| 162 | [WO162-backend-instrument-feature-evidence.md](WO162-backend-instrument-feature-evidence.md)               | q_backend              | WO159-WO161                    |
+| 163 | [WO163-backend-strategy-robustness-acceptance.md](WO163-backend-strategy-robustness-acceptance.md)         | q_backend              | WO161 + WO162                  |
+| 164 | [WO164-backend-alpha-research-experiment.md](WO164-backend-alpha-research-experiment.md)                   | q_backend              | WO161-WO163 + WO166            |
+| 165 | [WO165-frontend-alpha-research-panel.md](WO165-frontend-alpha-research-panel.md)                           | q_frontend             | WO164 + WO166                  |
+| 166 | [WO166-experiment-inconclusive-verdict-semantics.md](WO166-experiment-inconclusive-verdict-semantics.md)   | q_backend + q_frontend | independent; before WO164      |
+
+### Dispatch order
+
+```text
+WO158 ─┬─► WO159 ─┐
+       └─► WO160 ─┴─► WO161 ──► WO162 ──► WO163 ─┬─► WO164 ──► WO165
+WO166 ────────────────────────────────────────────┘
+```
+
+WO158 lands first because every new primitive must use the current adaptive/latent-aware generation
+contract. WO159 and WO160 are independent after that and can run **in parallel**: WO159 owns same-
+instrument session/regime/multi-timeframe context, while WO160 owns cross-symbol loading/alignment.
+WO161 freezes the profile and hypothesis contracts. WO162 then implements WO161's evidence-resolver
+boundary and evaluates required features under those exact profile/horizon definitions. WO163
+consumes both candidate and evidence contracts to define the paper-candidate verdict. WO166 is a
+small independent correctness fix and can start immediately, but must land before WO164 so the
+orchestrator and existing Discovery A/B consumers share honest insufficient-evidence semantics.
+WO164 is the orchestration layer and must reuse those services; WO165 is last because it renders the
+final backend contract.
+
+### Batch-specific review checklist
+
+1. Are CCM$ H1, WIN$ H1, and WDO$ M15 separate versioned profiles with no forced universal strategy?
+2. Is every context value causal at the decision timestamp, including completed D1 values, opening
+   ranges, previous-session levels, and backward-as-of exogenous joins?
+3. Are the new primitives visible to both the Feature Store and genome runtime through one mathematical
+   implementation, and are they actually reachable by seeded generation/mutation?
+4. Does feature admission use only the early evidence segment with purge/embargo, fold stability,
+   redundancy control, and a search-budget-aware permutation null floor?
+5. Does the hypothesis provider emit a small, named, economically explained catalog rather than a new
+   arbitrary combinatorial search?
+6. Can a losing best-of-population candidate ever become `ready_for_paper`? It must not.
+7. Are repeated seeds, parameter-neighborhood stability, DSR >= profile threshold, and the untouched
+   lock-box hard acceptance evidence rather than decorative metrics?
+8. Is missing/failed/zero-sample evidence `inconclusive`, never coerced to zero or `no_effect`?
+9. Is the lock-box consumed once per split-manifest/champion hash, with no automatic retry after
+   changing the candidate against the same tail?
+10. Does the experiment persist the full provenance chain: data hashes, split manifest, profile and
+    catalog versions, features, hypotheses, seeds, attempts, DSR inputs, criteria, and champion?
+11. Does WDO$ M5 fail preflight until continuous history is available, while M15 remains the primary
+    intraday research profile?
+12. Did each worker run the exact targeted tests plus full repo verification stated in its WO?
 
 ## Review checklist (apply to every returned PR)
 
