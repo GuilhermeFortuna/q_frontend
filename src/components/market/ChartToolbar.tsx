@@ -40,7 +40,7 @@ export function ChartToolbar({
   onChartSettingsChange,
 }: ChartToolbarProps) {
   return (
-    <div className="surface-well border-brass-600/10 relative z-10 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
+    <div className="surface-well border-brass-600/10 relative !z-20 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
       <SegmentedToggle
         aria-label="Chart timeframe"
         value={selectedTimeframe}

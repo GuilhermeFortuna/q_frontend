@@ -47,7 +47,7 @@ export function ChartSettingsPopover({ settings, onChange }: ChartSettingsPopove
       </button>
 
       {open && (
-        <div className="surface-overlay absolute top-full right-0 z-20 mt-1.5 w-64 space-y-4 rounded-lg p-3">
+        <div className="surface-overlay absolute top-full right-0 z-50 mt-1.5 w-64 space-y-4 rounded-lg p-3">
           {/* Background selection */}
           <div className="space-y-1.5">
             <span className="text-silver-400 block font-mono text-[9px] font-bold tracking-wider uppercase">

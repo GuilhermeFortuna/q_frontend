@@ -22,6 +22,7 @@ import { StatTile } from '@/components/ui/StatTile'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
 import type { LatentGateResult, NeuralModelStatus } from '@/types/neural'
+import { NeuralArchitectureVisualizer } from '@/components/research/neural/NeuralArchitectureVisualizer'
 
 type NeuralModelDetailProps = {
   modelHash: string
@@ -227,6 +228,11 @@ export function NeuralModelDetail({ modelHash, onClose }: NeuralModelDetailProps
               Validation metrics not evaluated.
             </p>
           )}
+        </section>
+
+        <section className="space-y-3">
+          <SectionHeader title="Activation flow map" />
+          <NeuralArchitectureVisualizer />
         </section>
 
         <section className="space-y-3">
