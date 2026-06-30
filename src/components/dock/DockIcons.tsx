@@ -631,3 +631,52 @@ export function SystemIcon({ className }: DockIconProps) {
     </svg>
   )
 }
+
+export function ExecutionIcon({ className }: DockIconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn('h-6 w-6 overflow-visible', className)}
+    >
+      <defs>
+        <linearGradient id="gold-grad-execution" x1="4" y1="4" x2="20" y2="20">
+          <stop offset="0%" stopColor="#f5d08f" />
+          <stop offset="100%" stopColor="#8c6a38" />
+        </linearGradient>
+      </defs>
+      <rect
+        x="4"
+        y="5"
+        width="16"
+        height="14"
+        rx="2"
+        stroke="url(#gold-grad-execution)"
+        strokeWidth="1.25"
+      />
+      <path
+        d="M8 10H16M8 14H13"
+        stroke="url(#gold-grad-execution)"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+      />
+      <circle
+        cx="17"
+        cy="17"
+        r="3"
+        fill="#10b981"
+        fillOpacity="0.25"
+        stroke="#34d399"
+        strokeWidth="1"
+      />
+      <path
+        d="M16 17L16.8 17.8L18.5 16.2"
+        stroke="#6ee7b7"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}

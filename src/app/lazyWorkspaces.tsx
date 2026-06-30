@@ -42,6 +42,12 @@ export const LazyResearchWorkspace = lazy(() =>
   })),
 )
 
+export const LazyExecutionWorkspace = lazy(() =>
+  import('@/workspaces/execution/ExecutionWorkspace').then((module) => ({
+    default: module.ExecutionWorkspace,
+  })),
+)
+
 export const LazyWalkForwardWorkspace = lazy(() =>
   import('@/workspaces/walkforward/WalkForwardWorkspace').then((module) => ({
     default: module.WalkForwardWorkspace,

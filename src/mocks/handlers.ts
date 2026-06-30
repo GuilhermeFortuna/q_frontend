@@ -84,7 +84,32 @@ import {
   getUpdatedMockEncoderAblationJob,
   resetMockExperimentsState,
 } from '@/mocks/experiments'
+import {
+  applyMockDeploymentAction,
+  createMockDeployment,
+  createMockPaperAccount,
+  getMockDeployment,
+  getMockExecutionHealth,
+  getMockKillSwitch,
+  listMockAuditEvents,
+  listMockDecisions,
+  listMockDeployments,
+  listMockFills,
+  listMockLedger,
+  listMockOrders,
+  listMockPaperAccounts,
+  listMockPositions,
+  listMockRiskEvents,
+  resetMockExecutionState,
+  updateMockKillSwitch,
+} from '@/mocks/execution'
 import type { BacktestRequest } from '@/types/backtesting'
+import type {
+  DeploymentActionRequest,
+  DeploymentCreateRequest,
+  KillSwitchUpdateRequest,
+  PaperAccountCreateRequest,
+} from '@/types/execution'
 import type { NeuralModelStatus, NeuralTrainRequest } from '@/types/neural'
 import type { OptimizationTrial } from '@/types/optimization'
 import type {
@@ -123,6 +148,7 @@ export function resetMockFeatureDeletes() {
   resetMockFeatureState()
   resetMockNeuralState()
   resetMockExperimentsState()
+  resetMockExecutionState()
 }
 
 export function resetMockStorageDeletes() {
@@ -131,6 +157,113 @@ export function resetMockStorageDeletes() {
 
 export const handlers = [
   http.get('*/api/v1/system/health', () => HttpResponse.json(mockSystemHealth)),
+
+  http.get('*/api/v1/execution/health', () => HttpResponse.json(getMockExecutionHealth())),
+
+  http.get('*/api/v1/execution/kill-switch', () => HttpResponse.json(getMockKillSwitch())),
+
+  http.put('*/api/v1/execution/kill-switch', async ({ request }) => {
+    const body = (await request.json()) as KillSwitchUpdateRequest
+    return HttpResponse.json(updateMockKillSwitch(body))
+  }),
+
+  http.get('*/api/v1/execution/accounts', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 50)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    return HttpResponse.json(listMockPaperAccounts(limit, offset))
+  }),
+
+  http.post('*/api/v1/execution/accounts', async ({ request }) => {
+    const body = (await request.json()) as PaperAccountCreateRequest
+    return HttpResponse.json(createMockPaperAccount(body))
+  }),
+
+  http.get('*/api/v1/execution/deployments', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 50)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    const paperAccountId = url.searchParams.get('paper_account_id')
+    return HttpResponse.json(listMockDeployments(paperAccountId, limit, offset))
+  }),
+
+  http.post('*/api/v1/execution/deployments', async ({ request }) => {
+    const body = (await request.json()) as DeploymentCreateRequest
+    return HttpResponse.json(createMockDeployment(body))
+  }),
+
+  http.get('*/api/v1/execution/deployments/:deploymentId', ({ params }) => {
+    const detail = getMockDeployment(String(params.deploymentId))
+    if (!detail) {
+      return HttpResponse.json({ detail: 'deployment not found' }, { status: 404 })
+    }
+    return HttpResponse.json(detail)
+  }),
+
+  http.post('*/api/v1/execution/deployments/:deploymentId/actions', async ({ params, request }) => {
+    const body = (await request.json()) as DeploymentActionRequest
+    const result = applyMockDeploymentAction(
+      String(params.deploymentId),
+      body.action,
+      !!body.confirm,
+    )
+    return HttpResponse.json({
+      accepted: result.accepted,
+      deployment_id: String(params.deploymentId),
+      lifecycle: result.lifecycle,
+      pending_action: result.pending_action,
+      message: result.message,
+    })
+  }),
+
+  http.get('*/api/v1/execution/deployments/:deploymentId/decisions', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 50)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    return HttpResponse.json(listMockDecisions(limit, offset))
+  }),
+
+  http.get('*/api/v1/execution/deployments/:deploymentId/orders', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 50)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    return HttpResponse.json(listMockOrders(limit, offset))
+  }),
+
+  http.get('*/api/v1/execution/deployments/:deploymentId/fills', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 50)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    return HttpResponse.json(listMockFills(limit, offset))
+  }),
+
+  http.get('*/api/v1/execution/positions', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 50)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    return HttpResponse.json(listMockPositions(limit, offset))
+  }),
+
+  http.get('*/api/v1/execution/accounts/:accountId/ledger', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 50)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    return HttpResponse.json(listMockLedger(limit, offset))
+  }),
+
+  http.get('*/api/v1/execution/deployments/:deploymentId/risk-events', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 50)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    return HttpResponse.json(listMockRiskEvents(limit, offset))
+  }),
+
+  http.get('*/api/v1/execution/audit-events', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 50)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    return HttpResponse.json(listMockAuditEvents(limit, offset))
+  }),
 
   http.get('*/api/v1/system/data-source', () => HttpResponse.json(mockDataSource)),
 

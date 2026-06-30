@@ -9,6 +9,7 @@ import {
 import {
   LazyBacktestsWorkspace,
   LazyDiscoverWorkspace,
+  LazyExecutionWorkspace,
   LazyLauncherWorkspace,
   LazyMarketDataWorkspace,
   LazyNewsReaderWorkspace,
@@ -195,6 +196,17 @@ const researchRoute = createRoute({
   },
 })
 
+const executionRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/execution',
+  beforeLoad: () => syncWorkspace('execution'),
+  component: () => (
+    <LazyRouteBoundary label="Loading execution">
+      <LazyExecutionWorkspace />
+    </LazyRouteBoundary>
+  ),
+})
+
 const strategyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/strategy',
@@ -234,6 +246,7 @@ const routeTree = rootRoute.addChildren([
   validateRoute,
   discoverRoute,
   researchRoute,
+  executionRoute,
   newsReaderRoute,
   strategyRoute,
   ...(import.meta.env.DEV
@@ -263,6 +276,7 @@ export const router = createRouter({
         '/validate',
         '/discover',
         '/research',
+        '/execution',
         '/system',
       ]
       const fromIndex = fromLocation ? PATH_ORDER.indexOf(fromLocation.pathname) : -1
