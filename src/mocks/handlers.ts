@@ -73,10 +73,13 @@ import {
   trainingRunFromJob,
 } from '@/mocks/neural'
 import {
+  createMockAlphaResearchJob,
   createMockDiscoveryAbJob,
   createMockEncoderAblationJob,
+  getAlphaResearchResult,
   getDiscoveryAbResult,
   getEncoderAblationResult,
+  getUpdatedMockAlphaResearchJob,
   getUpdatedMockDiscoveryAbJob,
   getUpdatedMockEncoderAblationJob,
   resetMockExperimentsState,
@@ -85,6 +88,8 @@ import type { BacktestRequest } from '@/types/backtesting'
 import type { NeuralModelStatus, NeuralTrainRequest } from '@/types/neural'
 import type { OptimizationTrial } from '@/types/optimization'
 import type {
+  AlphaResearchRequest,
+  AlphaResearchStatusResponse,
   DiscoveryAbRequest,
   DiscoveryAbStatusResponse,
   EncoderAblationRequest,
@@ -1212,6 +1217,53 @@ export const handlers = [
       progress: job.progress,
       result: job.status === 'completed' ? getEncoderAblationResult(job.request) : null,
       error: job.error ?? null,
+    }
+    return HttpResponse.json(resultPayload)
+  }),
+
+  // Alpha Research
+  http.post('*/api/v1/experiments/alpha-research', async ({ request }) => {
+    const body = (await request.json()) as AlphaResearchRequest
+    if (!body.profile_id || !body.start || !body.end) {
+      return HttpResponse.json({ detail: 'Invalid alpha-research request.' }, { status: 422 })
+    }
+    const job = createMockAlphaResearchJob(body)
+    return HttpResponse.json({ job_id: job.job_id, status: job.status })
+  }),
+
+  http.get('*/api/v1/experiments/alpha-research/:jobId', ({ params }) => {
+    const jobId = String(params.jobId)
+    const job = getUpdatedMockAlphaResearchJob(jobId)
+    if (!job) {
+      return HttpResponse.json(
+        { detail: `Alpha-research job '${jobId}' not found.` },
+        { status: 404 },
+      )
+    }
+    const runningStages: AlphaResearchStatusResponse['stages'] =
+      job.status === 'running'
+        ? [
+            { name: 'preflight', status: 'completed', detail: null },
+            { name: 'feature_evidence', status: 'running', detail: 'Scoring features' },
+          ]
+        : job.status === 'completed'
+          ? getAlphaResearchResult(job.request).stages
+          : []
+    const resultPayload: AlphaResearchStatusResponse = {
+      job_id: job.job_id,
+      status: job.status,
+      progress: job.progress,
+      detail: job.cancelled
+        ? 'Run cancelled by operator before lock-box consumption.'
+        : job.error
+          ? null
+          : job.status === 'running'
+            ? 'Running alpha-research pipeline…'
+            : null,
+      stages: runningStages,
+      result: job.status === 'completed' ? getAlphaResearchResult(job.request) : null,
+      error: job.error ?? null,
+      checkpoint: job.cancelled ? { stage: 'acceptance', consumed_lockbox: false } : null,
     }
     return HttpResponse.json(resultPayload)
   }),

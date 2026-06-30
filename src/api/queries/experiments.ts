@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
 import type {
+  AlphaResearchRequest,
+  AlphaResearchStartResponse,
+  AlphaResearchStatusResponse,
   DiscoveryAbRequest,
   DiscoveryAbStartResponse,
   DiscoveryAbStatusResponse,
@@ -14,6 +17,7 @@ export const experimentKeys = {
   all: ['experiments'] as const,
   discoveryAb: (jobId: string) => [...experimentKeys.all, 'discoveryAb', jobId] as const,
   encoderAblation: (jobId: string) => [...experimentKeys.all, 'encoderAblation', jobId] as const,
+  alphaResearch: (jobId: string) => [...experimentKeys.all, 'alphaResearch', jobId] as const,
 }
 
 // Discovery A/B harness
@@ -77,6 +81,23 @@ export async function startEncoderAblation(
   return data
 }
 
+export async function startAlphaResearch(
+  request: AlphaResearchRequest,
+): Promise<AlphaResearchStartResponse> {
+  const { data } = await apiClient.post<AlphaResearchStartResponse>(
+    '/api/v1/experiments/alpha-research',
+    request,
+  )
+  return data
+}
+
+export async function fetchAlphaResearchRun(jobId: string): Promise<AlphaResearchStatusResponse> {
+  const { data } = await apiClient.get<AlphaResearchStatusResponse>(
+    `/api/v1/experiments/alpha-research/${jobId}`,
+  )
+  return data
+}
+
 export async function fetchEncoderAblationRun(
   jobId: string,
 ): Promise<EncoderAblationStatusResponse> {
@@ -114,6 +135,39 @@ export function useEncoderAblationRun(jobId: string | null) {
       const status = query.state.data?.status
       if (status == null) return 1000
       return encoderAblationRunRefetchInterval(status)
+    },
+  })
+}
+
+export function useStartAlphaResearch() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: startAlphaResearch,
+    onSuccess: (data) => {
+      queryClient.setQueryData(experimentKeys.alphaResearch(data.job_id), undefined)
+    },
+  })
+}
+
+export function alphaResearchRunRefetchInterval(
+  status: AlphaResearchStatusResponse['status'] | undefined,
+): number | false {
+  return status === 'queued' || status === 'running' ? 1000 : false
+}
+
+export function useAlphaResearchRun(jobId: string | null, options?: { enabled?: boolean }) {
+  const enabled = (options?.enabled ?? true) && !!jobId
+  return useQuery({
+    queryKey: experimentKeys.alphaResearch(jobId ?? ''),
+    queryFn: () => fetchAlphaResearchRun(jobId as string),
+    enabled,
+    staleTime: 500,
+    refetchInterval: (query) => {
+      if (!enabled || !jobId) return false
+      const status = query.state.data?.status
+      if (status == null) return 1000
+      return alphaResearchRunRefetchInterval(status)
     },
   })
 }
