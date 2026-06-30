@@ -804,6 +804,74 @@ final backend contract.
     intraday research profile?
 12. Did each worker run the exact targeted tests plus full repo verification stated in its WO?
 
+## Phase: Paper and Live Execution
+
+Adds Q's first forward-execution path for M15-and-slower closed-bar strategies. The initial usable
+mode is an internal paper simulator driven by live MT5 bars/quotes. A broker-neutral domain keeps
+strategy evaluation, risk, accounting, and operator controls independent of MT5. The live MT5 adapter
+is implemented behind hard gates but remains `LIVE LOCKED` and operationally unvalidated until a
+controlled trading account exists. Full design:
+[`../design/paper-live-execution.md`](../design/paper-live-execution.md).
+
+Performance is a product contract: steady-state evaluation uses shared incremental bars and bounded
+rolling windows, keeps REST/Redis/Dramatiq out of the hot path, and measures a 500 ms p95 budget from
+completed-bar visibility to committed paper fill on the target machine. Tick/sub-second execution is
+explicitly deferred.
+
+| #   | File                                                                                               | Repo                   | Depends on         |
+| --- | -------------------------------------------------------------------------------------------------- | ---------------------- | ------------------ |
+| 167 | [WO167-backend-execution-domain-persistence.md](WO167-backend-execution-domain-persistence.md)     | q_backend              | current DB/runtime |
+| 168 | [WO168-backend-paper-broker-ledger.md](WO168-backend-paper-broker-ledger.md)                       | q_backend              | WO167              |
+| 169 | [WO169-backend-forward-strategy-evaluator.md](WO169-backend-forward-strategy-evaluator.md)         | q_backend              | WO167              |
+| 170 | [WO170-backend-execution-worker-risk-recovery.md](WO170-backend-execution-worker-risk-recovery.md) | q_backend              | WO167-WO169        |
+| 171 | [WO171-backend-execution-api.md](WO171-backend-execution-api.md)                                   | q_backend              | WO167 + WO170      |
+| 172 | [WO172-backend-mt5-live-broker-locked.md](WO172-backend-mt5-live-broker-locked.md)                 | q_backend              | WO168 + WO170      |
+| 173 | [WO173-frontend-execution-workspace.md](WO173-frontend-execution-workspace.md)                     | q_frontend             | WO171 contract     |
+| 174 | [WO174-frontend-deploy-to-paper-promotion.md](WO174-frontend-deploy-to-paper-promotion.md)         | q_frontend + q_backend | WO171 + WO173      |
+
+### Dispatch order
+
+```text
+WO167 ─┬─► WO168 ─┐
+       └─► WO169 ─┴─► WO170 ─┬─► WO171 ──► WO173 ──► WO174
+                              └─► WO172
+```
+
+WO167 lands first because every later path depends on its state/idempotency contract. WO168 and WO169
+can then run **in parallel**: the former owns broker/paper accounting, while the latter owns market
+bars/strategy evaluation. WO170 joins them into the standalone worker and freezes lifecycle,
+recovery, risk, and performance contracts. After WO170, WO172 can run **in parallel** with the API and
+frontend stream because it owns the locked live adapter. WO171 publishes the control/read contract;
+WO173 builds the operational workspace; WO174 adds promotion only after the canonical deployment
+flow exists.
+
+### Batch-specific review checklist
+
+1. Is every deployment one immutable strategy/config hash, symbol, and timeframe with one net
+   position, rather than mutable Backtest form state?
+2. Does each `(deployment, bar close)` produce at most one durable decision/order across polling,
+   retry, restart, and lease takeover?
+3. Does steady state fetch each symbol/timeframe once, exclude the forming bar, retain bounded rolling
+   windows, and avoid full-history reloads?
+4. Are buy/short-cover fills based on ask and sell/short-entry fills on bid, with spread, deterministic
+   slippage, and fees accounted exactly once?
+5. Does any persistence, lease, stale-data, or ambiguous-outcome failure block new orders rather than
+   guess or resend?
+6. Are pause, stop, flatten, and kill switch distinct and auditable, with pause/stop retaining open
+   positions unless flatten is explicit?
+7. Is the execution worker separate from API lifespan and Dramatiq, with REST/Redis/frontend absent
+   from the order hot path?
+8. Does the benchmark report phase timings and meet the documented 500 ms p95 M15/H1 paper budget on
+   the target profile?
+9. Does the MT5 adapter choose symbol-supported execution/fill settings, retain raw results/tickets,
+   and reconcile orders/positions/deals instead of equating `order_send` acceptance with a fill?
+10. Do all live gates default to denial, with the UI and docs saying `LIVE LOCKED` and operationally
+    unvalidated because no controlled account test occurred?
+11. Does the frontend stop polling off-route, bound audit history, and wait for backend acknowledgement
+    rather than optimistically claiming destructive commands completed?
+12. Can only immutable saved configs or frozen `ready_for_paper` champions create a reviewed draft,
+    with no automatic start or live option?
+
 ## Review checklist (apply to every returned PR)
 
 1. Does the compute path still work with Postgres **stopped**? (stop the container, run a backtest / a study)
