@@ -29,26 +29,36 @@ import {
   DEFAULT_LOCKBOX_CONFIG,
   type StrategySearchConfig,
 } from '@/types/strategySearch'
+import type { DiscoveryAbResult, DiscoveryAbVerdict } from '@/types/experiments'
 
-type VerdictType = 'helps' | 'no_effect' | 'hurts'
-
-const verdictBadgeClass: Record<VerdictType, string> = {
+const verdictBadgeClass: Record<DiscoveryAbVerdict, string> = {
   helps:
     'border-emerald-500/30 text-emerald-400 bg-emerald-500/10 shadow-[0_0_12px_-3px_rgba(52,211,153,0.2)]',
   no_effect: 'border-silver-500/30 text-silver-400 bg-silver-500/10',
   hurts:
     'border-rose-500/30 text-rose-400 bg-rose-500/10 shadow-[0_0_12px_-3px_rgba(244,63,94,0.2)]',
+  inconclusive: 'border-amber-500/30 text-amber-300 bg-amber-500/10',
 }
 
-const verdictLabel: Record<VerdictType, string> = {
+const verdictLabel: Record<DiscoveryAbVerdict, string> = {
   helps: 'PROVEN PAYOFF (HELPS)',
   no_effect: 'NO SIGNIFICANT EFFECT',
   hurts: 'NEGATIVE EFFECT (HURTS)',
+  inconclusive: 'INCONCLUSIVE — INSUFFICIENT COMPLETE PAIRS',
 }
 
 function progressPercent(progress: number | undefined): number {
   if (progress == null) return 0
   return progress <= 1 ? Math.round(progress * 100) : Math.round(progress)
+}
+
+function formatNullableNumber(value: number | null | undefined, digits = 4): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  return value.toFixed(digits)
+}
+
+function hasComputedStatistics(result: DiscoveryAbResult): boolean {
+  return result.verdict !== 'inconclusive'
 }
 
 export function DiscoveryAbPanel() {
@@ -136,20 +146,24 @@ export function DiscoveryAbPanel() {
     startMutation.reset()
   }
 
-  // Prepare chart data from completed results
+  const result = runQuery.data?.result
+
   const chartData = useMemo(() => {
-    if (!runQuery.data?.result) return []
-    const result = runQuery.data.result
-    return Array.from({ length: result.n_seeds }, (_, i) => {
-      const controlVal = result.control.values[i] ?? 0
-      const treatmentVal = result.treatment.values[i] ?? 0
+    if (!result || result.complete_pairs === 0) return []
+    const pairCount = Math.max(result.control.values.length, result.treatment.values.length)
+    return Array.from({ length: pairCount }, (_, i) => {
+      const controlVal = result.control.values[i]
+      const treatmentVal = result.treatment.values[i]
+      if (controlVal == null || treatmentVal == null) return null
       return {
-        name: `Seed ${42 + i}`,
+        name: `Pair ${i + 1}`,
         Control: Number(controlVal.toFixed(4)),
         Treatment: Number(treatmentVal.toFixed(4)),
       }
-    })
-  }, [runQuery.data])
+    }).filter((row): row is NonNullable<typeof row> => row != null)
+  }, [result])
+
+  const showStatistics = result != null && hasComputedStatistics(result)
 
   return (
     <div
@@ -301,7 +315,7 @@ export function DiscoveryAbPanel() {
           </div>
         )}
 
-        {runQuery.data?.result && (
+        {result && (
           <div className="flex flex-1 flex-col gap-6 overflow-y-auto pr-1" data-testid="ab-results">
             {/* Header & Verdict */}
             <div className="border-carbon-700/60 flex flex-col justify-between gap-4 border-b pb-4 sm:flex-row sm:items-center">
@@ -311,47 +325,92 @@ export function DiscoveryAbPanel() {
                 </h3>
                 <p className="text-silver-400 mt-0.5 text-xs">
                   Metric evaluated:{' '}
-                  <span className="text-silver-300 font-mono">{runQuery.data.result.metric}</span>
+                  <span className="text-silver-300 font-mono">{result.metric}</span>
+                </p>
+                <p className="text-silver-400 mt-1 text-xs" data-testid="ab-pair-count">
+                  Complete pairs:{' '}
+                  <span className="text-silver-200 font-mono">
+                    {result.complete_pairs} / {result.requested_seeds}
+                  </span>{' '}
+                  (minimum {result.minimum_complete_pairs})
                 </p>
               </div>
 
               <div
-                className={`rounded-lg border px-4 py-2 text-xs font-bold tracking-wider ${verdictBadgeClass[runQuery.data.result.verdict]}`}
+                className={`rounded-lg border px-4 py-2 text-xs font-bold tracking-wider ${verdictBadgeClass[result.verdict]}`}
                 data-testid="ab-verdict-badge"
               >
-                {verdictLabel[runQuery.data.result.verdict]}
+                {verdictLabel[result.verdict]}
               </div>
             </div>
 
-            {/* Stat tiles grid */}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-              <StatTile label="Control Mean" value={runQuery.data.result.control.mean.toFixed(4)} />
-              <StatTile
-                label="Treatment Mean"
-                value={runQuery.data.result.treatment.mean.toFixed(4)}
-                highlight={runQuery.data.result.verdict === 'helps'}
-              />
-              <StatTile
-                label="Paired Delta"
-                value={`${runQuery.data.result.paired_delta.mean > 0 ? '+' : ''}${runQuery.data.result.paired_delta.mean.toFixed(4)}`}
-                valueTone={
-                  runQuery.data.result.paired_delta.mean > 0
-                    ? 'up'
-                    : runQuery.data.result.paired_delta.mean < 0
-                      ? 'down'
+            {result.dropped_pair_reasons.length > 0 && (
+              <div
+                className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4"
+                data-testid="ab-dropped-reasons"
+              >
+                <h4 className="text-xs font-semibold tracking-wider text-amber-200 uppercase">
+                  Dropped pair reasons
+                </h4>
+                <ul className="text-silver-300 mt-2 space-y-1 text-xs leading-relaxed">
+                  {result.dropped_pair_reasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {showStatistics ? (
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-5" data-testid="ab-stat-tiles">
+                <StatTile label="Control Mean" value={formatNullableNumber(result.control.mean)} />
+                <StatTile
+                  label="Treatment Mean"
+                  value={formatNullableNumber(result.treatment.mean)}
+                  highlight={result.verdict === 'helps'}
+                />
+                <StatTile
+                  label="Paired Delta"
+                  value={
+                    result.paired_delta.mean == null
+                      ? '—'
+                      : `${result.paired_delta.mean > 0 ? '+' : ''}${formatNullableNumber(result.paired_delta.mean)}`
+                  }
+                  valueTone={
+                    result.paired_delta.mean == null
+                      ? 'neutral'
+                      : result.paired_delta.mean > 0
+                        ? 'up'
+                        : result.paired_delta.mean < 0
+                          ? 'down'
+                          : 'neutral'
+                  }
+                />
+                <StatTile
+                  label="Cohen's d"
+                  value={formatNullableNumber(result.paired_delta.cohens_d, 2)}
+                />
+                <StatTile
+                  label="p-value"
+                  value={formatNullableNumber(result.paired_delta.p_value)}
+                  valueTone={
+                    result.paired_delta.p_value != null && result.paired_delta.p_value < 0.05
+                      ? 'up'
                       : 'neutral'
-                }
-              />
-              <StatTile
-                label="Cohen's d"
-                value={runQuery.data.result.paired_delta.cohens_d.toFixed(2)}
-              />
-              <StatTile
-                label="p-value"
-                value={runQuery.data.result.paired_delta.p_value.toFixed(4)}
-                valueTone={runQuery.data.result.paired_delta.p_value < 0.05 ? 'up' : 'neutral'}
-              />
-            </div>
+                  }
+                />
+              </div>
+            ) : (
+              <div
+                className="border-carbon-600/40 bg-carbon-950/20 rounded-lg border p-4 text-sm"
+                data-testid="ab-stats-unavailable"
+              >
+                <p className="text-silver-300">
+                  Statistics are unavailable because fewer than {result.minimum_complete_pairs}{' '}
+                  complete paired seeds were measured. Review dropped pair reasons above and rerun
+                  with more seeds or after fixing failed child runs.
+                </p>
+              </div>
+            )}
 
             {/* Chart zone */}
             <div className="border-carbon-600/40 bg-carbon-950/20 flex min-h-[320px] flex-1 flex-col rounded-xl border p-4 backdrop-blur-sm">
@@ -359,38 +418,50 @@ export function DiscoveryAbPanel() {
                 Paired Performance comparison per Seed
               </h4>
               <div className="min-h-0 w-full flex-1 overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fill: CHART_COLORS.axis, fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={{ stroke: CHART_COLORS.grid }}
-                    />
-                    <YAxis
-                      tick={{ fill: CHART_COLORS.axis, fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: CHART_COLORS.tooltipBg,
-                        border: `1px solid ${CHART_COLORS.tooltipBorder}`,
-                        borderRadius: 8,
-                        fontSize: 12,
-                      }}
-                      labelStyle={{ color: CHART_COLORS.axis }}
-                    />
-                    <Legend
-                      verticalAlign="top"
-                      height={36}
-                      wrapperStyle={{ fontSize: 11, color: CHART_COLORS.axis }}
-                    />
-                    <Bar dataKey="Control" fill={CHART_COLORS.reference} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Treatment" fill={CHART_COLORS.equity} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={chartData}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: CHART_COLORS.axis, fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={{ stroke: CHART_COLORS.grid }}
+                      />
+                      <YAxis
+                        tick={{ fill: CHART_COLORS.axis, fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: CHART_COLORS.tooltipBg,
+                          border: `1px solid ${CHART_COLORS.tooltipBorder}`,
+                          borderRadius: 8,
+                          fontSize: 12,
+                        }}
+                        labelStyle={{ color: CHART_COLORS.axis }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        wrapperStyle={{ fontSize: 11, color: CHART_COLORS.axis }}
+                      />
+                      <Bar dataKey="Control" fill={CHART_COLORS.reference} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Treatment" fill={CHART_COLORS.equity} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div
+                    className="text-silver-400 flex h-full items-center justify-center text-sm"
+                    data-testid="ab-chart-empty"
+                  >
+                    No complete paired observations to chart.
+                  </div>
+                )}
               </div>
             </div>
           </div>

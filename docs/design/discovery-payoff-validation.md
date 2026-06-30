@@ -78,9 +78,11 @@ normal run unchanged. See `tests/optimization/test_latents_enabled_seam.py`. Nex
 through the existing strategy-search job manager — per seed, a control run (`latents_enabled=False`)
 and a treatment run (`latents_enabled=True`) with the same `init_seed`. Tracks child run_ids, polls
 terminal status, reads each run's best-candidate lockbox objective (OOS fallback when lockbox disabled).
-Output: paired deltas, Cohen's d, p-value, `verdict ∈ {helps, no_effect, hurts}`; persisted as
+Output: paired deltas, Cohen's d, p-value, `verdict ∈ {helps, no_effect, hurts, inconclusive}`; persisted as
 `experiments/discovery_ab/{job_id}/result.json`. See `api/schemas/experiments.py::DiscoveryAbRequest`
-and `tests/api/test_discovery_ab_jobs.py`. Next: **WO156** (A/B panel consumes this).
+and `tests/api/test_discovery_ab_jobs.py`. **WO166** corrected verdict semantics so zero complete pairs
+never map to `no_effect`; insufficient evidence uses `inconclusive` with nullable statistics. Next:
+**WO156** (A/B panel consumes this).
 
 ### WO155 — Encoder ablation job + endpoint (backend) ✅ implemented
 
@@ -114,6 +116,23 @@ comparison table (config × `recon_r2` × `best_latent_ic` vs baseline × pass/f
 Reuses the WO156 query/poll plumbing and result-schema types. Consumes **WO155**
 (`POST/GET .../encoder-ablation`) inside the **WO156** Experiments tab shell. **WO153–157 batch
 complete.**
+
+### WO166 — Inconclusive experiment verdict semantics (backend + frontend) ✅ implemented
+
+Corrects a statistical honesty bug in the Discovery A/B contract: zero surviving paired seeds must not
+be labeled `no_effect`. The shared verdict set is now `helps | no_effect | hurts | inconclusive`.
+
+- **`inconclusive`**: fewer than `minimum_complete_pairs` complete paired seeds (default **2**). Means,
+  Cohen's d, and p-value are **nullable** — the backend does not synthesize zero means or `p_value=1`.
+- **`no_effect`**: enough complete pairs were measured, but the effect did not clear significance /
+  direction criteria.
+- **Result fields**: `requested_seeds`, `complete_pairs`, `minimum_complete_pairs`, and
+  `dropped_pair_reasons` are exposed alongside legacy `n_seeds` (= `complete_pairs`).
+- **Migration**: old stored reports remain readable via schema backfill on deserialize; historical
+  `no_effect` artifacts are not rewritten. New jobs use the corrected contract.
+- **Consumers**: `DiscoveryAbPanel` shows `INCONCLUSIVE — INSUFFICIENT COMPLETE PAIRS`, pair counts,
+  dropped reasons, and suppresses stat tiles / chart when statistics are unavailable. **WO164** (alpha
+  research experiment) consumes this shared rule but does not own it.
 
 ## Guardrails (batch-wide)
 
