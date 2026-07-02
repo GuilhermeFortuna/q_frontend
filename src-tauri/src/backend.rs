@@ -34,34 +34,56 @@ impl Drop for BackendState {
     }
 }
 
+fn is_usable_backend_dir(path: &Path) -> bool {
+    path.join("docker-compose.yml").exists()
+        && path.join("pyproject.toml").exists()
+        && path.join("docker/metatrader5-stub").exists()
+}
+
+/// Walks up from the running executable to find a full sibling `q_backend` checkout.
+fn resolve_dev_backend_dir() -> Option<PathBuf> {
+    let current_exe = std::env::current_exe().ok()?;
+    let mut p = current_exe;
+    for _ in 0..8 {
+        if let Some(parent) = p.parent() {
+            p = parent.to_path_buf();
+            let check_path = p.join("q_backend");
+            if is_usable_backend_dir(&check_path) {
+                return Some(check_path);
+            }
+        }
+    }
+    None
+}
+
 /// Resolves the absolute path to the backend directory containing pyproject.toml and docker-compose.yml.
 fn resolve_backend_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    // Prefer the full sibling checkout during local dev/debug builds. Tauri only bundles a
+    // subset of q_backend into target/debug/_up_/_up_/q_backend, which is enough to locate
+    // docker-compose.yml but not enough for `uv sync` (missing docker/metatrader5-stub).
+    if cfg!(debug_assertions) {
+        if let Some(path) = resolve_dev_backend_dir() {
+            return Ok(path);
+        }
+    }
+
     let resource_dir = app.path().resource_dir().map_err(|e| e.to_string())?;
 
     // 1. Check if direct subfolder in resource_dir exists (packaged / target structure)
     let path1 = resource_dir.join("q_backend");
-    if path1.join("docker-compose.yml").exists() {
+    if is_usable_backend_dir(&path1) {
         return Ok(path1);
     }
 
     // 2. Check if Tauri escaped relative path mapping exists
     let path2 = resource_dir.join("_up_/_up_/q_backend");
-    if path2.join("docker-compose.yml").exists() {
+    if is_usable_backend_dir(&path2) {
         return Ok(path2);
     }
 
-    // 3. Fallback for local development execution: trace parent directories of current executable
-    if let Ok(current_exe) = std::env::current_exe() {
-        let mut p = current_exe.clone();
-        for _ in 0..6 {
-            if let Some(parent) = p.parent() {
-                p = parent.to_path_buf();
-                let check_path = p.join("q_backend");
-                if check_path.join("docker-compose.yml").exists() {
-                    return Ok(check_path);
-                }
-            }
-        }
+    // 3. Fallback for release builds launched from a monorepo checkout
+    if let Some(path) = resolve_dev_backend_dir() {
+        return Ok(path);
     }
 
     Err("Could not locate backend directory (q_backend) containing docker-compose.yml".to_string())

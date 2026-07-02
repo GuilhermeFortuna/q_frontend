@@ -39,6 +39,7 @@
     "resources": [
       "../../q_backend/src/**/*",
       "../../q_backend/alembic/**/*",
+      "../../q_backend/docker/metatrader5-stub/**/*",
       "../../q_backend/pyproject.toml",
       "../../q_backend/uv.lock",
       "../../q_backend/alembic.ini",
