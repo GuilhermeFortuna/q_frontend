@@ -99,6 +99,35 @@ export type IndicatorConfig =
       showCloud?: boolean
     }
 
+/**
+ * A backend-computed indicator series aligned bar-for-bar to the chart's `bars`.
+ * Unlike {@link IndicatorConfig} (client-computed for the Market workspace) these
+ * values are rendered verbatim — the live execution chart never recomputes strategy
+ * indicators. `null` entries are warm-up gaps and break the drawn line.
+ */
+export type PrecomputedIndicatorSeries = {
+  key: string
+  label: string
+  pane: 'price' | 'oscillator'
+  color?: string | null
+  values: (number | null)[]
+}
+
+export type ChartMarkerKind = 'buy' | 'sell' | 'close' | 'fill'
+
+/** A decision/fill event pinned to a bar timestamp on the live execution chart. */
+export type ChartMarker = {
+  id: string
+  /** Bar (open) timestamp this marker aligns to. */
+  timestamp: string
+  kind: ChartMarkerKind
+  label: string
+  /** Multi-line hover detail (action, reason, quantity, price). */
+  detail: string
+  /** Optional price used to vertically place fill markers. */
+  price?: number | null
+}
+
 export type ChartSettings = {
   backgroundType: 'gradient' | 'solid'
   backgroundColor: string

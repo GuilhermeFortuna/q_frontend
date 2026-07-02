@@ -19,6 +19,7 @@ import {
   useUpdateKillSwitch,
 } from '@/api/queries/execution'
 import { useBacktestHistory } from '@/api/queries/backtests'
+import { ExecutionLiveChartPanel } from '@/workspaces/execution/ExecutionLiveChartPanel'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { Panel, PanelHeader } from '@/components/ui/Panel'
@@ -642,6 +643,12 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
               </p>
             ) : null}
           </Panel>
+
+          <ExecutionLiveChartPanel
+            deploymentId={deploymentId}
+            symbol={deployment?.symbol ?? null}
+            pollingEnabled={isPolling}
+          />
 
           <Panel className="flex min-h-0 flex-1 flex-col p-0">
             <PanelHeader title="History" />

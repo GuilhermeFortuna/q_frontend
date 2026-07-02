@@ -255,6 +255,35 @@ export type KillSwitchUpdateResponse = {
   audit_event_id: string
 }
 
+export type DeploymentChartBar = {
+  timestamp: string
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+}
+
+export type DeploymentChartIndicatorPane = 'price' | 'oscillator'
+
+export type DeploymentChartIndicator = {
+  key: string
+  label: string
+  pane: DeploymentChartIndicatorPane
+  color: string | null
+  values: (number | null)[]
+}
+
+export type DeploymentChart = {
+  symbol: string
+  timeframe: string
+  window_bound_bars: number
+  last_bar_close_time: string | null
+  next_bar_close_time: string | null
+  bars: DeploymentChartBar[]
+  indicators: DeploymentChartIndicator[]
+}
+
 export type ExecutionHistoryKind =
   | 'decisions'
   | 'orders'

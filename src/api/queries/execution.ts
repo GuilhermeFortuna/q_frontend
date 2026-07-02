@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 
 import { apiClient } from '@/api/client'
 import type {
@@ -6,6 +7,7 @@ import type {
   DecisionListResponse,
   DeploymentActionRequest,
   DeploymentActionResponse,
+  DeploymentChart,
   DeploymentCreateRequest,
   DeploymentDetail,
   DeploymentListResponse,
@@ -24,6 +26,9 @@ import type {
 
 export const EXECUTION_POLL_MS = 5_000
 export const EXECUTION_PAGE_SIZE = 25
+export const EXECUTION_CHART_BARS = 200
+/** Markers only need the most recent activity; the chart window is bounded anyway. */
+export const EXECUTION_CHART_MARKER_LIMIT = 100
 
 export const executionKeys = {
   all: ['execution'] as const,
@@ -34,6 +39,8 @@ export const executionKeys = {
   deployments: (params: DeploymentListParams) =>
     [...executionKeys.all, 'deployments', params] as const,
   deployment: (id: string) => [...executionKeys.all, 'deployment', id] as const,
+  chart: (deploymentId: string, bars: number) =>
+    [...executionKeys.all, 'chart', deploymentId, { bars }] as const,
   decisions: (deploymentId: string, limit: number, offset: number) =>
     [...executionKeys.all, 'decisions', deploymentId, { limit, offset }] as const,
   orders: (deploymentId: string, limit: number, offset: number) =>
@@ -108,6 +115,17 @@ export async function fetchDeployments(
 export async function fetchDeployment(deploymentId: string): Promise<DeploymentDetail> {
   const { data } = await apiClient.get<DeploymentDetail>(
     `/api/v1/execution/deployments/${deploymentId}`,
+  )
+  return data
+}
+
+export async function fetchDeploymentChart(
+  deploymentId: string,
+  bars = EXECUTION_CHART_BARS,
+): Promise<DeploymentChart> {
+  const { data } = await apiClient.get<DeploymentChart>(
+    `/api/v1/execution/deployments/${deploymentId}/chart`,
+    { params: { bars } },
   )
   return data
 }
@@ -274,6 +292,30 @@ export function useDeployment(deploymentId: string | null, options?: PollingOpti
     enabled,
     staleTime: 2_000,
     refetchInterval: pollingInterval(enabled),
+  })
+}
+
+export function useDeploymentChart(
+  deploymentId: string | null,
+  bars = EXECUTION_CHART_BARS,
+  options?: PollingOptions,
+) {
+  const enabled = (options?.enabled ?? true) && !!deploymentId
+  return useQuery({
+    queryKey: executionKeys.chart(deploymentId ?? '', bars),
+    queryFn: () => fetchDeploymentChart(deploymentId as string, bars),
+    enabled,
+    // The backend serves a new-bar cache, so a full chart refetch is bounded to the
+    // execution cadence — the forming-bar quote poll is the only faster loop.
+    staleTime: EXECUTION_POLL_MS,
+    refetchInterval: pollingInterval(enabled),
+    // On a 503 (market data down) keep the last good chart so the panel can show a
+    // stale note instead of an error wall. A 404 (pre-WO175 backend) must not retry.
+    placeholderData: keepPreviousData,
+    retry: (failureCount, error) => {
+      if (isAxiosError(error) && error.response?.status === 404) return false
+      return failureCount < 1
+    },
   })
 }
 
