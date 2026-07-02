@@ -533,6 +533,65 @@ not UI.
    artifacts and the book summary?
 10. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
 
+## Phase: Local Data Store (next batch)
+
+Makes the platform run **with or without MetaTrader 5** so it can be developed on **Linux**,
+where MT5 does not exist. Today every market-data read funnels through one MT5 wrapper
+(`MarketDataService`) and `import MetaTrader5` is a top-level import in three modules — so the
+backend can't even boot on Linux. This batch turns that single seam into a **provider router**
+(`auto` / `mt5` / `local`, a persisted setting on the System page), makes the MT5 import
+optional, and adds a **portable local parquet store** of market data (`data/market/`,
+self-describing `catalog.json`, copy-the-folder portability for the USB workflow). A new
+**Storage** workspace fetches data from MT5 on Windows and writes it to the store; on Linux the
+app reads the same store with `local` selected. Phase A ships OHLCV (candle engine offline);
+Phase B (WO50–WO51) adds ticks (tick engine offline).
+
+| #   | File                                                                                                   | Repo       | Depends on        |
+| --- | ------------------------------------------------------------------------------------------------------ | ---------- | ----------------- |
+| 47  | [WO47-backend-market-data-provider-abstraction.md](WO47-backend-market-data-provider-abstraction.md)   | q_backend  | —                 |
+| 48  | [WO48-backend-local-ohlcv-store-and-ingestion.md](WO48-backend-local-ohlcv-store-and-ingestion.md)     | q_backend  | WO47 contract     |
+| 49  | [WO49-frontend-storage-workspace.md](WO49-frontend-storage-workspace.md)                               | q_frontend | WO47 + WO48       |
+| 50  | [WO50-backend-local-tick-store-and-ingestion.md](WO50-backend-local-tick-store-and-ingestion.md)       | q_backend  | WO48              |
+| 51  | [WO51-frontend-storage-tick-support.md](WO51-frontend-storage-tick-support.md)                         | q_frontend | WO49 + WO50       |
+
+### Dispatch order
+
+```
+WO47  ──►  WO48  ─┬─►  WO49  ──────────►  WO51
+                  └─►  WO50  ──►  WO51
+```
+
+Strictly WO47→WO48 first (each pastes its contract: WO47 the `MarketDataProvider` interface +
+`/system/data-source` JSON; WO48 the four `/storage/*` shapes + catalog layout). After WO48,
+WO49 (Storage UI + System data-source card) and WO50 (tick backend) run **in parallel** —
+disjoint repos. WO51 last: it needs WO49's Storage workspace and WO50's `kind`-tagged tick
+contract.
+
+### Batch-specific review checklist
+
+1. Does the backend **import and boot with `MetaTrader5` uninstalled** (no top-level `mt5.*`
+   left — timeframes and tick flags resolved lazily), and is behavior **identical** when MT5 is
+   present (all 21 timeframes resolve to the same constants)?
+2. Does **every** market-data read still funnel through `MarketDataService` (engines/workers/
+   `backtest_runner` call sites unchanged), with the provider chosen by the `auto/mt5/local`
+   setting read **per-process** (workers see the change without a restart)?
+3. Is the OHLCV store **idempotent on overlap** (re-ingest doesn't duplicate bars; catalog
+   start/end/rows stay correct) and **portable** (copy `data/market` / repoint
+   `Q_MARKET_DATA_ROOT` → inventory + a `local` backtest still work)?
+4. Does a candle backtest in `local` mode run with **zero MT5 calls** (spy proves it), and does
+   a tick backtest with no stored ticks **degrade with a clear "ingest ticks" error**, not a 500?
+5. Is `ingest` gated on MT5 availability (you can't fill the store from a machine with no
+   broker), while inventory/delete/read work **without** MT5?
+6. Do live-only UI features (snapshots, recent ticks, time & sales, broker symbol search) in
+   `local` mode **degrade** (empty/disabled, catalog-backed search) rather than throw?
+7. Are ticks stored in the **existing `COLUMNAR_TICK_KEYS` schema/dtypes** (WO50), and is the
+   columnar contract the engine consumes unchanged?
+8. Are all new fields/endpoints strictly **additive** (health/ catalog `kind`), with existing
+   market-data/backtest tests green and unmodified?
+9. Is `MetaTrader5` now an **optional/Windows-only** dependency so `uv sync` succeeds on Linux,
+   while still installing on Windows?
+10. Did the agent actually run `uv run pytest` / `pnpm test:run`, or just claim green?
+
 ## Phase: Exit-Driven Discovery (next batch)
 
 Makes exit logic a first-class discovery surface. Today Discovery can rank entries and genetic
@@ -871,6 +930,49 @@ flow exists.
     rather than optimistically claiming destructive commands completed?
 12. Can only immutable saved configs or frozen `ready_for_paper` champions create a reviewed draft,
     with no automatic start or live option?
+
+## Phase: Execution Live Chart (next batch)
+
+Gives the Execution workspace visual feedback. Today, after starting a paper deployment, the only
+signal is JSON rows accumulating in the Decisions table — you can't see what the strategy sees or
+why it hasn't acted. This batch adds a live chart per deployment: the backend exposes the exact
+bounded bar window + strategy indicator series the forward evaluator consumes (same code path, so
+backtest/forward parity is guaranteed by construction), and the frontend renders it with
+decision/fill markers, the live forming bar, and a bar-close countdown that makes the closed-bar
+evaluation contract obvious.
+
+| #   | File                                                                                             | Repo       | Depends on     |
+| --- | ------------------------------------------------------------------------------------------------ | ---------- | -------------- |
+| 175 | [WO175-backend-deployment-chart-endpoint.md](WO175-backend-deployment-chart-endpoint.md)         | q_backend  | WO169 + WO171  |
+| 176 | [WO176-frontend-execution-live-chart.md](WO176-frontend-execution-live-chart.md)                 | q_frontend | WO175 contract |
+
+### Dispatch order
+
+```text
+WO175  ──►  WO176
+```
+
+Strictly sequential. WO175 **must paste the full chart JSON contract** (one real payload with
+indicators on at least two panes) in its completion message — WO176 builds the entire panel
+against it. WO176 must degrade cleanly against a pre-WO175 backend.
+
+### Batch-specific review checklist
+
+1. Do the endpoint and the evaluator share **one** indicator-augmentation helper (parity test
+   proves identical values per bar), with no duplicated indicator math in the router?
+2. Is display trimming done **after** indicator computation, so no warm-up NaNs reach the
+   requested display window?
+3. Does 5s polling recompute indicators only when a **new completed bar** lands (call-count spy),
+   and is the `bars` param bounded?
+4. Did bars/indicator series stay **out of Postgres** (compute-and-return only), and do reads
+   funnel through `MarketDataService` (works under `auto`/`mt5`/`local`)?
+5. Frontend: are strategy indicators rendered from **backend values only** (no client
+   recomputation), and is the Market workspace chart pixel-identical?
+6. Do hidden/off-route Execution views stop polling the chart, and does the page degrade
+   (404 → unavailable panel, 503 → stale note) instead of an error wall?
+7. Are markers sourced from persisted decisions/fills only (no optimistic rendering), with `hold`
+   skipped?
+8. Did the agent actually run `uv run pytest` / `pnpm test:run` for real, or just claim green?
 
 ## Review checklist (apply to every returned PR)
 
