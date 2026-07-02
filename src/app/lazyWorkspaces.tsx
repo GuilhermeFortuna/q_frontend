@@ -71,3 +71,9 @@ export const LazyStandaloneChartWindow = lazy(() =>
     default: module.StandaloneChartWindow,
   })),
 )
+
+export const LazyExecutionLiveWorkspace = lazy(() =>
+  import('@/workspaces/execution/ExecutionLiveWorkspace').then((module) => ({
+    default: module.ExecutionLiveWorkspace,
+  })),
+)

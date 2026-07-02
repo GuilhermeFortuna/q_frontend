@@ -1,5 +1,8 @@
 import axios from 'axios'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
+import { isTauri } from '@tauri-apps/api/core'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { ExternalLink } from 'lucide-react'
 
 import {
   EXECUTION_PAGE_SIZE,
@@ -31,7 +34,14 @@ import { wellInputClass } from '@/components/ui/wellInputStyles'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
-import type { ExecutionHistoryKind } from '@/types/execution'
+import type { 
+  ExecutionHistoryKind,
+  Decision,
+  ExecutionOrder,
+  Fill,
+  LedgerEntry,
+  RiskEvent
+} from '@/types/execution'
 
 type ExecutionWorkspaceProps = {
   /** When false, all execution polling stops (route visibility guard). */
@@ -48,14 +58,15 @@ const HISTORY_TABS: { value: ExecutionHistoryKind; label: string }[] = [
   { value: 'risk-events', label: 'Risk' },
 ]
 
-function statusTone(status: string): string {
+function statusToStatTileTone(status: string): 'up' | 'down' | 'warning' | 'neutral' {
   if (status === 'healthy' || status === 'ok' || status === 'online' || status === 'running') {
-    return 'text-emerald-400'
+    return 'up'
   }
   if (status === 'stale' || status === 'degraded' || status === 'paused') {
-    return 'text-amber-400'
+    return 'warning'
   }
-  return 'text-rose-400'
+  if (!status) return 'neutral'
+  return 'down'
 }
 
 function EnvironmentBadges() {
@@ -90,14 +101,14 @@ function HealthSignals({
   unknownOrders: number
 }) {
   return (
-    <Panel className="p-4" data-testid="execution-health-panel">
+    <Panel className="p-4" living data-testid="execution-health-panel">
       <p className="text-silver-400 mb-3 text-xs">
         API reachability is separate from worker heartbeat and market-data freshness.
       </p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="API" value={apiStatus} valueTone="neutral" />
-        <StatTile label="Worker" value={workerStatus} />
-        <StatTile label="Market data" value={marketStatus} />
+        <StatTile label="API" value={apiStatus} valueTone={statusToStatTileTone(apiStatus)} />
+        <StatTile label="Worker" value={workerStatus} valueTone={statusToStatTileTone(workerStatus)} />
+        <StatTile label="Market data" value={marketStatus} valueTone={statusToStatTileTone(marketStatus)} />
         <StatTile
           label="Unknown orders"
           value={String(unknownOrders)}
@@ -106,16 +117,24 @@ function HealthSignals({
         />
       </div>
       {apiStatus === 'ok' && workerStatus === 'offline' ? (
-        <p className="mt-3 text-sm text-amber-300" data-testid="execution-worker-down-banner">
-          Control API is up, but no healthy worker lease was detected. Lifecycle commands may queue
-          until a worker reconnects.
-        </p>
+        <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-300" data-testid="execution-worker-down-banner">
+          <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-400 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <span className="font-semibold text-amber-200">Worker Lease offline:</span> Control API is up, but no healthy worker lease was detected. Lifecycle commands may queue until a worker reconnects.
+          </div>
+        </div>
       ) : null}
       {unknownOrders > 0 ? (
-        <p className="mt-3 text-sm text-rose-300" data-testid="execution-unknown-orders-banner">
-          {unknownOrders} order(s) need reconciliation — inspect the Orders tab and worker logs
-          before flattening.
-        </p>
+        <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-300" data-testid="execution-unknown-orders-banner">
+          <svg className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <span className="font-semibold text-rose-200">Reconciliation Required:</span> {unknownOrders} order(s) need reconciliation — inspect the Orders tab and worker logs before flattening.
+          </div>
+        </div>
       ) : null}
     </Panel>
   )
@@ -160,6 +179,208 @@ function PaginatedHistoryTable({
   const pageStart = offset + 1
   const pageEnd = Math.min(offset + EXECUTION_PAGE_SIZE, total)
 
+  const renderHeaders = () => {
+    switch (kind) {
+      case 'decisions':
+        return (
+          <>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Time</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Action</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Outcome</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Requested Qty</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Reason</th>
+          </>
+        )
+      case 'orders':
+        return (
+          <>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Time</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Order ID</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Side</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Type</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Qty</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Status</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Reconciliation</th>
+          </>
+        )
+      case 'fills':
+        return (
+          <>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Time</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Fill ID</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Order ID</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Side</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Price</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Qty</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Fee</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Slippage</th>
+          </>
+        )
+      case 'ledger':
+        return (
+          <>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Time</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Type</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Amount</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Balance After</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Description</th>
+          </>
+        )
+      case 'risk-events':
+        return (
+          <>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Time</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Rejection Code</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400">Message</th>
+            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono text-right">Context</th>
+          </>
+        )
+      default:
+        return <th className="px-4 py-2.5 font-semibold text-silver-400">Raw Data</th>
+    }
+  }
+
+  const renderRow = (row: any) => {
+    switch (kind) {
+      case 'decisions': {
+        const item = row as Decision
+        return (
+          <>
+            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.created_at || item.bar_close_time)}</td>
+            <td className="px-4 py-2 whitespace-nowrap">
+              <span className={cn(
+                "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
+                item.signal_action === 'buy'
+                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
+                  : item.signal_action === 'sell'
+                    ? "bg-rose-500/10 text-rose-300 border-rose-500/25"
+                    : item.signal_action === 'hold'
+                      ? "bg-silver-500/10 text-silver-300 border-silver-500/25"
+                      : "bg-amber-500/10 text-amber-300 border-amber-500/25"
+              )}>
+                {item.signal_action}
+              </span>
+            </td>
+            <td className="px-4 py-2 whitespace-nowrap">
+              <span className={cn(
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                item.outcome === 'executed' || item.outcome === 'submitted'
+                  ? "bg-emerald-500/5 text-emerald-400 border border-emerald-500/15"
+                  : item.outcome === 'no_trade'
+                    ? "bg-carbon-800 text-silver-400 border border-carbon-700"
+                    : "bg-rose-500/5 text-rose-400 border border-rose-500/15"
+              )}>
+                {item.outcome}
+              </span>
+            </td>
+            <td className="px-4 py-2 text-silver-300 text-right font-mono font-medium">{item.requested_quantity ?? '—'}</td>
+            <td className="px-4 py-2 text-silver-400 truncate max-w-xs" title={item.reason ?? ''}>{item.reason ?? '—'}</td>
+          </>
+        )
+      }
+      case 'orders': {
+        const item = row as ExecutionOrder
+        return (
+          <>
+            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.created_at)}</td>
+            <td className="px-4 py-2 text-silver-400 font-mono" title={item.id}>{item.id.slice(0, 8)}…</td>
+            <td className="px-4 py-2 whitespace-nowrap">
+              <span className={cn(
+                "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
+                item.side === 'buy'
+                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
+                  : "bg-rose-500/10 text-rose-300 border-rose-500/25"
+              )}>
+                {item.side}
+              </span>
+            </td>
+            <td className="px-4 py-2 text-silver-300 font-medium uppercase text-[10px] tracking-wide">{item.order_type}</td>
+            <td className="px-4 py-2 text-silver-300 text-right font-mono font-medium">{item.quantity}</td>
+            <td className="px-4 py-2 whitespace-nowrap">
+              <span className={cn(
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded border",
+                item.status === 'filled'
+                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                  : item.status === 'pending'
+                    ? "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                    : "bg-rose-500/10 text-rose-300 border-rose-500/20"
+              )}>
+                {item.status}
+              </span>
+            </td>
+            <td className="px-4 py-2 text-silver-400 font-mono text-[10px]">{item.reconciliation_state}</td>
+          </>
+        )
+      }
+      case 'fills': {
+        const item = row as Fill
+        return (
+          <>
+            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.filled_at || item.created_at)}</td>
+            <td className="px-4 py-2 text-silver-400 font-mono" title={item.id}>{item.id.slice(0, 8)}…</td>
+            <td className="px-4 py-2 text-silver-400 font-mono" title={item.order_id}>{item.order_id.slice(0, 8)}…</td>
+            <td className="px-4 py-2 whitespace-nowrap">
+              <span className={cn(
+                "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
+                item.side === 'buy'
+                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
+                  : "bg-rose-500/10 text-rose-300 border-rose-500/25"
+              )}>
+                {item.side}
+              </span>
+            </td>
+            <td className="px-4 py-2 text-silver-100 text-right font-mono font-semibold">{Number(item.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+            <td className="px-4 py-2 text-silver-300 text-right font-mono font-medium">{item.quantity}</td>
+            <td className="px-4 py-2 text-silver-400 text-right font-mono">{Number(item.fee).toFixed(2)}</td>
+            <td className="px-4 py-2 text-silver-400 text-right font-mono">{Number(item.slippage).toFixed(2)}</td>
+          </>
+        )
+      }
+      case 'ledger': {
+        const item = row as LedgerEntry
+        const amt = Number(item.amount)
+        const isPositive = amt >= 0
+        return (
+          <>
+            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.created_at)}</td>
+            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-medium text-[10px] uppercase tracking-wider">{item.entry_type.replace('_', ' ')}</td>
+            <td className={cn(
+              "px-4 py-2 text-right font-mono font-semibold whitespace-nowrap",
+              isPositive ? "text-emerald-400" : "text-rose-400"
+            )}>
+              {isPositive ? '+' : ''}{amt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </td>
+            <td className="px-4 py-2 text-silver-100 text-right font-mono font-medium">{Number(item.balance_after).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+            <td className="px-4 py-2 text-silver-400 truncate max-w-xs" title={item.description ?? ''}>{item.description ?? '—'}</td>
+          </>
+        )
+      }
+      case 'risk-events': {
+        const item = row as RiskEvent
+        return (
+          <>
+            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.created_at)}</td>
+            <td className="px-4 py-2 whitespace-nowrap">
+              <span className="bg-rose-500/10 text-rose-300 border border-rose-500/25 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded">
+                {item.rejection_code}
+              </span>
+            </td>
+            <td className="px-4 py-2 text-silver-200 leading-normal" title={item.message}>{item.message}</td>
+            <td className="px-4 py-2 text-silver-400 font-mono text-[10px] text-right truncate max-w-xs" title={JSON.stringify(item.context)}>
+              {JSON.stringify(item.context)}
+            </td>
+          </>
+        )
+      }
+      default:
+        return (
+          <td className="px-4 py-2 text-silver-300 font-mono">
+            <pre className="whitespace-pre-wrap">{JSON.stringify(row, null, 0)}</pre>
+          </td>
+        )
+    }
+  }
+
   return (
     <div className="min-h-0 flex-1 overflow-auto" data-testid={`execution-history-${kind}`}>
       {isLoading ? <p className="text-silver-400 p-4 text-sm">Loading…</p> : null}
@@ -170,15 +391,18 @@ function PaginatedHistoryTable({
         <p className="text-silver-500 p-4 text-sm">No {kind} for this page.</p>
       ) : null}
       <table className="w-full text-left text-xs">
-        <tbody>
+        <thead className="bg-carbon-950/60 border-carbon-800 border-b text-[10px] font-bold tracking-wider uppercase">
+          <tr>
+            {renderHeaders()}
+          </tr>
+        </thead>
+        <tbody className="divide-carbon-800/60 divide-y">
           {items.map((row) => (
             <tr
               key={'id' in row ? String(row.id) : JSON.stringify(row)}
-              className="border-carbon-800 border-b"
+              className="border-carbon-800 border-b hover:bg-carbon-800/25 transition-colors"
             >
-              <td className="text-silver-300 p-2 font-mono">
-                <pre className="whitespace-pre-wrap">{JSON.stringify(row, null, 0)}</pre>
-              </td>
+              {renderRow(row)}
             </tr>
           ))}
         </tbody>
@@ -216,6 +440,31 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
   const storeActive = useAppStore((s) => s.activeWorkspace === 'execution')
   const isPolling = pollingEnabled ?? storeActive
   const poll = { enabled: isPolling }
+
+  const openExecutionMonitor = useCallback((id: string, name: string) => {
+    const url = `/?deployment_id=${encodeURIComponent(id)}`
+    if (isTauri()) {
+      const windowLabel = `exec-monitor-${id}-${Date.now()}`
+      try {
+        const monitorWindow = new WebviewWindow(windowLabel, {
+          url,
+          title: `Execution Monitor - ${name}`,
+          width: 1200,
+          height: 800,
+          resizable: true,
+          decorations: false,
+          focus: true,
+        })
+        void monitorWindow.once('tauri://error', (event) => {
+          console.error('Failed to open Tauri execution window:', event.payload)
+        })
+      } catch (err) {
+        console.error('Failed to open Tauri execution window:', err)
+      }
+    } else {
+      window.open(url, '_blank', 'width=1200,height=800')
+    }
+  }, [])
 
   const healthQuery = useExecutionHealth(poll)
   const killSwitchQuery = useKillSwitch(poll)
@@ -419,7 +668,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
       ) : null}
 
       <div className="grid shrink-0 gap-4 lg:grid-cols-2">
-        <Panel className="p-4">
+        <Panel className="p-4" living>
           <PanelHeader title="Global kill switch" />
           <p className="text-silver-400 -mt-1 mb-3 text-xs">
             Halts new risk across paper deployments. Requires explicit confirmation to enable.
@@ -427,10 +676,10 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
           <div className="flex flex-wrap items-center gap-3">
             <span
               className={cn(
-                'rounded-md px-2 py-1 text-xs font-semibold uppercase',
+                'rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider border',
                 killSwitch?.enabled
-                  ? 'bg-rose-500/15 text-rose-300'
-                  : 'bg-emerald-500/10 text-emerald-300',
+                  ? 'bg-rose-500/15 text-rose-300 border-rose-500/25 animate-pulse'
+                  : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
               )}
               data-testid="execution-kill-switch-state"
             >
@@ -441,6 +690,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                 type="button"
                 variant="outline"
                 size="sm"
+                className="border-silver-500/30 text-silver-300 hover:bg-silver-500/10 transition-all duration-150 active:scale-95"
                 disabled={updateKillSwitch.isPending}
                 onClick={() => void runKillSwitch(false)}
               >
@@ -451,7 +701,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-rose-500/40 text-rose-300"
+                className="border-rose-500/40 text-rose-300 hover:bg-rose-500/10 hover:border-rose-500 transition-all duration-150 active:scale-95"
                 onClick={() => setConfirmKind('kill_switch_on')}
               >
                 Engage kill switch
@@ -460,14 +710,17 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
           </div>
         </Panel>
 
-        <Panel className="p-4">
+        <Panel className="p-4" living>
           <PanelHeader title="Paper account" />
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div className="mb-3 flex flex-wrap gap-2 items-center">
             {accountsQuery.data?.items.map((account) => (
               <button
                 key={account.id}
                 type="button"
-                className={chipClass(account.id === activeAccountId)}
+                className={cn(
+                  chipClass(account.id === activeAccountId),
+                  'transition-all duration-150 active:scale-95'
+                )}
                 onClick={() => {
                   setSelectedAccountId(account.id)
                   setSelectedDeploymentId(null)
@@ -480,6 +733,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
               type="button"
               variant="ghost"
               size="sm"
+              className="text-brass-400 hover:text-brass-350 hover:bg-brass-500/10 transition-colors"
               onClick={() => setShowCreateAccount(true)}
             >
               + Account
@@ -487,15 +741,18 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
           </div>
           {activeAccount ? (
             <div className="grid gap-3 sm:grid-cols-3">
-              <StatTile label="Cash balance" value={activeAccount.cash_balance} />
+              <StatTile 
+                label="Cash balance" 
+                value={Number(activeAccount.cash_balance).toLocaleString('pt-BR', { style: 'currency', currency: activeAccount.currency })} 
+              />
               <StatTile
                 label="Equity (cash)"
-                value={activeAccount.cash_balance}
-                delta="Mark-to-market uses worker quotes when a position is open"
+                value={Number(activeAccount.cash_balance).toLocaleString('pt-BR', { style: 'currency', currency: activeAccount.currency })}
+                delta="Uses worker quotes when a position is open"
               />
               <StatTile
                 label="Session P&L vs initial"
-                value={dailyPnl == null ? '—' : dailyPnl.toFixed(2)}
+                value={dailyPnl == null ? '—' : `${dailyPnl >= 0 ? '+' : ''}${dailyPnl.toLocaleString('pt-BR', { style: 'currency', currency: activeAccount.currency })}`}
                 valueTone={dailyPnl != null && dailyPnl >= 0 ? 'up' : 'down'}
               />
             </div>
@@ -506,7 +763,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-        <Panel className="flex min-h-0 flex-col p-0">
+        <Panel className="flex min-h-0 flex-col p-0" living>
           <PanelHeader
             title="Deployments"
             right={
@@ -514,6 +771,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                 type="button"
                 variant="ghost"
                 size="sm"
+                className="text-brass-400 hover:text-brass-350 hover:bg-brass-500/10 transition-colors font-medium text-xs"
                 disabled={!activeAccountId}
                 onClick={() => setShowCreateDeployment(true)}
               >
@@ -525,27 +783,81 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
             {deploymentsQuery.isLoading ? (
               <p className="text-silver-400 p-2 text-sm">Loading deployments…</p>
             ) : null}
-            {(deploymentsQuery.data?.items ?? []).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={cn(
-                  'surface-card mb-2 w-full rounded-lg border p-3 text-left transition-colors',
-                  item.id === deploymentId ? 'border-brass-500/50' : 'border-transparent',
-                )}
-                onClick={() => setSelectedDeploymentId(item.id)}
-                data-testid={`execution-deployment-${item.id}`}
-              >
-                <p className="text-silver-100 text-sm font-semibold">{item.name}</p>
-                <p className="text-silver-500 mt-1 text-xs">
-                  {item.symbol} · {item.timeframe} ·{' '}
-                  <span className={statusTone(item.lifecycle)}>{item.lifecycle}</span>
-                </p>
-                {item.pending_action ? (
-                  <p className="mt-1 text-xs text-amber-300">Pending: {item.pending_action}</p>
-                ) : null}
-              </button>
-            ))}
+            {(deploymentsQuery.data?.items ?? []).map((item) => {
+              const isSelected = item.id === deploymentId;
+              let statusBorder = 'border-l-rose-500';
+              if (item.lifecycle === 'running') {
+                statusBorder = 'border-l-emerald-500';
+              } else if (item.lifecycle === 'paused' || item.lifecycle === 'draft') {
+                statusBorder = 'border-l-amber-500';
+              }
+
+              return (
+                <div
+                  key={item.id}
+                  role="button"
+                  tabIndex={0}
+                  className={cn(
+                    'surface-card mb-2 w-full rounded-lg border-y border-r border-l-4 p-3 text-left transition-all duration-155 hover:bg-carbon-800/40 cursor-pointer',
+                    statusBorder,
+                    isSelected 
+                      ? 'border-y-brass-600/30 border-r-brass-600/30 bg-brass-500/5 shadow-[0_0_12px_rgba(217,158,34,0.08)]' 
+                      : 'border-y-transparent border-r-transparent bg-transparent',
+                  )}
+                  onClick={() => setSelectedDeploymentId(item.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setSelectedDeploymentId(item.id)
+                    }
+                  }}
+                  data-testid={`execution-deployment-${item.id}`}
+                >
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className={cn(
+                        'text-sm font-semibold transition-colors truncate',
+                        isSelected ? 'text-brass-400' : 'text-silver-100'
+                      )}>
+                        {item.name}
+                      </p>
+                      <button
+                        type="button"
+                        title="Open monitor window"
+                        className="text-silver-500 hover:text-brass-400 p-0.5 rounded transition-colors shrink-0 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openExecutionMonitor(item.id, item.name)
+                        }}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <span className={cn(
+                      'text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border',
+                      item.lifecycle === 'running'
+                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'
+                        : item.lifecycle === 'paused'
+                          ? 'bg-amber-500/10 text-amber-300 border-amber-500/25'
+                          : 'bg-rose-500/10 text-rose-300 border-rose-500/25'
+                    )}>
+                      {item.lifecycle}
+                    </span>
+                  </div>
+                  <p className="text-silver-400 mt-1.5 font-mono text-[11px] flex items-center gap-1.5">
+                    <span>{item.symbol}</span>
+                    <span className="text-carbon-600">·</span>
+                    <span>{item.timeframe}</span>
+                  </p>
+                  {item.pending_action ? (
+                    <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-300 bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 rounded">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <span>Pending: {item.pending_action}</span>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
             {(deploymentsQuery.data?.items.length ?? 0) === 0 && !deploymentsQuery.isLoading ? (
               <p className="text-silver-500 p-2 text-sm">No deployments yet.</p>
             ) : null}
@@ -553,34 +865,51 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
         </Panel>
 
         <div className="flex min-h-0 flex-col gap-4">
-          <Panel className="p-4">
+          <Panel className="p-4" living>
             <PanelHeader title="Deployment control" />
             {deployment ? (
               <>
-                <div className="mb-3 flex flex-wrap gap-2 text-xs">
-                  <span className="text-silver-400">
-                    Current:{' '}
-                    <strong className={statusTone(deployment.lifecycle)}>
+                <div className="mb-4 flex flex-wrap gap-x-4 gap-y-2 text-xs border-b border-carbon-800 pb-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-silver-400">Current Status:</span>
+                    <span className={cn(
+                      'font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border',
+                      deployment.lifecycle === 'running'
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                        : deployment.lifecycle === 'paused'
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/25'
+                          : 'bg-rose-500/10 text-rose-400 border-rose-500/25'
+                    )}>
                       {deployment.lifecycle}
-                    </strong>
-                  </span>
+                    </span>
+                  </div>
                   {deployment.pending_action ? (
-                    <span className="text-amber-300">Desired: {deployment.pending_action}</span>
+                    <div className="flex items-center gap-1.5 text-amber-350 bg-amber-500/5 border border-amber-500/15 px-2 py-0.5 rounded">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <span>Desired: {deployment.pending_action}</span>
+                    </div>
                   ) : null}
                   {deployment.last_bar_close_time ? (
-                    <span className="text-silver-500">
-                      Last bar {formatDisplayDateTime(deployment.last_bar_close_time)}
-                    </span>
+                    <div className="flex items-center gap-1 text-silver-500">
+                      <span>Last bar:</span>
+                      <span className="font-mono">{formatDisplayDateTime(deployment.last_bar_close_time)}</span>
+                    </div>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" onClick={() => void runLifecycleAction('start')}>
+                <div className="flex flex-wrap gap-3">
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors shadow-lg shadow-emerald-950/20 active:scale-95 cursor-pointer"
+                    onClick={() => void runLifecycleAction('start')}
+                  >
                     Start
                   </Button>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
+                    className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10 hover:border-amber-500 transition-colors font-semibold active:scale-95 cursor-pointer"
                     onClick={() => void runLifecycleAction('pause')}
                   >
                     Pause
@@ -589,6 +918,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                     type="button"
                     size="sm"
                     variant="outline"
+                    className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10 hover:border-rose-500 transition-colors font-semibold active:scale-95 cursor-pointer"
                     onClick={() => void runLifecycleAction('stop')}
                   >
                     Stop
@@ -597,14 +927,24 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="border-rose-500/40 text-rose-300"
+                    className="border-brass-500/30 text-brass-300 hover:bg-brass-500/10 hover:border-brass-450 transition-colors font-semibold active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    onClick={() => openExecutionMonitor(deployment.id, deployment.name)}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    <span>Monitor Live</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="border-red-500/40 text-red-200 bg-red-950/15 hover:bg-red-950/30 hover:border-red-500 hover:text-red-100 transition-all font-semibold active:scale-95 cursor-pointer ml-auto"
                     onClick={() => setConfirmKind('flatten')}
                   >
                     Flatten
                   </Button>
                 </div>
                 <p
-                  className="text-silver-500 mt-3 text-xs"
+                  className="text-silver-400 mt-4 text-xs bg-carbon-900/40 border border-carbon-800 p-2.5 rounded-lg leading-relaxed"
                   data-testid="execution-retained-position-note"
                 >
                   Pause and stop halt new entries; open positions remain until you flatten or the
@@ -612,35 +952,71 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                 </p>
                 {deployment.open_position ? (
                   <div
-                    className="surface-card mt-4 rounded-lg border p-3"
+                    className={cn(
+                      "mt-4 rounded-lg border-y border-r border-l-4 p-4 shadow-md bg-carbon-900/50",
+                      deployment.open_position.side === 'long' 
+                        ? 'border-l-emerald-500 border-y-emerald-950/20 border-r-emerald-950/20' 
+                        : 'border-l-rose-500 border-y-rose-950/20 border-r-rose-950/20'
+                    )}
                     data-testid="execution-open-position"
                   >
-                    <p className="text-silver-300 text-sm font-semibold">Open position</p>
-                    <p className="text-silver-400 mt-1 font-mono text-xs">
-                      {deployment.open_position.side} {deployment.open_position.quantity} @{' '}
-                      {deployment.open_position.average_entry_price ?? '—'}
-                    </p>
-                    <p className="text-silver-500 mt-1 text-xs">
+                    <div className="flex items-center justify-between border-b border-carbon-800 pb-2 mb-3">
+                      <p className="text-silver-100 text-sm font-bold flex items-center gap-1.5">
+                        <span className={cn(
+                          "h-2 w-2 rounded-full",
+                          deployment.open_position.side === 'long' ? 'bg-emerald-400' : 'bg-rose-400'
+                        )} />
+                        <span>Open Position</span>
+                      </p>
+                      <span className={cn(
+                        "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border",
+                        deployment.open_position.side === 'long'
+                          ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
+                          : "bg-rose-500/10 text-rose-300 border-rose-500/25"
+                      )}>
+                        {deployment.open_position.side}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-silver-500 text-[10px] font-semibold uppercase tracking-wider">Quantity</p>
+                        <p className="text-silver-100 font-mono text-base font-bold mt-0.5">
+                          {deployment.open_position.quantity}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-silver-500 text-[10px] font-semibold uppercase tracking-wider">Avg Entry Price</p>
+                        <p className="text-silver-100 font-mono text-base font-bold mt-0.5">
+                          {deployment.open_position.average_entry_price ?? '—'}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-silver-500 mt-3 text-xs italic leading-relaxed border-t border-carbon-800/60 pt-2.5">
                       Mark-to-market updates when the worker receives fresh quotes — not simulated
                       here.
                     </p>
                   </div>
                 ) : (
-                  <p className="text-silver-500 mt-3 text-sm">Flat — no open net position.</p>
+                  <div className="mt-4 flex items-center gap-2 rounded-lg border border-dashed border-carbon-800 bg-carbon-950/20 p-4 text-silver-450 text-sm">
+                    <span className="h-2 w-2 rounded-full bg-silver-500" />
+                    <span>Flat — no open net position.</span>
+                  </div>
                 )}
               </>
             ) : (
-              <p className="text-silver-500 text-sm">Select a deployment.</p>
+              <p className="text-silver-500 text-sm py-2">Select a deployment.</p>
             )}
             {actionFeedback ? (
-              <p className="mt-3 text-sm text-emerald-300" data-testid="execution-action-feedback">
-                {actionFeedback}
-              </p>
+              <div className="mt-3 flex items-center gap-2 text-sm text-emerald-350 bg-emerald-500/5 border border-emerald-500/15 p-2.5 rounded-lg" data-testid="execution-action-feedback">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span>{actionFeedback}</span>
+              </div>
             ) : null}
             {actionError ? (
-              <p className="mt-3 text-sm text-rose-300" data-testid="execution-action-error">
-                {actionError}
-              </p>
+              <div className="mt-3 flex items-center gap-2 text-sm text-rose-350 bg-rose-500/5 border border-rose-500/15 p-2.5 rounded-lg" data-testid="execution-action-error">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-450" />
+                <span>{actionError}</span>
+              </div>
             ) : null}
           </Panel>
 
@@ -650,7 +1026,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
             pollingEnabled={isPolling}
           />
 
-          <Panel className="flex min-h-0 flex-1 flex-col p-0">
+          <Panel className="flex min-h-0 flex-1 flex-col p-0" living>
             <PanelHeader title="History" />
             <div className="border-carbon-800 shrink-0 border-b px-3 py-2">
               <SegmentedToggle

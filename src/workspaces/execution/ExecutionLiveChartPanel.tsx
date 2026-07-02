@@ -14,11 +14,14 @@ import { Panel, PanelHeader } from '@/components/ui/Panel'
 import { buildChartMarkers } from '@/workspaces/execution/liveChartMarkers'
 import type { DeploymentChart } from '@/types/execution'
 import type { OhlcvBar } from '@/types/api'
+import { cn } from '@/lib/utils'
 
 type ExecutionLiveChartPanelProps = {
   deploymentId: string | null
   symbol: string | null
   pollingEnabled: boolean
+  className?: string
+  chartHeight?: number | string
 }
 
 function toOhlcvBars(chart: DeploymentChart): OhlcvBar[] {
@@ -96,6 +99,8 @@ export function ExecutionLiveChartPanel({
   deploymentId,
   symbol,
   pollingEnabled,
+  className,
+  chartHeight,
 }: ExecutionLiveChartPanelProps) {
   const enabled = pollingEnabled && !!deploymentId
   const chartQuery = useDeploymentChart(deploymentId, EXECUTION_CHART_BARS, { enabled })
@@ -186,7 +191,7 @@ export function ExecutionLiveChartPanel({
   }
 
   return (
-    <Panel className="p-4" data-testid="execution-live-chart-panel">
+    <Panel className={cn("p-4", className)} data-testid="execution-live-chart-panel">
       {header}
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p
@@ -210,14 +215,17 @@ export function ExecutionLiveChartPanel({
           Market data is stale — showing the last chart the worker could load.
         </p>
       ) : null}
-      <LiveStrategyChart
-        bars={completedBars}
-        formingBar={formingBar}
-        indicators={indicators}
-        markers={markers}
-        symbol={chart.symbol}
-        timeframe={chart.timeframe}
-      />
+      <div className="flex-1 min-h-0 w-full flex flex-col">
+        <LiveStrategyChart
+          bars={completedBars}
+          formingBar={formingBar}
+          indicators={indicators}
+          markers={markers}
+          symbol={chart.symbol}
+          timeframe={chart.timeframe}
+          height={chartHeight}
+        />
+      </div>
     </Panel>
   )
 }

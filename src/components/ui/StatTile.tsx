@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-export type StatTileDeltaTone = 'up' | 'down' | 'neutral'
+export type StatTileDeltaTone = 'up' | 'down' | 'neutral' | 'warning'
 
 export type StatTileProps = {
   label: string
@@ -16,6 +16,7 @@ const deltaToneClass: Record<StatTileDeltaTone, string> = {
   up: 'text-emerald-400',
   down: 'text-rose-400',
   neutral: 'text-silver-400',
+  warning: 'text-amber-400',
 }
 
 export function StatTile({
@@ -39,7 +40,9 @@ export function StatTile({
               ? 'text-emerald-400'
               : valueTone === 'down'
                 ? 'text-rose-400'
-                : 'text-silver-100',
+                : valueTone === 'warning'
+                  ? 'text-amber-400'
+                  : 'text-silver-100',
         )}
       >
         {value}

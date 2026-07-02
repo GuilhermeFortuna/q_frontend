@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { RouterProvider } from '@tanstack/react-router'
 
 import { AppProviders } from '@/app/providers'
-import { LazyNewsReaderWorkspace, LazyStandaloneChartWindow } from '@/app/lazyWorkspaces'
+import { LazyNewsReaderWorkspace, LazyStandaloneChartWindow, LazyExecutionLiveWorkspace } from '@/app/lazyWorkspaces'
 import { router } from '@/app/router'
 import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
 import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'
@@ -23,6 +23,12 @@ export function App() {
     return params.get('run_id')
   }, [])
 
+  const deploymentId = useMemo(() => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    return params.get('deployment_id')
+  }, [])
+
   if (newsId) {
     return (
       <AppProviders>
@@ -40,6 +46,16 @@ export function App() {
       <AppProviders>
         <LazyRouteBoundary label="Loading chart">
           <LazyStandaloneChartWindow runId={runId} />
+        </LazyRouteBoundary>
+      </AppProviders>
+    )
+  }
+
+  if (deploymentId) {
+    return (
+      <AppProviders>
+        <LazyRouteBoundary label="Loading execution monitor">
+          <LazyExecutionLiveWorkspace deploymentId={deploymentId} />
         </LazyRouteBoundary>
       </AppProviders>
     )
