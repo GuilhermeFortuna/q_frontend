@@ -120,6 +120,28 @@ describe('ExecutionWorkspace', () => {
     expect(rows.length).toBeLessThanOrEqual(25)
   })
 
+  it('renders the live chart panel with backend indicators for the selected deployment', async () => {
+    renderWithQueryClient(<ExecutionWorkspace pollingEnabled />)
+    await waitFor(() => expect(screen.queryByTestId('execution-loading')).not.toBeInTheDocument())
+
+    expect(await screen.findByTestId('execution-live-chart-panel')).toBeInTheDocument()
+    expect(await screen.findByTestId('live-strategy-chart')).toBeInTheDocument()
+    expect(screen.getByTestId('live-chart-bar-close-note')).toHaveTextContent(/decisions occur at bar close/i)
+  })
+
+  it('degrades to a chart-unavailable state against a pre-WO175 backend (404)', async () => {
+    server.use(
+      http.get('*/api/v1/execution/deployments/:id/chart', () =>
+        HttpResponse.json({ detail: 'not found' }, { status: 404 }),
+      ),
+    )
+    renderWithQueryClient(<ExecutionWorkspace pollingEnabled />)
+
+    expect(await screen.findByTestId('live-chart-unavailable')).toBeInTheDocument()
+    // Rest of the page still works.
+    expect(await screen.findByTestId('execution-retained-position-note')).toBeInTheDocument()
+  })
+
   it('stops execution polling when workspace is inactive', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const healthSpy = vi.fn()

@@ -1,6 +1,7 @@
 import type {
   AuditEvent,
   Decision,
+  DeploymentChart,
   DeploymentDetail,
   DeploymentSummary,
   ExecutionHealth,
@@ -273,6 +274,53 @@ export function getMockDeployment(id: string): DeploymentDetail | undefined {
   const refreshed = buildDeploymentDetail()
   mockDeployments.set(id, refreshed)
   return refreshed
+}
+
+export function getMockDeploymentChart(id: string, bars: number): DeploymentChart | undefined {
+  const detail = mockDeployments.get(id)
+  if (!detail) return undefined
+
+  const count = Math.min(Math.max(bars, 1), 60)
+  const tfMs = 60 * 60_000 // H1
+  const lastOpen = new Date('2026-06-30T14:00:00.000Z').getTime()
+  const chartBars = Array.from({ length: count }, (_, i) => {
+    const idx = count - 1 - i
+    const openMs = lastOpen - idx * tfMs
+    const base = 132000 + Math.sin(i / 4) * 400
+    const open = base
+    const close = base + Math.cos(i / 3) * 120
+    const high = Math.max(open, close) + 60
+    const low = Math.min(open, close) - 60
+    return {
+      timestamp: new Date(openMs).toISOString(),
+      open,
+      high,
+      low,
+      close,
+      volume: 1000 + (i % 7) * 50,
+    }
+  })
+
+  const warmup = 5
+  const maShort = chartBars.map((_, i) =>
+    i < warmup
+      ? null
+      : chartBars.slice(i - warmup, i + 1).reduce((s, b) => s + b.close, 0) / (warmup + 1),
+  )
+  const oscillator = chartBars.map((_, i) => (i < warmup ? null : Math.sin(i / 5) * 100))
+
+  return {
+    symbol: detail.symbol,
+    timeframe: detail.timeframe,
+    window_bound_bars: 20,
+    last_bar_close_time: new Date(lastOpen + tfMs).toISOString(),
+    next_bar_close_time: new Date(lastOpen + 2 * tfMs).toISOString(),
+    bars: chartBars,
+    indicators: [
+      { key: 'ma_short', label: 'MA(5)', pane: 'price', color: '#c9a227', values: maShort },
+      { key: 'osc', label: 'Momentum', pane: 'oscillator', color: '#a78bfa', values: oscillator },
+    ],
+  }
 }
 
 export function createMockDeployment(body: {

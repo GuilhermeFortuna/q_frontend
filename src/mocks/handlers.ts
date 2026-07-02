@@ -89,6 +89,7 @@ import {
   createMockDeployment,
   createMockPaperAccount,
   getMockDeployment,
+  getMockDeploymentChart,
   getMockExecutionHealth,
   getMockKillSwitch,
   listMockAuditEvents,
@@ -198,6 +199,16 @@ export const handlers = [
       return HttpResponse.json({ detail: 'deployment not found' }, { status: 404 })
     }
     return HttpResponse.json(detail)
+  }),
+
+  http.get('*/api/v1/execution/deployments/:deploymentId/chart', ({ params, request }) => {
+    const url = new URL(request.url)
+    const bars = Number(url.searchParams.get('bars') ?? 200)
+    const chart = getMockDeploymentChart(String(params.deploymentId), bars)
+    if (!chart) {
+      return HttpResponse.json({ detail: 'deployment not found' }, { status: 404 })
+    }
+    return HttpResponse.json(chart)
   }),
 
   http.post('*/api/v1/execution/deployments/:deploymentId/actions', async ({ params, request }) => {
