@@ -7,8 +7,17 @@ import {
   TIME_AXIS_STRETCH_SENSITIVITY,
 } from '@/components/charts/types/chart'
 
+function initialViewport(barCount: number): ChartViewport {
+  if (barCount === 0) return { startIndex: 0, endIndex: 0 }
+  const visible = Math.min(DEFAULT_VISIBLE_BARS, barCount)
+  return { startIndex: Math.max(0, barCount - visible), endIndex: barCount - 1 }
+}
+
 export function useChartViewport(barCount: number, resetKey = '') {
-  const [viewport, setViewport] = useState<ChartViewport>({ startIndex: 0, endIndex: 0 })
+  // Initialize to the correct window on the very first render so consumers never
+  // render a degenerate 1-bar viewport while effects catch up (which would emit
+  // empty/partial indicator paths).
+  const [viewport, setViewport] = useState<ChartViewport>(() => initialViewport(barCount))
 
   useEffect(() => {
     if (barCount === 0) {

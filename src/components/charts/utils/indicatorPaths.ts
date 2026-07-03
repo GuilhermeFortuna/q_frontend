@@ -17,12 +17,16 @@ export function linePath(
     const ts = allBars[i].timestamp
     if (!visibleTimestamps.has(ts)) continue
     const val = values[i]
-    if (val === null) {
+    if (val === null || !Number.isFinite(val)) {
       started = false
       continue
     }
     const x = (xScale(ts) ?? 0) + bw / 2
     const y = yScale(val)
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      started = false
+      continue
+    }
     parts.push(`${started ? 'L' : 'M'} ${x} ${y}`)
     started = true
   }
