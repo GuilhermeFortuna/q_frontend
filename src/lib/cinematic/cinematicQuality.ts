@@ -54,11 +54,9 @@ export function resolveCinematicQuality(input: {
   if (isLauncher) {
     return {
       mode: 'launcher',
-      // Animated particle grid (dots + wireframe lines) intentionally disabled; the
-      // branded background art is kept.
-      showParticles: false,
-      particleOpacity: 0,
-      animateLoop: false,
+      showParticles: true,
+      particleOpacity: documentHidden ? 0.35 : 1,
+      animateLoop: !documentHidden,
       dpr: 1,
       sceneDim: documentHidden ? 0.25 : 0,
       vignetteOpacity: 1,
