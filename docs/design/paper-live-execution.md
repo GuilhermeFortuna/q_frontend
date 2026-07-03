@@ -107,6 +107,55 @@ Operational commands have explicit meanings:
 
 Stale data, a lost lease, an unavailable database, or an ambiguous broker result blocks new orders.
 
+## Unknown orders and reconciliation
+
+An order enters `UNKNOWN` with `ReconciliationState.PENDING` whenever its broker outcome cannot be
+durably confirmed: a crash window between intent commit and fill persistence, or a fill-persistence
+failure after the broker responded. A pending unknown is not a dead end — it is read, resolved, and
+until then it _blocks_ new orders for its deployment.
+
+### State machine
+
+```text
+UNKNOWN / PENDING ──broker confirms fill──────────► FILLED   / RECONCILED   (ledger + position applied)
+UNKNOWN / PENDING ──broker rejects / not-found────► REJECTED / RECONCILED   (ledger untouched, intent released)
+UNKNOWN / PENDING ──broker unavailable────────────► UNKNOWN  / PENDING       (attempt timestamp + error recorded)
+```
+
+Who may transition:
+
+- **The worker (`reconciler`)** resolves automatically. It calls the broker's read-only
+  `lookup_order(client_order_id)` capability, which returns filled (with fill details), rejected,
+  not-found, or unavailable. The `PaperBroker` keeps no external state of its own — Q's ledger is
+  authoritative — so a still-unknown paper order provably never filled and resolves to _not-found_.
+  The `MetaTraderBroker` reconciles from deal history via the intent magic/comment.
+- **An operator** resolves manually through the API when the broker cannot answer. The request
+  carries an explicit outcome (`filled` with details, or `not_filled`) plus who and why; there is no
+  "assume it's fine" default. Who/when/why are recorded on the order row (`reconciled_by`,
+  `reconciled_at`, `reconciliation_detail`).
+
+Reconciliation never re-submits. Resolution is read-and-record only; the decision to resend a signal
+stays with the strategy on later bars. It fails closed: if the broker is unreachable the order stays
+`PENDING`, the deployment stays blocked, and there is no time-based auto-expiry.
+
+### Blocking rule
+
+The pre-trade risk gate rejects any new order for a deployment that has an unresolved unknown, with
+the structured code `unknown_prior_order`. Because a resolved order leaves `UNKNOWN` status, clearing
+the last pending unknown automatically unblocks the deployment.
+
+### Production triggers
+
+The worker runs reconciliation at two points: once at startup recovery (immediately after
+`ExecutionRecovery` marks incomplete orders unknown, before the poll loop emits any decision) and on
+every poll cycle for each leased deployment that still has a pending unknown.
+
+### API surface
+
+- `GET /api/v1/execution/deployments/{id}/reconciliation` — list orders awaiting reconciliation.
+- `POST /api/v1/execution/orders/{order_id}/resolve` — operator manual resolution (explicit outcome).
+- Unresolved-unknown counts appear in the deployment detail and health payloads.
+
 ## MT5 live adapter
 
 `MetaTraderBroker` translates domain orders into MT5 requests. It verifies terminal/account trading

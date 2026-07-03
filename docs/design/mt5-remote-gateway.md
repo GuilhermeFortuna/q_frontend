@@ -1,6 +1,10 @@
 # MT5 Remote Data Gateway — fresh WIN$/WDO$ data on Linux
 
-**Status:** Design approved 2026-07-03. Implementation batch: WO183+ (to be authored).
+**Status:** Design approved 2026-07-03. WO183–WO186 landed (gateway server,
+`RemoteMt5Client` + `remote` config, `remote` routing + fetch-through + ingest
+provider switch, and the Wine setup script + systemd units + operator guide). The
+manual E2E checklist in `q_backend/docs/mt5-wine-gateway.md` awaits a run on the target
+Wine machine.
 **Related:** hardening batch WO177–182 (must land first).
 
 ## Context / problem
@@ -115,9 +119,16 @@ works identically on Linux through the gateway. No new job type.
 
 ### 6. Wine setup & operations
 
+Delivered in WO186 — operator guide: `q_backend/docs/mt5-wine-gateway.md`; setup script:
+`q_backend/gateway/setup_wine.sh`; systemd user units: `q_backend/gateway/systemd/`
+(`mt5-terminal.service` + `mt5-gateway.service` + `mt5-gateway.env.example`).
+
 - Doc + helper script: dedicated Wine prefix, MT5 terminal install, Windows-Python
   install, `pip install MetaTrader5`, launching terminal + gateway; systemd user unit
-  example so both start on login.
+  example so both start on login (the `mt5-gateway.service` unit is the production
+  trigger for the WO183 server).
+- Pins (deliberate, no auto-update): Windows Python 3.11.9, `MetaTrader5==5.0.5735`, and
+  the Wine version recorded + change-checked in the prefix marker.
 - Known risks: (a) terminal-under-Wine stability — mitigation: same gateway on a
   Windows VM, no code change; (b) MetaTrader5 pip package occasionally lags Wine —
   mitigation: pin the Wine prefix and the package version in the setup doc.
