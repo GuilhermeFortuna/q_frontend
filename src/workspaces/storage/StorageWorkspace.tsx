@@ -21,6 +21,8 @@ import { chipClass } from '@/components/ui/chipStyles'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { Panel, PanelHeader } from '@/components/ui/Panel'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
+import { Callout } from '@/components/ui/Callout'
+import { Database, Download, Trash2, Calendar, AlertTriangle, Info } from 'lucide-react'
 import { formatBytes } from '@/lib/formatBytes'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { combineOhlcvAvailableRanges, toStorageDateInputs } from '@/lib/backtesting/dateRange'
@@ -224,16 +226,21 @@ export function StorageWorkspace() {
     : null
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <div>
-        <h1 className="text-brass-400 text-xl font-bold">Storage</h1>
-        <p className="text-silver-400 mt-1 text-sm">
-          Download OHLCV bars or tick data from MetaTrader 5 into the local parquet store, then
-          serve them in Local data-source mode on Linux.
-        </p>
+    <div className="animate-fade-in-up mx-auto flex max-w-5xl flex-col gap-6 pb-28">
+      <div className="flex items-center gap-3">
+        <div className="border-brass-600/20 bg-brass-500/5 text-brass-400 flex h-10 w-10 items-center justify-center rounded-lg border">
+          <Database className="h-5 w-5" />
+        </div>
+        <div>
+          <h1 className="text-brass-400 text-xl font-bold">Storage</h1>
+          <p className="text-silver-400 mt-0.5 text-sm">
+            Download OHLCV bars or tick data from MetaTrader 5 into the local parquet store, then
+            serve them in Local data-source mode on Linux.
+          </p>
+        </div>
       </div>
 
-      <Panel className="p-0">
+      <Panel living className="p-0">
         <PanelHeader title="Download from MT5" />
         <div className="space-y-5 px-4 pb-4">
           <p className="text-silver-400 -mt-1 text-xs">
@@ -241,85 +248,89 @@ export function StorageWorkspace() {
             <span className="text-silver-200 font-mono">{inventory?.root ?? 'data/market'}</span>
           </p>
           {!mt5Available ? (
-            <Panel className="text-silver-300 border-amber-500/20 bg-amber-500/5 px-3 py-2 text-sm">
-              Downloading needs MT5 — run this on the Windows machine with MetaTrader connected.
-            </Panel>
+            <Callout type="warning" title="MetaTrader 5 Offline">
+              Downloading data requires MetaTrader 5 — either natively on Windows or via the remote
+              MT5 gateway. Start the gateway (mt5-gateway.service) or run this on the Windows
+              machine.
+            </Callout>
           ) : null}
 
           <div className="grid gap-4 md:grid-cols-2">
             <LabeledField label="Symbol" htmlFor="storage-symbol">
-              <input
-                id="storage-symbol"
-                type="text"
-                value={symbol}
-                role="combobox"
-                aria-autocomplete="list"
-                aria-expanded={suggestionsOpen}
-                aria-controls="storage-symbol-suggestions"
-                aria-activedescendant={
-                  suggestionsOpen
-                    ? `storage-symbol-option-${visibleSuggestions[selectedSuggestionIndex]?.symbol ?? selectedSuggestionIndex}`
-                    : undefined
-                }
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase()
-                  setSymbol(value)
-                  setSymbolQuery(value)
-                  setShowSuggestions(true)
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setShowSuggestions(false)}
-                onKeyDown={handleSymbolKeyDown}
-                className={inputClass}
-                placeholder="e.g. PETR4"
-                autoComplete="off"
-              />
-              {suggestionsOpen ? (
-                <ul
-                  id="storage-symbol-suggestions"
-                  role="listbox"
-                  className="surface-overlay max-h-32 overflow-y-auto rounded-lg p-1 text-xs"
-                >
-                  {visibleSuggestions.map((item, index) => {
-                    const isActive = index === selectedSuggestionIndex
-                    return (
-                      <li
-                        key={item.symbol}
-                        id={`storage-symbol-option-${item.symbol}`}
-                        role="option"
-                        aria-selected={isActive}
-                      >
-                        <button
-                          type="button"
-                          className={cn(
-                            symbolSuggestionItemClass,
-                            isActive
-                              ? chipClass(true)
-                              : chipClass(false, 'text-silver-200 border-transparent'),
-                          )}
-                          // Keep the input focused so onBlur doesn't close the list
-                          // before this click registers.
-                          onMouseDown={(e) => e.preventDefault()}
-                          onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                          onClick={() => selectSuggestion(item)}
+              <div className="relative">
+                <input
+                  id="storage-symbol"
+                  type="text"
+                  value={symbol}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={suggestionsOpen}
+                  aria-controls="storage-symbol-suggestions"
+                  aria-activedescendant={
+                    suggestionsOpen
+                      ? `storage-symbol-option-${visibleSuggestions[selectedSuggestionIndex]?.symbol ?? selectedSuggestionIndex}`
+                      : undefined
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase()
+                    setSymbol(value)
+                    setSymbolQuery(value)
+                    setShowSuggestions(true)
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setShowSuggestions(false)}
+                  onKeyDown={handleSymbolKeyDown}
+                  className={inputClass}
+                  placeholder="e.g. PETR4"
+                  autoComplete="off"
+                />
+                {suggestionsOpen ? (
+                  <ul
+                    id="storage-symbol-suggestions"
+                    role="listbox"
+                    className="border-carbon-700/60 bg-carbon-950 absolute right-0 left-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border p-1 text-xs shadow-xl"
+                  >
+                    {visibleSuggestions.map((item, index) => {
+                      const isActive = index === selectedSuggestionIndex
+                      return (
+                        <li
+                          key={item.symbol}
+                          id={`storage-symbol-option-${item.symbol}`}
+                          role="option"
+                          aria-selected={isActive}
                         >
-                          <span className="text-brass-400 font-mono font-semibold">
-                            {item.symbol}
-                          </span>
-                          <span
+                          <button
+                            type="button"
                             className={cn(
-                              'ml-2',
-                              isActive ? 'text-brass-200/80' : 'text-silver-500',
+                              symbolSuggestionItemClass,
+                              isActive
+                                ? chipClass(true)
+                                : chipClass(false, 'text-silver-200 border-transparent'),
                             )}
+                            // Keep the input focused so onBlur doesn't close the list
+                            // before this click registers.
+                            onMouseDown={(e) => e.preventDefault()}
+                            onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                            onClick={() => selectSuggestion(item)}
                           >
-                            {item.name}
-                          </span>
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              ) : null}
+                            <span className="text-brass-400 font-mono font-semibold">
+                              {item.symbol}
+                            </span>
+                            <span
+                              className={cn(
+                                'ml-2',
+                                isActive ? 'text-brass-200/80' : 'text-silver-500',
+                              )}
+                            >
+                              {item.name}
+                            </span>
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ) : null}
+              </div>
             </LabeledField>
 
             <LabeledField label="Data kind">
@@ -336,10 +347,10 @@ export function StorageWorkspace() {
           </div>
 
           {isTicksKind ? (
-            <Panel className="text-silver-300 border-violet-500/20 bg-violet-950/20 px-3 py-2 text-sm">
+            <Callout type="info" title="Tick Ingestion Notice">
               Tick ranges are very large and ingest slowly (progress advances per month). Start with
               a narrow date range — a few days or one week — before pulling longer history.
-            </Panel>
+            </Callout>
           ) : (
             <LabeledField label="Timeframes">
               <SegmentedToggle
@@ -380,64 +391,100 @@ export function StorageWorkspace() {
           </div>
 
           {canProbeAvailableRange ? (
-            <Panel className="space-y-2 px-3 py-2.5">
+            <Panel className="border-brass-600/15 bg-carbon-900/10 p-4">
               {availableRangeLoading ? (
-                <p className="text-silver-400 text-sm">Checking MT5 history…</p>
+                <div className="text-silver-400 flex items-center gap-2.5 text-sm">
+                  <div className="border-brass-500 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
+                  <span>Checking MT5 history…</span>
+                </div>
               ) : availableRangeErrorMessage ? (
-                <p className="text-sm text-rose-300">{availableRangeErrorMessage}</p>
+                <div className="flex items-center gap-2 text-sm text-rose-400">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>{availableRangeErrorMessage}</span>
+                </div>
               ) : allRangesLoaded && combinedAvailableRange ? (
-                <>
-                  <div className="space-y-1">
-                    {availableRanges.length === 1 ? (
-                      <p className="text-silver-300 text-sm">
-                        Available in MT5 for{' '}
-                        <span className="text-brass-400 font-mono">{trimmedSymbol}</span>{' '}
-                        <span className="text-brass-400 font-mono">
-                          {availableRanges[0].timeframe}
-                        </span>
-                        : {formatDisplayDateTime(availableRanges[0].start)} →{' '}
-                        {formatDisplayDateTime(availableRanges[0].end)}
-                        <span className="text-silver-500">
-                          {' '}
-                          · {availableRanges[0].bar_count.toLocaleString()} bars
-                        </span>
-                      </p>
-                    ) : (
-                      <>
+                <div className="space-y-3.5">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="text-brass-400 mt-0.5 h-4.5 w-4.5 shrink-0" />
+                    <div className="space-y-1">
+                      {availableRanges.length === 1 ? (
                         <p className="text-silver-300 text-sm">
-                          Combined range across {selectedTimeframes.length} timeframes:{' '}
-                          {formatDisplayDateTime(combinedAvailableRange.start)} →{' '}
-                          {formatDisplayDateTime(combinedAvailableRange.end)}
+                          Available in MT5 for{' '}
+                          <span className="text-brass-400 font-mono font-semibold">
+                            {trimmedSymbol}
+                          </span>{' '}
+                          <span className="text-brass-400 font-mono font-semibold">
+                            {availableRanges[0].timeframe}
+                          </span>
+                          :{' '}
+                          <span className="text-silver-100 font-semibold">
+                            {formatDisplayDateTime(availableRanges[0].start)}
+                          </span>{' '}
+                          →{' '}
+                          <span className="text-silver-100 font-semibold">
+                            {formatDisplayDateTime(availableRanges[0].end)}
+                          </span>
+                          <span className="text-silver-500 font-mono text-xs">
+                            {' '}
+                            ({availableRanges[0].bar_count.toLocaleString()} bars)
+                          </span>
                         </p>
-                        <ul className="text-silver-500 space-y-0.5 font-mono text-xs">
-                          {availableRanges.map((range) => (
-                            <li key={range.timeframe}>
-                              {range.timeframe}: {formatDisplayDateTime(range.start)} →{' '}
-                              {formatDisplayDateTime(range.end)} ·{' '}
-                              {range.bar_count.toLocaleString()} bars
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
+                      ) : (
+                        <>
+                          <p className="text-silver-300 text-sm">
+                            Combined range across{' '}
+                            <span className="text-brass-400 font-semibold">
+                              {selectedTimeframes.length}
+                            </span>{' '}
+                            timeframes:{' '}
+                            <span className="text-silver-100 font-semibold">
+                              {formatDisplayDateTime(combinedAvailableRange.start)}
+                            </span>{' '}
+                            →{' '}
+                            <span className="text-silver-100 font-semibold">
+                              {formatDisplayDateTime(combinedAvailableRange.end)}
+                            </span>
+                          </p>
+                          <ul className="text-silver-500 space-y-1 font-mono text-xs">
+                            {availableRanges.map((range) => (
+                              <li key={range.timeframe} className="flex items-center gap-2">
+                                <span className="text-brass-500/80 w-8 font-bold">
+                                  {range.timeframe}:
+                                </span>
+                                <span>
+                                  {formatDisplayDateTime(range.start)} →{' '}
+                                  {formatDisplayDateTime(range.end)}
+                                </span>
+                                <span className="text-silver-600">
+                                  ({range.bar_count.toLocaleString()} bars)
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"
                     title="Set start and end to the full range available in MetaTrader 5"
                     onClick={applyFullAvailableRange}
-                    className={chipClass(useFullRangeActive)}
+                    className={cn(chipClass(useFullRangeActive), 'flex items-center gap-1.5')}
                   >
+                    <Calendar className="h-3.5 w-3.5" />
                     Use full range
                   </button>
-                </>
+                </div>
               ) : someRangesMissing ? (
-                <p className="text-silver-400 text-sm">
-                  No MT5 history found for one or more selected timeframes.
-                </p>
+                <div className="text-silver-400 flex items-center gap-2 text-sm">
+                  <Info className="text-brass-400 h-4 w-4 shrink-0" />
+                  <span>No MT5 history found for one or more selected timeframes.</span>
+                </div>
               ) : (
-                <p className="text-silver-400 text-sm">
-                  No MT5 history found for this symbol and timeframe selection.
-                </p>
+                <div className="text-silver-400 flex items-center gap-2 text-sm">
+                  <Info className="text-brass-400 h-4 w-4 shrink-0" />
+                  <span>No MT5 history found for this symbol and timeframe selection.</span>
+                </div>
               )}
             </Panel>
           ) : null}
@@ -448,7 +495,9 @@ export function StorageWorkspace() {
               variant="brass"
               onClick={handleDownload}
               disabled={downloadDisabled || !canDownload}
+              className="flex items-center gap-2"
             >
+              <Download className="h-4 w-4" />
               {startIngest.isPending ? 'Starting…' : 'Download'}
             </Button>
             {startError ? <p className="text-sm text-rose-300">{startError}</p> : null}
@@ -488,7 +537,7 @@ export function StorageWorkspace() {
         </div>
       </Panel>
 
-      <Panel className="p-0">
+      <Panel living className="p-0">
         <PanelHeader title="Inventory" />
         <div className="px-4 pb-4">
           <p className="text-silver-400 -mt-1 mb-4 text-xs">
@@ -502,45 +551,58 @@ export function StorageWorkspace() {
               or ticks for a symbol.
             </p>
           ) : (
-            <Panel className="overflow-x-auto p-0">
+            <div className="border-carbon-800 bg-carbon-900/10 overflow-x-auto rounded-xl border">
               <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="surface-well">
-                  <tr className="text-silver-400 text-xs tracking-wide uppercase">
-                    <th className="px-2 py-2 font-medium">Symbol</th>
-                    <th className="px-2 py-2 font-medium">Kind</th>
-                    <th className="px-2 py-2 font-medium">Timeframe</th>
-                    <th className="px-2 py-2 font-medium">Range</th>
-                    <th className="px-2 py-2 font-medium">Rows</th>
-                    <th className="px-2 py-2 font-medium">Size</th>
-                    <th className="px-2 py-2 font-medium">Updated</th>
-                    <th className="px-2 py-2 font-medium" />
+                <thead className="bg-carbon-950/40 border-carbon-800/60 border-b text-[10px] font-bold tracking-wider uppercase">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">Symbol</th>
+                    <th className="px-4 py-3 font-bold">Kind</th>
+                    <th className="px-4 py-3 font-bold">Timeframe</th>
+                    <th className="px-4 py-3 font-bold">Range</th>
+                    <th className="px-4 py-3 font-bold">Rows</th>
+                    <th className="px-4 py-3 font-bold">Size</th>
+                    <th className="px-4 py-3 font-bold">Updated</th>
+                    <th className="px-4 py-3 font-bold" />
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-carbon-800/60 divide-y">
                   {inventory.items.map((item) => {
                     const kind = resolveInventoryKind(item)
                     const isTicks = kind === 'ticks'
+                    const isDeletingThisItem =
+                      deleteStorage.isPending &&
+                      deleteStorage.variables?.symbol === item.symbol &&
+                      deleteStorage.variables?.kind === kind &&
+                      deleteStorage.variables?.timeframe === item.timeframe
+
                     return (
-                      <tr key={inventoryItemKey(item)} className="border-carbon-800/80 border-b">
-                        <td className="text-silver-100 px-2 py-2 font-mono">{item.symbol}</td>
-                        <td className="px-2 py-2">
+                      <tr
+                        key={inventoryItemKey(item)}
+                        className="text-silver-200 hover:bg-carbon-800/20 transition-all duration-150"
+                      >
+                        <td className="text-brass-400 px-4 py-3 font-mono font-bold">
+                          {item.symbol}
+                        </td>
+                        <td className="px-4 py-3">
                           <KindBadge kind={kind} />
                         </td>
-                        <td className="text-silver-200 px-2 py-2 font-mono">
+                        <td className="text-silver-200 px-4 py-3 font-mono font-medium">
                           {isTicks ? '—' : (item.timeframe ?? '—')}
                         </td>
-                        <td className="text-silver-300 px-2 py-2 font-mono text-xs">
+                        <td className="text-silver-300 px-4 py-3 font-mono text-xs">
                           {formatDisplayDateTime(item.start)} → {formatDisplayDateTime(item.end)}
                         </td>
-                        <td className="text-silver-200 px-2 py-2 tabular-nums">{item.rows}</td>
-                        <td className="text-silver-300 px-2 py-2">{formatBytes(item.bytes)}</td>
-                        <td className="text-silver-400 px-2 py-2 text-xs">
+                        <td className="text-silver-200 px-4 py-3 font-mono tabular-nums">
+                          {item.rows.toLocaleString()}
+                        </td>
+                        <td className="text-silver-300 px-4 py-3">{formatBytes(item.bytes)}</td>
+                        <td className="text-silver-400 px-4 py-3 text-xs">
                           {formatDisplayDateTime(item.updated_at)}
                         </td>
-                        <td className="px-2 py-2 text-right">
+                        <td className="px-4 py-3 text-right">
                           <button
                             type="button"
-                            className="text-xs font-semibold text-rose-300 hover:text-rose-200"
+                            className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold text-rose-400 transition-all duration-150 hover:bg-rose-500/10 hover:text-rose-300 active:scale-95"
                             disabled={deleteStorage.isPending}
                             onClick={() => {
                               const label = isTicks
@@ -555,7 +617,17 @@ export function StorageWorkspace() {
                               }
                             }}
                           >
-                            Delete
+                            {isDeletingThisItem ? (
+                              <>
+                                <span className="h-3 w-3 animate-spin rounded-full border border-rose-400 border-t-transparent" />
+                                Deleting…
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Delete
+                              </>
+                            )}
                           </button>
                         </td>
                       </tr>
@@ -563,7 +635,7 @@ export function StorageWorkspace() {
                   })}
                 </tbody>
               </table>
-            </Panel>
+            </div>
           )}
         </div>
       </Panel>
