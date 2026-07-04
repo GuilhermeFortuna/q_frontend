@@ -101,7 +101,11 @@ Implements `MarketDataProvider` (`clients/base.py`) with the same method surface
 - **Fetch-through cache:** bars/ticks read via the gateway are also written into the
   local parquet store (same dedup/append path as ingestion,
   `market_data/local_store.py::write_ohlcv/write_ticks`), so every read enriches the
-  offline cache.
+  offline cache. In **`auto`** mode (WO188), OHLCV reads are **coverage-aware**: when
+  the gateway wins routing, local parquet is the fast path if its envelope already
+  covers the requested range; otherwise only missing head/tail segments are fetched,
+  persisted, and the full range is served from local parquet. Explicit **`remote`**
+  source always performs a full-range gateway fetch.
 
 ### 4. Ingestion through the gateway
 
