@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { Group, Panel, Separator, useDefaultLayout, usePanelRef } from 'react-resizable-panels'
 
 import { useInstruments, useMarketSnapshot, useMarketSnapshots } from '@/api/queries/market-data'
@@ -211,6 +211,9 @@ export function MarketDataWorkspace() {
 
   const leftPanelRef = usePanelRef()
   const rightPanelRef = usePanelRef()
+  const lastSidebarSizeRef = useRef(20)
+  const lastDetailSizeRef = useRef(20)
+
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: 'quant-market-layout',
     panelIds: [...MARKET_PANEL_IDS],
@@ -279,7 +282,7 @@ export function MarketDataWorkspace() {
     const panel = leftPanelRef.current
     if (!panel) return
     if (panel.isCollapsed()) {
-      panel.expand()
+      panel.resize(Math.max(20, lastSidebarSizeRef.current))
     } else {
       panel.collapse()
     }
@@ -289,7 +292,7 @@ export function MarketDataWorkspace() {
     const panel = rightPanelRef.current
     if (!panel) return
     if (panel.isCollapsed()) {
-      panel.expand()
+      panel.resize(Math.max(20, lastDetailSizeRef.current))
     } else {
       panel.collapse()
     }
@@ -338,6 +341,9 @@ export function MarketDataWorkspace() {
           className="min-w-0"
           onResize={(size) => {
             const isCollapsed = size.asPercentage === 0
+            if (!isCollapsed) {
+              lastSidebarSizeRef.current = size.asPercentage
+            }
             if (isCollapsed !== sidebarCollapsed) {
               patchMarketDataSession({ sidebarCollapsed: isCollapsed })
             }
@@ -436,6 +442,9 @@ export function MarketDataWorkspace() {
           className="min-w-0"
           onResize={(size) => {
             const isCollapsed = size.asPercentage === 0
+            if (!isCollapsed) {
+              lastDetailSizeRef.current = size.asPercentage
+            }
             if (isCollapsed !== detailCollapsed) {
               patchMarketDataSession({ detailCollapsed: isCollapsed })
             }
