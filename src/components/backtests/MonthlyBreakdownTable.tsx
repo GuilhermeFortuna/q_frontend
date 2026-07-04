@@ -1,4 +1,5 @@
 import { formatSignedCurrency } from '@/components/backtests/chartUtils'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import type { MonthlyStats } from '@/types/backtesting'
 
 type MonthlyBreakdownTableProps = {
@@ -15,35 +16,33 @@ export function MonthlyBreakdownTable({ data }: MonthlyBreakdownTableProps) {
   }
 
   return (
-    <div className="border-carbon-600/60 overflow-x-auto rounded-lg border">
-      <table className="text-silver-200 w-full text-left text-sm">
-        <thead className="text-silver-400 bg-carbon-800 border-carbon-600/60 border-b text-xs uppercase">
-          <tr>
-            <th className="px-4 py-3">Month</th>
-            <th className="px-4 py-3 text-right">PnL</th>
-            <th className="px-4 py-3 text-right">Trades</th>
-            <th className="px-4 py-3 text-right">Wins</th>
-            <th className="px-4 py-3 text-right">Losses</th>
-            <th className="px-4 py-3 text-right">Win Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row) => (
-            <tr key={row.month} className="border-carbon-700/50 hover:bg-carbon-800/30 border-b">
-              <td className="text-silver-100 px-4 py-3 font-medium">{row.label}</td>
-              <td
-                className={`px-4 py-3 text-right font-medium tabular-nums ${row.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
-              >
-                {formatSignedCurrency(row.pnl)}
-              </td>
-              <td className="px-4 py-3 text-right">{row.trades}</td>
-              <td className="px-4 py-3 text-right text-emerald-400">{row.wins}</td>
-              <td className="px-4 py-3 text-right text-rose-400">{row.losses}</td>
-              <td className="px-4 py-3 text-right">{(row.winRate * 100).toFixed(1)}%</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>Month</TableHead>
+          <TableHead className="text-right">PnL</TableHead>
+          <TableHead className="text-right">Trades</TableHead>
+          <TableHead className="text-right">Wins</TableHead>
+          <TableHead className="text-right">Losses</TableHead>
+          <TableHead className="text-right">Win Rate</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map((row) => (
+          <TableRow key={row.month}>
+            <TableCell className="text-silver-100 font-medium">{row.label}</TableCell>
+            <TableCell
+              className={`text-right font-medium tabular-nums ${row.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+            >
+              {formatSignedCurrency(row.pnl)}
+            </TableCell>
+            <TableCell className="text-right">{row.trades}</TableCell>
+            <TableCell className="text-right text-emerald-400">{row.wins}</TableCell>
+            <TableCell className="text-right text-rose-400">{row.losses}</TableCell>
+            <TableCell className="text-right">{(row.winRate * 100).toFixed(1)}%</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   )
 }

@@ -26,3 +26,14 @@ export {
   type KeyValueItemProps,
 } from './KeyValueGrid'
 export { HistoryCard, type HistoryCardProps } from './HistoryCard'
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableCaption,
+  type TableRowProps,
+} from './table'

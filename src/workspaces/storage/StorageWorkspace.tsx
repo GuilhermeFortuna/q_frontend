@@ -22,7 +22,9 @@ import { LabeledField } from '@/components/ui/LabeledField'
 import { Panel, PanelHeader } from '@/components/ui/Panel'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { Callout } from '@/components/ui/Callout'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Database, Download, Trash2, Calendar, AlertTriangle, Info } from 'lucide-react'
+
 import { formatBytes } from '@/lib/formatBytes'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { combineOhlcvAvailableRanges, toStorageDateInputs } from '@/lib/backtesting/dateRange'
@@ -549,91 +551,86 @@ export function StorageWorkspace() {
               or ticks for a symbol.
             </p>
           ) : (
-            <div className="border-carbon-800 bg-carbon-900/10 overflow-x-auto rounded-xl border">
-              <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="bg-carbon-950/40 border-carbon-800/60 border-b text-[10px] font-bold tracking-wider uppercase">
-                  <tr>
-                    <th className="px-4 py-3 font-bold">Symbol</th>
-                    <th className="px-4 py-3 font-bold">Kind</th>
-                    <th className="px-4 py-3 font-bold">Timeframe</th>
-                    <th className="px-4 py-3 font-bold">Range</th>
-                    <th className="px-4 py-3 font-bold">Rows</th>
-                    <th className="px-4 py-3 font-bold">Size</th>
-                    <th className="px-4 py-3 font-bold">Updated</th>
-                    <th className="px-4 py-3 font-bold" />
-                  </tr>
-                </thead>
-                <tbody className="divide-carbon-800/60 divide-y">
-                  {inventory.items.map((item) => {
-                    const kind = resolveInventoryKind(item)
-                    const isTicks = kind === 'ticks'
-                    const isDeletingThisItem =
-                      deleteStorage.isPending &&
-                      deleteStorage.variables?.symbol === item.symbol &&
-                      deleteStorage.variables?.kind === kind &&
-                      deleteStorage.variables?.timeframe === item.timeframe
+            <Table className="min-w-[720px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Symbol</TableHead>
+                  <TableHead>Kind</TableHead>
+                  <TableHead>Timeframe</TableHead>
+                  <TableHead>Range</TableHead>
+                  <TableHead>Rows</TableHead>
+                  <TableHead>Size</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inventory.items.map((item) => {
+                  const kind = resolveInventoryKind(item)
+                  const isTicks = kind === 'ticks'
+                  const isDeletingThisItem =
+                    deleteStorage.isPending &&
+                    deleteStorage.variables?.symbol === item.symbol &&
+                    deleteStorage.variables?.kind === kind &&
+                    deleteStorage.variables?.timeframe === item.timeframe
 
-                    return (
-                      <tr
-                        key={inventoryItemKey(item)}
-                        className="text-silver-200 hover:bg-carbon-800/20 transition-all duration-150"
-                      >
-                        <td className="text-brass-400 px-4 py-3 font-mono font-bold">
-                          {item.symbol}
-                        </td>
-                        <td className="px-4 py-3">
-                          <KindBadge kind={kind} />
-                        </td>
-                        <td className="text-silver-200 px-4 py-3 font-mono font-medium">
-                          {isTicks ? '—' : (item.timeframe ?? '—')}
-                        </td>
-                        <td className="text-silver-300 px-4 py-3 font-mono text-xs">
-                          {formatDisplayDateTime(item.start)} → {formatDisplayDateTime(item.end)}
-                        </td>
-                        <td className="text-silver-200 px-4 py-3 font-mono tabular-nums">
-                          {item.rows.toLocaleString()}
-                        </td>
-                        <td className="text-silver-300 px-4 py-3">{formatBytes(item.bytes)}</td>
-                        <td className="text-silver-400 px-4 py-3 text-xs">
-                          {formatDisplayDateTime(item.updated_at)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold text-rose-400 transition-all duration-150 hover:bg-rose-500/10 hover:text-rose-300 active:scale-95"
-                            disabled={deleteStorage.isPending}
-                            onClick={() => {
-                              const label = isTicks
-                                ? `Delete stored ${item.symbol} tick data?`
-                                : `Delete stored ${item.symbol} ${item.timeframe} bar data?`
-                              if (window.confirm(label)) {
-                                deleteStorage.mutate({
-                                  symbol: item.symbol,
-                                  kind,
-                                  timeframe: item.timeframe,
-                                })
-                              }
-                            }}
-                          >
-                            {isDeletingThisItem ? (
-                              <>
-                                <span className="h-3 w-3 animate-spin rounded-full border border-rose-400 border-t-transparent" />
-                                Deleting…
-                              </>
-                            ) : (
-                              <>
-                                <Trash2 className="h-3.5 w-3.5" />
-                                Delete
-                              </>
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  return (
+                    <TableRow key={inventoryItemKey(item)}>
+                      <TableCell className="text-brass-400 font-mono font-bold">
+                        {item.symbol}
+                      </TableCell>
+                      <TableCell>
+                        <KindBadge kind={kind} />
+                      </TableCell>
+                      <TableCell className="text-silver-200 font-mono font-medium">
+                        {isTicks ? '—' : (item.timeframe ?? '—')}
+                      </TableCell>
+                      <TableCell className="text-silver-300 font-mono text-xs">
+                        {formatDisplayDateTime(item.start)} → {formatDisplayDateTime(item.end)}
+                      </TableCell>
+                      <TableCell className="text-silver-200 font-mono tabular-nums">
+                        {item.rows.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-silver-300">{formatBytes(item.bytes)}</TableCell>
+                      <TableCell className="text-silver-400 text-xs">
+                        {formatDisplayDateTime(item.updated_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold text-rose-400 transition-all duration-150 hover:bg-rose-500/10 hover:text-rose-300 active:scale-95"
+                          disabled={deleteStorage.isPending}
+                          onClick={() => {
+                            const label = isTicks
+                              ? `Delete stored ${item.symbol} tick data?`
+                              : `Delete stored ${item.symbol} ${item.timeframe} bar data?`
+                            if (window.confirm(label)) {
+                              deleteStorage.mutate({
+                                symbol: item.symbol,
+                                kind,
+                                timeframe: item.timeframe,
+                              })
+                            }
+                          }}
+                        >
+                          {isDeletingThisItem ? (
+                            <>
+                              <span className="h-3 w-3 animate-spin rounded-full border border-rose-400 border-t-transparent" />
+                              Deleting…
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Delete
+                            </>
+                          )}
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           )}
         </div>
       </Panel>

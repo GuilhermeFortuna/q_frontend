@@ -94,13 +94,11 @@ export function VirtualTableScroller<T>({
   return (
     <div
       ref={scrollRef}
-      className={cn('min-h-0 flex-1 overflow-auto', className)}
+      className={cn('q-table-container min-h-0 flex-1 overflow-auto', className)}
       data-virtualized={shouldVirtualize ? 'true' : 'false'}
     >
-      <table className={cn('w-full text-left text-xs', tableClassName)}>
-        <thead className={cn('text-silver-400 bg-carbon-900 sticky top-0 z-10', theadClassName)}>
-          {header}
-        </thead>
+      <table className={cn('q-table text-xs', tableClassName)}>
+        <thead className={cn('q-table-thead sticky top-0 z-10', theadClassName)}>{header}</thead>
         <tbody>{body}</tbody>
       </table>
     </div>

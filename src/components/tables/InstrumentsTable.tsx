@@ -5,6 +5,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import type { Instrument } from '@/types/api'
 
 const columnHelper = createColumnHelper<Instrument>()
@@ -40,43 +41,41 @@ export function InstrumentsTable({ data, selectedSymbol, onSelectSymbol }: Instr
   })
 
   return (
-    <div className="border-brass-600/15 bg-carbon-900/40 overflow-auto rounded-xl border shadow-lg">
-      <table className="w-full min-w-[480px] text-left text-sm">
-        <thead className="bg-carbon-950/60 border-brass-600/15 text-silver-400 border-b text-[10px] font-bold tracking-wider uppercase">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th key={header.id} className="px-4 py-3 font-bold">
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                </th>
+    <Table className="min-w-[480px]">
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow
+            key={headerGroup.id}
+            className="bg-carbon-950/60 border-brass-600/15 border-b hover:bg-transparent"
+          >
+            {headerGroup.headers.map((header) => (
+              <TableHead key={header.id}>
+                {flexRender(header.column.columnDef.header, header.getContext())}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => {
+          const symbol = row.original.symbol
+          const isSelected = symbol === selectedSymbol
+          return (
+            <TableRow
+              key={row.id}
+              onClick={() => onSelectSymbol(symbol)}
+              isSelected={isSelected}
+              className="cursor-pointer"
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
               ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="divide-carbon-800/60 divide-y">
-          {table.getRowModel().rows.map((row) => {
-            const symbol = row.original.symbol
-            const isSelected = symbol === selectedSymbol
-            return (
-              <tr
-                key={row.id}
-                onClick={() => onSelectSymbol(symbol)}
-                className={
-                  isSelected
-                    ? 'bg-brass-600/15 text-silver-100 cursor-pointer shadow-[inset_3px_0_0_#c4a574] transition-all duration-150'
-                    : 'border-carbon-800/60 text-silver-200 hover:bg-carbon-800/35 cursor-pointer border-t transition-all duration-150'
-                }
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3 font-medium">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+            </TableRow>
+          )
+        })}
+      </TableBody>
+    </Table>
   )
 }

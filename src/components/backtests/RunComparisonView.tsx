@@ -14,6 +14,7 @@ import { useBacktestEquityArtifacts } from '@/api/queries/backtests'
 import { CHART_COLORS, formatCurrency } from '@/components/backtests/chartUtils'
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
 import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import {
   buildMergedComparisonChartData,
   buildRunComparisonLabel,
@@ -241,52 +242,48 @@ export function RunComparisonView({ runs, onClose }: RunComparisonViewProps) {
 
       <div className="min-h-0 flex-1 overflow-auto">
         <h4 className="text-silver-200 mb-3 text-sm font-medium">Metrics</h4>
-        <div className="border-carbon-600/60 overflow-x-auto rounded-lg border">
-          <table className="min-w-full text-sm">
-            <thead className="bg-carbon-900/60 text-silver-400">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Metric</th>
-                {runs.map((run) => (
-                  <th key={run.run_id} className="px-3 py-2 text-right font-medium">
-                    <span className="block truncate" title={buildRunComparisonLabel(run)}>
-                      {shortRunComparisonLabel(run)}
-                    </span>
-                    <span className="text-silver-500 block text-xs font-normal">
-                      {run.timeframe}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {COMPARISON_METRIC_ROWS.map((row) => {
-                const bestIndex = findBestMetricRunIndex(runs, row.key, row.direction)
-                return (
-                  <tr key={row.key} className="border-carbon-600/40 border-t">
-                    <td className="text-silver-300 px-3 py-2">{row.label}</td>
-                    {runs.map((run, index) => {
-                      const value = getMetricValue(run.summary, row.key)
-                      const isBest = bestIndex === index && value != null
-                      return (
-                        <td
-                          key={run.run_id}
-                          className={cn(
-                            'px-3 py-2 text-right tabular-nums',
-                            isBest
-                              ? 'bg-emerald-500/10 font-medium text-emerald-300'
-                              : 'text-silver-100',
-                          )}
-                        >
-                          {value == null ? '—' : row.format(value)}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        <Table className="min-w-full text-sm">
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="px-3 py-2 text-left font-medium">Metric</TableHead>
+              {runs.map((run) => (
+                <TableHead key={run.run_id} className="px-3 py-2 text-right font-medium">
+                  <span className="block truncate" title={buildRunComparisonLabel(run)}>
+                    {shortRunComparisonLabel(run)}
+                  </span>
+                  <span className="text-silver-500 block text-xs font-normal">{run.timeframe}</span>
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {COMPARISON_METRIC_ROWS.map((row) => {
+              const bestIndex = findBestMetricRunIndex(runs, row.key, row.direction)
+              return (
+                <TableRow key={row.key}>
+                  <TableCell className="text-silver-300 px-3 py-2">{row.label}</TableCell>
+                  {runs.map((run, index) => {
+                    const value = getMetricValue(run.summary, row.key)
+                    const isBest = bestIndex === index && value != null
+                    return (
+                      <TableCell
+                        key={run.run_id}
+                        className={cn(
+                          'px-3 py-2 text-right tabular-nums',
+                          isBest
+                            ? 'bg-emerald-500/10 font-medium text-emerald-300'
+                            : 'text-silver-100',
+                        )}
+                      >
+                        {value == null ? '—' : row.format(value)}
+                      </TableCell>
+                    )
+                  })}
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
       </div>
     </div>
   )
