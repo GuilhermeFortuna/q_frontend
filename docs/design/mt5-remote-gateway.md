@@ -113,6 +113,15 @@ Implements `MarketDataProvider` (`clients/base.py`) with the same method surface
 switch it to the resolved provider so the existing "download history" job (and its UI)
 works identically on Linux through the gateway. No new job type.
 
+### Consumers
+
+As of WO189, research pipelines (feature-matrix builds, feature evaluation, feature
+evidence, neural latent gating, and alpha-research preflight) load OHLCV through
+`market_data/read_through.py::read_ohlcv_fresh`, which delegates to
+`MarketDataService.get_ohlcv` so coverage-aware gateway gap-fill applies. Offline
+behavior is unchanged: with no gateway, reads fall through to local parquet exactly as
+before.
+
 ### 5. Out of scope
 
 - **Everything under `execution/`** (live brokers, `quote_source.py`) — live execution
@@ -144,4 +153,7 @@ Delivered in WO186 — operator guide: `q_backend/docs/mt5-wine-gateway.md`; set
 - Routing: new `remote` branch + `auto` fallback order (remote reachable / unreachable).
 - Round-trip: gateway-fetched bars land in the parquet store identical to fixture bars
   ingested via the native path (guards the timezone convention).
+- App-wide smoke (WO190): `tests/integration_smoke/test_gateway_app_wide.py` (fake gateway
+  in CI; live pass via `Q_MT5_GATEWAY_URL` + manual checklist in
+  `q_frontend/docs/dev/gateway-app-wide-validation.md`).
 - Manual E2E against real Wine + terminal is part of verification, not CI.
