@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 
 import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
-import { useAiStrategySession } from '@/lib/strategies/useAiStrategySession'
+import { Callout } from '@/components/ui'
 import { handlers } from '@/mocks/handlers'
 import { mockStrategies, resetMockCustomStrategies } from '@/mocks/data'
 import { renderWithQueryClient } from '../testUtils'
@@ -78,10 +78,66 @@ afterAll(() => server.close())
 
 function StrategyStudioHarness({ hidden = false }: { hidden?: boolean }) {
   const config = useBacktestConfig()
-  const aiSession = useAiStrategySession({ config })
+  const { authoring } = config
   return (
-    <div hidden={hidden}>
-      <StrategyStudio config={config} aiSession={aiSession} />
+    <div hidden={hidden} className="space-y-4">
+      {/* Strategy Customizer Header rendered in test harness */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[12rem] flex-1 space-y-1">
+            <label htmlFor="studio-strategy-name">Name</label>
+            <input
+              id="studio-strategy-name"
+              type="text"
+              value={authoring.customName}
+              onChange={(event) => authoring.setCustomName(event.target.value)}
+              placeholder="e.g. MyRSIReversion"
+              disabled={Boolean(authoring.loadedCustomName)}
+            />
+          </div>
+
+          <div className="min-w-[16rem] flex-[2] space-y-1">
+            <label htmlFor="studio-strategy-desc">Description</label>
+            <input
+              id="studio-strategy-desc"
+              type="text"
+              value={authoring.description}
+              onChange={(event) => authoring.setDescription(event.target.value)}
+              placeholder="Optional thesis summary..."
+            />
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2 pb-0.5">
+            <button type="button" onClick={authoring.newDraft}>
+              New
+            </button>
+            <button
+              type="button"
+              onClick={authoring.saveCustom}
+              disabled={authoring.isSaving || authoring.customName.trim().length === 0}
+            >
+              {authoring.isSaving ? 'Saving…' : 'Save'}
+            </button>
+            {authoring.loadedCustomName ? (
+              <button
+                type="button"
+                onClick={() => authoring.deleteCustom(authoring.loadedCustomName!)}
+                title="Delete loaded custom strategy"
+              >
+                Delete
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {authoring.authoringError ? (
+          <Callout type="error" title="Strategy Code Error" className="mb-2">
+            {authoring.authoringError}
+          </Callout>
+        ) : null}
+      </div>
+
+      <StrategyStudio config={config} />
     </div>
   )
 }

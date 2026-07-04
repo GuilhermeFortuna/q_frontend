@@ -5,12 +5,20 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { BacktestFocusWorkbench } from '@/components/backtests/focus/BacktestFocusWorkbench'
-import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
+import { StrategyBuilderWorkspace } from '@/workspaces/strategy-builder/StrategyBuilderWorkspace'
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { handlers } from '@/mocks/handlers'
 import { MOCK_CAPABILITIES, MOCK_MODELS } from '../fixtures/strategyBuilderFixtures'
 import { renderWithQueryClient } from '../testUtils'
 import { http, HttpResponse } from 'msw'
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  }
+})
 
 const server = setupServer(...handlers)
 
@@ -24,8 +32,6 @@ beforeEach(() => {
     http.get('*/api/v1/strategy-builder/models', () => HttpResponse.json(MOCK_MODELS)),
   )
 })
-
-let capabilitiesCalls = 0
 
 function FocusSwapHarness() {
   const [focus, setFocus] = useState<'setup' | 'results'>('setup')
@@ -119,46 +125,13 @@ describe('feature islands — pane parking', () => {
   })
 })
 
-describe('feature islands — AI lazy loading', () => {
-  beforeEach(() => {
-    capabilitiesCalls = 0
-    server.use(
-      http.get('*/api/v1/strategy-builder/capabilities', () => {
-        capabilitiesCalls += 1
-        return HttpResponse.json(MOCK_CAPABILITIES)
-      }),
-    )
-  })
-
-  function StudioHarness() {
-    const config = useBacktestConfig()
-    return <StrategyStudio config={config} onRunBacktest={vi.fn()} />
-  }
-
-  it('shows AI teaser without fetching capabilities on mount', async () => {
-    renderWithQueryClient(<StudioHarness />)
-
-    await waitFor(() => {
-      expect(screen.getByTestId('ai-strategy-teaser')).toBeInTheDocument()
-    })
-    expect(screen.queryByTestId('ai-strategy-panel')).not.toBeInTheDocument()
-    expect(capabilitiesCalls).toBe(0)
-  })
-
-  it('loads AI island only after teaser is opened', async () => {
-    const user = userEvent.setup()
-    renderWithQueryClient(<StudioHarness />)
-
-    await waitFor(() => {
-      expect(screen.getByTestId('ai-strategy-teaser')).toBeInTheDocument()
-    })
-
-    await user.click(screen.getByTestId('ai-strategy-teaser'))
+describe('feature islands — AI Strategy Builder workspace', () => {
+  it('renders StrategyBuilderWorkspace directly and displays the AI panel', async () => {
+    renderWithQueryClient(<StrategyBuilderWorkspace />)
 
     await waitFor(() => {
       expect(screen.getByTestId('ai-strategy-panel')).toBeInTheDocument()
     })
-    expect(capabilitiesCalls).toBe(0)
   })
 })
 

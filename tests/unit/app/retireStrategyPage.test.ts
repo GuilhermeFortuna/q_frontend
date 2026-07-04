@@ -10,16 +10,18 @@ const dockSource = readFileSync(resolve(process.cwd(), 'src/components/dock/AppD
 const workspaceTypesSource = readFileSync(resolve(process.cwd(), 'src/types/api.ts'), 'utf8')
 
 describe('retire standalone strategy page', () => {
-  it('redirects /strategy to /backtests without mounting StrategyWorkspace', () => {
+  it('redirects /strategy to /strategy-builder without mounting StrategyWorkspace', () => {
     expect(routerSource).toContain("path: '/strategy'")
-    expect(routerSource).toMatch(/strategyRoute[\s\S]*throw redirect\(\{ to: '\/backtests' \}\)/)
+    expect(routerSource).toMatch(
+      /strategyRoute[\s\S]*throw redirect\(\{ to: '\/strategy-builder' \}\)/,
+    )
     expect(routerSource).not.toContain('StrategyWorkspace')
   })
 
-  it('migrates persisted activeWorkspace strategy to backtests on initial load', () => {
+  it('migrates persisted activeWorkspace strategy to strategy-builder on initial load', () => {
     expect(routerSource).toMatch(/active as string\) === 'strategy'/)
     expect(routerSource).toMatch(
-      /active as string\) === 'strategy'[\s\S]*setActiveWorkspace\('backtests'\)[\s\S]*throw redirect\(\{ to: '\/backtests' \}\)/,
+      /active as string\) === 'strategy'[\s\S]*setActiveWorkspace\('strategy-builder'\)[\s\S]*throw redirect\(\{ to: '\/strategy-builder' \}\)/,
     )
   })
 

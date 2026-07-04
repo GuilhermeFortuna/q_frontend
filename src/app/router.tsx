@@ -16,7 +16,7 @@ import {
   LazyResearchWorkspace,
   LazyStorageWorkspace,
   LazySystemWorkspace,
-  LazyWalkForwardWorkspace,
+  LazyStrategyBuilderWorkspace,
 } from '@/app/lazyWorkspaces'
 import { LazyDevUiGallery } from '@/app/lazyDev'
 import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
@@ -49,16 +49,18 @@ const indexRoute = createRoute({
       const active = useAppStore.getState().activeWorkspace
       if (active && active !== 'launcher') {
         if (active === 'validate') {
-          throw redirect({ to: '/validate' })
+          useAppStore.getState().setActiveWorkspace('backtests')
+          useAppStore.getState().patchBacktestSession({ workflowMode: 'validate' })
+          throw redirect({ to: '/backtests', search: { mode: 'validate' } })
         }
         if ((active as string) === 'optimize') {
           useAppStore.getState().setActiveWorkspace('backtests')
           useAppStore.getState().patchBacktestSession({ workflowMode: 'optimize' })
           throw redirect({ to: '/backtests', search: { mode: 'optimize' } })
         }
-        if ((active as string) === 'strategy') {
-          useAppStore.getState().setActiveWorkspace('backtests')
-          throw redirect({ to: '/backtests' })
+        if ((active as string) === 'strategy' || active === 'strategy-builder') {
+          useAppStore.getState().setActiveWorkspace('strategy-builder')
+          throw redirect({ to: '/strategy-builder' })
         }
         throw redirect({ to: `/${active}` })
       }
@@ -106,19 +108,22 @@ const systemRoute = createRoute({
 })
 
 type BacktestsSearch = {
-  mode?: 'optimize'
+  mode?: 'optimize' | 'validate'
 }
 
 const backtestsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/backtests',
   validateSearch: (search: Record<string, unknown>): BacktestsSearch => ({
-    mode: search.mode === 'optimize' ? 'optimize' : undefined,
+    mode:
+      search.mode === 'optimize' ? 'optimize' : search.mode === 'validate' ? 'validate' : undefined,
   }),
   beforeLoad: ({ search }) => {
     syncWorkspace('backtests')
     if (search.mode === 'optimize') {
       useAppStore.getState().patchBacktestSession({ workflowMode: 'optimize' })
+    } else if (search.mode === 'validate') {
+      useAppStore.getState().patchBacktestSession({ workflowMode: 'validate' })
     }
   },
   component: () => {
@@ -143,12 +148,10 @@ const optimizeRoute = createRoute({
 const validateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/validate',
-  beforeLoad: () => syncWorkspace('validate'),
-  component: () => (
-    <LazyRouteBoundary label="Loading validation">
-      <LazyWalkForwardWorkspace />
-    </LazyRouteBoundary>
-  ),
+  beforeLoad: () => {
+    useAppStore.getState().patchBacktestSession({ workflowMode: 'validate' })
+    throw redirect({ to: '/backtests', search: { mode: 'validate' } })
+  },
 })
 
 const discoverRoute = createRoute({
@@ -211,9 +214,19 @@ const strategyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/strategy',
   beforeLoad: () => {
-    useAppStore.getState().setActiveWorkspace('backtests')
-    throw redirect({ to: '/backtests' })
+    throw redirect({ to: '/strategy-builder' })
   },
+})
+
+const strategyBuilderRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/strategy-builder',
+  beforeLoad: () => syncWorkspace('strategy-builder'),
+  component: () => (
+    <LazyRouteBoundary label="Loading strategy builder">
+      <LazyStrategyBuilderWorkspace />
+    </LazyRouteBoundary>
+  ),
 })
 
 type NewsReaderSearch = {
@@ -249,6 +262,7 @@ const routeTree = rootRoute.addChildren([
   executionRoute,
   newsReaderRoute,
   strategyRoute,
+  strategyBuilderRoute,
   ...(import.meta.env.DEV
     ? [
         createRoute({
@@ -272,6 +286,7 @@ export const router = createRouter({
         '/',
         '/market-data',
         '/storage',
+        '/strategy-builder',
         '/backtests',
         '/validate',
         '/discover',

@@ -66,6 +66,12 @@ export const LazyOptimizeWorkflow = lazy(() =>
   })),
 )
 
+export const LazyValidateWorkflow = lazy(() =>
+  import('@/workspaces/backtests/ValidateWorkflow').then((module) => ({
+    default: module.ValidateWorkflow,
+  })),
+)
+
 export const LazyStandaloneChartWindow = lazy(() =>
   import('@/components/backtests/StandaloneChartWindow').then((module) => ({
     default: module.StandaloneChartWindow,
@@ -75,5 +81,11 @@ export const LazyStandaloneChartWindow = lazy(() =>
 export const LazyExecutionLiveWorkspace = lazy(() =>
   import('@/workspaces/execution/ExecutionLiveWorkspace').then((module) => ({
     default: module.ExecutionLiveWorkspace,
+  })),
+)
+
+export const LazyStrategyBuilderWorkspace = lazy(() =>
+  import('@/workspaces/strategy-builder/StrategyBuilderWorkspace').then((module) => ({
+    default: module.StrategyBuilderWorkspace,
   })),
 )

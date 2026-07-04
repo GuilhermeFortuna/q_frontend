@@ -38,6 +38,7 @@ type BacktestConfig = ReturnType<typeof useBacktestConfig>
 type UseAiStrategySessionOptions = {
   config: BacktestConfig
   onRunBacktest?: (request: BacktestRequest) => void
+  onOptimize?: () => void
 }
 
 function extractInterpretError(error: unknown): string {
@@ -56,7 +57,11 @@ function extractInterpretError(error: unknown): string {
   return error.message
 }
 
-export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySessionOptions) {
+export function useAiStrategySession({
+  config,
+  onRunBacktest,
+  onOptimize,
+}: UseAiStrategySessionOptions) {
   const queryClient = useQueryClient()
   const interpretMutation = useInterpretStrategy()
   const modelsQuery = useStrategyBuilderModels()
@@ -78,6 +83,7 @@ export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySes
   const [capabilitiesVersion, setCapabilitiesVersion] = useState('q_capabilities.v1')
 
   const availableModels = modelsQuery.data?.models ?? []
+  const provider = modelsQuery.data?.provider ?? ''
   const modelsLoading = modelsQuery.isLoading
   const modelsError = modelsQuery.isError
     ? modelsQuery.error instanceof Error
@@ -330,9 +336,11 @@ export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySes
 
     setPendingOptimizationConfig(optimizationConfig)
     patchBacktestSession({ workflowMode: 'optimize' })
+    onOptimize?.()
   }, [
     config.fields,
     config.selectedStrategy,
+    onOptimize,
     patchBacktestSession,
     setPendingOptimizationConfig,
     workflowBlocker,
@@ -368,6 +376,7 @@ export function useAiStrategySession({ config, onRunBacktest }: UseAiStrategySes
     selectedModel,
     setSelectedModel,
     availableModels,
+    provider,
     modelsLoading,
     modelsError,
     submitInterpret,

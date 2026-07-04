@@ -48,7 +48,7 @@ export type DiscoverSession = {
 
 export type BacktestWorkbenchFocus = 'setup' | 'results'
 
-export type BacktestWorkflowMode = 'backtest' | 'optimize'
+export type BacktestWorkflowMode = 'backtest' | 'optimize' | 'validate'
 
 /**
  * Backtests are now async jobs, so the active run id must outlive navigation just

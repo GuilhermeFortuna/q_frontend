@@ -11,7 +11,6 @@ type BacktestSetupPanelProps = {
   loading: boolean
   error: string | null
   onSubmit: (request: BacktestRequest) => void
-  onAiWorkflowBlockerChange?: (blocker: string | null) => void
   aiWorkflowBlocker?: string | null
 }
 
@@ -20,7 +19,6 @@ export function BacktestSetupPanel({
   loading,
   error,
   onSubmit,
-  onAiWorkflowBlockerChange,
   aiWorkflowBlocker = null,
 }: BacktestSetupPanelProps) {
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,11 +36,7 @@ export function BacktestSetupPanel({
         validation={config.validation}
       />
 
-      <StrategyStudio
-        config={config}
-        onRunBacktest={onSubmit}
-        onAiWorkflowBlockerChange={onAiWorkflowBlockerChange}
-      />
+      <StrategyStudio config={config} />
 
       <div className="border-carbon-600/50 shrink-0 border-t pt-4">
         <Button

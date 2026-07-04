@@ -8,6 +8,7 @@ export type WorkspaceId =
   | 'research'
   | 'execution'
   | 'system'
+  | 'strategy-builder'
 
 export type SystemHealth = {
   status: 'healthy' | 'degraded' | 'down'

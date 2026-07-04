@@ -34,7 +34,6 @@ type BacktestFocusWorkbenchProps = {
   monthlyStats: MonthlyStats[]
   performanceComputing?: boolean
   aiWorkflowBlocker?: string | null
-  onAiWorkflowBlockerChange?: (blocker: string | null) => void
 }
 
 /**
@@ -58,7 +57,6 @@ export function BacktestFocusWorkbench({
   monthlyStats,
   performanceComputing = false,
   aiWorkflowBlocker = null,
-  onAiWorkflowBlockerChange,
 }: BacktestFocusWorkbenchProps) {
   const workbenchRef = useRef<HTMLDivElement>(null)
   const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
@@ -114,7 +112,6 @@ export function BacktestFocusWorkbench({
               loading={loading}
               error={error}
               onSubmit={onSubmit}
-              onAiWorkflowBlockerChange={onAiWorkflowBlockerChange}
               aiWorkflowBlocker={aiWorkflowBlocker}
             />
           </div>

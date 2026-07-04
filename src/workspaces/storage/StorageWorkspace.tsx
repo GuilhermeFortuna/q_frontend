@@ -249,9 +249,7 @@ export function StorageWorkspace() {
           </p>
           {!mt5Available ? (
             <Callout type="warning" title="MetaTrader 5 Offline">
-              Downloading data requires MetaTrader 5 — either natively on Windows or via the remote
-              MT5 gateway. Start the gateway (mt5-gateway.service) or run this on the Windows
-              machine.
+              Downloading needs MT5 — run this on the Windows machine with MetaTrader connected.
             </Callout>
           ) : null}
 

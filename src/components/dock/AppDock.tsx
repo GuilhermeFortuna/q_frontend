@@ -7,11 +7,11 @@ import {
   MarketIcon,
   StorageIcon,
   BacktestsIcon,
-  ValidateIcon,
   DiscoverIcon,
   ExecutionIcon,
   ResearchIcon,
   SystemIcon,
+  StrategyBuilderIcon,
 } from '@/components/dock/DockIcons'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { cn } from '@/lib/utils'
@@ -30,7 +30,13 @@ const dockItems: DockItem[] = [
   { id: 'market-data', label: 'Market', to: '/market-data', icon: MarketIcon, enabled: true },
   { id: 'storage', label: 'Storage', to: '/storage', icon: StorageIcon, enabled: true },
   { id: 'backtests', label: 'Backtests', to: '/backtests', icon: BacktestsIcon, enabled: true },
-  { id: 'validate', label: 'Validate', to: '/validate', icon: ValidateIcon, enabled: true },
+  {
+    id: 'strategy-builder',
+    label: 'AI Builder',
+    to: '/strategy-builder',
+    icon: StrategyBuilderIcon,
+    enabled: true,
+  },
   { id: 'discover', label: 'Discover', to: '/discover', icon: DiscoverIcon, enabled: true },
   { id: 'research', label: 'Research', to: '/research', icon: ResearchIcon, enabled: true },
   { id: 'execution', label: 'Execution', to: '/execution', icon: ExecutionIcon, enabled: true },

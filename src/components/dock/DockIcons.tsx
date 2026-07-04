@@ -680,3 +680,88 @@ export function ExecutionIcon({ className }: DockIconProps) {
     </svg>
   )
 }
+
+export function StrategyBuilderIcon({ className }: DockIconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn('h-6 w-6 overflow-visible', className)}
+    >
+      <defs>
+        <linearGradient
+          id="gold-grad-builder"
+          x1="2"
+          y1="2"
+          x2="22"
+          y2="22"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#f5d08f" />
+          <stop offset="100%" stopColor="#8c6a38" />
+        </linearGradient>
+      </defs>
+      <style>{`
+        .builder-wand {
+          transform-origin: 6px 18px;
+          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .group:hover .builder-wand {
+          transform: rotate(-15deg) scale(1.1);
+        }
+        .builder-sparkle-1 {
+          transform-origin: 19px 5px;
+          transition: transform 0.6s ease-in-out;
+        }
+        .group:hover .builder-sparkle-1 {
+          transform: rotate(180deg) scale(1.2);
+        }
+        .builder-sparkle-2 {
+          transform-origin: 14px 10px;
+          transition: transform 0.5s ease-in-out;
+        }
+        .group:hover .builder-sparkle-2 {
+          transform: rotate(-90deg) scale(1.1);
+        }
+      `}</style>
+
+      <path
+        d="M19 5L5 19"
+        stroke="url(#gold-grad-builder)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        className="builder-wand"
+      />
+      <path
+        d="M5 19L3 21"
+        stroke="url(#gold-grad-builder)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        className="builder-wand"
+      />
+      <path
+        d="M19 5L20 4"
+        stroke="url(#gold-grad-builder)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        className="builder-wand"
+      />
+
+      <path
+        d="M19 2C19 2 19 5 21 5C19 5 19 8 19 8C19 8 19 5 17 5C19 5 19 2 19 2Z"
+        fill="url(#gold-grad-builder)"
+        className="builder-sparkle-1"
+      />
+      <path
+        d="M13 8C13 8 13 10 15 10C13 10 13 12 13 12C13 12 13 10 11 10C13 10 13 8 13 8Z"
+        fill="url(#gold-grad-builder)"
+        className="builder-sparkle-2"
+      />
+      <path
+        d="M9 3C9 3 9 4 10 4C9 4 9 5 9 5C9 5 9 4 8 4C9 4 9 3 9 3Z"
+        fill="url(#gold-grad-builder)"
+      />
+    </svg>
+  )
+}

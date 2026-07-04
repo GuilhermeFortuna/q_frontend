@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 import { useBacktestJob } from '@/api/queries/backtests'
 import { BacktestFocusWorkbench } from '@/components/backtests/focus/BacktestFocusWorkbench'
@@ -14,11 +14,12 @@ import { cn } from '@/lib/utils'
 import type { BacktestWorkflowMode, JobPanelTab } from '@/store/slices/jobSessionsSlice'
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
-import { LazyOptimizeWorkflow } from '@/app/lazyWorkspaces'
+import { LazyOptimizeWorkflow, LazyValidateWorkflow } from '@/app/lazyWorkspaces'
 
 const WORKFLOW_MODES: { id: BacktestWorkflowMode; label: string }[] = [
   { id: 'backtest', label: 'Simulation' },
   { id: 'optimize', label: 'Optimization' },
+  { id: 'validate', label: 'Validation' },
 ]
 
 const RIGHT_PANEL_TABS: { id: JobPanelTab; label: string }[] = [
@@ -35,7 +36,6 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
   const backtestConfig = useBacktestConfig()
   const optimizeConfig = useOptimizeConfig()
   const reducedMotion = usePrefersReducedMotion()
-  const [aiWorkflowBlocker, setAiWorkflowBlocker] = useState<string | null>(null)
 
   const {
     workflowMode: storedWorkflowMode,
@@ -47,8 +47,10 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
     comparisonRuns,
   } = useAppStore((s) => s.backtestSession)
   const optimizeRightPanelTab = useAppStore((s) => s.optimizeSession.rightPanelTab)
+  const validateRightPanelTab = useAppStore((s) => s.walkForwardSession.rightPanelTab)
   const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
   const patchOptimizeSession = useAppStore((s) => s.patchOptimizeSession)
+  const patchWalkForwardSession = useAppStore((s) => s.patchWalkForwardSession)
 
   const workflowMode = storedWorkflowMode ?? 'backtest'
 
@@ -57,11 +59,20 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
     patchBacktestSession({ workflowMode: initialMode })
   }, [initialMode, patchBacktestSession])
 
-  const rightPanelTab = workflowMode === 'optimize' ? optimizeRightPanelTab : backtestRightPanelTab
+  const rightPanelTab =
+    workflowMode === 'optimize'
+      ? optimizeRightPanelTab
+      : workflowMode === 'validate'
+        ? validateRightPanelTab
+        : backtestRightPanelTab
 
   const handleRightPanelTabChange = (tab: JobPanelTab) => {
     if (workflowMode === 'optimize') {
       patchOptimizeSession({ rightPanelTab: tab })
+      return
+    }
+    if (workflowMode === 'validate') {
+      patchWalkForwardSession({ rightPanelTab: tab })
       return
     }
     patchBacktestSession({ rightPanelTab: tab })
@@ -142,6 +153,17 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
           </div>
         ) : null}
 
+        {workflowMode === 'validate' ? (
+          <div
+            data-testid="validate-workflow"
+            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          >
+            <LazyRouteBoundary label="Loading validation">
+              <LazyValidateWorkflow />
+            </LazyRouteBoundary>
+          </div>
+        ) : null}
+
         {workflowMode === 'backtest' ? (
           <div
             data-testid="backtest-workflow"
@@ -177,8 +199,6 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
                 equityCurve={equityCurve}
                 monthlyStats={monthlyStats}
                 performanceComputing={performanceComputing}
-                aiWorkflowBlocker={aiWorkflowBlocker}
-                onAiWorkflowBlockerChange={setAiWorkflowBlocker}
               />
             )}
           </div>
