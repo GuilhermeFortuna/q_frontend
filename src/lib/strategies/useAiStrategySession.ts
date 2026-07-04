@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   fetchStrategyBuilderCapabilities,
@@ -41,6 +41,30 @@ type UseAiStrategySessionOptions = {
   onOptimize?: () => void
 }
 
+export type TranscriptUserEntry = {
+  id: string
+  kind: 'user'
+  content: string
+}
+
+export type TranscriptAssistantEntry = {
+  id: string
+  kind: 'assistant'
+  summary: string
+  change_notes: string[]
+  questions: string[]
+  confidence: number
+  revisionIndex: number
+}
+
+export type TranscriptNoticeEntry = {
+  id: string
+  kind: 'notice'
+  content: string
+}
+
+export type TranscriptEntry = TranscriptUserEntry | TranscriptAssistantEntry | TranscriptNoticeEntry
+
 function extractInterpretError(error: unknown): string {
   if (!axios.isAxiosError(error)) {
     return error instanceof Error ? error.message : 'AI interpretation failed.'
@@ -67,10 +91,12 @@ export function useAiStrategySession({
   const modelsQuery = useStrategyBuilderModels()
   const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
   const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
+  const transcriptIdRef = useRef(0)
 
   const [message, setMessage] = useState('')
   const [selectedModel, setSelectedModel] = useState('')
   const [conversation, setConversation] = useState<ConversationMessage[]>([])
+  const [transcript, setTranscript] = useState<TranscriptEntry[]>([])
   const [draftSpec, setDraftSpec] = useState<StrategySpec | null>(null)
   const [response, setResponse] = useState<AiStrategyResponse | null>(null)
   const [serviceError, setServiceError] = useState<string | null>(null)
@@ -81,6 +107,11 @@ export function useAiStrategySession({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [revisions, setRevisions] = useState<AiRevisionSnapshot[]>([])
   const [capabilitiesVersion, setCapabilitiesVersion] = useState('q_capabilities.v1')
+
+  const nextTranscriptId = useCallback(() => {
+    transcriptIdRef.current += 1
+    return `transcript-${transcriptIdRef.current}`
+  }, [])
 
   const availableModels = modelsQuery.data?.models ?? []
   const provider = modelsQuery.data?.provider ?? ''
@@ -102,7 +133,6 @@ export function useAiStrategySession({
   const validationErrors = response?.validation?.errors ?? []
   const unsupportedRequests = response?.unsupported_requests ?? []
   const assumptions = response?.assumptions ?? []
-  const questions = response?.questions ?? []
 
   const workflowBlocker = useMemo(
     () =>
@@ -139,6 +169,8 @@ export function useAiStrategySession({
   const resetDraft = useCallback(() => {
     setMessage('')
     setConversation([])
+    setTranscript([])
+    transcriptIdRef.current = 0
     setDraftSpec(null)
     setResponse(null)
     setServiceError(null)
@@ -165,32 +197,41 @@ export function useAiStrategySession({
       resetDraft()
       if (!metadata) return
 
+      const hydratedResponse: AiStrategyResponse = {
+        summary: metadata.strategy_spec.name,
+        assumptions: metadata.assumptions,
+        questions: [],
+        unsupported_requests: metadata.unsupported_requests_acknowledged,
+        change_notes: [],
+        strategy_spec: metadata.strategy_spec,
+        validation: { valid: true, errors: [] },
+        compiled_strategy: metadata.compiled_strategy,
+        confidence: 1,
+      }
+
       setDraftSpec(metadata.strategy_spec)
       setOriginalPrompt(metadata.original_prompt)
       setUnsupportedAcknowledged(metadata.unsupported_requests_acknowledged.length > 0)
       setAppliedToSetup(true)
       setActiveAiDraft(true)
-      setResponse({
-        summary: metadata.strategy_spec.name,
-        assumptions: metadata.assumptions,
-        questions: [],
-        unsupported_requests: metadata.unsupported_requests_acknowledged,
-        strategy_spec: metadata.strategy_spec,
-        validation: { valid: true, errors: [] },
-        compiled_strategy: metadata.compiled_strategy,
-        confidence: 1,
-      })
-      setRevisions([
-        createRevisionSnapshot(metadata.original_prompt, {
-          summary: metadata.strategy_spec.name,
-          assumptions: metadata.assumptions,
+      setResponse(hydratedResponse)
+      setRevisions([createRevisionSnapshot(metadata.original_prompt, hydratedResponse)])
+      transcriptIdRef.current = 2
+      setTranscript([
+        {
+          id: 'transcript-1',
+          kind: 'user',
+          content: metadata.original_prompt,
+        },
+        {
+          id: 'transcript-2',
+          kind: 'assistant',
+          summary: hydratedResponse.summary,
+          change_notes: [],
           questions: [],
-          unsupported_requests: metadata.unsupported_requests_acknowledged,
-          strategy_spec: metadata.strategy_spec,
-          validation: { valid: true, errors: [] },
-          compiled_strategy: metadata.compiled_strategy,
-          confidence: 1,
-        }),
+          confidence: hydratedResponse.confidence,
+          revisionIndex: 0,
+        },
       ])
     },
     [resetDraft],
@@ -206,6 +247,10 @@ export function useAiStrategySession({
       const userTurn: ConversationMessage = { role: 'user', content: trimmed }
       const nextConversation = [...conversation, userTurn]
       setConversation(nextConversation)
+      setTranscript((current) => [
+        ...current,
+        { id: nextTranscriptId(), kind: 'user', content: trimmed },
+      ])
       if (!originalPrompt) {
         setOriginalPrompt(trimmed)
       }
@@ -221,6 +266,7 @@ export function useAiStrategySession({
           validation_errors: validationErrorsToRepair,
         })
 
+        const revisionIndex = revisions.length
         setResponse(result)
         setDraftSpec(result.strategy_spec)
         setUnsupportedAcknowledged(false)
@@ -228,9 +274,26 @@ export function useAiStrategySession({
         setActiveAiDraft(true)
         setConversation((current) => [...current, { role: 'assistant', content: result.summary }])
         setRevisions((current) => [...current, createRevisionSnapshot(trimmed, result)])
+        setTranscript((current) => [
+          ...current,
+          {
+            id: nextTranscriptId(),
+            kind: 'assistant',
+            summary: result.summary,
+            change_notes: result.change_notes ?? [],
+            questions: result.questions,
+            confidence: result.confidence,
+            revisionIndex,
+          },
+        ])
         setMessage('')
       } catch (error) {
-        setServiceError(extractInterpretError(error))
+        const errorMessage = extractInterpretError(error)
+        setServiceError(errorMessage)
+        setTranscript((current) => [
+          ...current,
+          { id: nextTranscriptId(), kind: 'notice', content: errorMessage },
+        ])
       }
     },
     [
@@ -238,8 +301,10 @@ export function useAiStrategySession({
       draftSpec,
       ensureCapabilitiesVersion,
       interpretMutation,
+      nextTranscriptId,
       originalPrompt,
       response?.strategy_spec,
+      revisions.length,
       selectedModel,
     ],
   )
@@ -346,15 +411,31 @@ export function useAiStrategySession({
     workflowBlocker,
   ])
 
-  const updateDraft = useCallback((next: StrategySpec) => {
-    setDraftSpec(next)
-    setAppliedToSetup(false)
-  }, [])
+  const updateDraft = useCallback(
+    (next: StrategySpec) => {
+      setDraftSpec((current) => {
+        if (current && JSON.stringify(current) !== JSON.stringify(next)) {
+          setTranscript((entries) => [
+            ...entries,
+            {
+              id: nextTranscriptId(),
+              kind: 'notice',
+              content: 'You edited the draft manually',
+            },
+          ])
+        }
+        return next
+      })
+      setAppliedToSetup(false)
+    },
+    [nextTranscriptId],
+  )
 
   return {
     message,
     setMessage,
     conversation,
+    transcript,
     draftSpec,
     previewSpec,
     response,
@@ -363,7 +444,6 @@ export function useAiStrategySession({
     validationErrors,
     unsupportedRequests,
     assumptions,
-    questions,
     unsupportedAcknowledged,
     setUnsupportedAcknowledged,
     appliedToSetup,

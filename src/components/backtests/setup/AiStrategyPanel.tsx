@@ -1,7 +1,8 @@
 import { Copy, Download, Loader2, Play, RotateCcw, Save, Sparkles, Wand2, Zap } from 'lucide-react'
-import { type ReactNode } from 'react'
+import { type ReactNode, useRef } from 'react'
 import { Callout } from '@/components/ui'
 
+import { AiChatTranscript } from '@/components/backtests/setup/AiChatTranscript'
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
 import {
   updateExitConditionValue,
@@ -48,9 +49,11 @@ function BulletList({ items, testId }: { items: string[]; testId?: string }) {
 }
 
 export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
+  const composerRef = useRef<HTMLTextAreaElement>(null)
   const {
     message,
     setMessage,
+    transcript,
     previewSpec,
     response,
     serviceError,
@@ -58,12 +61,11 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
     validationErrors,
     unsupportedRequests,
     assumptions,
-    questions,
     unsupportedAcknowledged,
     setUnsupportedAcknowledged,
     workflowBlocker,
     canSave,
-    revisionDiff,
+    revisions,
     interpretMutation,
     selectedModel,
     setSelectedModel,
@@ -80,7 +82,10 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
     handleOptimize,
     resetDraft,
     updateDraft,
+    conversation,
   } = session
+
+  const hasConversation = conversation.length > 0 || transcript.length > 0
 
   const handleAskAiToFix = () => {
     if (validationErrors.length === 0) return
@@ -139,10 +144,20 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
             </p>
           ) : null}
         </div>
+
+        <AiChatTranscript
+          transcript={transcript}
+          revisions={revisions}
+          isPending={interpretMutation.isPending}
+          onQuestionSelect={setMessage}
+          composerRef={composerRef}
+        />
+
         <label htmlFor="ai-strategy-message" className="sr-only">
           Strategy prompt
         </label>
         <textarea
+          ref={composerRef}
           id="ai-strategy-message"
           value={message}
           onChange={(event) => setMessage(event.target.value)}
@@ -171,7 +186,7 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
             ) : (
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
             )}
-            {interpretMutation.isPending ? 'Interpreting…' : 'Interpret'}
+            {interpretMutation.isPending ? 'Interpreting…' : hasConversation ? 'Send' : 'Interpret'}
           </button>
 
           {validationErrors.length > 0 ? (
@@ -198,7 +213,7 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
             </button>
           ) : null}
 
-          {response ? (
+          {hasConversation || response ? (
             <button
               type="button"
               onClick={resetDraft}
@@ -206,7 +221,7 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
               data-testid="ai-strategy-reset"
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-              Reset draft
+              New conversation
             </button>
           ) : null}
         </div>
@@ -305,24 +320,6 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
 
       {response ? (
         <div className="space-y-3" data-testid="ai-strategy-results">
-          <p className="text-silver-200 text-sm leading-relaxed">{response.summary}</p>
-
-          {revisionDiff.some((entry) => entry.changed) ? (
-            <PreviewSection title="Revision changes">
-              <ul className="space-y-1" data-testid="ai-strategy-revision-diff">
-                {revisionDiff
-                  .filter((entry) => entry.changed)
-                  .map((entry) => (
-                    <li key={entry.section}>
-                      <span className="text-brass-400 font-medium uppercase">{entry.section}</span>
-                      <div className="text-silver-500">was: {entry.previous}</div>
-                      <div className="text-silver-200">now: {entry.current}</div>
-                    </li>
-                  ))}
-              </ul>
-            </PreviewSection>
-          ) : null}
-
           {assumptions.length > 0 ? (
             <PreviewSection title="Assumptions">
               <BulletList items={assumptions} testId="ai-strategy-assumptions" />
@@ -332,12 +329,6 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
           {unsupportedRequests.length > 0 ? (
             <PreviewSection title="Unsupported requests">
               <BulletList items={unsupportedRequests} testId="ai-strategy-unsupported" />
-            </PreviewSection>
-          ) : null}
-
-          {questions.length > 0 ? (
-            <PreviewSection title="Questions">
-              <BulletList items={questions} testId="ai-strategy-questions" />
             </PreviewSection>
           ) : null}
 

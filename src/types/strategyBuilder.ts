@@ -167,6 +167,7 @@ export type AiStrategyResponse = {
   assumptions: string[]
   questions: string[]
   unsupported_requests: string[]
+  change_notes?: string[]
   strategy_spec: StrategySpec | null
   validation: ValidationResult | null
   compiled_strategy: CompiledStrategy | null

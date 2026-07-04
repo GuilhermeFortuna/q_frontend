@@ -1,13 +1,46 @@
-import type {
-  AiStrategyResponse,
-  CompiledStrategy,
-  StrategySpec,
-  ValidationErrorDetail,
-} from '@/types/strategyBuilder'
+import type { AiStrategyResponse, StrategySpec } from '@/types/strategyBuilder'
 
-export const EMA_CROSS_SPEC: StrategySpec = {
+export const MOCK_STRATEGY_BUILDER_CAPABILITIES = {
+  schema_version: 'q_capabilities.v1' as const,
+  data: {
+    markets: ['B3'],
+    engines: ['candle' as const],
+    timeframes: ['D1', 'H1'],
+    ohlcv_columns: ['open', 'high', 'low', 'close', 'volume'],
+    tick_columns: ['price'],
+    data_sources: ['local'],
+  },
+  strategies: [],
+  genome_nodes: [],
+  genome_param_bounds: [],
+  genome_limits: { max_depth: 8, max_node_count: 32 },
+  operators: ['>', '<', 'crosses_above', 'crosses_below'],
+  condition_groups: ['all', 'any'],
+  exit_rules: [],
+  exit_presets: [],
+  risk_sizing: [],
+  execution_assumptions: {
+    supported_signal_timing: ['closed_bar'],
+    supported_entry_timing: ['next_bar_open'],
+    allow_short: false,
+    ai_builder_mvp_long_only: true,
+  },
+  unsupported: ['live trading'],
+}
+
+export const MOCK_STRATEGY_BUILDER_MODELS = {
+  provider: 'openai_compatible',
+  default_model: 'test-model-a',
+  models: [
+    { id: 'test-model-a', label: 'Model A', available: true },
+    { id: 'test-model-b', label: 'Model B', available: false },
+  ],
+}
+
+const MOCK_EMA_CROSS_SPEC: StrategySpec = {
   schema_version: 'strategy_spec.v1',
   name: 'EMA Trend Cross',
+
   universe: ['PETR4'],
   market: 'B3',
   timeframe: 'D1',
@@ -32,7 +65,7 @@ export const EMA_CROSS_SPEC: StrategySpec = {
   },
 }
 
-export const COMPILED_EMA_CROSS: CompiledStrategy = {
+const MOCK_COMPILED_EMA_CROSS = {
   compiled_id: 'compiled-ema-cross',
   schema_version: 'strategy_spec.v1',
   strategy_name: 'CompositeStrategy',
@@ -69,7 +102,7 @@ export const COMPILED_EMA_CROSS: CompiledStrategy = {
   },
 }
 
-export function buildInterpretResponse(
+export function buildMockInterpretResponse(
   overrides: Partial<AiStrategyResponse> = {},
 ): AiStrategyResponse {
   return {
@@ -78,54 +111,10 @@ export function buildInterpretResponse(
     questions: [],
     unsupported_requests: [],
     change_notes: [],
-    strategy_spec: EMA_CROSS_SPEC,
+    strategy_spec: MOCK_EMA_CROSS_SPEC,
     validation: { valid: true, errors: [] },
-    compiled_strategy: COMPILED_EMA_CROSS,
+    compiled_strategy: MOCK_COMPILED_EMA_CROSS,
     confidence: 0.92,
     ...overrides,
   }
-}
-
-export const TIMEFRAME_VALIDATION_ERROR: ValidationErrorDetail = {
-  path: 'timeframe',
-  code: 'unsupported_timeframe',
-  message: "Timeframe 'BADTF' is not currently supported.",
-  suggestions: ['D1'],
-}
-
-export const MOCK_CAPABILITIES = {
-  schema_version: 'q_capabilities.v1' as const,
-  data: {
-    markets: ['B3'],
-    engines: ['candle' as const],
-    timeframes: ['D1', 'H1'],
-    ohlcv_columns: ['open', 'high', 'low', 'close', 'volume'],
-    tick_columns: ['price'],
-    data_sources: ['local'],
-  },
-  strategies: [],
-  genome_nodes: [],
-  genome_param_bounds: [],
-  genome_limits: { max_depth: 8, max_node_count: 32 },
-  operators: ['>', '<', 'crosses_above', 'crosses_below'],
-  condition_groups: ['all', 'any'],
-  exit_rules: [],
-  exit_presets: [],
-  risk_sizing: [],
-  execution_assumptions: {
-    supported_signal_timing: ['closed_bar'],
-    supported_entry_timing: ['next_bar_open'],
-    allow_short: false,
-    ai_builder_mvp_long_only: true,
-  },
-  unsupported: ['live trading'],
-}
-
-export const MOCK_MODELS = {
-  provider: 'openai_compatible',
-  default_model: 'test-model-a',
-  models: [
-    { id: 'test-model-a', label: 'Model A', available: true },
-    { id: 'test-model-b', label: 'Model B', available: false },
-  ],
 }

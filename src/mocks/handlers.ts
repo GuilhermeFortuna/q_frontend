@@ -104,6 +104,11 @@ import {
   resetMockExecutionState,
   updateMockKillSwitch,
 } from '@/mocks/execution'
+import {
+  buildMockInterpretResponse,
+  MOCK_STRATEGY_BUILDER_CAPABILITIES,
+  MOCK_STRATEGY_BUILDER_MODELS,
+} from '@/mocks/strategyBuilder'
 import type { BacktestRequest } from '@/types/backtesting'
 import type {
   DeploymentActionRequest,
@@ -366,6 +371,18 @@ export const handlers = [
   }),
 
   http.get('*/api/v1/strategies', () => HttpResponse.json(mockStrategies)),
+
+  http.get('*/api/v1/strategy-builder/capabilities', () =>
+    HttpResponse.json(MOCK_STRATEGY_BUILDER_CAPABILITIES),
+  ),
+
+  http.get('*/api/v1/strategy-builder/models', () =>
+    HttpResponse.json(MOCK_STRATEGY_BUILDER_MODELS),
+  ),
+
+  http.post('*/api/v1/strategy-builder/interpret', () =>
+    HttpResponse.json(buildMockInterpretResponse()),
+  ),
 
   http.get('*/api/v1/strategies/custom', () => HttpResponse.json(mockCustomStrategies)),
 

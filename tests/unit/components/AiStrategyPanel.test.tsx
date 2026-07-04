@@ -388,7 +388,12 @@ describe('AiStrategyPanel in StrategyStudio', () => {
     await waitFor(() => {
       expect(screen.getByTestId('ai-strategy-service-error')).toBeInTheDocument()
     })
-    expect(screen.getByText(/AI strategy interpretation is disabled/i)).toBeInTheDocument()
+    expect(screen.getByTestId('ai-strategy-service-error')).toHaveTextContent(
+      /AI strategy interpretation is disabled/i,
+    )
+    expect(screen.getByTestId('ai-chat-notice-turn')).toHaveTextContent(
+      /AI strategy interpretation is disabled/i,
+    )
     expect(screen.getByTestId('strategy-studio')).toBeInTheDocument()
   })
 
