@@ -6,6 +6,7 @@ import { useFeatureLeaderboard, useFeatureList, useStartFeatureEval } from '@/ap
 import { FeatureLabCompareView } from '@/components/research/FeatureLabCompareView'
 import { FeatureLabFeaturePicker } from '@/components/research/FeatureLabFeaturePicker'
 import { FeatureLabInstrumentFields } from '@/components/research/FeatureLabInstrumentFields'
+import { wellInputClass } from '@/components/ui/wellInputStyles'
 import {
   buildEvalRunRequest,
   evalRunLabel,
@@ -168,7 +169,7 @@ export function FeatureLab({ onEvalStarted, onOpenRun, recentRuns }: FeatureLabP
                 id="feature-lab-target"
                 value={formState.targetName}
                 onChange={(event) => updateForm({ targetName: event.target.value as TargetFamily })}
-                className="border-carbon-700 bg-carbon-900 text-silver-100 w-full rounded-lg border px-3 py-2 text-sm"
+                className={wellInputClass}
               >
                 {TARGET_FAMILY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>

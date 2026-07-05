@@ -21,6 +21,7 @@ import {
 } from '@/lib/strategies/aiStrategyMetadata'
 import { buildOptimizationConfigFromBacktestFields } from '@/lib/strategies/buildOptimizationFromBacktest'
 import { downloadStrategySpecJson } from '@/lib/strategies/exportStrategySpec'
+import { toast } from '@/components/ui'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
@@ -368,6 +369,7 @@ export function useAiStrategySession({
     config.authoring.setDescription(response.summary)
     setAppliedToSetup(false)
     setUnsupportedAcknowledged(false)
+    toast.success(`Duplicated as "${nextName}"`)
   }, [config.authoring, previewSpec, response])
 
   const handleExport = useCallback(() => {

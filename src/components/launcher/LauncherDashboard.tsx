@@ -601,7 +601,7 @@ export function LauncherDashboard() {
                         </FlashOnChange>
                         <span
                           className={cn(
-                            'flex items-center gap-0.5 font-mono text-[10px] font-bold tabular-nums',
+                            'text-2xs quant-tabular-nums flex items-center gap-0.5 font-mono font-[560]',
                             isPositive ? 'text-emerald-400' : 'text-rose-400',
                           )}
                         >
@@ -622,10 +622,10 @@ export function LauncherDashboard() {
           ) : (
             <Panel className="flex flex-col items-center justify-center border-2 border-dashed py-6 text-center">
               <BarChart3 className="text-silver-500 mb-1.5 h-6 w-6 animate-pulse opacity-30" />
-              <span className="text-silver-400 font-mono text-[10px] tracking-wider uppercase">
+              <span className="text-silver-400 text-2xs font-mono tracking-[0.08em] uppercase">
                 Watchlist Empty
               </span>
-              <span className="text-silver-500 mt-0.5 text-[9px]">Add symbols in edit mode.</span>
+              <span className="text-silver-500 text-2xs mt-0.5">Add symbols in edit mode.</span>
             </Panel>
           )}
         </div>
@@ -834,7 +834,7 @@ export function LauncherDashboard() {
                     )}
                   />
                 </span>
-                <span className="text-silver-100 font-mono text-[10px] font-bold uppercase">
+                <span className="text-silver-100 text-2xs font-mono font-[560] tracking-[0.08em] uppercase">
                   {health?.status === 'healthy' ? 'Online' : 'Offline'}
                 </span>
               </div>

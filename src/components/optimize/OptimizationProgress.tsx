@@ -66,11 +66,11 @@ export function OptimizationProgress({
             {headerLabel ? (
               <p className="text-silver-200 mb-3 text-center text-sm font-medium">{headerLabel}</p>
             ) : null}
-            <div className="text-silver-300 mb-2.5 flex justify-between font-mono text-xs font-bold tracking-wide uppercase">
+            <div className="text-silver-300 mb-2.5 flex justify-between font-mono text-xs font-[560] tracking-[0.08em] uppercase">
               <span>
                 Progress: {status.completed_trials} / {status.n_trials} Trials
               </span>
-              <span className="text-brass-400">{pct}%</span>
+              <span className="text-silver-100 quant-tabular-nums">{pct}%</span>
             </div>
             <div className="bg-carbon-950/85 border-brass-600/10 h-2.5 w-full overflow-hidden rounded-full border shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)]">
               <div

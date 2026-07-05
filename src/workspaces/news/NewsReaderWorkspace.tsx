@@ -59,7 +59,7 @@ export function NewsReaderWorkspace({
     return (
       <Panel className="flex min-h-[300px] flex-col items-center justify-center p-6 text-center">
         <RefreshCw className="text-brass-400 h-8 w-8 animate-spin opacity-85" />
-        <span className="text-silver-300 mt-4 animate-pulse font-mono text-[10px] tracking-wider uppercase">
+        <span className="text-silver-300 text-2xs mt-4 animate-pulse font-mono tracking-[0.08em] uppercase">
           Fetching Article Content...
         </span>
       </Panel>

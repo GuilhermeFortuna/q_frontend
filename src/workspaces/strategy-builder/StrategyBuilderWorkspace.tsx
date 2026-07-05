@@ -42,11 +42,13 @@ export function StrategyBuilderWorkspace() {
   return (
     <div className="animate-fade-in-up mx-auto flex max-w-5xl flex-col gap-6 pb-28">
       <div className="flex items-center gap-3">
-        <div className="border-brass-600/20 bg-brass-500/5 text-brass-400 flex h-10 w-10 items-center justify-center rounded-lg border">
+        <div className="border-carbon-700/60 bg-carbon-900/50 text-silver-300 flex h-10 w-10 items-center justify-center rounded-lg border">
           <Sparkles className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-brass-400 text-xl font-bold">AI Strategy Builder</h1>
+          <h1 className="font-display text-silver-100 tracking-display text-xl font-semibold">
+            AI Strategy Builder
+          </h1>
           <p className="text-silver-400 mt-0.5 text-sm">
             Describe, validate, apply, save, and iterate on trading strategies using natural
             language AI.
@@ -60,7 +62,7 @@ export function StrategyBuilderWorkspace() {
           <div className="min-w-[12rem] flex-1 space-y-1">
             <label
               htmlFor="studio-strategy-name"
-              className="text-silver-300 text-xs font-medium tracking-wider uppercase"
+              className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase"
             >
               Name
             </label>
@@ -78,7 +80,7 @@ export function StrategyBuilderWorkspace() {
           <div className="min-w-[16rem] flex-[2] space-y-1">
             <label
               htmlFor="studio-strategy-desc"
-              className="text-silver-300 text-xs font-medium tracking-wider uppercase"
+              className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase"
             >
               Description
             </label>

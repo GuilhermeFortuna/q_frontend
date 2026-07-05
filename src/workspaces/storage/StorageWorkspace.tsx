@@ -49,7 +49,7 @@ function KindBadge({ kind }: { kind: StorageKind }) {
   return (
     <span
       className={cn(
-        'rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
+        'text-2xs rounded-full px-2 py-0.5 font-semibold tracking-wide uppercase',
         isTicks ? 'bg-violet-500/10 text-violet-300' : 'bg-brass-500/10 text-brass-300',
       )}
     >
@@ -230,11 +230,13 @@ export function StorageWorkspace() {
   return (
     <div className="animate-fade-in-up mx-auto flex max-w-5xl flex-col gap-6 pb-28">
       <div className="flex items-center gap-3">
-        <div className="border-brass-600/20 bg-brass-500/5 text-brass-400 flex h-10 w-10 items-center justify-center rounded-lg border">
+        <div className="border-carbon-700/60 bg-carbon-900/50 text-silver-300 flex h-10 w-10 items-center justify-center rounded-lg border">
           <Database className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-brass-400 text-xl font-bold">Storage</h1>
+          <h1 className="font-display text-silver-100 tracking-display text-xl font-semibold">
+            Storage
+          </h1>
           <p className="text-silver-400 mt-0.5 text-sm">
             Download OHLCV bars or tick data from MetaTrader 5 into the local parquet store, then
             serve them in Local data-source mode on Linux.
@@ -433,7 +435,7 @@ export function StorageWorkspace() {
                         <>
                           <p className="text-silver-300 text-sm">
                             Combined range across{' '}
-                            <span className="text-brass-400 font-semibold">
+                            <span className="text-silver-100 font-semibold">
                               {selectedTimeframes.length}
                             </span>{' '}
                             timeframes:{' '}
@@ -448,7 +450,7 @@ export function StorageWorkspace() {
                           <ul className="text-silver-500 space-y-1 font-mono text-xs">
                             {availableRanges.map((range) => (
                               <li key={range.timeframe} className="flex items-center gap-2">
-                                <span className="text-brass-500/80 w-8 font-bold">
+                                <span className="text-silver-400 w-8 font-[560]">
                                   {range.timeframe}:
                                 </span>
                                 <span>
@@ -576,7 +578,7 @@ export function StorageWorkspace() {
 
                   return (
                     <TableRow key={inventoryItemKey(item)}>
-                      <TableCell className="text-brass-400 font-mono font-bold">
+                      <TableCell className="text-silver-100 font-mono font-semibold">
                         {item.symbol}
                       </TableCell>
                       <TableCell>

@@ -86,8 +86,8 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
               <Icon className={cn(isLauncher ? 'h-9 w-9' : 'h-6 w-6', 'opacity-20 grayscale')} />
               <span
                 className={cn(
-                  'font-mono font-bold tracking-wider uppercase',
-                  isLauncher ? 'text-xs' : 'text-[10px]',
+                  'font-mono font-[560] tracking-[0.08em] uppercase',
+                  isLauncher ? 'text-xs' : 'text-2xs',
                 )}
               >
                 {item.label}
@@ -101,9 +101,12 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
             key={item.id}
             to={item.to}
             className={cn(
-              'text-cream-300 cubic-bezier(0.16,1,0.3,1) group relative flex flex-col items-center border border-transparent transition-[transform,color,background-color,border-color] duration-350 hover:-translate-y-0.5 hover:scale-105 active:scale-95',
+              'text-cream-300 group relative flex flex-col items-center border border-transparent',
+              'transition-[transform,color,background-color,border-color] duration-[var(--motion-fast)] ease-[var(--ease-exit)]',
+              'hover:-translate-y-0.5 hover:duration-[var(--motion-base)] hover:ease-[var(--ease-out)]',
+              'active:translate-y-[0.5px] active:scale-[0.985] active:duration-[var(--motion-fast)] active:ease-[var(--ease-out)]',
               isLauncher ? 'shrink-0 gap-1.5 rounded-xl px-4 py-3' : 'gap-1 rounded-lg px-4 py-2.5',
-              isActive ? 'text-gold-400 font-bold' : 'text-silver-400 hover:text-silver-200',
+              isActive ? 'text-brass-400 font-semibold' : 'text-silver-400 hover:text-silver-200',
             )}
           >
             {isActive ? (
@@ -142,8 +145,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
             </span>
             <span
               className={cn(
-                'relative z-10 font-mono font-bold tracking-wider uppercase',
-                isLauncher ? 'text-xs' : 'text-[10px]',
+                'text-2xs relative z-10 font-mono font-[560] tracking-[0.08em] uppercase',
               )}
             >
               {item.label}
@@ -174,10 +176,10 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
                   >
                     <div className="flex items-center gap-1.5">
                       <Icon className="text-brass-400 h-3.5 w-3.5 shrink-0" />
-                      <span className="text-silver-200 truncate font-mono text-[10px] font-bold tracking-wider uppercase">
+                      <span className="text-silver-200 text-2xs truncate font-mono font-[560] tracking-[0.08em] uppercase">
                         {item.label}
                       </span>
-                      <span className="text-brass-400 ml-auto font-mono text-[10px] font-bold tabular-nums">
+                      <span className="text-silver-100 quant-tabular-nums text-2xs ml-auto font-mono font-[560]">
                         {job.pct}%
                       </span>
                     </div>

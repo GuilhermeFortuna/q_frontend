@@ -202,7 +202,9 @@ export function DiscoverConfigForm({
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 shrink-0">
-        <h2 className="text-brass-400 text-xl font-bold">Discover</h2>
+        <h2 className="font-display text-silver-100 tracking-display text-xl font-semibold">
+          Discover
+        </h2>
         <p className="text-silver-400 mt-1 text-xs">
           Automatic strategy search — sweep registered strategies or evolve novel genomes, ranked on
           out-of-sample performance.

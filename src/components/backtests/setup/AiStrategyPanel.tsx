@@ -26,7 +26,7 @@ type AiStrategyPanelProps = {
 function PreviewSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="bg-carbon-900/25 border-carbon-800/50 rounded-lg border px-3 py-2">
-      <h4 className="text-silver-400 mb-1.5 text-[11px] font-semibold tracking-wide uppercase">
+      <h4 className="accent-wayfinding text-2xs mb-1.5 font-[560] tracking-[0.08em] uppercase">
         {title}
       </h4>
       <div className="text-silver-300 space-y-1 text-xs leading-relaxed">{children}</div>

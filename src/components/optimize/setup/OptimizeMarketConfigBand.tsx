@@ -102,7 +102,7 @@ export function OptimizeMarketConfigBand({
                 <div className="space-y-1">
                   <label
                     htmlFor="optimize-display-timeframe"
-                    className="text-silver-400 text-[10px] font-bold tracking-wider uppercase"
+                    className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase"
                   >
                     Display TF
                   </label>
@@ -122,7 +122,7 @@ export function OptimizeMarketConfigBand({
                 <div className="space-y-1">
                   <label
                     htmlFor="optimize-tick-source"
-                    className="text-silver-400 text-[10px] font-bold tracking-wider uppercase"
+                    className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase"
                   >
                     Tick Source
                   </label>
@@ -169,7 +169,7 @@ export function OptimizeMarketConfigBand({
                 <div className="bg-carbon-950/40 border-carbon-600/35 mt-2 space-y-2 rounded-lg border p-2">
                   <div className="grid grid-cols-3 gap-1.5">
                     <div className="space-y-1 text-center">
-                      <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
+                      <label className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
                         Start
                       </label>
                       <input
@@ -181,7 +181,7 @@ export function OptimizeMarketConfigBand({
                       />
                     </div>
                     <div className="space-y-1 text-center">
-                      <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
+                      <label className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
                         End
                       </label>
                       <input
@@ -193,7 +193,7 @@ export function OptimizeMarketConfigBand({
                       />
                     </div>
                     <div className="space-y-1 text-center">
-                      <label className="text-silver-400 text-[9px] font-bold tracking-wider uppercase">
+                      <label className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
                         Close
                       </label>
                       <input

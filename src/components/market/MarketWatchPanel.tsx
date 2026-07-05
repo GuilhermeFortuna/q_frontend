@@ -467,7 +467,7 @@ export function MarketWatchPanel({
 
             {searchQuery.trim().length > 1 && (
               <div className="border-carbon-700/60 mt-2 border-t pt-2">
-                <p className="text-brass-400 mb-1.5 px-2.5 text-[10px] font-bold tracking-wider uppercase">
+                <p className="accent-wayfinding text-2xs mb-1.5 px-2.5 font-[560] tracking-[0.08em] uppercase">
                   Add Symbol
                 </p>
                 {mt5SearchLoading ? (

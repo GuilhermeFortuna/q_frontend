@@ -39,6 +39,7 @@ import {
   type StrategyParamValue,
 } from '@/lib/strategies/strategyParams'
 import { strategyEngine } from '@/lib/strategies/strategyPresentation'
+import { toast } from '@/components/ui'
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
 import type { CustomStrategy, ExitRuleCatalogResponse, StrategyParamSpec } from '@/types/strategies'
@@ -534,6 +535,7 @@ export function useBacktestConfig() {
           setLoadedCustomName(payload.name)
           setCustomName(payload.name)
           setDescription(payload.description ?? '')
+          toast.success(`Strategy "${payload.name}" saved`)
         },
         onError: (err: unknown) => {
           const message = axios.isAxiosError(err)

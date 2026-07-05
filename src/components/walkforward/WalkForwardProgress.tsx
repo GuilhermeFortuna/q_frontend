@@ -41,7 +41,7 @@ export function WalkForwardProgress({ status, onCancel, cancelling }: WalkForwar
         <div className="relative z-20">
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="live-status-dot h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
-            <span className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+            <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
               Walk-forward running
             </span>
           </div>
@@ -51,11 +51,11 @@ export function WalkForwardProgress({ status, onCancel, cancelling }: WalkForwar
               Live phase unavailable — showing persisted window progress after restart.
             </p>
           ) : null}
-          <div className="text-silver-300 mb-2.5 flex justify-between font-mono text-xs font-bold tracking-wide uppercase">
+          <div className="text-silver-300 mb-2.5 flex justify-between font-mono text-xs font-[560] tracking-[0.08em] uppercase">
             <span>
               Windows completed: {completed} / {status.total_windows}
             </span>
-            <span className="text-brass-400">{pct}%</span>
+            <span className="text-silver-100 quant-tabular-nums">{pct}%</span>
           </div>
           <div className="surface-well h-2.5 w-full overflow-hidden rounded-full">
             <div

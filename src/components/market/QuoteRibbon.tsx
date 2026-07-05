@@ -155,7 +155,9 @@ export function QuoteRibbon({
 
         {snapshot && (
           <div className="surface-card surface-card--edge border-carbon-800 rounded-xl border-l px-4 py-2">
-            <p className="accent-wayfinding text-[10px] font-bold tracking-wider uppercase">Last</p>
+            <p className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
+              Last
+            </p>
             <FlashOnChange value={snapshot.last}>
               <p
                 className={cn(

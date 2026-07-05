@@ -100,7 +100,7 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
         <div className="relative z-20">
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="live-status-dot h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
-            <span className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+            <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
               Search running
             </span>
           </div>
@@ -109,9 +109,9 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
               <p className="text-silver-200 mb-1 text-center text-sm font-medium">
                 Generation {status.generation} / {status.total_generations}
               </p>
-              <div className="text-silver-300 mb-2 flex justify-between font-mono text-xs font-bold tracking-wide uppercase">
+              <div className="text-silver-300 mb-2 flex justify-between font-mono text-xs font-[560] tracking-[0.08em] uppercase">
                 <span>Generations</span>
-                <span className="text-brass-400">{generationPct}%</span>
+                <span className="text-silver-100 quant-tabular-nums">{generationPct}%</span>
               </div>
               <div className="surface-well mb-4 h-2 w-full overflow-hidden rounded-full">
                 <div
@@ -127,11 +127,11 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
               Live window phase unavailable — showing persisted candidate progress after restart.
             </p>
           ) : null}
-          <div className="text-silver-300 mb-2.5 flex justify-between font-mono text-xs font-bold tracking-wide uppercase">
+          <div className="text-silver-300 mb-2.5 flex justify-between font-mono text-xs font-[560] tracking-[0.08em] uppercase">
             <span>
               Candidates: {current} / {status.total_candidates}
             </span>
-            <span className="text-brass-400">{pct}%</span>
+            <span className="text-silver-100 quant-tabular-nums">{pct}%</span>
           </div>
           <div className="surface-well h-2.5 w-full overflow-hidden rounded-full">
             <div
@@ -150,18 +150,18 @@ export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgr
             <Panel className="text-silver-400 mt-4 p-3 text-xs">
               <div className="grid grid-cols-2 gap-2 font-mono">
                 <div className="flex flex-col">
-                  <span className="text-silver-500 text-[10px] font-bold tracking-wider uppercase">
+                  <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
                     Elapsed Time
                   </span>
-                  <span className="text-silver-200 mt-0.5 font-semibold">
+                  <span className="text-silver-200 quant-tabular-nums mt-0.5 font-semibold">
                     {formatDuration(elapsed)}
                   </span>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-silver-500 text-[10px] font-bold tracking-wider uppercase">
+                  <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
                     Remaining (Est)
                   </span>
-                  <span className="text-brass-400 mt-0.5 font-semibold">
+                  <span className="text-silver-100 quant-tabular-nums mt-0.5 font-semibold">
                     {currentRaw / total > 0.02 ? formatDuration(remaining) : 'Estimating...'}
                   </span>
                 </div>

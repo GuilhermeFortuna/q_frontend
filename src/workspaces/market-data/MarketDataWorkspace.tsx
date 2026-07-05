@@ -339,6 +339,7 @@ export function MarketDataWorkspace() {
           collapsible
           collapsedSize={0}
           className="min-w-0"
+          style={{ minWidth: 0 }}
           onResize={(size) => {
             const isCollapsed = size.asPercentage === 0
             if (!isCollapsed) {
@@ -349,15 +350,17 @@ export function MarketDataWorkspace() {
             }
           }}
         >
-          <MarketWatchPanel
-            watchlist={watchlist}
-            snapshotsBySymbol={snapshotsBySymbol}
-            selectedSymbol={selectedSymbol}
-            isLoadingInstruments={instrumentsQuery.isLoading}
-            onSelectSymbol={setSelectedSymbol}
-            onAddInstrument={addToWatchlist}
-            onRemoveInstrument={removeFromWatchlist}
-          />
+          {!sidebarCollapsed && (
+            <MarketWatchPanel
+              watchlist={watchlist}
+              snapshotsBySymbol={snapshotsBySymbol}
+              selectedSymbol={selectedSymbol}
+              isLoadingInstruments={instrumentsQuery.isLoading}
+              onSelectSymbol={setSelectedSymbol}
+              onAddInstrument={addToWatchlist}
+              onRemoveInstrument={removeFromWatchlist}
+            />
+          )}
         </Panel>
 
         <Separator className="market-panel-resize-handle" />
@@ -440,6 +443,7 @@ export function MarketDataWorkspace() {
           collapsible
           collapsedSize={0}
           className="min-w-0"
+          style={{ minWidth: 0 }}
           onResize={(size) => {
             const isCollapsed = size.asPercentage === 0
             if (!isCollapsed) {
@@ -450,7 +454,7 @@ export function MarketDataWorkspace() {
             }
           }}
         >
-          <DetailZone symbol={selectedSymbol} snapshot={snapshot} />
+          {!detailCollapsed && <DetailZone symbol={selectedSymbol} snapshot={snapshot} />}
         </Panel>
       </Group>
 

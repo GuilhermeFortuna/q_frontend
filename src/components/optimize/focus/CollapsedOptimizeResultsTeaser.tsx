@@ -62,17 +62,19 @@ export function CollapsedOptimizeResultsTeaser({
         aria-label="Expand results"
         onClick={onExpand}
       >
-        <span className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+        <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
           Best objective
         </span>
-        <span className="text-brass-400 text-sm font-semibold">{formatBestObjective(results)}</span>
+        <span className="text-silver-100 quant-tabular-nums text-sm font-semibold">
+          {formatBestObjective(results)}
+        </span>
         <span className="text-silver-500 ml-2 text-xs">·</span>
-        <span className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+        <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
           Completed
         </span>
-        <span className="text-silver-200 text-sm font-medium">{completed}</span>
+        <span className="text-silver-200 quant-tabular-nums text-sm font-medium">{completed}</span>
         <span className="text-silver-500 ml-2 text-xs">·</span>
-        <span className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+        <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
           Failed
         </span>
         <span className="text-silver-200 text-sm font-medium">{results.failures.length}</span>

@@ -59,7 +59,7 @@ export function FeatureLabFeaturePicker({
       {[...grouped.entries()].map(([category, categoryFeatures]) => (
         <div key={category} className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-silver-400 text-[10px] font-bold tracking-wider uppercase">
+            <p className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
               {category}
             </p>
             <button

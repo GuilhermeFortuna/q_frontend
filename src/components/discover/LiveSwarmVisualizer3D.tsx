@@ -10,6 +10,7 @@ import type {
 } from '@/types/strategySearch'
 import { formatObjectiveMetricValue, objectiveMetricLabel } from '@/lib/walkforward/objectiveMetric'
 import { registerFeature3DSurface } from '@/lib/cinematic/feature3DRegistry'
+import { wellInputClass } from '@/components/ui/wellInputStyles'
 
 // WebGL Error Boundary
 class CanvasErrorBoundary extends React.Component<
@@ -718,7 +719,7 @@ export function LiveSwarmVisualizer3D({
               id="z-metric-select"
               value={zMetric}
               onChange={(e) => setZMetric(e.target.value as ZAxisMetric)}
-              className="border-carbon-700 bg-carbon-900 text-silver-200 focus:ring-brass-500/50 rounded-lg border px-2.5 py-1.5 font-mono text-xs focus:ring-1 focus:outline-none"
+              className={wellInputClass}
             >
               <option value="complexity">Node Complexity (Count)</option>
               <option value="robustness">Robustness Score</option>

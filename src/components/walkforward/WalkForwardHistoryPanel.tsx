@@ -41,7 +41,7 @@ function RunListItem({
   const metricsContent = (
     <div className="flex items-center justify-between text-[10px]">
       <div className="flex flex-col">
-        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+        <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
           Objective Metrics
         </span>
         <span className="text-silver-200 mt-0.5 text-[11px] font-semibold">
@@ -49,10 +49,10 @@ function RunListItem({
         </span>
       </div>
       <div className="flex flex-col items-end">
-        <span className="text-silver-500 text-[8px] font-medium tracking-wider uppercase">
+        <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
           Efficiency
         </span>
-        <span className="text-brass-400 mt-0.5 font-mono text-[11px] font-bold">
+        <span className="text-silver-100 quant-tabular-nums mt-0.5 font-mono text-[11px] font-semibold">
           {formatEfficiencyRatio(run.efficiency)}
         </span>
       </div>

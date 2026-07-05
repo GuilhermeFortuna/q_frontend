@@ -64,7 +64,9 @@ export function SystemWorkspace() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
-        <h1 className="text-brass-400 text-xl font-bold">System</h1>
+        <h1 className="font-display text-silver-100 tracking-display text-xl font-semibold">
+          System
+        </h1>
         <p className="text-silver-400 mt-1 text-sm">
           Runtime configuration and backend connectivity (mock API in Phase 1).
         </p>

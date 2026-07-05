@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { RotateCcw, Eye, EyeOff, Sparkles, HelpCircle, Trophy } from 'lucide-react'
 import type { OptimizationResults } from '@/types/optimization'
 import { registerFeature3DSurface } from '@/lib/cinematic/feature3DRegistry'
+import { wellInputClass } from '@/components/ui/wellInputStyles'
 
 // WebGL Canvas error boundary
 class CanvasErrorBoundary extends React.Component<
@@ -315,7 +316,7 @@ export function OptimizationTerrain3D({
             id="x-axis-select"
             value={xKey}
             onChange={(e) => setXKey(e.target.value)}
-            className="border-carbon-700 bg-carbon-900 text-silver-200 focus:ring-brass-500/50 rounded-lg border px-2.5 py-1.5 text-xs focus:ring-1 focus:outline-none"
+            className={wellInputClass}
           >
             {parameterKeys.map((k) => (
               <option key={`x-${k}`} value={k}>
@@ -334,7 +335,7 @@ export function OptimizationTerrain3D({
             id="y-axis-select"
             value={yKey}
             onChange={(e) => setYKey(e.target.value)}
-            className="border-carbon-700 bg-carbon-900 text-silver-200 focus:ring-brass-500/50 rounded-lg border px-2.5 py-1.5 text-xs focus:ring-1 focus:outline-none"
+            className={wellInputClass}
           >
             {parameterKeys.map((k) => (
               <option key={`y-${k}`} value={k}>
@@ -353,7 +354,7 @@ export function OptimizationTerrain3D({
             id="z-axis-select"
             value={zKey}
             onChange={(e) => setZKey(e.target.value)}
-            className="border-carbon-700 bg-carbon-900 text-silver-200 focus:ring-brass-500/50 rounded-lg border px-2.5 py-1.5 text-xs focus:ring-1 focus:outline-none"
+            className={wellInputClass}
           >
             <option value="objective">Primary Objective</option>
             {metricKeys.map((k) => (

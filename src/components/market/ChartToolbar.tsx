@@ -71,7 +71,7 @@ export function ChartToolbar({
             onChange={(e) => onShowGridChange(e.target.checked)}
             className="border-carbon-700 text-brass-500 accent-brass-500 cursor-pointer rounded focus:ring-0"
           />
-          <span className="text-silver-300 text-[10px] font-bold tracking-wider uppercase">
+          <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
             Grid
           </span>
         </label>

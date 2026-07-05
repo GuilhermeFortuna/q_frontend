@@ -60,7 +60,9 @@ export function OptimizeConfigForm({
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 shrink-0">
-        <h2 className="text-brass-400 text-xl font-bold">Optimizer</h2>
+        <h2 className="font-display text-silver-100 tracking-display text-xl font-semibold">
+          Optimizer
+        </h2>
         <p className="text-silver-400 mt-1 text-xs">
           Search strategy &amp; risk parameters with Optuna.
         </p>
