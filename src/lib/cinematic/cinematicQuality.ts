@@ -54,8 +54,8 @@ export function resolveCinematicQuality(input: {
   if (isLauncher) {
     return {
       mode: 'launcher',
-      showParticles: true,
-      particleOpacity: documentHidden ? 0.35 : 1,
+      showParticles: false,
+      particleOpacity: 0,
       animateLoop: !documentHidden,
       dpr: 1,
       sceneDim: documentHidden ? 0.25 : 0,

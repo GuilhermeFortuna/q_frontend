@@ -30,7 +30,7 @@ describe('resolveCinematicQuality', () => {
     expect(profile.sceneDim).toBeGreaterThan(0)
   })
 
-  it('returns launcher profile with particles on the launcher workspace', () => {
+  it('returns launcher profile without particles on the launcher workspace', () => {
     const profile = resolveCinematicQuality({
       activeWorkspace: 'launcher',
       reducedMotion: false,
@@ -39,7 +39,7 @@ describe('resolveCinematicQuality', () => {
     })
 
     expect(profile.mode).toBe('launcher')
-    expect(profile.showParticles).toBe(true)
+    expect(profile.showParticles).toBe(false)
     expect(profile.animateLoop).toBe(true)
   })
 

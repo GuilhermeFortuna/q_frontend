@@ -52,7 +52,7 @@ describe('CinematicScene', () => {
 
     expect(screen.getByTestId('cinematic-scene')).toBeInTheDocument()
     expect(screen.getByTestId('cinematic-scene')).toHaveAttribute('data-quality-mode', 'launcher')
-    expect(screen.getByTestId('cinematic-canvas')).toBeInTheDocument()
+    expect(screen.queryByTestId('cinematic-canvas')).not.toBeInTheDocument()
   })
 
   it('disables the animation loop when reduced motion is preferred', () => {
@@ -74,7 +74,7 @@ describe('CinematicScene', () => {
 
     render(<CinematicScene />)
 
-    expect(screen.getByTestId('cinematic-canvas')).toHaveAttribute('data-frameloop', 'never')
+    expect(screen.queryByTestId('cinematic-canvas')).not.toBeInTheDocument()
     expect(screen.getByTestId('cinematic-scene')).toHaveAttribute('data-loop-active', 'false')
   })
 
