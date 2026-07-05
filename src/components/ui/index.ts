@@ -37,3 +37,31 @@ export {
   TableCaption,
   type TableRowProps,
 } from './table'
+export {
+  DataTable,
+  type DataColumn,
+  type DataTableProps,
+  type DataTableVirtualizeOptions,
+} from './DataTable'
+export {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogClose,
+  DialogDescription,
+} from './Dialog'
+export { Popover, PopoverTrigger, PopoverPortal, PopoverContent } from './Popover'
+export {
+  Menu,
+  MenuTrigger,
+  MenuPortal,
+  MenuContent,
+  MenuItem,
+  MenuSeparator,
+  MenuSub,
+  MenuSubTrigger,
+  MenuSubContent,
+} from './Menu'
+export { Tooltip, TooltipProvider, type TooltipProps } from './Tooltip'
+export { toast, Toaster, useToasts, type ToastItem } from './toast'
