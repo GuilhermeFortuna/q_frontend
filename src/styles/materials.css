@@ -365,4 +365,92 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
+
+  /* --- Hero Aurora (single-use by decree; reserved dispensation) ---
+     This class is single-use only: it mounts exclusively in the AI Strategy Builder
+     hero state. Never use this in any other surface to protect the accent ladder. */
+  .surface-aurora {
+    --aurora-strength: 0.32;
+    --aurora-speed: 14s;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    /* Transparent overlay: the living panel's glass must stay visible beneath. */
+  }
+
+  .surface-aurora::before,
+  .surface-aurora::after {
+    content: '';
+    position: absolute;
+    width: 65%;
+    height: 55%;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: var(--aurora-strength);
+    mix-blend-mode: screen;
+    will-change: transform, opacity;
+  }
+
+  /* Both light fields live around the greeting (upper-center), fully on-canvas,
+     drifting slowly through it — light breathing over the content, not corner haze. */
+  .surface-aurora::before {
+    background: radial-gradient(circle, var(--color-brass-500) 0%, transparent 68%);
+    top: 4%;
+    left: 12%;
+    animation: aurora-drift-1 var(--aurora-speed) infinite alternate ease-in-out;
+  }
+
+  .surface-aurora::after {
+    background: radial-gradient(circle, var(--color-cream-300) 0%, transparent 68%);
+    top: 14%;
+    right: 8%;
+    animation: aurora-drift-2 calc(var(--aurora-speed) * 1.3) infinite alternate ease-in-out;
+  }
+
+  @keyframes aurora-drift-1 {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: calc(var(--aurora-strength) * 0.65);
+    }
+    50% {
+      transform: translate(14%, 12%) scale(1.12);
+      opacity: var(--aurora-strength);
+    }
+    100% {
+      transform: translate(-8%, 4%) scale(0.94);
+      opacity: calc(var(--aurora-strength) * 0.75);
+    }
+  }
+
+  @keyframes aurora-drift-2 {
+    0% {
+      transform: translate(0, 0) scale(1.05);
+      opacity: calc(var(--aurora-strength) * 0.55);
+    }
+    50% {
+      transform: translate(-16%, 10%) scale(0.92);
+      opacity: calc(var(--aurora-strength) * 0.9);
+    }
+    100% {
+      transform: translate(6%, -6%) scale(1.1);
+      opacity: calc(var(--aurora-strength) * 0.7);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .surface-aurora::before,
+    .surface-aurora::after {
+      animation: none !important;
+      transform: none !important;
+    }
+  }
+
+  :root[data-reduced-motion='true'] .surface-aurora::before,
+  :root[data-reduced-motion='true'] .surface-aurora::after {
+    animation: none !important;
+    transform: none !important;
+  }
 }

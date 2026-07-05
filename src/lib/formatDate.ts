@@ -20,23 +20,29 @@ function toDate(value: Date | string | number): Date {
 
 type DateTimePart = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second'
 
-function getPart(date: Date, part: DateTimePart): string {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: DISPLAY_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).formatToParts(date)
+// Constructing an Intl.DateTimeFormat is expensive (locale/timezone data lookup);
+// this formatter's options never change, so build it once and reuse it. Formatting
+// hundreds of chart/table timestamps used to mean thousands of fresh instances.
+const DISPLAY_TIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  timeZone: DISPLAY_TIMEZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+})
 
-  const value = parts.find((entry) => entry.type === part)?.value ?? ''
-  if (part === 'hour' && value === '24') {
-    return '00'
+function getParts(date: Date): Record<DateTimePart, string> {
+  const parts = {} as Record<DateTimePart, string>
+  for (const { type, value } of DISPLAY_TIME_FORMATTER.formatToParts(date)) {
+    parts[type as DateTimePart] = value
   }
-  return value
+  if (parts.hour === '24') {
+    parts.hour = '00'
+  }
+  return parts
 }
 
 function pad2(value: string): string {
@@ -48,12 +54,13 @@ function formatInDisplayZone(
   include: { date?: boolean; time?: boolean; seconds?: boolean; monthOnly?: boolean },
 ): string {
   const date = toDate(value)
-  const year = getPart(date, 'year')
-  const month = pad2(getPart(date, 'month'))
-  const day = pad2(getPart(date, 'day'))
-  const hour = pad2(getPart(date, 'hour'))
-  const minute = pad2(getPart(date, 'minute'))
-  const second = pad2(getPart(date, 'second'))
+  const parts = getParts(date)
+  const year = parts.year
+  const month = pad2(parts.month)
+  const day = pad2(parts.day)
+  const hour = pad2(parts.hour)
+  const minute = pad2(parts.minute)
+  const second = pad2(parts.second)
 
   if (include.monthOnly) {
     return `${year}/${month}`
@@ -98,7 +105,8 @@ export function formatDisplayTimeSeconds(value: Date | string | number): string 
 /** Month key for aggregation buckets: YYYY-MM */
 export function formatDisplayMonthKey(value: Date | string | number): string {
   const date = toDate(value)
-  const year = getPart(date, 'year')
-  const month = pad2(getPart(date, 'month'))
+  const parts = getParts(date)
+  const year = parts.year
+  const month = pad2(parts.month)
   return `${year}-${month}`
 }

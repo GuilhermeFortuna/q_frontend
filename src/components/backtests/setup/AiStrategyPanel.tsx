@@ -1,10 +1,34 @@
 import { Copy, Download, Loader2, Play, RotateCcw, Save, Sparkles, Wand2, Zap } from 'lucide-react'
-import { type ReactNode, useRef } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { Button, Callout } from '@/components/ui'
 import { LabeledField } from '@/components/ui/LabeledField'
+import { AnimatePresence, motion } from 'motion/react'
 
 import { AiChatTranscript } from '@/components/backtests/setup/AiChatTranscript'
+import { AiComposer } from '@/components/backtests/setup/AiComposer'
+import { AiBuilderHero } from '@/components/backtests/setup/AiBuilderHero'
+import { useReducedMotion } from '@/lib/motion/useReducedMotion'
+import { chipClass } from '@/components/ui/chipStyles'
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
+
+const STARTER_CHIPS = [
+  {
+    caption: 'rough idea',
+    label: 'I have a rough idea about momentum',
+    prompt: "I want something that rides momentum but I'm not sure about entries or exits yet.",
+  },
+  {
+    caption: 'half-formed',
+    label: 'Buy pullbacks in an uptrend',
+    prompt: 'Buy pullbacks in an uptrend — you pick sensible indicators; I want a tight stop.',
+  },
+  {
+    caption: 'full spec',
+    label: 'Full spec: EMA crossover',
+    prompt: 'Create a trend strategy using EMA 20 and EMA 50 with a 3% stop.',
+  },
+] as const
+
 import {
   updateExitConditionValue,
   updateStrategySpecField,
@@ -94,6 +118,7 @@ export function AiStrategyPanel({
     resetDraft,
     updateDraft,
     conversation,
+    setAnsweringQuestion,
   } = session
 
   const hasConversation = conversation.length > 0 || transcript.length > 0
@@ -104,6 +129,161 @@ export function AiStrategyPanel({
   const handleAskAiToFix = () => {
     if (validationErrors.length === 0) return
     void submitInterpret('Please fix the validation errors in the current draft.', validationErrors)
+  }
+
+  const isReduced = useReducedMotion()
+  const wasConversationRef = useRef(hasConversation)
+  const isResetting = wasConversationRef.current && !hasConversation
+  useEffect(() => {
+    wasConversationRef.current = hasConversation
+  }, [hasConversation])
+
+  const layoutTransition =
+    isReduced || isResetting ? { duration: 0 } : { duration: 0.28, ease: [0.4, 0, 0.2, 1] }
+  if (hideHeader) {
+    return (
+      <section
+        className={cn(
+          'border-carbon-700/50 bg-carbon-950/40 relative rounded-xl border p-3',
+          fillHeight ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-3',
+        )}
+        data-testid="ai-strategy-panel"
+      >
+        {draftHeader}
+
+        <div className="flex min-h-0 flex-1 flex-col">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {!hasConversation ? (
+              <motion.div
+                key="empty"
+                initial={isReduced ? {} : { opacity: 0 }}
+                animate={isReduced ? {} : { opacity: 1 }}
+                exit={isReduced ? {} : { opacity: 0, y: -20 }}
+                transition={{ duration: 0.28, ease: 'easeInOut' }}
+                className="relative flex flex-1 flex-col items-center justify-center gap-7 overflow-hidden rounded-xl py-8"
+              >
+                <div className="surface-aurora" aria-hidden data-testid="ai-builder-aurora" />
+
+                <AiBuilderHero />
+
+                <motion.div
+                  layoutId="composer-pill"
+                  transition={layoutTransition}
+                  className="relative z-20 flex w-full max-w-2xl flex-col items-center gap-4"
+                >
+                  <AiComposer
+                    session={session}
+                    composerRef={composerRef}
+                    variant="pill"
+                    docked={false}
+                  />
+
+                  <div className="flex max-w-3xl flex-wrap justify-center gap-2">
+                    {STARTER_CHIPS.map((chip) => (
+                      <button
+                        key={chip.prompt}
+                        type="button"
+                        className={cn(
+                          chipClass(false),
+                          'flex h-auto items-baseline gap-1.5 rounded-full px-3.5 py-1.5',
+                        )}
+                        onClick={() => {
+                          setMessage(chip.prompt)
+                          composerRef.current?.focus()
+                        }}
+                        data-testid="ai-chat-example-chip"
+                      >
+                        <span className="text-brass-500 text-[10px] font-[560] tracking-wider uppercase select-none">
+                          {chip.caption}
+                        </span>
+                        <span className="text-silver-200 text-xs">{chip.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="active"
+                initial={isReduced ? {} : { opacity: 0 }}
+                animate={isReduced ? {} : { opacity: 1 }}
+                transition={{ duration: 0.28 }}
+                className="flex min-h-0 flex-1 flex-col gap-3"
+              >
+                <AiChatTranscript
+                  transcript={transcript}
+                  revisions={revisions}
+                  isPending={interpretMutation.isPending}
+                  onQuestionSelect={(prefill, question) => {
+                    setMessage(prefill)
+                    if (question) setAnsweringQuestion(question)
+                  }}
+                  composerRef={composerRef}
+                  fillHeight={fillHeight}
+                />
+
+                <motion.div
+                  layoutId="composer-pill"
+                  transition={layoutTransition}
+                  className="flex w-full flex-col gap-2"
+                >
+                  <AiComposer
+                    session={session}
+                    composerRef={composerRef}
+                    variant="pill"
+                    docked={true}
+                  />
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {validationErrors.length > 0 ? (
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        onClick={handleAskAiToFix}
+                        disabled={interpretMutation.isPending}
+                        className="tracking-wider uppercase"
+                        data-testid="ai-strategy-ask-fix"
+                      >
+                        <Wand2 className="h-3.5 w-3.5" aria-hidden />
+                        Ask AI to fix
+                      </Button>
+                    ) : null}
+
+                    {response?.compiled_strategy ? (
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        onClick={handleApplyToSetup}
+                        className="tracking-wider uppercase"
+                        data-testid="ai-strategy-apply"
+                      >
+                        Apply to setup
+                      </Button>
+                    ) : null}
+
+                    {hasConversation || response ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetDraft}
+                        className="tracking-wider uppercase"
+                        data-testid="ai-strategy-reset"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                        New conversation
+                      </Button>
+                    ) : null}
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -199,31 +379,15 @@ export function AiStrategyPanel({
           transcript={transcript}
           revisions={revisions}
           isPending={interpretMutation.isPending}
-          onQuestionSelect={setMessage}
+          onQuestionSelect={(prefill, question) => {
+            setMessage(prefill)
+            if (question) setAnsweringQuestion(question)
+          }}
           composerRef={composerRef}
           fillHeight={fillHeight}
         />
 
-        <label htmlFor="ai-strategy-message" className="sr-only">
-          Strategy prompt
-        </label>
-        <textarea
-          ref={composerRef}
-          id="ai-strategy-message"
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          rows={3}
-          placeholder="e.g. Create a trend strategy using EMA 20 and EMA 50 with a 3% stop."
-          className={`${inputClass} min-h-[4.5rem] resize-y`}
-          disabled={interpretMutation.isPending}
-          data-testid="ai-strategy-message"
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-              event.preventDefault()
-              void submitInterpret(message)
-            }
-          }}
-        />
+        <AiComposer session={session} composerRef={composerRef} variant="compact" />
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"

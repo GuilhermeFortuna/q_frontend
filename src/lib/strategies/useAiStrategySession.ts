@@ -46,6 +46,7 @@ export type TranscriptUserEntry = {
   id: string
   kind: 'user'
   content: string
+  answeringQuestion?: string
 }
 
 export type TranscriptAssistantEntry = {
@@ -113,6 +114,7 @@ export function useAiStrategySession({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [revisions, setRevisions] = useState<AiRevisionSnapshot[]>([])
   const [capabilitiesVersion, setCapabilitiesVersion] = useState('q_capabilities.v1')
+  const [answeringQuestion, setAnsweringQuestion] = useState<string | null>(null)
 
   const nextTranscriptId = useCallback(() => {
     transcriptIdRef.current += 1
@@ -218,6 +220,7 @@ export function useAiStrategySession({
     setActiveAiDraft(false)
     setSaveError(null)
     setRevisions([])
+    setAnsweringQuestion(null)
   }, [])
 
   const ensureCapabilitiesVersion = useCallback(async () => {
@@ -290,7 +293,11 @@ export function useAiStrategySession({
   )
 
   const submitInterpret = useCallback(
-    async (nextMessage: string, validationErrorsToRepair: ValidationErrorDetail[] = []) => {
+    async (
+      nextMessage: string,
+      validationErrorsToRepair: ValidationErrorDetail[] = [],
+      fromQuestion?: string,
+    ) => {
       const trimmed = nextMessage.trim()
       if (!trimmed) return
 
@@ -298,11 +305,18 @@ export function useAiStrategySession({
       setSaveError(null)
       const userTurn: ConversationMessage = { role: 'user', content: trimmed }
       const nextConversation = [...conversation, userTurn]
+      const activeQuestion = fromQuestion || answeringQuestion || undefined
       setConversation(nextConversation)
       setTranscript((current) => [
         ...current,
-        { id: nextTranscriptId(), kind: 'user', content: trimmed },
+        {
+          id: nextTranscriptId(),
+          kind: 'user',
+          content: trimmed,
+          answeringQuestion: activeQuestion,
+        },
       ])
+      setAnsweringQuestion(null)
       if (!originalPrompt) {
         setOriginalPrompt(trimmed)
       }
@@ -530,6 +544,8 @@ export function useAiStrategySession({
     resetDraft,
     hydrateFromMetadata,
     updateDraft,
+    answeringQuestion,
+    setAnsweringQuestion,
   }
 }
 

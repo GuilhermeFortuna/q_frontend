@@ -264,6 +264,15 @@ Standing bar for all future UI work — the same 10-point checklist enforced in 
 
 Sweep log: `docs/work-orders/WO199-sweep-log.md`.
 
+## Hero dispensation
+
+This section governs the single-use hero state layout added in WO207 for the AI Strategy Builder workspace host:
+
+1. **Aurora ambient background** — The `.surface-aurora` class is the _only_ allowed slow-breathing ambient light animation in the application. It is restricted strictly to the empty state of the AI Strategy Builder hero panel. It must never be applied to any other panel or surface. It is gated to a static rendering under reduced motion preference.
+2. **Ombré-keyword rule** — A text gradient (brass→cream ombré) is allowed _only_ for the single greeting keyword ("building") in the empty builder state greeting. No other text elements may carry this gradient.
+3. **Pill composer** — A frosted glass pill (`.surface-panel` styling with custom rounded-full/relaxed radius borders) is utilized as a single focal object centered mid-screen in the empty state, docking to the bottom upon starting a conversation. It contains the model picker in its left edge as a quiet suede chip and the machined-brass circular send button in its right edge.
+4. **Editorial turn** — Assistant chat turns follow a strict hierarchical structure: isolated bold headline (first sentence) first, followed by quiet body description, prominent suede question cards with a brass left edge, and a collapsible "Details" drawer for diff chips and change lists. A pending response renders an animated shimmer line, which scales back to static dots under reduced motion.
+
 ## Out of scope
 
 - No new runtime dependencies; no component framework (Radix is already present for primitives only).

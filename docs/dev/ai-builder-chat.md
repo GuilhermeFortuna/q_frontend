@@ -41,7 +41,24 @@ The model picker groups models by the provider summaries returned from `/models`
 pre-WO200 backend are normalized into one implicit provider group and omit `provider` from
 interpret requests for compatibility.
 
-`AiStrategyPanel` has two hosting modes. Its default renders the compact panel heading used
-inside Backtests. The dedicated `/strategy-builder` workspace passes `hideHeader` and
-`fillHeight`, supplies the integrated `draftHeader`, and lets the transcript consume the
-remaining panel height without duplicating the page identity.
+`AiStrategyPanel` has two hosting modes:
+
+1. **Compact Backtests host** (`hideHeader=false`): Renders the compact panel heading, a compact model dropdown row, and standard compact input layout.
+2. **Workspace host** (`hideHeader=true`): Renders the premium AI Builder layout. If the transcript is empty, it mounts the `AiBuilderHero` (with a breathing `surface-aurora` background, logo, display greeting, and starter chips) and centers the `AiComposer` in a rounded frosted-glass pill variant. Upon the first submit, a collapse choreography unmounts/fades the hero, fades out the aurora, and docks the composer pill to the bottom, transitioning into the active transcript layout. Resetting the draft instantly returns the layout to the empty state without animations. Reduced motion preferences disable the keyframe animations of the aurora background and force layout updates to snap instantly.
+
+## Editorial Turn Anatomy
+
+Assistant turns are styled as well-edited briefs with a clear structural hierarchy:
+
+- **Headline & Body** — The first sentence of `entry.summary` is rendered as an isolated, larger, bold headline. Subsequent sentences are rendered underneath in a smaller, quieter body style.
+- **Question Cards** — Prominent suede cards with a brass left edge (tier-3 accent) rendered directly beneath the summary block. Cards invite direct interaction, clicking a card pre-fills the composer with a quoted prefill and focuses the input. Max 3 questions are visible, additional questions are collapsible.
+- **Collapsible Details** — A toggleable "Details" section containing change notes and revision chips moves below the questions. It is expanded by default on the first assistant turn (revision index 0) and collapsed by default from the second turn on.
+- **Pending Shimmer** — While waiting for the AI response (`isPending` is true), an animated gradient shimmer line is displayed where the headline will land. If reduced motion is active, the animaton is replaced by a set of static dots.
+
+## Three-Level Starter Chips
+
+To guide user expectations, starter chips are provided at three completeness levels:
+
+1. **Rough Idea (Vague)** — "I have a rough idea about momentum" (pre-fills: _"I want something that rides momentum but I'm not sure about entries or exits yet."_)
+2. **Half-formed (Partial)** — "Buy pullbacks in an uptrend" (pre-fills: _"Buy pullbacks in an uptrend — you pick sensible indicators; I want a tight stop."_)
+3. **Full Spec (Complete)** — "Full spec: EMA crossover" (pre-fills: _"Create a trend strategy using EMA 20 and EMA 50 with a 3% stop."_)

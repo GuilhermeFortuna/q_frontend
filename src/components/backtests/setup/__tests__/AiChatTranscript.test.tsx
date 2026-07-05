@@ -159,7 +159,7 @@ describe('AiChatTranscript', () => {
 
     await user.click(screen.getByTestId('ai-chat-question-chip'))
 
-    expect(onQuestionSelect).toHaveBeenCalledWith('> Which timeframe? — ')
+    expect(onQuestionSelect).toHaveBeenCalledWith('> Which timeframe? — ', 'Which timeframe?')
     expect(document.activeElement).toBe(composerRef.current)
   })
 

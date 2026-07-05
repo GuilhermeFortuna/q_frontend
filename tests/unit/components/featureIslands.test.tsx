@@ -136,7 +136,9 @@ describe('feature islands — AI Strategy Builder workspace', () => {
     expect(screen.getByTestId('ai-strategy-draft-header')).toBeInTheDocument()
     expect(screen.getByLabelText('Name')).toBeInTheDocument()
     expect(screen.getByLabelText('Description')).toBeInTheDocument()
-    expect(screen.getByTestId('ai-chat-transcript')).toBeInTheDocument()
+    // Empty conversation renders the hero state (aurora backdrop + greeting), not the transcript.
+    expect(screen.getByTestId('ai-builder-hero')).toBeInTheDocument()
+    expect(screen.getByTestId('ai-builder-aurora')).toBeInTheDocument()
     expect(screen.getByTestId('ai-strategy-message')).toBeInTheDocument()
   })
 })

@@ -366,6 +366,17 @@
     animation: quant-shimmer-sweep 8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
   }
 
+  /* Skeleton placeholder shimmer: moves the gradient INSIDE the bar
+     (background-position only — never transform; bars must not travel). */
+  @keyframes quant-skeleton-sweep {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
   @keyframes quant-shimmer-sweep {
     0% {
       transform: rotate(-15deg) translate(-100%, -100%);

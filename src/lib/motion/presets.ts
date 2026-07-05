@@ -41,3 +41,31 @@ export const staggerChildren = (staggerDelay = 0.02, reduced = false) => ({
     },
   },
 })
+
+export const heroExit = (reduced = false) => ({
+  visible: { opacity: 1, y: 0 },
+  hidden: {
+    opacity: 0,
+    y: reduced ? 0 : -8,
+    transition: {
+      duration: reduced ? 0 : 0.28, // --motion-slow
+      ease: [0.4, 0, 0.2, 1], // --ease-in-out
+    },
+  },
+})
+
+export const composerDock = (reduced = false) => ({
+  centered: {
+    y: 0,
+    scale: 1,
+    transition: { duration: 0 },
+  },
+  docked: {
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: reduced ? 0 : 0.28,
+      ease: [0.4, 0, 0.2, 1],
+    },
+  },
+})

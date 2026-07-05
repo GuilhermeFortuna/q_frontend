@@ -308,6 +308,7 @@ type AiStrategyResponse = {
 
 Important behavior:
 
+- Act as a collaborator: for partial or high-level requests, draft what is specified, record standard assumptions, and return at most 3 questions ordered by impact (matching the frontend UI cap in WO208).
 - If the request is supported, produce a StrategySpec.
 - If partially supported, produce the closest valid StrategySpec and list unsupported parts.
 - If ambiguous, ask targeted questions.
