@@ -199,7 +199,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         <button
           type="button"
           tabIndex={-1}
-          className="text-silver-400 hover:text-gold-400 flex h-3.5 w-5 items-center justify-center text-[9px] leading-none transition-colors"
+          className="text-silver-400 hover:text-gold-400 flex h-3.5 w-5 items-center justify-center text-[9px] leading-none transition-[transform,color] duration-[var(--motion-fast)] ease-[var(--ease-exit)] hover:duration-[var(--motion-base)] hover:ease-[var(--ease-out)] active:translate-y-[0.5px] active:scale-[0.985] active:duration-[var(--motion-fast)] active:ease-[var(--ease-out)]"
           onMouseDown={stopStepperPropagation}
           onClick={() => stepBy(1)}
           aria-label="Increment"
@@ -210,7 +210,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         <button
           type="button"
           tabIndex={-1}
-          className="text-silver-400 hover:text-gold-400 flex h-3.5 w-5 items-center justify-center text-[9px] leading-none transition-colors"
+          className="text-silver-400 hover:text-gold-400 flex h-3.5 w-5 items-center justify-center text-[9px] leading-none transition-[transform,color] duration-[var(--motion-fast)] ease-[var(--ease-exit)] hover:duration-[var(--motion-base)] hover:ease-[var(--ease-out)] active:translate-y-[0.5px] active:scale-[0.985] active:duration-[var(--motion-fast)] active:ease-[var(--ease-out)]"
           onMouseDown={stopStepperPropagation}
           onClick={() => stepBy(-1)}
           aria-label="Decrement"

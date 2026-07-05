@@ -11,6 +11,22 @@
  * - surface-shell: header, dock, major chrome (blur allowed, few instances)
  */
 
+:root {
+  --suede-sheen-strength: 0.05;
+  --suede-sheen-width: 140px;
+  --suede-sheen-height: 100px;
+  --suede-sheen-strength-active: 0.03;
+  --suede-sheen-width-active: 84px;
+  --suede-sheen-height-active: 60px;
+
+  --overlay-bg: linear-gradient(165deg, #181716, #0e0d0c 72%);
+  --overlay-border: rgba(255, 255, 255, 0.09);
+  --overlay-border-top: rgba(255, 255, 255, 0.22);
+  --overlay-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 20px 40px -12px rgba(0, 0, 0, 0.95),
+    0 0 50px 0 rgba(0, 0, 0, 0.4);
+}
+
 @layer utilities {
   /* --- Shell (top-level chrome; backdrop blur permitted) --- */
   .surface-shell {
@@ -53,8 +69,8 @@
     position: relative;
     background: linear-gradient(
       158deg,
-      color-mix(in srgb, var(--surface-base-1) 72%, transparent),
-      color-mix(in srgb, var(--surface-base-2) 78%, transparent)
+      color-mix(in srgb, var(--surface-base-1) 69%, transparent),
+      color-mix(in srgb, var(--surface-base-2) 75%, transparent)
     );
     backdrop-filter: blur(var(--panel-blur)) saturate(1.04);
     -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.04);
@@ -177,25 +193,20 @@
   .surface-card {
     isolation: isolate;
     position: relative;
-    background: linear-gradient(165deg, var(--surface-raised-1), var(--surface-raised-2) 75%);
-    border: 1px solid rgba(0, 0, 0, 0.55);
-    border-top-color: var(--edge-warm);
+    background: linear-gradient(178deg, #131312, #0e0e0d 85%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-top-color: rgba(255, 250, 240, 0.11);
     box-shadow:
-      inset 0 1px 0 rgba(255, 224, 170, 0.11),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.5),
-      0 7px 16px -7px rgba(0, 0, 0, 0.78);
-    transition:
-      border-color 250ms ease,
-      box-shadow 250ms ease,
-      transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 4px 10px -6px rgba(0, 0, 0, 0.6);
   }
 
   .surface-card:hover {
-    border-top-color: rgba(255, 228, 180, 0.18);
+    border-color: rgba(255, 255, 255, 0.12);
+    border-top-color: rgba(255, 250, 240, 0.18);
     box-shadow:
-      inset 0 1px 0 rgba(255, 224, 170, 0.14),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.5),
-      0 9px 20px -7px rgba(0, 0, 0, 0.82);
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 6px 14px -6px rgba(0, 0, 0, 0.7);
   }
 
   /* Static top-edge highlight for metric tiles (no animation). */
@@ -208,33 +219,108 @@
     background: linear-gradient(180deg, rgba(255, 202, 71, 0.07) 0%, transparent 42%);
   }
 
-  /* --- Control (+1 raised; interactive primitives) --- */
+  /* --- Suede & Control (+1 raised; interactive primitives with matte fill + pointer sheen) --- */
+  .surface-suede,
   .surface-control {
-    background: linear-gradient(165deg, var(--surface-raised-1), var(--surface-raised-2) 75%);
-    border: 1px solid rgba(0, 0, 0, 0.55);
-    border-top-color: var(--edge-warm);
+    isolation: isolate;
+    position: relative;
+    background: linear-gradient(178deg, #131312, #0e0e0d 85%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-top-color: rgba(255, 250, 240, 0.11);
     box-shadow:
-      inset 0 1px 0 rgba(255, 224, 170, 0.09),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.45),
-      0 4px 12px -6px rgba(0, 0, 0, 0.65);
-    transition:
-      border-color 200ms ease,
-      box-shadow 200ms ease,
-      transform 350ms cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 200ms ease;
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 4px 10px -6px rgba(0, 0, 0, 0.6);
   }
 
-  .surface-control:hover {
-    border-top-color: rgba(255, 228, 180, 0.16);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 224, 170, 0.12),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.45),
-      0 5px 14px -6px rgba(0, 0, 0, 0.7);
+  .surface-suede::after,
+  .surface-control::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(
+      var(--suede-sheen-width) var(--suede-sheen-height) at var(--spot-x, 50%) var(--spot-y, 50%),
+      color-mix(
+        in srgb,
+        rgba(226, 214, 192, 1) calc(var(--suede-sheen-strength) * 100%),
+        transparent
+      ),
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity var(--motion-base) var(--ease-out);
+    will-change: opacity;
   }
 
+  .surface-suede:hover::after,
+  .surface-control:hover::after {
+    opacity: 1;
+  }
+
+  .surface-suede:active,
+  .surface-control:active {
+    background: linear-gradient(178deg, #0e0e0d, #090909 85%);
+  }
+
+  .surface-suede:active::after,
+  .surface-control:active::after {
+    background: radial-gradient(
+      var(--suede-sheen-width-active) var(--suede-sheen-height-active) at var(--spot-x, 50%)
+        var(--spot-y, 50%),
+      color-mix(
+        in srgb,
+        rgba(226, 214, 192, 1) calc(var(--suede-sheen-strength-active) * 100%),
+        transparent
+      ),
+      transparent 70%
+    );
+  }
+
+  .surface-suede:focus-visible,
   .surface-control:focus-visible {
     outline: 2px solid var(--color-brass-500);
     outline-offset: 2px;
+  }
+
+  :root[data-reduced-motion='true'] .surface-suede::after,
+  :root[data-reduced-motion='true'] .surface-control::after {
+    transition: none !important;
+  }
+
+  /* --- Machined Brass CTA Button (tier-4 jewelry) --- */
+  .button-machined-brass {
+    background: linear-gradient(180deg, var(--color-brass-500) 0%, var(--color-brass-700) 100%);
+    border: 1px solid #7c5810;
+    border-top-color: rgba(255, 235, 200, 0.45);
+    border-bottom-color: #4b3406;
+    color: #0b0a09;
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 235, 200, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.4),
+      0 6px 16px -8px rgba(217, 158, 34, 0.3);
+    transition:
+      border-top-color var(--motion-base) var(--ease-out),
+      box-shadow var(--motion-base) var(--ease-out),
+      transform var(--motion-fast) var(--ease-exit);
+  }
+
+  .button-machined-brass:hover {
+    border-top-color: rgba(255, 245, 220, 0.7);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 235, 200, 0.4),
+      0 3px 6px rgba(0, 0, 0, 0.4),
+      0 8px 20px -6px rgba(217, 158, 34, 0.4);
+  }
+
+  .button-machined-brass:active {
+    background: linear-gradient(180deg, var(--color-brass-600) 0%, var(--color-brass-800) 100%);
+    border-top-color: rgba(255, 235, 200, 0.2);
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.6),
+      0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   /* --- Overlay (+2 floats; modals / popovers) --- */
@@ -245,13 +331,10 @@
   }
 
   .surface-overlay {
-    background: linear-gradient(165deg, #1d1814, #120f0b 72%);
-    border: 1px solid rgba(168, 139, 82, 0.22);
-    border-top-color: rgba(214, 178, 120, 0.3);
-    box-shadow:
-      inset 0 1px 0 var(--edge-warm-strong),
-      0 0 40px -10px rgba(196, 165, 116, 0.25),
-      0 26px 50px -18px rgba(0, 0, 0, 0.85);
+    background: var(--overlay-bg);
+    border: 1px solid var(--overlay-border);
+    border-top-color: var(--overlay-border-top);
+    box-shadow: var(--overlay-shadow);
   }
 
   .surface-overlay--hud {
@@ -262,13 +345,10 @@
 
   /* --- Chart / 3D workspace float (+2; single-instance overlays) --- */
   .surface-float {
-    background: linear-gradient(165deg, #1d1814, #120f0b 72%);
-    border: 1px solid rgba(168, 139, 82, 0.22);
-    border-top-color: rgba(214, 178, 120, 0.3);
-    box-shadow:
-      inset 0 1px 0 var(--edge-warm-strong),
-      0 0 40px -10px rgba(196, 165, 116, 0.25),
-      0 26px 50px -18px rgba(0, 0, 0, 0.85);
+    background: var(--overlay-bg);
+    border: 1px solid var(--overlay-border);
+    border-top-color: var(--overlay-border-top);
+    box-shadow: var(--overlay-shadow);
   }
 
   .surface-float--blur {

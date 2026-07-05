@@ -1,4 +1,5 @@
 export const LIVING_SELECTOR = '.surface-panel--living'
+export const SUEDE_SELECTOR = '.surface-suede, .surface-control'
 export const SPOTLIGHT_SELECTOR = '.quant-panel--spotlight, .surface-panel--spotlight'
 
 export function writeSpotVars(panel: HTMLElement, clientX: number, clientY: number) {
@@ -7,13 +8,13 @@ export function writeSpotVars(panel: HTMLElement, clientX: number, clientY: numb
   panel.style.setProperty('--spot-y', `${clientY - rect.top}px`)
 }
 
-/** Every living panel from innermost to outermost along the ancestor chain. */
+/** Every living panel or suede control from innermost to outermost along the ancestor chain. */
 export function collectLivingAncestors(target: Element | null): HTMLElement[] {
   const panels: HTMLElement[] = []
   let el = target
 
   while (el) {
-    if (el instanceof HTMLElement && el.matches(LIVING_SELECTOR)) {
+    if (el instanceof HTMLElement && (el.matches(LIVING_SELECTOR) || el.matches(SUEDE_SELECTOR))) {
       panels.push(el)
     }
     el = el.parentElement

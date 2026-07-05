@@ -41,7 +41,7 @@ export function KeyValueItem({ label, value, className, layout = 'stacked' }: Ke
     return (
       <div
         className={cn(
-          'border-carbon-800 bg-carbon-900/10 hover:bg-carbon-900/25 flex items-center justify-between gap-3 rounded-lg border px-3 py-2 transition-all duration-150',
+          'border-carbon-800 bg-carbon-900/10 hover:bg-carbon-900/25 flex items-center justify-between gap-3 rounded-lg border px-3 py-2 transition-all duration-[var(--motion-fast)] ease-[var(--ease-exit)] hover:duration-[var(--motion-base)] hover:ease-[var(--ease-out)]',
           className,
         )}
       >
@@ -56,7 +56,7 @@ export function KeyValueItem({ label, value, className, layout = 'stacked' }: Ke
   return (
     <div
       className={cn(
-        'border-carbon-800 bg-carbon-900/10 hover:bg-carbon-900/20 flex flex-col justify-between gap-1 rounded-lg border px-3 py-2.5 transition-all duration-150',
+        'border-carbon-800 bg-carbon-900/10 hover:bg-carbon-900/20 flex flex-col justify-between gap-1 rounded-lg border px-3 py-2.5 transition-all duration-[var(--motion-fast)] ease-[var(--ease-exit)] hover:duration-[var(--motion-base)] hover:ease-[var(--ease-out)]',
         className,
       )}
     >

@@ -30,10 +30,12 @@ export function StatTile({
 }: StatTileProps) {
   return (
     <div className={cn('surface-card surface-card--edge rounded-xl p-4', className)}>
-      <p className="accent-wayfinding text-[10px] font-bold tracking-wider uppercase">{label}</p>
+      <p className="accent-wayfinding text-[11px] font-[560] tracking-[0.08em] uppercase">
+        {label}
+      </p>
       <p
         className={cn(
-          'mt-1.5 font-mono text-xl font-bold tracking-tight',
+          'font-display stat-tile-value tracking-display mt-1.5 text-xl font-bold',
           highlight
             ? 'text-gold-400'
             : valueTone === 'up'

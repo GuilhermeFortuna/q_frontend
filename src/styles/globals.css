@@ -1,6 +1,38 @@
 @import 'tailwindcss';
 @import './materials.css';
 
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/inter/InterVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/inter/InterVariable-Italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter Display';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/inter/InterVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter Display';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/inter/InterVariable-Italic.woff2') format('woff2');
+}
+
 @theme {
   /* Carbon / graphite surfaces */
   --color-carbon-950: #0a0b0c;
@@ -32,8 +64,47 @@
   --color-silver-300: #9aa1ac;
   --color-silver-400: #6f7785;
 
-  --font-sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans:
+    'Inter Variable', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Inter Display', var(--font-sans);
   --font-mono: 'Cascadia Code', 'Consolas', 'SFMono-Regular', ui-monospace, monospace;
+
+  --text-2xs: 10.5px;
+  --text-2xs--line-height: 14px;
+
+  --text-xs: 11.5px;
+  --text-xs--line-height: 16px;
+
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+
+  --text-lg: 16px;
+  --text-lg--line-height: 22px;
+
+  --text-xl: 19px;
+  --text-xl--line-height: 24px;
+  --text-xl--letter-spacing: -0.015em;
+
+  --text-2xl: 24px;
+  --text-2xl--line-height: 28px;
+  --text-2xl--letter-spacing: -0.015em;
+
+  --tracking-display: -0.015em;
+
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 280ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --table-header-bg: #141311;
+  --table-row-hover-bg: rgba(255, 255, 255, 0.035);
+  --table-row-selected-bg: rgba(217, 158, 34, 0.07);
+  --table-row-border: rgba(255, 255, 255, 0.045);
 
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
@@ -190,7 +261,7 @@
   .market-panel-resize-handle {
     width: 1px;
     background-color: var(--color-carbon-700);
-    transition: background-color 150ms ease;
+    transition: background-color var(--motion-base) var(--ease-out);
   }
 
   .market-panel-resize-handle:hover,
@@ -198,7 +269,13 @@
     background-color: rgba(217, 158, 34, 0.6); /* brass-500 */
   }
 
-  .quant-tabular-nums {
+  .quant-tabular-nums,
+  .q-table-td,
+  input[type='number'],
+  .number-input--steppers,
+  .stat-tile-value,
+  .chart-tooltip,
+  .chart-tick {
     font-variant-numeric: tabular-nums slashed-zero;
   }
 
@@ -597,7 +674,7 @@
   }
 
   .accent-interactive {
-    transition: border-color 200ms ease;
+    transition: border-color var(--motion-base) var(--ease-out);
   }
 
   .accent-interactive:hover,
@@ -645,26 +722,29 @@
   }
 
   .q-table-thead {
-    background: linear-gradient(180deg, rgba(10, 11, 12, 0.75), rgba(17, 19, 21, 0.85));
-    border-bottom: 1px solid rgba(150, 124, 78, 0.28);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--table-header-bg);
+    border-bottom: 1px solid var(--table-row-border);
     color: var(--color-silver-400);
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 560;
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
 
   .q-table-th {
-    padding: 0.875rem 1rem;
-    font-weight: 700;
-    color: var(--color-silver-300);
+    padding: 0.5rem 1rem;
+    font-weight: 560;
+    color: var(--color-brass-600);
   }
 
   .q-table-tr {
-    border-bottom: 1px solid rgba(24, 27, 31, 0.55);
+    border-bottom: 1px solid var(--table-row-border);
     transition:
-      background 180ms ease,
-      color 180ms ease;
+      background var(--motion-base) var(--ease-out),
+      color var(--motion-base) var(--ease-out);
   }
 
   .q-table-tr:last-child {
@@ -672,35 +752,25 @@
   }
 
   .q-table-tr:hover {
-    background: linear-gradient(
-      90deg,
-      rgba(240, 180, 41, 0.04) 0%,
-      rgba(240, 180, 41, 0.01) 50%,
-      transparent 100%
-    );
+    background: var(--table-row-hover-bg);
     color: var(--color-silver-100);
   }
 
   .q-table-td {
-    padding: 0.75rem 1rem;
-    transition: border-color 180ms ease;
+    padding: 0.5rem 1rem;
+    transition: border-color var(--motion-base) var(--ease-out);
     border-left: 2px solid transparent;
   }
 
-  /* Left accent highlight on hover */
+  /* Left accent highlight on hover disabled */
   .q-table-tr:hover .q-table-td:first-child {
-    border-left-color: var(--color-brass-400);
+    border-left-color: transparent;
   }
 
   /* Selected state */
   .q-table-tr.is-selected {
-    background: linear-gradient(
-      90deg,
-      rgba(240, 180, 41, 0.08) 0%,
-      rgba(240, 180, 41, 0.02) 60%,
-      transparent 100%
-    );
-    color: var(--color-silver-100);
+    background: var(--table-row-selected-bg);
+    color: var(--color-gold-400);
   }
 
   .q-table-tr.is-selected .q-table-td:first-child {
@@ -722,7 +792,7 @@
 ::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--color-brass-600) 20%, transparent);
   border-radius: 9999px;
-  transition: background-color 150ms ease;
+  transition: background-color var(--motion-base) var(--ease-out);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -742,4 +812,12 @@ html[data-reduced-motion='true'] ::view-transition-group(*),
 html[data-reduced-motion='true'] ::view-transition-old(*),
 html[data-reduced-motion='true'] ::view-transition-new(*) {
   animation: none !important;
+}
+
+/* Global reduced-motion override for CSS transitions and animations */
+:root[data-reduced-motion='true'] *,
+:root[data-reduced-motion='true'] *::before,
+:root[data-reduced-motion='true'] *::after {
+  transition-duration: 0ms !important;
+  animation-duration: 0ms !important;
 }

@@ -72,9 +72,10 @@ export function HistoryCard({
       onKeyDown={handleKeyDown}
       aria-pressed={selected}
       className={cn(
-        'surface-card relative flex w-full cursor-pointer flex-col gap-2 rounded-lg p-3 text-left transition-[transform,border-color,box-shadow] duration-350',
+        'surface-suede relative flex w-full cursor-pointer flex-col gap-2 rounded-lg p-3 text-left',
+        'transition-[transform,border-color,box-shadow,background-color] duration-[var(--motion-fast)] ease-[var(--ease-exit)]',
         'focus-visible:outline-brass-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-        'hover:-translate-y-0.5 hover:scale-[1.01] active:scale-[0.97]',
+        'hover:-translate-y-0.5 hover:duration-[var(--motion-base)] hover:ease-[var(--ease-out)] active:translate-y-[0.5px] active:scale-[0.985] active:duration-[var(--motion-fast)] active:ease-[var(--ease-out)]',
         selected && !selectionMode && 'accent-state border-brass-500/50',
         selectionMode && checked && 'accent-state border-brass-500/40',
         className,

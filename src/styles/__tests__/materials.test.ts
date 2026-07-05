@@ -14,6 +14,7 @@ const EXPECTED_SURFACE_CLASSES = [
   'surface-panel',
   'surface-card',
   'surface-control',
+  'surface-suede',
   'surface-overlay',
   'surface-float',
 ] as const
@@ -68,5 +69,11 @@ describe('design-system material classes (WO116 regression guard)', () => {
     for (const className of EXPECTED_ACCENT_CLASSES) {
       assertExportsClass(globalsCss, className)
     }
+  })
+
+  it('defines ::selection styling exactly once in globals.css', () => {
+    const matches = globalsCss.match(/::selection/g) ?? []
+    expect(matches).toHaveLength(1)
+    expect(globalsCss).toMatch(/::selection\s*\{[\s\S]*?background-color:[\s\S]*?brass/)
   })
 })

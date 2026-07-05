@@ -98,11 +98,14 @@ export function SegmentedToggle<T extends string = string>(props: SegmentedToggl
               }
             }}
             className={cn(
-              'rounded-md px-2.5 py-1 text-xs font-semibold transition-[border-color,box-shadow,transform] duration-150',
+              'rounded-md px-2.5 py-1 text-xs font-semibold',
+              'transition-[transform,border-color,box-shadow,background-color] duration-[var(--motion-fast)] ease-[var(--ease-exit)]',
+              'hover:duration-[var(--motion-base)] hover:ease-[var(--ease-out)]',
+              'active:translate-y-[0.5px] active:scale-[0.985] active:duration-[var(--motion-fast)] active:ease-[var(--ease-out)]',
               'focus-visible:outline-brass-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
               selected
                 ? 'accent-state text-gold-400'
-                : 'surface-control text-silver-300 hover:border-brass-500/40 active:scale-95',
+                : 'surface-suede text-silver-300 hover:border-brass-500/40',
             )}
           >
             {option.label}
