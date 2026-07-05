@@ -2,16 +2,7 @@ import { endOfDay, startOfDay } from 'date-fns'
 import { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 import { Loader2, Play, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts'
+import { BarChart, Bar, Legend, ResponsiveContainer } from 'recharts'
 
 import { useStartDiscoveryAb, useDiscoveryAbRun } from '@/api/queries/experiments'
 import { DateRangePresetsFields, inputClass } from '@/components/shared/InstrumentConfigFields'
@@ -21,7 +12,14 @@ import { NumberInput } from '@/components/ui/number-input'
 import { Panel } from '@/components/ui/Panel'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { StatTile } from '@/components/ui/StatTile'
-import { CHART_COLORS } from '@/components/backtests/chartUtils'
+import { chartTheme } from '@/lib/charts/chartTheme'
+import {
+  ThemedCartesianGrid,
+  ThemedTooltip,
+  ThemedXAxis,
+  ThemedYAxis,
+  chartMargin,
+} from '@/lib/charts/rechartsTheme'
 import { defaultBacktestStart, defaultBacktestEnd } from '@/lib/backtesting/dateRange'
 import {
   DEFAULT_GATE_CONFIG,
@@ -422,36 +420,30 @@ export function DiscoveryAbPanel() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={chartData}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      margin={{ ...chartMargin, top: 10, right: 10, left: -20 }}
                     >
-                      <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fill: CHART_COLORS.axis, fontSize: 10 }}
-                        tickLine={false}
-                        axisLine={{ stroke: CHART_COLORS.grid }}
-                      />
-                      <YAxis
-                        tick={{ fill: CHART_COLORS.axis, fontSize: 10 }}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: CHART_COLORS.tooltipBg,
-                          border: `1px solid ${CHART_COLORS.tooltipBorder}`,
-                          borderRadius: 8,
-                          fontSize: 12,
-                        }}
-                        labelStyle={{ color: CHART_COLORS.axis }}
-                      />
+                      <ThemedCartesianGrid />
+                      <ThemedXAxis dataKey="name" />
+                      <ThemedYAxis />
+                      <ThemedTooltip />
                       <Legend
                         verticalAlign="top"
                         height={36}
-                        wrapperStyle={{ fontSize: 11, color: CHART_COLORS.axis }}
+                        wrapperStyle={{
+                          fontSize: 11,
+                          color: chartTheme.axis.tick.fill,
+                        }}
                       />
-                      <Bar dataKey="Control" fill={CHART_COLORS.reference} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Treatment" fill={CHART_COLORS.equity} radius={[4, 4, 0, 0]} />
+                      <Bar
+                        dataKey="Control"
+                        fill={chartTheme.semantic.reference}
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Treatment"
+                        fill={chartTheme.semantic.equity}
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (

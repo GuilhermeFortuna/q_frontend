@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  LabelList,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Bar, BarChart, LabelList, ResponsiveContainer } from 'recharts'
 
-import { CHART_COLORS } from '@/components/backtests/chartUtils'
+import { chartTheme } from '@/lib/charts/chartTheme'
+import {
+  ThemedCartesianGrid,
+  ThemedTooltip,
+  ThemedXAxis,
+  ThemedYAxis,
+  chartMargin,
+} from '@/lib/charts/rechartsTheme'
 import { cn } from '@/lib/utils'
 import type { OptimizationAnalytics, ParamImportanceEntry } from '@/types/optimization'
 
@@ -112,42 +110,19 @@ export function ParamImportancePanel({ analytics }: ParamImportancePanelProps) {
           <BarChart
             layout="vertical"
             data={series}
-            margin={{ top: 8, right: 56, left: 8, bottom: 8 }}
+            margin={{ ...chartMargin, right: 56, bottom: 8 }}
           >
-            <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" horizontal={false} />
-            <XAxis
-              type="number"
-              domain={[0, 'auto']}
-              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-              tickLine={false}
-              axisLine={{ stroke: CHART_COLORS.grid }}
-            />
-            <YAxis
-              type="category"
-              dataKey="param"
-              width={120}
-              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip
-              cursor={{ fill: 'rgba(196, 165, 116, 0.08)' }}
-              contentStyle={{
-                backgroundColor: CHART_COLORS.tooltipBg,
-                border: `1px solid ${CHART_COLORS.tooltipBorder}`,
-                borderRadius: 6,
-                fontSize: 12,
-              }}
-              labelStyle={{ color: CHART_COLORS.axis }}
-              formatter={(value: number) => [value.toFixed(2), 'Importance']}
-            />
-            <Bar dataKey="importance" fill={CHART_COLORS.equity} radius={[0, 4, 4, 0]}>
+            <ThemedCartesianGrid horizontal={false} />
+            <ThemedXAxis type="number" domain={[0, 'auto']} />
+            <ThemedYAxis type="category" dataKey="param" width={120} />
+            <ThemedTooltip formatter={(value: number) => [value.toFixed(2), 'Importance']} />
+            <Bar dataKey="importance" fill={chartTheme.semantic.equity} radius={[0, 4, 4, 0]}>
               <LabelList
                 dataKey="importance"
                 position="right"
                 formatter={(value: number) => value.toFixed(2)}
-                fill={CHART_COLORS.axis}
-                fontSize={11}
+                fill={chartTheme.axis.tick.fill}
+                fontSize={chartTheme.axis.tick.fontSize}
               />
             </Bar>
           </BarChart>

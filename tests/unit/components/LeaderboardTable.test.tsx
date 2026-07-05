@@ -112,9 +112,9 @@ describe('LeaderboardTable', () => {
     renderLeaderboard()
 
     const entryOnlyRow = rowForStrategy('VMA')
-    const exitCell = within(entryOnlyRow).getByText('Signal exit').closest('td')!
-    expect(exitCell).toHaveClass('text-silver-500')
-    expect(exitCell).toHaveAttribute(
+    const exitLabel = within(entryOnlyRow).getByText('Signal exit')
+    expect(exitLabel).toHaveClass('text-silver-500')
+    expect(exitLabel).toHaveAttribute(
       'title',
       "Closes on the strategy's own signal — no stop/target overlay.",
     )

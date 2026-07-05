@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
-import { VirtualTableScroller } from '@/components/shared/VirtualTableBody'
+import { DataTable, type DataColumn } from '@/components/ui/DataTable'
 import { Panel } from '@/components/ui/Panel'
 import {
   formatObjectiveMetricValue,
   objectiveMetricLabel,
   objectiveMetricValue,
 } from '@/lib/walkforward/objectiveMetric'
+import { cn } from '@/lib/utils'
 import type { ObjectiveMode } from '@/types/optimization'
 import type { WalkForwardWindowResult } from '@/types/walkforward'
 
@@ -44,80 +45,109 @@ function ParamsPreview({ params }: { params: Record<string, unknown> }) {
   )
 }
 
-const ROW_HEIGHT = 44
+const ROW_HEIGHT = 34
 
 export function WalkForwardWindowsTable({ windows, objectiveMode }: WalkForwardWindowsTableProps) {
-  const renderWindowRow = (window: WalkForwardWindowResult) => {
-    const isValue = objectiveMetricValue(window.is_metrics, objectiveMode)
-    const oosValue = objectiveMetricValue(window.oos_metrics, objectiveMode)
-    const oosWorse =
-      window.status === 'completed' && isValue != null && oosValue != null && oosValue < isValue
+  const isLabel = objectiveMetricLabel(objectiveMode)
+  const oosLabel = objectiveMetricLabel(objectiveMode)
 
-    return (
-      <tr
-        key={window.index}
-        className={
-          window.status === 'no_result'
-            ? 'border-carbon-700/40 border-t bg-amber-500/5'
-            : oosWorse
-              ? 'border-carbon-700/40 border-t bg-rose-500/5'
-              : 'border-carbon-700/40 border-t'
-        }
-      >
-        <td className="text-silver-200 px-3 py-2 font-medium">
-          {window.index + 1}
-          {window.status === 'no_result' ? (
-            <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-300">
-              no result
+  const columns = useMemo<DataColumn<WalkForwardWindowResult>[]>(
+    () => [
+      {
+        id: 'window',
+        header: 'Window',
+        render: (window) => (
+          <span className="text-silver-200 font-medium">
+            {window.index + 1}
+            {window.status === 'no_result' ? (
+              <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-300">
+                no result
+              </span>
+            ) : null}
+          </span>
+        ),
+      },
+      {
+        id: 'train',
+        header: 'Train',
+        render: (window) => (
+          <span className="text-silver-400 whitespace-nowrap">
+            {window.train_start.slice(0, 10)} → {window.train_end.slice(0, 10)}
+          </span>
+        ),
+      },
+      {
+        id: 'test',
+        header: 'Test',
+        render: (window) => (
+          <span className="text-silver-400 whitespace-nowrap">
+            {window.test_start.slice(0, 10)} → {window.test_end.slice(0, 10)}
+          </span>
+        ),
+      },
+      {
+        id: 'params',
+        header: 'Best params',
+        render: (window) => <ParamsPreview params={window.best_params} />,
+      },
+      {
+        id: 'is',
+        header: `IS ${isLabel}`,
+        align: 'right',
+        numeric: true,
+        render: (window) => (
+          <span className="text-silver-200">
+            {formatObjectiveMetricValue(
+              objectiveMetricValue(window.is_metrics, objectiveMode),
+              objectiveMode,
+            )}
+          </span>
+        ),
+      },
+      {
+        id: 'oos',
+        header: `OOS ${oosLabel}`,
+        align: 'right',
+        numeric: true,
+        render: (window) => {
+          const isValue = objectiveMetricValue(window.is_metrics, objectiveMode)
+          const oosValue = objectiveMetricValue(window.oos_metrics, objectiveMode)
+          const oosWorse =
+            window.status === 'completed' &&
+            isValue != null &&
+            oosValue != null &&
+            oosValue < isValue
+          return (
+            <span className={cn(oosWorse ? 'text-rose-400' : 'text-silver-200')}>
+              {formatObjectiveMetricValue(oosValue, objectiveMode)}
             </span>
-          ) : null}
-        </td>
-        <td className="text-silver-400 px-3 py-2 whitespace-nowrap">
-          {window.train_start.slice(0, 10)} → {window.train_end.slice(0, 10)}
-        </td>
-        <td className="text-silver-400 px-3 py-2 whitespace-nowrap">
-          {window.test_start.slice(0, 10)} → {window.test_end.slice(0, 10)}
-        </td>
-        <td className="px-3 py-2">
-          <ParamsPreview params={window.best_params} />
-        </td>
-        <td className="text-silver-200 px-3 py-2 tabular-nums">
-          {formatObjectiveMetricValue(isValue, objectiveMode)}
-        </td>
-        <td
-          className={
-            oosWorse
-              ? 'px-3 py-2 text-rose-400 tabular-nums'
-              : 'text-silver-200 px-3 py-2 tabular-nums'
-          }
-        >
-          {formatObjectiveMetricValue(oosValue, objectiveMode)}
-        </td>
-      </tr>
-    )
-  }
+          )
+        },
+      },
+    ],
+    [isLabel, objectiveMode, oosLabel],
+  )
 
   return (
     <Panel className="overflow-hidden p-0">
-      <VirtualTableScroller
-        items={windows}
-        rowHeight={ROW_HEIGHT}
-        colSpan={6}
-        className="max-h-[min(60vh,520px)] overflow-x-auto"
+      <DataTable
+        columns={columns}
+        rows={windows}
+        rowKey={(window) => window.index}
+        getRowClassName={(window) => {
+          const isValue = objectiveMetricValue(window.is_metrics, objectiveMode)
+          const oosValue = objectiveMetricValue(window.oos_metrics, objectiveMode)
+          const oosWorse =
+            window.status === 'completed' &&
+            isValue != null &&
+            oosValue != null &&
+            oosValue < isValue
+          return cn(window.status === 'no_result' && 'bg-amber-500/5', oosWorse && 'bg-rose-500/5')
+        }}
+        virtualize={{ rowHeight: ROW_HEIGHT }}
+        scrollContainerClassName="max-h-[min(60vh,520px)] overflow-x-auto"
         tableClassName="min-w-[720px] text-xs"
-        theadClassName="surface-well tracking-wide uppercase"
-        getItemKey={(index) => windows[index]!.index}
-        header={
-          <tr>
-            <th className="px-3 py-2 font-medium">Window</th>
-            <th className="px-3 py-2 font-medium">Train</th>
-            <th className="px-3 py-2 font-medium">Test</th>
-            <th className="px-3 py-2 font-medium">Best params</th>
-            <th className="px-3 py-2 font-medium">IS {objectiveMetricLabel(objectiveMode)}</th>
-            <th className="px-3 py-2 font-medium">OOS {objectiveMetricLabel(objectiveMode)}</th>
-          </tr>
-        }
-        renderRow={(window) => renderWindowRow(window)}
+        theadClassName="tracking-wide uppercase"
       />
     </Panel>
   )

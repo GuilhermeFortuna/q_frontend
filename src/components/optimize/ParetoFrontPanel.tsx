@@ -1,19 +1,17 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import {
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Scatter,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Cell, ComposedChart, Line, ResponsiveContainer, Scatter } from 'recharts'
 
-import { CHART_COLORS } from '@/components/backtests/chartUtils'
 import { cn } from '@/lib/utils'
+import { chartTheme } from '@/lib/charts/chartTheme'
+import {
+  ThemedCartesianGrid,
+  ThemedTooltip,
+  ThemedXAxis,
+  ThemedYAxis,
+  chartMargin,
+  scatterTooltipFormatter,
+} from '@/lib/charts/rechartsTheme'
 import type { OptimizationAnalytics } from '@/types/optimization'
 
 const CHART_MIN_HEIGHT_PX = 280
@@ -112,43 +110,28 @@ export function ParetoFrontPanel({
       >
         <ResponsiveContainer width="100%" height="100%">
           {chart.mode === 'multi' ? (
-            <ComposedChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
-              <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-              <XAxis
-                type="number"
-                dataKey="x"
-                name={chart.xLabel}
-                tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-                tickLine={false}
-                axisLine={{ stroke: CHART_COLORS.grid }}
-              />
-              <YAxis
-                type="number"
-                dataKey="y"
-                name={chart.yLabel}
-                tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                width={56}
-              />
-              <Tooltip {...tooltipProps(chart.xLabel, chart.yLabel)} />
+            <ComposedChart margin={{ ...chartMargin, bottom: 8 }}>
+              <ThemedCartesianGrid />
+              <ThemedXAxis type="number" dataKey="x" name={chart.xLabel} />
+              <ThemedYAxis type="number" dataKey="y" name={chart.yLabel} width={56} />
+              <ThemedTooltip formatter={scatterTooltipFormatter(chart.xLabel, chart.yLabel)} />
               <Scatter
                 data={chart.background}
-                fill={CHART_COLORS.reference}
+                fill={chartTheme.semantic.reference}
                 fillOpacity={0.25}
                 shape="circle"
               />
               <Line
                 data={chart.line}
                 dataKey="y"
-                stroke={CHART_COLORS.equity}
+                stroke={chartTheme.semantic.equity}
                 strokeWidth={2}
                 dot={false}
                 isAnimationActive={false}
               />
               <Scatter
                 data={chart.frontier}
-                fill={CHART_COLORS.equity}
+                fill={chartTheme.semantic.equity}
                 shape="circle"
                 cursor={onSelectTrial ? 'pointer' : undefined}
                 onClick={
@@ -162,36 +145,21 @@ export function ParetoFrontPanel({
                     key={point.n}
                     fill={
                       point.n === selectedTrialNumber
-                        ? '#ffd700'
+                        ? chartTheme.series.primary
                         : frontierNumbers.has(point.n)
-                          ? CHART_COLORS.equity
-                          : CHART_COLORS.reference
+                          ? chartTheme.semantic.equity
+                          : chartTheme.semantic.reference
                     }
                   />
                 ))}
               </Scatter>
             </ComposedChart>
           ) : (
-            <ComposedChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
-              <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-              <XAxis
-                type="number"
-                dataKey="x"
-                name={chart.xLabel}
-                tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-                tickLine={false}
-                axisLine={{ stroke: CHART_COLORS.grid }}
-              />
-              <YAxis
-                type="number"
-                dataKey="y"
-                name={chart.yLabel}
-                tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                width={72}
-              />
-              <Tooltip {...tooltipProps(chart.xLabel, chart.yLabel)} />
+            <ComposedChart margin={{ ...chartMargin, bottom: 8 }}>
+              <ThemedCartesianGrid />
+              <ThemedXAxis type="number" dataKey="x" name={chart.xLabel} />
+              <ThemedYAxis type="number" dataKey="y" name={chart.yLabel} width={72} />
+              <ThemedTooltip formatter={scatterTooltipFormatter(chart.xLabel, chart.yLabel)} />
               <Scatter
                 data={chart.points}
                 shape="circle"
@@ -207,10 +175,10 @@ export function ParetoFrontPanel({
                     key={point.n}
                     fill={
                       point.n === selectedTrialNumber
-                        ? '#ffd700'
+                        ? chartTheme.series.primary
                         : point.kind === 'best'
-                          ? CHART_COLORS.equity
-                          : CHART_COLORS.reference
+                          ? chartTheme.semantic.equity
+                          : chartTheme.semantic.reference
                     }
                   />
                 ))}
@@ -235,24 +203,6 @@ function handleScatterClick(
   const trialNumber = payload?.n
   if (trialNumber == null) return
   onSelectTrial(trialNumber === selectedTrialNumber ? null : trialNumber)
-}
-
-function tooltipProps(xLabel: string, yLabel: string) {
-  return {
-    cursor: { strokeDasharray: '3 3' },
-    contentStyle: {
-      backgroundColor: CHART_COLORS.tooltipBg,
-      border: `1px solid ${CHART_COLORS.tooltipBorder}`,
-      borderRadius: 6,
-      fontSize: 12,
-    },
-    labelStyle: { color: CHART_COLORS.axis },
-    formatter: (value: number, name: string, item: { payload?: ScatterDatum }) => {
-      const trialNumber = item.payload?.n
-      const label = name === 'x' ? xLabel : name === 'y' ? yLabel : name
-      return [value.toFixed(4), trialNumber != null ? `Trial #${trialNumber} · ${label}` : label]
-    },
-  }
 }
 
 function PanelFrame({

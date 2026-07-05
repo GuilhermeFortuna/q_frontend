@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
 
 import { BacktestMetricsBar } from '@/components/backtests/BacktestMetricsBar'
@@ -8,7 +8,7 @@ import {
   LazyBacktestPerformanceCharts,
 } from '@/components/backtests/LazyBacktestRechartsCharts'
 import { MonthlyBreakdownTable } from '@/components/backtests/MonthlyBreakdownTable'
-import { VirtualTableScroller } from '@/components/shared/VirtualTableBody'
+import { DataTable, type DataColumn } from '@/components/ui/DataTable'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import {
   formatCurrency,
@@ -48,7 +48,7 @@ function formatPositionSize(quantity: number): string {
   return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2)
 }
 
-const TRADE_ROW_HEIGHT = 44
+const TRADE_ROW_HEIGHT = 34
 
 function TradeHistoryTable({
   trades,
@@ -63,51 +63,96 @@ function TradeHistoryTable({
   onHoverTrade?: (id: string | null) => void
   onClickTrade?: (id: string) => void
 }) {
-  const renderTradeRow = (trade: Trade) => {
-    const isHighlighted = focusedTradeId === trade.id || hoveredTradeId === trade.id
-    return (
-      <tr
-        key={trade.id}
-        onClick={() => onClickTrade?.(trade.id)}
-        onMouseEnter={() => onHoverTrade?.(trade.id)}
-        onMouseLeave={() => onHoverTrade?.(null)}
-        className={cn(
-          'cursor-pointer border-l-2 transition-all',
-          isHighlighted
-            ? 'bg-brass-500/10 border-l-brass-500'
-            : 'hover:bg-carbon-800/30 border-l-transparent',
-        )}
-      >
-        <td className="text-silver-100 px-4 py-3 font-mono text-xs font-bold">{trade.symbol}</td>
-        <td className="px-4 py-3">
+  const columns = useMemo<DataColumn<Trade>[]>(
+    () => [
+      {
+        id: 'symbol',
+        header: 'Symbol',
+        render: (trade) => (
+          <span className="text-silver-100 font-mono font-bold">{trade.symbol}</span>
+        ),
+      },
+      {
+        id: 'action',
+        header: 'Action',
+        render: (trade) => (
           <span
-            className={`rounded-md px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase ${trade.action === 'BUY' ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border border-rose-500/20 bg-rose-500/10 text-rose-400'}`}
+            className={cn(
+              'text-2xs rounded px-1.5 py-0.5 font-[560] tracking-[0.08em] uppercase',
+              trade.action === 'BUY'
+                ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                : 'border border-rose-500/20 bg-rose-500/10 text-rose-400',
+            )}
           >
             {trade.action}
           </span>
-        </td>
-        <td className="text-silver-100 px-4 py-3 text-right font-mono text-xs tabular-nums">
-          {formatPositionSize(trade.quantity)}
-        </td>
-        <td className="px-4 py-3 font-mono text-xs">{formatDisplayDateTime(trade.entry_time)}</td>
-        <td className="px-4 py-3 font-mono text-xs">{formatCurrency(trade.entry_price)}</td>
-        <td className="px-4 py-3 font-mono text-xs">
-          {trade.exit_time ? formatDisplayDateTime(trade.exit_time) : '-'}
-        </td>
-        <td className="px-4 py-3 font-mono text-xs">
-          {trade.exit_price != null ? formatCurrency(trade.exit_price) : '-'}
-        </td>
-        <td className="px-4 py-3 font-mono text-xs">
-          {trade.exit_reason ? formatExitReason(trade.exit_reason) : '-'}
-        </td>
-        <td
-          className={`px-4 py-3 text-right font-mono text-xs font-bold tabular-nums ${trade.pnl && trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
-        >
-          {trade.pnl != null ? formatSignedCurrency(trade.pnl) : '-'}
-        </td>
-      </tr>
-    )
-  }
+        ),
+      },
+      {
+        id: 'quantity',
+        header: 'Size',
+        align: 'right',
+        numeric: true,
+        render: (trade) => formatPositionSize(trade.quantity),
+      },
+      {
+        id: 'entry_time',
+        header: 'Entry Time',
+        render: (trade) => (
+          <span className="font-mono">{formatDisplayDateTime(trade.entry_time)}</span>
+        ),
+      },
+      {
+        id: 'entry_price',
+        header: 'Entry Price',
+        align: 'right',
+        numeric: true,
+        render: (trade) => formatCurrency(trade.entry_price),
+      },
+      {
+        id: 'exit_time',
+        header: 'Exit Time',
+        render: (trade) => (
+          <span className="font-mono">
+            {trade.exit_time ? formatDisplayDateTime(trade.exit_time) : '-'}
+          </span>
+        ),
+      },
+      {
+        id: 'exit_price',
+        header: 'Exit Price',
+        align: 'right',
+        numeric: true,
+        render: (trade) => (trade.exit_price != null ? formatCurrency(trade.exit_price) : '-'),
+      },
+      {
+        id: 'exit_reason',
+        header: 'Exit Reason',
+        render: (trade) => (
+          <span className="font-mono">
+            {trade.exit_reason ? formatExitReason(trade.exit_reason) : '-'}
+          </span>
+        ),
+      },
+      {
+        id: 'pnl',
+        header: 'PnL',
+        align: 'right',
+        numeric: true,
+        render: (trade) => (
+          <span
+            className={cn(
+              'font-bold',
+              trade.pnl != null && trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400',
+            )}
+          >
+            {trade.pnl != null ? formatSignedCurrency(trade.pnl) : '-'}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
 
   if (trades.length === 0) {
     return (
@@ -119,28 +164,19 @@ function TradeHistoryTable({
 
   return (
     <div className="border-brass-600/15 bg-carbon-900/40 overflow-hidden rounded-xl border shadow-lg">
-      <VirtualTableScroller
-        items={trades}
-        rowHeight={TRADE_ROW_HEIGHT}
-        colSpan={9}
-        className="max-h-[min(60vh,560px)]"
+      <DataTable
+        columns={columns}
+        rows={trades}
+        rowKey={(trade) => trade.id}
+        isRowHighlighted={(trade) => focusedTradeId === trade.id || hoveredTradeId === trade.id}
+        getRowClassName={() => 'cursor-pointer'}
+        onRowClick={(trade) => onClickTrade?.(trade.id)}
+        onRowMouseEnter={(trade) => onHoverTrade?.(trade.id)}
+        onRowMouseLeave={() => onHoverTrade?.(null)}
+        virtualize={{ rowHeight: TRADE_ROW_HEIGHT }}
+        scrollContainerClassName="max-h-[min(60vh,560px)]"
         tableClassName="text-silver-200 text-sm"
-        theadClassName="text-silver-400 bg-carbon-950/60 border-brass-600/15 border-b text-[10px] font-bold tracking-wider uppercase"
-        getItemKey={(index) => trades[index]!.id}
-        header={
-          <tr>
-            <th className="px-4 py-3">Symbol</th>
-            <th className="px-4 py-3">Action</th>
-            <th className="px-4 py-3 text-right">Size</th>
-            <th className="px-4 py-3">Entry Time</th>
-            <th className="px-4 py-3">Entry Price</th>
-            <th className="px-4 py-3">Exit Time</th>
-            <th className="px-4 py-3">Exit Price</th>
-            <th className="px-4 py-3">Exit Reason</th>
-            <th className="px-4 py-3 text-right">PnL</th>
-          </tr>
-        }
-        renderRow={(trade) => renderTradeRow(trade)}
+        theadClassName="tracking-wider uppercase"
       />
     </div>
   )
@@ -200,9 +236,9 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
             type="button"
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              '-mb-px border-b-2 px-4 py-2.5 text-[10px] font-bold tracking-wider uppercase transition-all duration-200',
+              'text-2xs -mb-px border-b-2 px-4 py-2.5 font-[560] tracking-[0.08em] uppercase transition-all duration-200',
               activeTab === tab.id
-                ? 'border-brass-400 text-brass-400 [text-shadow:0_0_8px_rgba(196,165,116,0.25)]'
+                ? 'border-brass-400 text-silver-100'
                 : 'text-silver-400 hover:text-silver-200 border-transparent',
             )}
           >

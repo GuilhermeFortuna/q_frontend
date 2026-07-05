@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { CandidateDetailPanel } from '@/components/discover/CandidateDetailPanel'
 import { ComplexityLine } from '@/components/discover/GenomeViewer'
-import { VirtualTableScroller } from '@/components/shared/VirtualTableBody'
-import type { VirtualRowMeta } from '@/components/shared/virtualRowMeta'
 import { Button } from '@/components/ui/button'
+import { DataTable, type DataColumn } from '@/components/ui/DataTable'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { Panel } from '@/components/ui/Panel'
 import { inputClass } from '@/components/optimize/optimizeFormShared'
@@ -46,6 +45,7 @@ type LeaderboardTableProps = {
 }
 
 const ALL_GENERATIONS = 'all'
+const ROW_HEIGHT = 56
 
 function candidateTrades(candidate: CandidateResult): number | null {
   return candidate.oos_metrics?.total_trades ?? null
@@ -162,30 +162,39 @@ export function LeaderboardTable({
 
   const objectiveHeader = `OOS ${objectiveMetricLabel(objectiveMode)} (out-of-sample)`
   const showGenerationFilter = isGenetic && generationOptions.length > 0
-  const columnCount = showGenerationFilter ? 9 : 8
 
-  const renderCandidateRows = (candidate: CandidateResult, meta?: VirtualRowMeta) => {
-    const expanded = expandedId === candidate.candidate_id
-    const dimmed = isDeemphasized(candidate)
-    const canPromote = candidate.status === 'completed' && candidate.best_params != null
-    const exitDisplay = candidateExitDisplayLabel(candidate)
+  const SortHeader = ({ label, colKey }: { label: string; colKey: SortKey }) => (
+    <button
+      type="button"
+      className="hover:text-brass-400 transition-colors"
+      onClick={() => toggleSort(colKey)}
+    >
+      {label}
+      {sortKey === colKey ? (sortAsc ? ' ↑' : ' ↓') : ''}
+    </button>
+  )
 
-    return (
-      <>
-        <tr
-          ref={meta?.measureRef}
-          data-index={meta?.virtualIndex}
-          className={cn(
-            'border-carbon-600/30 border-t',
-            dimmed ? 'text-silver-500 opacity-70' : 'text-silver-100',
-          )}
-        >
-          <td className="px-3 py-2 font-mono tabular-nums">{candidate.rank ?? '—'}</td>
-          <td className="px-3 py-2">
+  const columns = useMemo<DataColumn<CandidateResult>[]>(() => {
+    const cols: DataColumn<CandidateResult>[] = [
+      {
+        id: 'rank',
+        header: <SortHeader label="Rank" colKey="rank" />,
+        numeric: true,
+        render: (candidate) => candidate.rank ?? '—',
+      },
+      {
+        id: 'strategy',
+        header: <SortHeader label="Entry" colKey="strategy" />,
+        render: (candidate) => {
+          const expanded = expandedId === candidate.candidate_id
+          return (
             <button
               type="button"
               className="hover:text-brass-400 flex items-start gap-1 text-left font-medium transition-colors"
-              onClick={() => setExpandedId(expanded ? null : candidate.candidate_id)}
+              onClick={(event) => {
+                event.stopPropagation()
+                setExpandedId(expanded ? null : candidate.candidate_id)
+              }}
             >
               {expanded ? (
                 <ChevronDown className="mt-0.5 h-4 w-4 shrink-0" />
@@ -196,7 +205,7 @@ export function LeaderboardTable({
                 <span className="flex flex-wrap items-center gap-1.5">
                   {candidate.strategy}
                   {isGeneticCandidate(candidate) ? (
-                    <span className="border-brass-500/30 text-brass-400 rounded-full border px-1.5 py-0 text-[9px] font-semibold tracking-wide uppercase">
+                    <span className="border-brass-500/30 text-brass-400 text-2xs rounded-full border px-1.5 py-0 font-[560] tracking-[0.08em] uppercase">
                       Evolved
                     </span>
                   ) : null}
@@ -207,36 +216,75 @@ export function LeaderboardTable({
                 />
               </span>
             </button>
-          </td>
-          <td
-            className={cn(
-              'px-3 py-2 text-xs',
-              exitDisplay.explicit ? 'text-silver-300' : 'text-silver-500',
-            )}
-            title={
-              exitDisplay.explicit
-                ? undefined
-                : "Closes on the strategy's own signal — no stop/target overlay."
-            }
-          >
-            {exitDisplay.label}
-          </td>
-          <td className="px-3 py-2 font-mono tabular-nums">
-            {formatObjectiveMetricValue(candidate.objective_value, objectiveMode)}
-          </td>
-          <td className="px-3 py-2 font-mono tabular-nums">
-            {formatEfficiencyRatio(candidate.efficiency)}
-          </td>
-          <td className="px-3 py-2 font-mono tabular-nums">{candidateTrades(candidate) ?? '—'}</td>
-          {showGenerationFilter ? (
-            <td className="text-silver-400 px-3 py-2 font-mono text-xs tabular-nums">
-              {candidate.generation ?? '—'}
-            </td>
-          ) : null}
-          <td className="px-3 py-2">
-            <GateBadge candidate={candidate} />
-          </td>
-          <td className="px-3 py-2">
+          )
+        },
+      },
+      {
+        id: 'exit',
+        header: 'Exit',
+        render: (candidate) => {
+          const exitDisplay = candidateExitDisplayLabel(candidate)
+          return (
+            <span
+              className={cn(
+                'text-xs',
+                exitDisplay.explicit ? 'text-silver-300' : 'text-silver-500',
+              )}
+              title={
+                exitDisplay.explicit
+                  ? undefined
+                  : "Closes on the strategy's own signal — no stop/target overlay."
+              }
+            >
+              {exitDisplay.label}
+            </span>
+          )
+        },
+      },
+      {
+        id: 'objective',
+        header: <SortHeader label={objectiveHeader} colKey="objective" />,
+        numeric: true,
+        render: (candidate) => formatObjectiveMetricValue(candidate.objective_value, objectiveMode),
+      },
+      {
+        id: 'efficiency',
+        header: <SortHeader label="Efficiency" colKey="efficiency" />,
+        numeric: true,
+        render: (candidate) => formatEfficiencyRatio(candidate.efficiency),
+      },
+      {
+        id: 'trades',
+        header: <SortHeader label="OOS trades" colKey="trades" />,
+        numeric: true,
+        render: (candidate) => candidateTrades(candidate) ?? '—',
+      },
+    ]
+
+    if (showGenerationFilter) {
+      cols.push({
+        id: 'generation',
+        header: 'Gen',
+        render: (candidate) => (
+          <span className="text-silver-400 quant-tabular-nums font-mono font-sans text-xs">
+            {candidate.generation ?? '—'}
+          </span>
+        ),
+      })
+    }
+
+    cols.push(
+      {
+        id: 'gate',
+        header: 'Gate',
+        render: (candidate) => <GateBadge candidate={candidate} />,
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        render: (candidate) => {
+          const canPromote = candidate.status === 'completed' && candidate.best_params != null
+          return (
             <div className="flex flex-wrap gap-1">
               <Button
                 type="button"
@@ -244,7 +292,10 @@ export function LeaderboardTable({
                 variant="ghost"
                 className="text-xs"
                 disabled={!canPromote}
-                onClick={() => handlePromoteBacktest(candidate)}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  handlePromoteBacktest(candidate)
+                }}
               >
                 Send to Backtest
               </Button>
@@ -254,29 +305,29 @@ export function LeaderboardTable({
                 variant="ghost"
                 className="text-xs"
                 disabled={!canPromote || !searchConfig}
-                onClick={() => handlePromoteOptimize(candidate)}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  handlePromoteOptimize(candidate)
+                }}
               >
                 Send to Optimizer
               </Button>
             </div>
-          </td>
-        </tr>
-        {expanded ? (
-          <tr className="border-carbon-600/30 border-t">
-            <td colSpan={columnCount} className="bg-carbon-950/40 px-4 py-4">
-              <CandidateDetailPanel
-                runId={runId}
-                candidate={candidate}
-                backtest={backtest}
-                objectiveMode={objectiveMode}
-                searchConfig={searchConfig}
-              />
-            </td>
-          </tr>
-        ) : null}
-      </>
+          )
+        },
+      },
     )
-  }
+
+    return cols
+  }, [
+    expandedId,
+    objectiveHeader,
+    objectiveMode,
+    showGenerationFilter,
+    sortAsc,
+    sortKey,
+    searchConfig,
+  ])
 
   return (
     <div className="space-y-3">
@@ -301,62 +352,32 @@ export function LeaderboardTable({
       ) : null}
 
       <Panel className="overflow-x-auto p-0">
-        <VirtualTableScroller
-          items={sortedCandidates}
-          colSpan={columnCount}
-          rowHeight={56}
-          remeasureKey={expandedId}
-          estimateSize={(index) =>
-            expandedId === sortedCandidates[index]?.candidate_id ? 360 : 56
+        <DataTable
+          columns={columns}
+          rows={sortedCandidates}
+          rowKey={(candidate) => candidate.candidate_id}
+          expandedKey={expandedId}
+          renderExpandedRow={(candidate) => (
+            <CandidateDetailPanel
+              runId={runId}
+              candidate={candidate}
+              backtest={backtest}
+              objectiveMode={objectiveMode}
+              searchConfig={searchConfig}
+            />
+          )}
+          getRowClassName={(candidate) =>
+            cn(isDeemphasized(candidate) ? 'text-silver-500 opacity-70' : 'text-silver-100')
           }
-          getItemKey={(index) => sortedCandidates[index]!.candidate_id}
-          className="max-h-[min(70vh,640px)]"
-          tableClassName="min-w-[720px] text-sm"
-          theadClassName="bg-carbon-950/60 text-xs tracking-wide uppercase"
-          header={
-            <tr>
-              {(
-                [
-                  ['rank', 'Rank'],
-                  ['strategy', 'Entry'],
-                ] as const
-              ).map(([key, label]) => (
-                <th key={key} className="px-3 py-2 font-semibold">
-                  <button
-                    type="button"
-                    className="hover:text-brass-400 transition-colors"
-                    onClick={() => toggleSort(key)}
-                  >
-                    {label}
-                    {sortKey === key ? (sortAsc ? ' ↑' : ' ↓') : ''}
-                  </button>
-                </th>
-              ))}
-              <th className="px-3 py-2 font-semibold">Exit</th>
-              {(
-                [
-                  ['objective', objectiveHeader],
-                  ['efficiency', 'Efficiency'],
-                  ['trades', 'OOS trades'],
-                ] as const
-              ).map(([key, label]) => (
-                <th key={key} className="px-3 py-2 font-semibold">
-                  <button
-                    type="button"
-                    className="hover:text-brass-400 transition-colors"
-                    onClick={() => toggleSort(key)}
-                  >
-                    {label}
-                    {sortKey === key ? (sortAsc ? ' ↑' : ' ↓') : ''}
-                  </button>
-                </th>
-              ))}
-              {showGenerationFilter ? <th className="px-3 py-2 font-semibold">Gen</th> : null}
-              <th className="px-3 py-2 font-semibold">Gate</th>
-              <th className="px-3 py-2 font-semibold">Actions</th>
-            </tr>
-          }
-          renderRow={(candidate, _index, meta) => renderCandidateRows(candidate, meta)}
+          virtualize={{
+            rowHeight: ROW_HEIGHT,
+            remeasureKey: expandedId,
+            estimateSize: (index) =>
+              expandedId === sortedCandidates[index]?.candidate_id ? 360 : ROW_HEIGHT,
+          }}
+          scrollContainerClassName="max-h-[min(70vh,640px)]"
+          tableClassName="min-w-[720px] text-xs"
+          theadClassName="tracking-wide uppercase"
         />
       </Panel>
     </div>

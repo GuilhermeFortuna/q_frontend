@@ -1,21 +1,17 @@
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Legend, Line, LineChart, ResponsiveContainer } from 'recharts'
 
-import { CHART_COLORS } from '@/components/backtests/chartUtils'
 import { stabilitySeries } from '@/components/research/featureScoringUtils'
 import { Panel } from '@/components/ui/Panel'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import { chartTheme } from '@/lib/charts/chartTheme'
+import {
+  ThemedCartesianGrid,
+  ThemedTooltip,
+  ThemedXAxis,
+  ThemedYAxis,
+  chartMargin,
+} from '@/lib/charts/rechartsTheme'
 import type { FeatureScoreRow } from '@/types/features'
-
-const LINE_COLORS = ['#c4a574', '#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#a78bfa']
 
 type FeatureStabilityPanelProps = {
   rows: FeatureScoreRow[]
@@ -47,35 +43,18 @@ export function FeatureStabilityPanel({ rows }: FeatureStabilityPanelProps) {
       ) : (
         <div className="min-h-[220px] flex-1">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-              <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-              <XAxis
-                dataKey="window"
-                tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-                tickLine={false}
-                axisLine={{ stroke: CHART_COLORS.grid }}
-              />
-              <YAxis
-                tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-                tickLine={false}
-                axisLine={{ stroke: CHART_COLORS.grid }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: CHART_COLORS.tooltipBg,
-                  border: `1px solid ${CHART_COLORS.tooltipBorder}`,
-                  borderRadius: 6,
-                  fontSize: 12,
-                }}
-                labelStyle={{ color: CHART_COLORS.axis }}
-              />
+            <LineChart data={chartData} margin={{ ...chartMargin, left: 0, bottom: 8 }}>
+              <ThemedCartesianGrid />
+              <ThemedXAxis dataKey="window" />
+              <ThemedYAxis />
+              <ThemedTooltip />
               <Legend />
               {rows.map((row, index) => (
                 <Line
                   key={row.feature_id}
                   type="monotone"
                   dataKey={row.feature_name}
-                  stroke={LINE_COLORS[index % LINE_COLORS.length]}
+                  stroke={chartTheme.series.palette[index % chartTheme.series.palette.length]}
                   strokeWidth={2}
                   dot={false}
                 />

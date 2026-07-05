@@ -1,5 +1,6 @@
+import { useMemo } from 'react'
 import { formatSignedCurrency } from '@/components/backtests/chartUtils'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { DataTable, type DataColumn } from '@/components/ui'
 import type { MonthlyStats } from '@/types/backtesting'
 
 type MonthlyBreakdownTableProps = {
@@ -7,6 +8,43 @@ type MonthlyBreakdownTableProps = {
 }
 
 export function MonthlyBreakdownTable({ data }: MonthlyBreakdownTableProps) {
+  const columns = useMemo<DataColumn<MonthlyStats>[]>(
+    () => [
+      { id: 'label', header: 'Month' },
+      {
+        id: 'pnl',
+        header: 'PnL',
+        align: 'right',
+        numeric: true,
+        tone: 'signed',
+        render: (row) => formatSignedCurrency(row.pnl),
+      },
+      { id: 'trades', header: 'Trades', align: 'right', numeric: true },
+      {
+        id: 'wins',
+        header: 'Wins',
+        align: 'right',
+        numeric: true,
+        render: (row) => <span className="text-emerald-400">{row.wins}</span>,
+      },
+      {
+        id: 'losses',
+        header: 'Losses',
+        align: 'right',
+        numeric: true,
+        render: (row) => <span className="text-rose-400">{row.losses}</span>,
+      },
+      {
+        id: 'winRate',
+        header: 'Win Rate',
+        align: 'right',
+        numeric: true,
+        render: (row) => `${(row.winRate * 100).toFixed(1)}%`,
+      },
+    ],
+    [],
+  )
+
   if (data.length === 0) {
     return (
       <div className="border-carbon-600 bg-carbon-900/30 text-silver-400 rounded-lg border border-dashed px-4 py-8 text-center text-sm">
@@ -15,34 +53,5 @@ export function MonthlyBreakdownTable({ data }: MonthlyBreakdownTableProps) {
     )
   }
 
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead>Month</TableHead>
-          <TableHead className="text-right">PnL</TableHead>
-          <TableHead className="text-right">Trades</TableHead>
-          <TableHead className="text-right">Wins</TableHead>
-          <TableHead className="text-right">Losses</TableHead>
-          <TableHead className="text-right">Win Rate</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.map((row) => (
-          <TableRow key={row.month}>
-            <TableCell className="text-silver-100 font-medium">{row.label}</TableCell>
-            <TableCell
-              className={`text-right font-medium tabular-nums ${row.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
-            >
-              {formatSignedCurrency(row.pnl)}
-            </TableCell>
-            <TableCell className="text-right">{row.trades}</TableCell>
-            <TableCell className="text-right text-emerald-400">{row.wins}</TableCell>
-            <TableCell className="text-right text-rose-400">{row.losses}</TableCell>
-            <TableCell className="text-right">{(row.winRate * 100).toFixed(1)}%</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  )
+  return <DataTable columns={columns} rows={data} rowKey={(row) => row.month} />
 }
