@@ -1,20 +1,19 @@
 import { type ReactElement, useMemo } from 'react'
-import {
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Cell, ResponsiveContainer, Scatter, ScatterChart } from 'recharts'
 
-import { CHART_COLORS } from '@/components/backtests/chartUtils'
 import {
   prepareOptimizationScatterData,
   type ScatterPoint,
 } from '@/lib/optimize/prepareScatterData'
+import { chartTheme } from '@/lib/charts/chartTheme'
+import {
+  ThemedCartesianGrid,
+  ThemedTooltip,
+  ThemedXAxis,
+  ThemedYAxis,
+  chartMargin,
+  scatterTooltipFormatter,
+} from '@/lib/charts/rechartsTheme'
 import { cn } from '@/lib/utils'
 import type { OptimizationResults } from '@/types/optimization'
 
@@ -55,29 +54,19 @@ export function OptimizationScatter({
       interactive={Boolean(onSelectTrial)}
       className={className}
       renderChart={() => (
-        <ScatterChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
-          <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-          <XAxis
-            type="number"
-            dataKey="x"
-            name={xLabel}
-            tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-            tickLine={false}
-            axisLine={{ stroke: CHART_COLORS.grid }}
-          />
-          <YAxis
+        <ScatterChart margin={{ ...chartMargin, bottom: 8 }}>
+          <ThemedCartesianGrid />
+          <ThemedXAxis type="number" dataKey="x" name={xLabel} />
+          <ThemedYAxis
             type="number"
             dataKey="y"
             name={yLabel}
-            tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-            tickLine={false}
-            axisLine={false}
             width={scatterData.mode === 'pareto' ? 56 : 72}
           />
-          <Tooltip {...tooltipProps} />
+          <ThemedTooltip formatter={scatterTooltipFormatter(xLabel, yLabel)} />
           <Scatter
             data={points}
-            fill={CHART_COLORS.reference}
+            fill={chartTheme.semantic.reference}
             shape="circle"
             cursor={onSelectTrial ? 'pointer' : undefined}
             onClick={
@@ -105,21 +94,6 @@ function readTrialNumber(entry: unknown): number | undefined {
   const payload = 'payload' in entry ? (entry as { payload?: ScatterPoint }).payload : undefined
   const direct = 'n' in entry ? (entry as ScatterPoint).n : undefined
   return payload?.n ?? direct
-}
-
-const tooltipProps = {
-  cursor: { strokeDasharray: '3 3' },
-  contentStyle: {
-    backgroundColor: CHART_COLORS.tooltipBg,
-    border: `1px solid ${CHART_COLORS.tooltipBorder}`,
-    borderRadius: 6,
-    fontSize: 12,
-  },
-  labelStyle: { color: CHART_COLORS.axis },
-  formatter: (value: number, _name: string, item: { payload?: ScatterPoint }) => {
-    const trialNumber = item.payload?.n
-    return [value.toFixed(4), trialNumber != null ? `Trial #${trialNumber}` : _name]
-  },
 }
 
 function ChartFrame({

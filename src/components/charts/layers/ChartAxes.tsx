@@ -2,6 +2,7 @@ import { AxisBottom, AxisRight } from '@visx/axis'
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
 import { isPaddingSlotKey } from '@/components/charts/types/chart'
+import { chartTheme } from '@/lib/charts/chartTheme'
 import { formatTimeAxisLabel } from '@/lib/market/timeframes'
 
 type ChartAxesProps = {
@@ -29,12 +30,13 @@ type ChartAxesProps = {
 
 const axisStyle = {
   tickLabelProps: () => ({
-    fill: 'var(--color-silver-400, #9ca3af)',
-    fontSize: 10,
+    fill: chartTheme.axis.tick.fill,
+    fontSize: chartTheme.axis.tick.fontSize,
     fontFamily: 'var(--font-mono, monospace)',
+    fontVariantNumeric: chartTheme.axis.tick.fontVariantNumeric,
   }),
-  stroke: 'rgba(111, 119, 133, 0.15)',
-  tickStroke: 'rgba(111, 119, 133, 0.15)',
+  stroke: chartTheme.axis.stroke,
+  tickStroke: chartTheme.axis.stroke,
 }
 
 export function ChartAxes({

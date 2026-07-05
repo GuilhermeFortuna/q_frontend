@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
-import { createPortal } from 'react-dom'
 import { X, Search, Activity, Sliders } from 'lucide-react'
+import { Dialog, DialogContent } from '@/components/ui/Dialog'
 import type { OhlcvBar } from '@/types/api'
 import { NumberInput } from '@/components/ui/number-input'
 import { DEFAULT_INDICATORS, type IndicatorConfig } from '@/components/charts/types/chart'
@@ -925,19 +925,14 @@ export function IndicatorsModal({
     Volume: filteredIndicators.filter((i) => i.category === 'Volume'),
   }
 
-  return createPortal(
-    <div
-      className="surface-overlay-scrim animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
-      role="presentation"
-      onClick={onClose}
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={(val) => {
+        if (!val) onClose()
+      }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="indicators-modal-title"
-        className="surface-overlay flex h-[580px] w-full max-w-4xl flex-col overflow-hidden rounded-xl transition-[transform,opacity] duration-300 select-none"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <DialogContent className="flex h-[580px] w-full max-w-4xl flex-col overflow-hidden rounded-xl p-0 select-none">
         {/* Header */}
         <div className="border-carbon-800/80 flex items-center justify-between border-b px-5 py-3">
           <div className="flex items-center gap-2">
@@ -1303,8 +1298,7 @@ export function IndicatorsModal({
             OK
           </button>
         </div>
-      </div>
-    </div>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   )
 }

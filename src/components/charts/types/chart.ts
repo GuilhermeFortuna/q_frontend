@@ -1,4 +1,5 @@
 import type { OhlcvBar } from '@/types/api'
+import { chartTheme } from '@/lib/charts/chartTheme'
 
 export type ChartType = 'candles' | 'line' | 'area'
 
@@ -181,10 +182,10 @@ export const CHART_MARGINS: ChartMargins = {
   left: 8,
 }
 
-export const BULL_COLOR = '#26a69a'
-export const BEAR_COLOR = '#ef5350'
-export const BRASS_COLOR = '#c9a227'
-export const GRID_COLOR = 'rgba(111, 119, 133, 0.12)'
+export const BULL_COLOR = chartTheme.candle.bull
+export const BEAR_COLOR = chartTheme.candle.bear
+export const BRASS_COLOR = chartTheme.candle.brass
+export const GRID_COLOR = chartTheme.grid.stroke
 
 export const DEFAULT_VISIBLE_BARS = 120
 export const MIN_VISIBLE_BARS = 20
@@ -277,7 +278,7 @@ export const DEFAULT_SETTINGS: ChartSettings = {
   showWatermark: true,
   candleOpacity: 0.85,
   volumeOpacity: 0.4,
-  crosshairColor: 'rgba(201, 162, 39, 0.45)',
+  crosshairColor: chartTheme.crosshair.stroke,
 }
 
 export type ProcessedBar = OhlcvBar & {

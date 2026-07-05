@@ -11,11 +11,13 @@ import {
   GRID_COLOR,
   type ChartMarker,
   type PrecomputedIndicatorSeries,
+  type ProcessedBar,
 } from '@/components/charts/types/chart'
 import { processBars, timestampAtX } from '@/components/charts/hooks/useChartScales'
 import { useChartViewport } from '@/components/charts/hooks/useChartViewport'
 import { linePath, visibleTimestampSet } from '@/components/charts/utils/indicatorPaths'
 import { formatTimeAxisLabel } from '@/lib/market/timeframes'
+import { chartTheme } from '@/lib/charts/chartTheme'
 import type { OhlcvBar } from '@/types/api'
 
 export type LiveStrategyChartProps = {
@@ -65,7 +67,10 @@ function markerGlyph(
     const y = priceScale(barLow) + 14
     return (
       <g key={marker.id} data-testid={`live-chart-marker-${marker.id}`} data-kind="buy">
-        <path d={`M ${cx} ${y - 9} L ${cx - 6} ${y + 3} L ${cx + 6} ${y + 3} Z`} fill={BULL_COLOR} />
+        <path
+          d={`M ${cx} ${y - 9} L ${cx - 6} ${y + 3} L ${cx + 6} ${y + 3} Z`}
+          fill={BULL_COLOR}
+        />
         {detail}
       </g>
     )
@@ -74,7 +79,10 @@ function markerGlyph(
     const y = priceScale(barHigh) - 14
     return (
       <g key={marker.id} data-testid={`live-chart-marker-${marker.id}`} data-kind="sell">
-        <path d={`M ${cx} ${y + 9} L ${cx - 6} ${y - 3} L ${cx + 6} ${y - 3} Z`} fill={BEAR_COLOR} />
+        <path
+          d={`M ${cx} ${y + 9} L ${cx - 6} ${y - 3} L ${cx + 6} ${y - 3} Z`}
+          fill={BEAR_COLOR}
+        />
         {detail}
       </g>
     )
@@ -107,16 +115,10 @@ function ChartBody({
   symbol,
   timeframe,
 }: Required<Omit<LiveStrategyChartProps, 'height'>> & { width: number; height: number }) {
-  const displayBars = useMemo(
-    () => (formingBar ? [...bars, formingBar] : bars),
-    [bars, formingBar],
-  )
+  const displayBars = useMemo(() => (formingBar ? [...bars, formingBar] : bars), [bars, formingBar])
 
   const resetKey = `${symbol}:${timeframe}`
-  const { viewport, resetViewport, zoomAt, panBy } = useChartViewport(
-    displayBars.length,
-    resetKey,
-  )
+  const { viewport, resetViewport, zoomAt, panBy } = useChartViewport(displayBars.length, resetKey)
 
   // Pre-process display bars to ProcessedBar[] for crosshair and rendering
   const processedBars = useMemo(() => processBars(displayBars), [displayBars])
@@ -144,7 +146,10 @@ function ChartBody({
     return visibleBars.find((b) => b.timestamp === formingBar?.timestamp) ?? null
   }, [visibleBars, formingBar])
 
-  const completedProcessed = useMemo(() => processBars(visibleCompletedBars), [visibleCompletedBars])
+  const completedProcessed = useMemo(
+    () => processBars(visibleCompletedBars),
+    [visibleCompletedBars],
+  )
   const formingProcessed = useMemo(
     () => (visibleFormingBar ? processBars([visibleFormingBar]) : []),
     [visibleFormingBar],
@@ -155,7 +160,7 @@ function ChartBody({
     [visibleCompletedBars],
   )
 
-  const [hoveredBar, setHoveredBar] = useState<any | null>(null)
+  const [hoveredBar, setHoveredBar] = useState<ProcessedBar | null>(null)
   const [mouseY, setMouseY] = useState<number | null>(null)
 
   const priceOverlays = useMemo(
@@ -177,9 +182,7 @@ function ChartBody({
   const innerHeight = Math.max(height - MARGINS.top - MARGINS.bottom, 0)
 
   const oscHeight =
-    oscillators.length > 0
-      ? Math.min(MAX_OSCILLATOR_HEIGHT, innerHeight * OSCILLATOR_RATIO)
-      : 0
+    oscillators.length > 0 ? Math.min(MAX_OSCILLATOR_HEIGHT, innerHeight * OSCILLATOR_RATIO) : 0
   const priceHeight = Math.max(innerHeight - oscHeight * oscillators.length, 0)
   const priceTop = MARGINS.top
 
@@ -261,7 +264,15 @@ function ChartBody({
       setHoveredBar(bar || null)
       setMouseY(y)
     },
-    [panBy, innerWidth, viewport.startIndex, viewport.endIndex, completedProcessed, formingProcessed, xScale],
+    [
+      panBy,
+      innerWidth,
+      viewport.startIndex,
+      viewport.endIndex,
+      completedProcessed,
+      formingProcessed,
+      xScale,
+    ],
   )
 
   const handleMouseUp = useCallback(() => {
@@ -305,8 +316,13 @@ function ChartBody({
   }
 
   return (
-    <div ref={chartRef} className="relative w-full h-full select-none cursor-crosshair">
-      <svg width={width} height={height} role="img" aria-label={`${symbol} ${timeframe} live chart`}>
+    <div ref={chartRef} className="relative h-full w-full cursor-crosshair select-none">
+      <svg
+        width={width}
+        height={height}
+        role="img"
+        aria-label={`${symbol} ${timeframe} live chart`}
+      >
         <defs>
           <linearGradient id="bull-gradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#26a69a" />
@@ -366,7 +382,8 @@ function ChartBody({
 
         <g transform={`translate(${MARGINS.left}, 0)`}>
           {priceOverlays.map((series, index) => {
-            const color = series.color ?? DEFAULT_OVERLAY_COLORS[index % DEFAULT_OVERLAY_COLORS.length]
+            const color =
+              series.color ?? DEFAULT_OVERLAY_COLORS[index % DEFAULT_OVERLAY_COLORS.length]
             return (
               <path
                 key={series.key}
@@ -397,7 +414,8 @@ function ChartBody({
             range: [top + oscHeight - 6, top + 6],
             nice: true,
           })
-          const color = series.color ?? DEFAULT_OVERLAY_COLORS[index % DEFAULT_OVERLAY_COLORS.length]
+          const color =
+            series.color ?? DEFAULT_OVERLAY_COLORS[index % DEFAULT_OVERLAY_COLORS.length]
           return (
             <g key={series.key} data-testid={`live-chart-oscillator-${series.key}`}>
               <rect
@@ -406,7 +424,7 @@ function ChartBody({
                 width={innerWidth}
                 height={oscHeight}
                 fill="rgba(7, 16, 28, 0.35)"
-                stroke="rgba(111, 119, 133, 0.15)"
+                stroke={chartTheme.axis.stroke}
                 shapeRendering="crispEdges"
               />
               <g transform={`translate(${MARGINS.left}, 0)`}>
@@ -438,9 +456,10 @@ function ChartBody({
               key={`time-${tick.ts}`}
               x={MARGINS.left + x + bandwidth / 2}
               y={height - 6}
-              fill="#6b7280"
-              fontSize={9}
+              fill={chartTheme.axis.tick.fill}
+              fontSize={chartTheme.axis.tick.fontSize}
               fontFamily="monospace"
+              style={{ fontVariantNumeric: chartTheme.axis.tick.fontVariantNumeric }}
               textAnchor="middle"
             >
               {tick.label}
@@ -456,35 +475,38 @@ function ChartBody({
               y1={MARGINS.top}
               x2={MARGINS.left + (xScale(hoveredBar.timestamp) ?? 0) + bandwidth / 2}
               y2={MARGINS.top + innerHeight}
-              stroke="rgba(217, 158, 34, 0.25)"
+              stroke={chartTheme.crosshair.stroke}
               strokeWidth={1}
-              strokeDasharray="3,3"
+              strokeDasharray={chartTheme.crosshair.strokeDasharray}
             />
           </g>
         )}
-        {hoveredBar && mouseY !== null && mouseY >= MARGINS.top && mouseY <= MARGINS.top + innerHeight && (
-          <g>
-            <line
-              x1={MARGINS.left}
-              y1={mouseY}
-              x2={MARGINS.left + innerWidth}
-              y2={mouseY}
-              stroke="rgba(217, 158, 34, 0.25)"
-              strokeWidth={1}
-              strokeDasharray="3,3"
-            />
-            <text
-              x={MARGINS.left + innerWidth + 4}
-              y={mouseY + 3}
-              fill="#d99e22"
-              fontSize={9}
-              fontFamily="monospace"
-              className="font-bold"
-            >
-              {priceScale.invert(mouseY).toFixed(2)}
-            </text>
-          </g>
-        )}
+        {hoveredBar &&
+          mouseY !== null &&
+          mouseY >= MARGINS.top &&
+          mouseY <= MARGINS.top + innerHeight && (
+            <g>
+              <line
+                x1={MARGINS.left}
+                y1={mouseY}
+                x2={MARGINS.left + innerWidth}
+                y2={mouseY}
+                stroke={chartTheme.crosshair.stroke}
+                strokeWidth={1}
+                strokeDasharray={chartTheme.crosshair.strokeDasharray}
+              />
+              <text
+                x={MARGINS.left + innerWidth + 4}
+                y={mouseY + 3}
+                fill={chartTheme.candle.brass}
+                fontSize={9}
+                fontFamily="monospace"
+                className="font-bold"
+              >
+                {priceScale.invert(mouseY).toFixed(2)}
+              </text>
+            </g>
+          )}
 
         {/* OHLCV Legend */}
         {activeBar && (
@@ -494,7 +516,7 @@ function ChartBody({
             fill="#e5e7eb"
             fontSize={10}
             fontFamily="monospace"
-            className="select-none font-bold"
+            className="font-bold select-none"
           >
             <tspan fill="#9ca3af">O:</tspan> {activeBar.open.toFixed(2)}{' '}
             <tspan fill="#9ca3af">H:</tspan> {activeBar.high.toFixed(2)}{' '}
@@ -503,7 +525,8 @@ function ChartBody({
             <tspan fill="#9ca3af">V:</tspan> {activeBar.volume.toLocaleString()}{' '}
             {change !== 0 && (
               <tspan fill={change >= 0 ? '#26a69a' : '#ef5350'}>
-                ({change >= 0 ? '+' : ''}{changePercent.toFixed(2)}%)
+                ({change >= 0 ? '+' : ''}
+                {changePercent.toFixed(2)}%)
               </tspan>
             )}
           </text>
@@ -528,7 +551,7 @@ function ChartBody({
         onClick={() => {
           resetViewport()
         }}
-        className="absolute bottom-10 right-4 bg-carbon-900/80 hover:bg-carbon-800 text-silver-300 border border-carbon-700 hover:border-brass-600/40 rounded px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-all shadow-md z-20 cursor-pointer"
+        className="bg-carbon-900/80 hover:bg-carbon-800 text-silver-300 border-carbon-700 hover:border-brass-600/40 absolute right-4 bottom-10 z-20 cursor-pointer rounded border px-2.5 py-1 font-mono text-[10px] font-bold uppercase shadow-md transition-all"
         title="Double-click chart area to fit all"
       >
         Reset Zoom
@@ -563,7 +586,7 @@ export function LiveStrategyChart({
   return (
     <div
       className={`border-carbon-700 bg-carbon-950/60 relative w-full overflow-hidden rounded-lg border ${
-        isPercent ? 'flex-1 h-full' : ''
+        isPercent ? 'h-full flex-1' : ''
       }`}
       style={{ height: isPercent ? height : `${height}px` }}
       data-testid="live-strategy-chart"

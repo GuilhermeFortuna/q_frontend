@@ -4,6 +4,7 @@ import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
 import type { ProcessedBar } from '@/components/charts/types/chart'
 import { BRASS_COLOR } from '@/components/charts/types/chart'
+import { chartTheme } from '@/lib/charts/chartTheme'
 import { formatCrosshairLabel } from '@/lib/market/timeframes'
 import { barCenterX } from '@/components/charts/hooks/useChartScales'
 
@@ -50,16 +51,16 @@ function CrosshairLayerImpl({
         x2={cx}
         y1={layout.priceTop}
         y2={layout.priceTop + layout.priceHeight}
-        stroke="rgba(201, 162, 39, 0.45)"
-        strokeDasharray="4 3"
+        stroke={chartTheme.crosshair.stroke}
+        strokeDasharray={chartTheme.crosshair.strokeDasharray}
       />
       <line
         x1={left}
         x2={left + layout.innerWidth}
         y1={priceY}
         y2={priceY}
-        stroke="rgba(201, 162, 39, 0.35)"
-        strokeDasharray="4 3"
+        stroke={chartTheme.crosshair.stroke}
+        strokeDasharray={chartTheme.crosshair.strokeDasharray}
       />
       <rect
         x={left + layout.innerWidth + 2}

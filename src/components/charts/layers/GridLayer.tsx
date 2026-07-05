@@ -16,20 +16,8 @@ type GridLayerProps = {
 function GridLayerImpl({ xScale, yScale, width, height, top, left }: GridLayerProps) {
   return (
     <g transform={`translate(${left}, 0)`}>
-      <GridRows
-        scale={yScale}
-        width={width}
-        stroke={GRID_COLOR}
-        strokeDasharray="2 2"
-        numTicks={6}
-      />
-      <GridColumns
-        scale={xScale}
-        height={height}
-        top={top}
-        stroke={GRID_COLOR}
-        strokeDasharray="2 2"
-      />
+      <GridRows scale={yScale} width={width} stroke={GRID_COLOR} numTicks={6} />
+      <GridColumns scale={xScale} height={height} top={top} stroke={GRID_COLOR} />
     </g>
   )
 }

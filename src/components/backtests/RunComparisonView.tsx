@@ -1,17 +1,16 @@
 import { useMemo, useState } from 'react'
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Legend, Line, LineChart, ResponsiveContainer } from 'recharts'
 
 import { useBacktestEquityArtifacts } from '@/api/queries/backtests'
-import { CHART_COLORS, formatCurrency } from '@/components/backtests/chartUtils'
+import { formatCurrency } from '@/components/backtests/chartUtils'
+import { chartTheme } from '@/lib/charts/chartTheme'
+import {
+  ThemedCartesianGrid,
+  ThemedTooltip,
+  ThemedXAxis,
+  ThemedYAxis,
+  chartMargin,
+} from '@/lib/charts/rechartsTheme'
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
@@ -147,33 +146,19 @@ export function RunComparisonView({ runs, onClose }: RunComparisonViewProps) {
         ) : (
           <div className="h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-                <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={{ stroke: CHART_COLORS.grid }}
-                  minTickGap={48}
-                />
-                <YAxis
-                  tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
+              <LineChart data={chartData} margin={chartMargin}>
+                <ThemedCartesianGrid vertical={false} />
+                <ThemedXAxis dataKey="label" minTickGap={48} />
+                <ThemedYAxis
                   tickFormatter={(value: number) =>
                     formatComparisonYAxisValue(value, resolvedNormalizeMode)
                   }
                   width={72}
                 />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: CHART_COLORS.tooltipBg,
-                    border: `1px solid ${CHART_COLORS.tooltipBorder}`,
-                    borderRadius: 6,
-                    fontSize: 12,
-                  }}
+                <ThemedTooltip
                   formatter={(value: number, _name: string, item) => {
-                    const series = chartSeries.find((entry) => entry.runId === item.dataKey)
+                    const dataKey = String((item as { dataKey?: string | number }).dataKey ?? '')
+                    const series = chartSeries.find((entry) => entry.runId === dataKey)
                     if (!series || value == null) return ['—', series?.label ?? '']
                     if (resolvedNormalizeMode === 'percent') {
                       return [`${value >= 0 ? '+' : ''}${value.toFixed(2)}%`, series.label]
@@ -232,7 +217,9 @@ export function RunComparisonView({ runs, onClose }: RunComparisonViewProps) {
             >
               <span
                 className="mr-1.5 inline-block h-2 w-2 rounded-full"
-                style={{ backgroundColor: series.unavailable ? CHART_COLORS.axis : series.color }}
+                style={{
+                  backgroundColor: series.unavailable ? chartTheme.axis.tick.fill : series.color,
+                }}
               />
               {series.unavailable ? `${series.label} · no curve` : series.label}
             </button>

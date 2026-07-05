@@ -1,17 +1,16 @@
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip } from 'recharts'
 
-import { CHART_COLORS, formatChartDate, formatCurrency } from '@/components/backtests/chartUtils'
+import { formatChartDate, formatCurrency } from '@/components/backtests/chartUtils'
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
 import { cn } from '@/lib/utils'
+import { chartTheme } from '@/lib/charts/chartTheme'
+import {
+  ThemedCartesianGrid,
+  ThemedXAxis,
+  ThemedYAxis,
+  chartMargin,
+  themedTooltipCursor,
+} from '@/lib/charts/rechartsTheme'
 import type { EquityPoint, Trade } from '@/types/backtesting'
 import type { OhlcvBar } from '@/types/api'
 
@@ -43,10 +42,8 @@ function CustomEquityTooltip({
   const point = payload[0].payload as EquityPoint
   const timestamp = point.timestamp
 
-  // Find corresponding candlestick bar
   const bar = bars.find((b) => b.timestamp === timestamp)
 
-  // Find open positions
   const pointTime = new Date(timestamp).getTime()
   const activeTrades = trades.filter((t) => {
     const entryTime = new Date(t.entry_time).getTime()
@@ -55,7 +52,7 @@ function CustomEquityTooltip({
   })
 
   return (
-    <div className="surface-overlay border-brass-600/30 max-w-[240px] space-y-2 rounded-lg border p-3 shadow-xl">
+    <div className={cn(chartTheme.tooltip.shellClass, 'max-w-[240px] space-y-2')}>
       <div className="text-silver-400 font-mono text-[10px]">
         {new Date(timestamp).toLocaleDateString(undefined, {
           month: 'short',
@@ -68,7 +65,7 @@ function CustomEquityTooltip({
       <div className="space-y-1">
         <div className="flex justify-between gap-4 text-xs">
           <span className="text-silver-300">Equity:</span>
-          <span className="text-silver-100 font-mono font-bold">
+          <span className="text-silver-100 font-mono font-bold tabular-nums">
             {formatCurrency(point.equity)}
           </span>
         </div>
@@ -78,7 +75,7 @@ function CustomEquityTooltip({
             <span className="text-silver-300">PnL:</span>
             <span
               className={cn(
-                'font-mono font-bold',
+                'font-mono font-bold tabular-nums',
                 point.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400',
               )}
             >
@@ -90,14 +87,16 @@ function CustomEquityTooltip({
 
         <div className="flex justify-between gap-4 text-xs">
           <span className="text-silver-300">Drawdown:</span>
-          <span className="font-mono font-bold text-rose-400">
+          <span className="font-mono font-bold text-rose-400 tabular-nums">
             -{point.drawdownPct.toFixed(2)}%
           </span>
         </div>
 
         <div className="border-carbon-800/40 mt-1 flex justify-between gap-4 border-t pt-1 text-xs">
           <span className="text-silver-300">Open Trades:</span>
-          <span className="text-brass-400 font-mono font-bold">{activeTrades.length}</span>
+          <span className="text-brass-400 font-mono font-bold tabular-nums">
+            {activeTrades.length}
+          </span>
         </div>
       </div>
 
@@ -105,11 +104,11 @@ function CustomEquityTooltip({
         <div className="border-carbon-800/40 text-silver-400 space-y-0.5 border-t pt-1 font-mono text-[9px]">
           <div className="flex justify-between">
             <span>Bar O:</span>
-            <span className="text-silver-200">{formatCurrency(bar.open)}</span>
+            <span className="text-silver-200 tabular-nums">{formatCurrency(bar.open)}</span>
           </div>
           <div className="flex justify-between">
             <span>Bar C:</span>
-            <span className="text-silver-200">{formatCurrency(bar.close)}</span>
+            <span className="text-silver-200 tabular-nums">{formatCurrency(bar.close)}</span>
           </div>
         </div>
       )}
@@ -124,7 +123,7 @@ function CustomEquityTooltip({
               <span className={t.action === 'BUY' ? 'text-emerald-400' : 'text-rose-400'}>
                 {t.action} {t.quantity}
               </span>
-              <span className="text-silver-300">{formatCurrency(t.entry_price)}</span>
+              <span className="text-silver-300 tabular-nums">{formatCurrency(t.entry_price)}</span>
             </div>
           ))}
           {activeTrades.length > 3 && (
@@ -167,30 +166,21 @@ export function EquityCurveChart({
       <h4 className="text-silver-200 mb-3 text-sm font-medium">Equity Curve</h4>
       <div className="w-full" style={{ height: EQUITY_CHART_HEIGHT_PX }}>
         <ResponsiveContainer width="100%" height={EQUITY_CHART_HEIGHT_PX}>
-          <LineChart data={chartData} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-            <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="label"
-              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-              tickLine={false}
-              axisLine={{ stroke: CHART_COLORS.grid }}
-              minTickGap={40}
+          <LineChart data={chartData} margin={chartMargin}>
+            <ThemedCartesianGrid vertical={false} />
+            <ThemedXAxis dataKey="label" minTickGap={40} />
+            <ThemedYAxis tickFormatter={(v) => formatCurrency(v)} width={72} />
+            <Tooltip
+              cursor={themedTooltipCursor}
+              content={<CustomEquityTooltip bars={bars} trades={trades} />}
             />
-            <YAxis
-              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) => formatCurrency(v)}
-              width={72}
-            />
-            <Tooltip content={<CustomEquityTooltip bars={bars} trades={trades} />} />
             <ReferenceLine
               y={initialCapital}
-              stroke={CHART_COLORS.reference}
-              strokeDasharray="4 4"
+              stroke={chartTheme.baseline.stroke}
+              strokeDasharray={chartTheme.baseline.strokeDasharray}
               label={{
                 value: 'Initial',
-                fill: CHART_COLORS.reference,
+                fill: chartTheme.baseline.labelFill,
                 fontSize: 10,
                 position: 'insideTopRight',
               }}
@@ -199,7 +189,7 @@ export function EquityCurveChart({
               <ReferenceLine
                 key={label}
                 x={label}
-                stroke={CHART_COLORS.reference}
+                stroke={chartTheme.semantic.reference}
                 strokeDasharray="2 4"
                 strokeOpacity={0.65}
               />
@@ -207,10 +197,10 @@ export function EquityCurveChart({
             <Line
               type="monotone"
               dataKey="equity"
-              stroke={CHART_COLORS.equity}
+              stroke={chartTheme.semantic.equity}
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: CHART_COLORS.equity }}
+              activeDot={{ r: 4, fill: chartTheme.semantic.equity }}
             />
           </LineChart>
         </ResponsiveContainer>
