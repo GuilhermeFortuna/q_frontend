@@ -31,9 +31,14 @@ export const MOCK_STRATEGY_BUILDER_CAPABILITIES = {
 export const MOCK_STRATEGY_BUILDER_MODELS = {
   provider: 'openai_compatible',
   default_model: 'test-model-a',
+  providers: [
+    { id: 'openai_compatible', label: 'Local (Ollama)' },
+    { id: 'gemini', label: 'Gemini' },
+  ],
   models: [
-    { id: 'test-model-a', label: 'Model A', available: true },
-    { id: 'test-model-b', label: 'Model B', available: false },
+    { id: 'test-model-a', label: 'Model A', available: true, provider: 'openai_compatible' },
+    { id: 'test-model-b', label: 'Model B', available: false, provider: 'openai_compatible' },
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', available: true, provider: 'gemini' },
   ],
 }
 

@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { memo, useEffect, useRef, useState, type RefObject } from 'react'
 
 import { chipClass } from '@/components/ui/chipStyles'
+import { cn } from '@/lib/utils'
 import {
   compareRevisionSections,
   type AiRevisionSnapshot,
@@ -20,7 +21,14 @@ type AiChatTranscriptProps = {
   isPending: boolean
   onQuestionSelect: (question: string) => void
   composerRef: RefObject<HTMLTextAreaElement | null>
+  fillHeight?: boolean
 }
+
+const EXAMPLE_PROMPTS = [
+  'Create a trend-following strategy using a fast and slow moving-average crossover.',
+  'Create a mean-reversion strategy that buys oversold RSI conditions and exits at the mean.',
+  'Create a breakout strategy that enters above recent resistance with a protective stop.',
+] as const
 
 function formatQuestionPrefill(question: string): string {
   return `> ${question} — `
@@ -187,6 +195,7 @@ export function AiChatTranscript({
   isPending,
   onQuestionSelect,
   composerRef,
+  fillHeight = false,
 }: AiChatTranscriptProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -199,13 +208,38 @@ export function AiChatTranscript({
 
   return (
     <div
-      className="border-carbon-800/50 bg-carbon-950/30 max-h-64 min-h-[6rem] space-y-3 overflow-y-auto rounded-lg border p-3"
+      className={cn(
+        'border-carbon-800/50 bg-carbon-950/30 min-h-[6rem] space-y-3 overflow-y-auto rounded-lg border p-3',
+        fillHeight ? 'min-h-0 flex-1' : 'max-h-64',
+      )}
       data-testid="ai-chat-transcript"
     >
       {transcript.length === 0 && !showPending ? (
-        <p className="text-silver-500 px-1 py-4 text-center text-xs leading-relaxed">
-          Describe a strategy to start — validate, apply, save, and iterate from here.
-        </p>
+        <div className="flex min-h-32 flex-col items-center justify-center gap-3 px-3 py-6 text-center">
+          <p className="text-silver-400 max-w-xl text-sm leading-relaxed">
+            Describe a strategy to start — validate, apply, save, and iterate from here.
+          </p>
+          <div className="flex max-w-3xl flex-wrap justify-center gap-2">
+            {EXAMPLE_PROMPTS.map((prompt, index) => (
+              <button
+                key={prompt}
+                type="button"
+                className={chipClass(false)}
+                onClick={() => {
+                  onQuestionSelect(prompt)
+                  composerRef.current?.focus()
+                }}
+                data-testid="ai-chat-example-chip"
+              >
+                {index === 0
+                  ? 'Trend-following crossover'
+                  : index === 1
+                    ? 'Mean-reversion entry'
+                    : 'Breakout with stop'}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : (
         transcript.map((entry) => (
           <TranscriptTurn

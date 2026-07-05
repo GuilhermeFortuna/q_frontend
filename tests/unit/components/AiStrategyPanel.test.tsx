@@ -213,13 +213,14 @@ describe('AiStrategyPanel in StrategyStudio', () => {
     })
     expect(interpretRequestBody).toMatchObject({
       message: 'Create a trend strategy using EMA 20 and EMA 50.',
+      provider: 'openai_compatible',
       model: 'test-model-a',
       capabilities_version: 'q_capabilities.v1',
     })
     expect(screen.getByTestId('ai-strategy-results')).toBeInTheDocument()
   })
 
-  it('renders the local model dropdown and sends the selected model', async () => {
+  it('renders the provider-aware model dropdown and sends separate provider and model', async () => {
     const user = userEvent.setup()
     renderWithQueryClient(<StrategyStudioHarness />)
     await waitForStudioReady()
@@ -229,14 +230,16 @@ describe('AiStrategyPanel in StrategyStudio', () => {
     expect(screen.getByRole('option', { name: 'Model A' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Model B (not loaded)' })).toBeInTheDocument()
 
-    await user.selectOptions(modelSelect, 'test-model-b')
+    await user.selectOptions(modelSelect, 'openai_compatible::test-model-b')
     await user.type(screen.getByTestId('ai-strategy-message'), 'Create EMA crossover')
     await user.click(screen.getByTestId('ai-strategy-submit'))
 
     await waitFor(() => {
       expect(interpretRequestBody).toMatchObject({
+        provider: 'openai_compatible',
         model: 'test-model-b',
       })
+      expect(JSON.stringify(interpretRequestBody)).not.toContain('openai_compatible::')
     })
   })
 

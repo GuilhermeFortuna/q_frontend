@@ -64,6 +64,7 @@ export type BacktestSession = {
   rightPanelTab: JobPanelTab
   selectedHistoryRunId: string | null
   comparisonRuns: BacktestRunSummary[] | null
+  aiModelSelection: { provider: string; model: string } | null
 }
 
 export type MarketDataSession = {
@@ -143,6 +144,7 @@ const initialBacktestSession: BacktestSession = {
   rightPanelTab: 'results',
   selectedHistoryRunId: null,
   comparisonRuns: null,
+  aiModelSelection: null,
 }
 
 const initialMarketDataSession: MarketDataSession = {

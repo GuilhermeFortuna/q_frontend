@@ -66,6 +66,8 @@ export type TranscriptNoticeEntry = {
 
 export type TranscriptEntry = TranscriptUserEntry | TranscriptAssistantEntry | TranscriptNoticeEntry
 
+export type AiModelSelection = { provider: string; model: string }
+
 function extractInterpretError(error: unknown): string {
   if (!axios.isAxiosError(error)) {
     return error instanceof Error ? error.message : 'AI interpretation failed.'
@@ -91,11 +93,14 @@ export function useAiStrategySession({
   const interpretMutation = useInterpretStrategy()
   const modelsQuery = useStrategyBuilderModels()
   const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
+  const persistedModelSelection = useAppStore((s) => s.backtestSession.aiModelSelection)
   const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
   const transcriptIdRef = useRef(0)
 
   const [message, setMessage] = useState('')
-  const [selectedModel, setSelectedModel] = useState('')
+  const [selectedModel, setSelectedModelState] = useState<AiModelSelection | null>(
+    persistedModelSelection,
+  )
   const [conversation, setConversation] = useState<ConversationMessage[]>([])
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([])
   const [draftSpec, setDraftSpec] = useState<StrategySpec | null>(null)
@@ -114,7 +119,20 @@ export function useAiStrategySession({
     return `transcript-${transcriptIdRef.current}`
   }, [])
 
-  const availableModels = modelsQuery.data?.models ?? []
+  const availableModels = useMemo(
+    () =>
+      (modelsQuery.data?.models ?? []).map((model) => ({
+        ...model,
+        provider: model.provider ?? modelsQuery.data?.provider ?? '',
+      })),
+    [modelsQuery.data],
+  )
+  const modelProviders = useMemo(() => {
+    if (modelsQuery.data?.providers) return modelsQuery.data.providers
+    if (!modelsQuery.data?.provider || availableModels.length === 0) return []
+    return [{ id: modelsQuery.data.provider, label: modelsQuery.data.provider }]
+  }, [availableModels.length, modelsQuery.data])
+  const hasProviderContract = modelsQuery.data?.providers !== undefined
   const provider = modelsQuery.data?.provider ?? ''
   const modelsLoading = modelsQuery.isLoading
   const modelsError = modelsQuery.isError
@@ -123,12 +141,31 @@ export function useAiStrategySession({
       : 'Unable to load local models.'
     : null
 
+  const setSelectedModel = useCallback(
+    (selection: AiModelSelection | null) => {
+      setSelectedModelState(selection)
+      patchBacktestSession({ aiModelSelection: selection })
+    },
+    [patchBacktestSession],
+  )
+
   useEffect(() => {
-    if (!modelsQuery.data || selectedModel) return
-    const defaultModel = modelsQuery.data.default_model
-    const hasDefault = modelsQuery.data.models.some((model) => model.id === defaultModel)
-    setSelectedModel(hasDefault ? defaultModel : (modelsQuery.data.models[0]?.id ?? ''))
-  }, [modelsQuery.data, selectedModel])
+    if (!modelsQuery.data) return
+    const candidate = selectedModel ?? persistedModelSelection
+    const candidateExists =
+      candidate &&
+      availableModels.some(
+        (model) => model.provider === candidate.provider && model.id === candidate.model,
+      )
+    if (candidateExists) return
+
+    const defaultSelection = availableModels.find(
+      (model) =>
+        model.provider === modelsQuery.data.provider && model.id === modelsQuery.data.default_model,
+    )
+    const fallback = defaultSelection ?? availableModels[0]
+    setSelectedModel(fallback ? { provider: fallback.provider, model: fallback.id } : null)
+  }, [availableModels, modelsQuery.data, persistedModelSelection, selectedModel, setSelectedModel])
 
   const previewSpec = draftSpec ?? response?.strategy_spec ?? null
   const validationErrors = response?.validation?.errors ?? []
@@ -234,8 +271,22 @@ export function useAiStrategySession({
           revisionIndex: 0,
         },
       ])
+      if (metadata.ai_provider && metadata.ai_model) {
+        const savedSelection = {
+          provider: metadata.ai_provider,
+          model: metadata.ai_model,
+        }
+        if (
+          availableModels.some(
+            (model) =>
+              model.provider === savedSelection.provider && model.id === savedSelection.model,
+          )
+        ) {
+          setSelectedModel(savedSelection)
+        }
+      }
     },
-    [resetDraft],
+    [availableModels, resetDraft, setSelectedModel],
   )
 
   const submitInterpret = useCallback(
@@ -260,7 +311,10 @@ export function useAiStrategySession({
         const nextCapabilitiesVersion = await ensureCapabilitiesVersion()
         const result = await interpretMutation.mutateAsync({
           message: trimmed,
-          model: selectedModel || undefined,
+          model: selectedModel?.model,
+          ...(hasProviderContract && selectedModel?.provider
+            ? { provider: selectedModel.provider }
+            : {}),
           conversation: nextConversation,
           current_spec: draftSpec ?? response?.strategy_spec ?? null,
           capabilities_version: nextCapabilitiesVersion,
@@ -306,6 +360,7 @@ export function useAiStrategySession({
       originalPrompt,
       response?.strategy_spec,
       revisions.length,
+      hasProviderContract,
       selectedModel,
     ],
   )
@@ -336,6 +391,7 @@ export function useAiStrategySession({
         ? unsupportedRequests
         : [],
       compiledStrategy: response.compiled_strategy,
+      modelSelection: selectedModel,
     })
 
     const payload: CustomStrategy = {
@@ -357,6 +413,7 @@ export function useAiStrategySession({
     originalPrompt,
     previewSpec,
     response,
+    selectedModel,
     unsupportedRequests,
     workflowBlocker,
   ])
@@ -458,6 +515,8 @@ export function useAiStrategySession({
     selectedModel,
     setSelectedModel,
     availableModels,
+    modelProviders,
+    hasProviderContract,
     provider,
     modelsLoading,
     modelsError,

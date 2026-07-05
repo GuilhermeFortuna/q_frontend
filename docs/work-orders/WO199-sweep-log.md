@@ -64,3 +64,10 @@ Format: `page · checklist# · file · what`
 - Backtests · #4 · EquityCurveChart.tsx inline legend `text-[8px]`/`text-[9px]` · Chart micro-legend; WO198 owns chart frame — tune in follow-up if needed
 - Market Data · #4 · ChartSettingsPopover / IndicatorsModal · Dense popover micro-type; functional HUD, not page chrome
 - All · #3 · Execution workspace · Out of WO199 page-area partition (WO122–126 batch already marked complete)
+
+## Addendum: AI Builder (WO202)
+
+- AI Builder · #1,#2,#7 · StrategyBuilderWorkspace.tsx · Consolidated the authoring band into one max-w-6xl full-height builder surface; aligned draft fields and actions and removed the redundant workspace scrollbar footprint.
+- AI Builder · #3,#4,#6 · AiStrategyPanel.tsx · Added dedicated-workspace header suppression, adopted LabeledField and Button materials, and reserved machined brass exclusively for Interpret.
+- AI Builder · #5,#7 · AiChatTranscript.tsx · Made the transcript the flexing scroll region and replaced the dead empty state with three focusable prompt chips covering trend, mean-reversion, and breakout starts.
+- AI Builder · #5,#8,#9,#10 · page audit · Preserved loading/error/empty model states and 16px inline icon discipline, reused surface-well/native focus treatment, and removed superseded one-off control styling without adding new primitives.

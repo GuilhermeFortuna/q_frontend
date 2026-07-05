@@ -10,6 +10,8 @@ What the client sends on every `POST /api/v1/strategy-builder/interpret` call:
 - `conversation` — prior turns as `{ role, content }` pairs
 - Assistant turns on the wire use `content = summary` only (compact, model-facing)
 - `current_spec`, `validation_errors`, and other request fields are unchanged from WO93
+- `provider` and `model` are separate fields. The selected option's `provider::model`
+  composite is DOM-only plumbing and is never persisted or sent over the wire.
 
 The backend is stateless. The client owns the transcript and resends the full conversation on each call.
 
@@ -33,3 +35,13 @@ Display-only fields are never sent to the API.
 ## UI
 
 `AiChatTranscript` renders above the composer in `AiStrategyPanel`. Question chips prefill the composer; per-turn revision chips use `compareRevisionSections(revisions[i - 1], revisions[i])`.
+
+The model picker groups models by the provider summaries returned from `/models`. The last
+`{ provider, model }` selection is persisted in the Backtests session. Responses from a
+pre-WO200 backend are normalized into one implicit provider group and omit `provider` from
+interpret requests for compatibility.
+
+`AiStrategyPanel` has two hosting modes. Its default renders the compact panel heading used
+inside Backtests. The dedicated `/strategy-builder` workspace passes `hideHeader` and
+`fillHeight`, supplies the integrated `draftHeader`, and lets the transcript consume the
+remaining panel height without duplicating the page identity.

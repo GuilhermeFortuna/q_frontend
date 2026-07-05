@@ -28,6 +28,7 @@ export function buildAiStrategyMetadata(input: {
   assumptions: string[]
   unsupportedRequestsAcknowledged: string[]
   compiledStrategy: CompiledStrategy | null
+  modelSelection?: { provider: string; model: string } | null
 }): AiStrategyMetadata {
   return {
     strategy_spec: input.strategySpec,
@@ -38,6 +39,12 @@ export function buildAiStrategyMetadata(input: {
     unsupported_requests_acknowledged: input.unsupportedRequestsAcknowledged,
     compiled_strategy_id: input.compiledStrategy?.compiled_id ?? null,
     compiled_strategy: input.compiledStrategy,
+    ...(input.modelSelection
+      ? {
+          ai_provider: input.modelSelection.provider,
+          ai_model: input.modelSelection.model,
+        }
+      : {}),
   }
 }
 

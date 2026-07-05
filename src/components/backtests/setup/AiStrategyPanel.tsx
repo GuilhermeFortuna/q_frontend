@@ -1,6 +1,7 @@
 import { Copy, Download, Loader2, Play, RotateCcw, Save, Sparkles, Wand2, Zap } from 'lucide-react'
 import { type ReactNode, useRef } from 'react'
-import { Callout } from '@/components/ui'
+import { Button, Callout } from '@/components/ui'
+import { LabeledField } from '@/components/ui/LabeledField'
 
 import { AiChatTranscript } from '@/components/backtests/setup/AiChatTranscript'
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
@@ -18,9 +19,13 @@ import {
 } from '@/lib/strategies/strategySpecPreview'
 import type { AiStrategySession } from '@/lib/strategies/useAiStrategySession'
 import type { StrategySpec } from '@/types/strategyBuilder'
+import { cn } from '@/lib/utils'
 
 type AiStrategyPanelProps = {
   session: AiStrategySession
+  hideHeader?: boolean
+  draftHeader?: ReactNode
+  fillHeight?: boolean
 }
 
 function PreviewSection({ title, children }: { title: string; children: ReactNode }) {
@@ -48,7 +53,12 @@ function BulletList({ items, testId }: { items: string[]; testId?: string }) {
   )
 }
 
-export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
+export function AiStrategyPanel({
+  session,
+  hideHeader = false,
+  draftHeader,
+  fillHeight = false,
+}: AiStrategyPanelProps) {
   const composerRef = useRef<HTMLTextAreaElement>(null)
   const {
     message,
@@ -70,6 +80,7 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
     selectedModel,
     setSelectedModel,
     availableModels,
+    modelProviders,
     provider,
     modelsLoading,
     modelsError,
@@ -86,6 +97,9 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
   } = session
 
   const hasConversation = conversation.length > 0 || transcript.length > 0
+  const activeProviderLabel =
+    modelProviders.find((modelProvider) => modelProvider.id === selectedModel?.provider)?.label ??
+    provider
 
   const handleAskAiToFix = () => {
     if (validationErrors.length === 0) return
@@ -94,42 +108,78 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
 
   return (
     <section
-      className="border-carbon-700/50 bg-carbon-950/40 space-y-3 rounded-xl border p-3"
+      className={cn(
+        'border-carbon-700/50 bg-carbon-950/40 rounded-xl border p-3',
+        fillHeight ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-3',
+      )}
       data-testid="ai-strategy-panel"
     >
-      <div className="flex items-center gap-2">
-        <Sparkles className="text-brass-400 h-4 w-4" aria-hidden />
-        <h3 className="text-silver-200 text-sm font-semibold">AI Strategy Builder</h3>
-        <span className="text-silver-500 text-[11px]">
-          Describe, validate, apply, save, and iterate.
-        </span>
-      </div>
+      {draftHeader}
 
-      <div className="space-y-2">
-        <div className="space-y-1">
-          <label
-            htmlFor="ai-strategy-model"
-            className="text-silver-400 text-[11px] font-semibold tracking-wide uppercase"
-          >
-            Local model
-          </label>
+      {!hideHeader ? (
+        <div className="flex items-center gap-2">
+          <Sparkles className="text-brass-400 h-4 w-4" aria-hidden />
+          <h3 className="text-silver-200 text-sm font-semibold">AI Strategy Builder</h3>
+          <span className="text-silver-500 text-[11px]">
+            Describe, validate, apply, save, and iterate.
+          </span>
+        </div>
+      ) : null}
+
+      <div className={cn('flex flex-col gap-2', fillHeight && 'min-h-0 flex-1')}>
+        <LabeledField
+          label="Model"
+          htmlFor="ai-strategy-model"
+          labelEnd={
+            activeProviderLabel ? (
+              <span className="text-silver-500 font-normal normal-case">
+                · {activeProviderLabel}
+              </span>
+            ) : null
+          }
+        >
           <select
             id="ai-strategy-model"
-            value={selectedModel}
-            onChange={(event) => setSelectedModel(event.target.value)}
+            value={selectedModel ? `${selectedModel.provider}::${selectedModel.model}` : ''}
+            onChange={(event) => {
+              const separator = event.target.value.indexOf('::')
+              setSelectedModel(
+                separator === -1
+                  ? null
+                  : {
+                      provider: event.target.value.slice(0, separator),
+                      model: event.target.value.slice(separator + 2),
+                    },
+              )
+            }}
             className={inputClass}
             disabled={interpretMutation.isPending || modelsLoading || availableModels.length === 0}
             data-testid="ai-strategy-model"
           >
             {availableModels.length === 0 ? (
-              <option value="">No local models configured</option>
+              <option value="">No models configured</option>
             ) : (
-              availableModels.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.label}
-                  {!model.available ? ' (not loaded)' : ''}
-                </option>
-              ))
+              modelProviders.map((modelProvider) => {
+                const providerModels = availableModels.filter(
+                  (model) => model.provider === modelProvider.id,
+                )
+                if (providerModels.length === 0) return null
+                return (
+                  <optgroup key={modelProvider.id} label={modelProvider.label}>
+                    {providerModels.map((model) => (
+                      <option
+                        key={`${model.provider}::${model.id}`}
+                        value={`${model.provider}::${model.id}`}
+                      >
+                        {model.label}
+                        {model.provider === 'openai_compatible' && !model.available
+                          ? ' (not loaded)'
+                          : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                )
+              })
             )}
           </select>
           {modelsError ? (
@@ -143,7 +193,7 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
                 : 'Start the Ollama server (and pull a model) to enable models.'}
             </p>
           ) : null}
-        </div>
+        </LabeledField>
 
         <AiChatTranscript
           transcript={transcript}
@@ -151,6 +201,7 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
           isPending={interpretMutation.isPending}
           onQuestionSelect={setMessage}
           composerRef={composerRef}
+          fillHeight={fillHeight}
         />
 
         <label htmlFor="ai-strategy-message" className="sr-only">
@@ -174,11 +225,13 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
           }}
         />
         <div className="flex flex-wrap items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="brass"
+            size="sm"
             onClick={() => void submitInterpret(message)}
             disabled={interpretMutation.isPending || message.trim().length === 0}
-            className="border-brass-600/30 bg-brass-600/10 text-brass-400 hover:bg-brass-600/20 disabled:text-silver-500 disabled:border-carbon-700/40 disabled:bg-carbon-900/40 inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold tracking-wider uppercase transition-colors"
+            className="tracking-wider uppercase"
             data-testid="ai-strategy-submit"
           >
             {interpretMutation.isPending ? (
@@ -187,98 +240,114 @@ export function AiStrategyPanel({ session }: AiStrategyPanelProps) {
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
             )}
             {interpretMutation.isPending ? 'Interpreting…' : hasConversation ? 'Send' : 'Interpret'}
-          </button>
+          </Button>
 
           {validationErrors.length > 0 ? (
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={handleAskAiToFix}
               disabled={interpretMutation.isPending}
-              className="border-carbon-700/60 bg-carbon-900/50 text-silver-200 hover:bg-carbon-800/70 inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold tracking-wider uppercase transition-colors"
+              className="tracking-wider uppercase"
               data-testid="ai-strategy-ask-fix"
             >
               <Wand2 className="h-3.5 w-3.5" aria-hidden />
               Ask AI to fix
-            </button>
+            </Button>
           ) : null}
 
           {response?.compiled_strategy ? (
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={handleApplyToSetup}
-              className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold tracking-wider text-emerald-300 uppercase transition-colors hover:bg-emerald-500/20"
+              className="tracking-wider uppercase"
               data-testid="ai-strategy-apply"
             >
               Apply to setup
-            </button>
+            </Button>
           ) : null}
 
           {hasConversation || response ? (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={resetDraft}
-              className="border-carbon-700/60 bg-carbon-900/50 text-silver-300 hover:bg-carbon-800/70 inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold tracking-wider uppercase transition-colors"
+              className="tracking-wider uppercase"
               data-testid="ai-strategy-reset"
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden />
               New conversation
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
 
       {response ? (
         <div className="flex flex-wrap items-center gap-2" data-testid="ai-strategy-actions">
-          <button
+          <Button
             type="button"
+            variant="default"
+            size="sm"
             onClick={handleSaveAiStrategy}
             disabled={!canSave}
-            className="border-brass-600/30 bg-brass-600/10 text-brass-400 hover:bg-brass-600/20 disabled:text-silver-500 disabled:border-carbon-700/40 disabled:bg-carbon-900/40 inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold tracking-wider uppercase transition-colors"
+            className="tracking-wider uppercase"
             data-testid="ai-strategy-save"
           >
             <Save className="h-3.5 w-3.5" aria-hidden />
             Save AI strategy
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleRunBacktest}
             disabled={Boolean(workflowBlocker)}
-            className="border-carbon-700/60 bg-carbon-900/50 text-silver-200 hover:bg-carbon-800/70 disabled:text-silver-500 inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold tracking-wider uppercase transition-colors"
+            className="tracking-wider uppercase"
             data-testid="ai-strategy-run"
           >
             <Play className="h-3.5 w-3.5" aria-hidden />
             Run backtest
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleOptimize}
             disabled={Boolean(workflowBlocker)}
-            className="border-carbon-700/60 bg-carbon-900/50 text-silver-200 hover:bg-carbon-800/70 disabled:text-silver-500 inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold tracking-wider uppercase transition-colors"
+            className="tracking-wider uppercase"
             data-testid="ai-strategy-optimize"
           >
             <Zap className="h-3.5 w-3.5" aria-hidden />
             Optimize
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleDuplicate}
             disabled={!previewSpec}
-            className="border-carbon-700/60 bg-carbon-900/50 text-silver-200 hover:bg-carbon-800/70 disabled:text-silver-500 inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold tracking-wider uppercase transition-colors"
+            className="tracking-wider uppercase"
             data-testid="ai-strategy-duplicate"
           >
             <Copy className="h-3.5 w-3.5" aria-hidden />
             Duplicate
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleExport}
             disabled={!previewSpec}
-            className="border-carbon-700/60 bg-carbon-900/50 text-silver-200 hover:bg-carbon-800/70 disabled:text-silver-500 inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold tracking-wider uppercase transition-colors"
+            className="tracking-wider uppercase"
             data-testid="ai-strategy-export"
           >
             <Download className="h-3.5 w-3.5" aria-hidden />
             Export spec
-          </button>
+          </Button>
         </div>
       ) : null}
 

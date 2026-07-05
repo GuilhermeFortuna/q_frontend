@@ -6,6 +6,7 @@ import { createElement, type ReactNode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
 import { useAiStrategySession } from '@/lib/strategies/useAiStrategySession'
+import { useAppStore } from '@/store/useAppStore'
 import {
   compareRevisionSections,
   createRevisionSnapshot,
@@ -59,6 +60,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 beforeEach(() => {
   interpretBodies = []
   interpretCallCount = 0
+  useAppStore.getState().patchBacktestSession({ aiModelSelection: null })
   server.use(
     http.post('*/api/v1/strategy-builder/interpret', async ({ request }) => {
       interpretCallCount += 1
@@ -92,7 +94,10 @@ describe('useAiStrategySession transcript', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.selectedModel).toBe('test-model-a')
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
     })
 
     await act(async () => {
@@ -129,7 +134,10 @@ describe('useAiStrategySession transcript', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.selectedModel).toBe('test-model-a')
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
     })
 
     await act(async () => {
@@ -166,7 +174,10 @@ describe('useAiStrategySession transcript', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.selectedModel).toBe('test-model-a')
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
     })
 
     await act(async () => {
@@ -188,7 +199,10 @@ describe('useAiStrategySession transcript', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.selectedModel).toBe('test-model-a')
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
     })
 
     await act(async () => {
@@ -212,7 +226,10 @@ describe('useAiStrategySession transcript', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.selectedModel).toBe('test-model-a')
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
     })
 
     await act(async () => {
@@ -227,6 +244,102 @@ describe('useAiStrategySession transcript', () => {
     expect(result.current.conversation).toEqual([])
     expect(result.current.revisions).toEqual([])
     expect(result.current.draftSpec).toBeNull()
+  })
+})
+
+describe('useAiStrategySession provider-aware model selection', () => {
+  it('selects the default provider model and sends separate provider and model fields', async () => {
+    const config = createMockConfig()
+    const { result } = renderHook(() => useAiStrategySession({ config: config as never }), {
+      wrapper,
+    })
+
+    await waitFor(() => {
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
+    })
+
+    act(() => {
+      result.current.setSelectedModel({ provider: 'gemini', model: 'gemini-2.5-flash' })
+    })
+    await act(async () => {
+      await result.current.submitInterpret('Create EMA crossover')
+    })
+
+    expect(interpretBodies[0]).toMatchObject({
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+    })
+    expect(JSON.stringify(interpretBodies[0])).not.toContain('gemini::')
+  })
+
+  it('omits provider for a pre-WO200 models response', async () => {
+    server.use(
+      http.get('*/api/v1/strategy-builder/models', () =>
+        HttpResponse.json({
+          provider: 'openai_compatible',
+          default_model: 'legacy-model',
+          models: [{ id: 'legacy-model', label: 'Legacy model', available: true }],
+        }),
+      ),
+    )
+    const config = createMockConfig()
+    const { result } = renderHook(() => useAiStrategySession({ config: config as never }), {
+      wrapper,
+    })
+
+    await waitFor(() => {
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'legacy-model',
+      })
+    })
+    await act(async () => {
+      await result.current.submitInterpret('Create EMA crossover')
+    })
+
+    expect(interpretBodies[0]).toMatchObject({ model: 'legacy-model' })
+    expect(interpretBodies[0]).not.toHaveProperty('provider')
+  })
+
+  it('restores a persisted provider and model selection', async () => {
+    useAppStore.getState().patchBacktestSession({
+      aiModelSelection: { provider: 'gemini', model: 'gemini-2.5-flash' },
+    })
+    const config = createMockConfig()
+    const { result } = renderHook(() => useAiStrategySession({ config: config as never }), {
+      wrapper,
+    })
+
+    await waitFor(() => {
+      expect(result.current.selectedModel).toEqual({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+      })
+    })
+  })
+
+  it('replaces a stale persisted selection with the backend default', async () => {
+    useAppStore.getState().patchBacktestSession({
+      aiModelSelection: { provider: 'gemini', model: 'removed-model' },
+    })
+    const config = createMockConfig()
+    const { result } = renderHook(() => useAiStrategySession({ config: config as never }), {
+      wrapper,
+    })
+
+    await waitFor(() => {
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
+    })
+    expect(useAppStore.getState().backtestSession.aiModelSelection).toEqual({
+      provider: 'openai_compatible',
+      model: 'test-model-a',
+    })
   })
 })
 

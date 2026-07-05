@@ -55,6 +55,8 @@ export type AiStrategyMetadata = {
   unsupported_requests_acknowledged: string[]
   compiled_strategy_id: string | null
   compiled_strategy: import('@/types/strategyBuilder').CompiledStrategy | null
+  ai_provider?: string
+  ai_model?: string
 }
 
 export type ExitRuleInfo = {

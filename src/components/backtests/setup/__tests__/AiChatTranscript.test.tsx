@@ -47,6 +47,32 @@ describe('AiChatTranscript', () => {
     )
   })
 
+  it('prefills and focuses the composer from an empty-state example chip', async () => {
+    const user = userEvent.setup()
+    const onQuestionSelect = vi.fn()
+    const composerRef = createRef<HTMLTextAreaElement>()
+    render(
+      <>
+        <textarea ref={composerRef} data-testid="composer" />
+        <AiChatTranscript
+          transcript={[]}
+          revisions={[]}
+          isPending={false}
+          onQuestionSelect={onQuestionSelect}
+          composerRef={composerRef}
+        />
+      </>,
+    )
+
+    expect(screen.getAllByTestId('ai-chat-example-chip')).toHaveLength(3)
+    await user.click(screen.getByRole('button', { name: /trend-following/i }))
+
+    expect(onQuestionSelect).toHaveBeenCalledWith(
+      'Create a trend-following strategy using a fast and slow moving-average crossover.',
+    )
+    expect(document.activeElement).toBe(composerRef.current)
+  })
+
   it('renders change_notes on assistant turns', () => {
     const transcript: TranscriptEntry[] = [
       { id: 'u1', kind: 'user', content: 'Tighten the stop.' },

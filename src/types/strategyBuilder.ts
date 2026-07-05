@@ -144,6 +144,7 @@ export type ConversationMessage = {
 export type StrategyInterpretRequest = {
   message: string
   model?: string
+  provider?: string
   conversation?: ConversationMessage[]
   current_spec?: StrategySpec | null
   capabilities_version?: string
@@ -154,11 +155,13 @@ export type AiModelOption = {
   id: string
   label: string
   available: boolean
+  provider?: string
 }
 
 export type AiStrategyModelsResponse = {
   provider: string
   default_model: string
+  providers?: Array<{ id: string; label: string }>
   models: AiModelOption[]
 }
 
