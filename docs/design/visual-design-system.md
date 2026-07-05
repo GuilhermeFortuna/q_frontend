@@ -79,20 +79,151 @@ everything tier-3/4 at once.
 The reusable React primitives built in WO117. Each names its elevation level and the accent tiers it
 can express. Built on the material classes above so they inherit future token changes for free.
 
-| Component               | Role                                                                    | Elevation          | States / accent                                                      |
-| ----------------------- | ----------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------- |
-| `Panel` + `PanelHeader` | section container + its small-caps title                                | 0                  | header text = tier 1                                                 |
-| `SectionHeader`         | standalone small-caps brass label (+ optional count/affordance)         | —                  | tier 1                                                               |
-| `LabeledField`          | label + control wrapper (consistent label/hint/error)                   | wraps a −2 control | error state; optional `labelEnd` adornment (compact hints)           |
-| `SegmentedToggle`       | pill group (`EMA/HMA/SMA`, `Any/All/Majority`)                          | track −2, thumb +1 | selected = tier 3; single or multi                                   |
-| `RangeChips`            | preset chips (`1M/3M/6M/1Y/YTD/All`)                                    | +1 chips           | selected = tier 3; `value` may be `null` when no preset is active    |
-| `FilterPills`           | category filter row (`All/Trend/Mean reversion/…`)                      | +1 chips           | active = tier 3; `radiogroup` / `radio` semantics                    |
-| `EntityCard`            | selectable strategy/entity card (title + type tag + description + meta) | +1, active accent  | hover = tier 2, active = tier 3; optional `badges` slot in title row |
-| `RangeInput`            | min/max/step triplet on top of existing `NumberInput`                   | −2 wells           | per-field error                                                      |
-| `StatTile`              | metric tile (label + value, optional delta)                             | +1                 | `valueTone` / `highlight` for value color; delta up/down, not gold   |
+| Component                      | Role                                                                    | Elevation          | States / accent                                                      |
+| ------------------------------ | ----------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------- |
+| `Panel` + `PanelHeader`        | section container + its small-caps title                                | 0                  | header text = tier 1                                                 |
+| `SectionHeader`                | standalone small-caps brass label (+ optional count/affordance)         | —                  | tier 1                                                               |
+| `LabeledField`                 | label + control wrapper (consistent label/hint/error)                   | wraps a −2 control | error state; optional `labelEnd` adornment (compact hints)           |
+| `SegmentedToggle`              | pill group (`EMA/HMA/SMA`, `Any/All/Majority`)                          | track −2, thumb +1 | selected = tier 3; single or multi                                   |
+| `RangeChips`                   | preset chips (`1M/3M/6M/1Y/YTD/All`)                                    | +1 chips           | selected = tier 3; `value` may be `null` when no preset is active    |
+| `FilterPills`                  | category filter row (`All/Trend/Mean reversion/…`)                      | +1 chips           | active = tier 3; `radiogroup` / `radio` semantics                    |
+| `EntityCard`                   | selectable strategy/entity card (title + type tag + description + meta) | +1, active accent  | hover = tier 2, active = tier 3; optional `badges` slot in title row |
+| `RangeInput`                   | min/max/step triplet on top of existing `NumberInput`                   | −2 wells           | per-field error                                                      |
+| `StatTile`                     | metric tile (label + value, optional delta)                             | +1                 | `valueTone` / `highlight` for value color; delta up/down, not gold   |
+| `DataTable`                    | premium quantitative tabular grid with column alignments and sorting    | 0 on panel         | hover = tier 2 (luminance lift), selected = tier 3 (warm fill)       |
+| `Dialog` / `ConfirmDialog`     | modal overlays                                                          | +2 overlay         | tier 1 header; scrim recedes workspace                               |
+| `Popover` / `Menu` / `Tooltip` | anchored floats and action menus                                        | +2 float           | luminance item hover; no arrows on popovers                          |
+| `toast` / `Toaster`            | transient top-right notifications                                       | +2 overlay cards   | success = tier-3 gold edge; errors = rose edge                       |
 
 Existing primitives kept and re-skinned via materials, not rewritten: `Button` (`ui/button.tsx`,
 cva), `Card` (`ui/card.tsx`), `NumberInput` (`ui/number-input.tsx`), `ConfirmDialog`, `ActiveOutline`.
+
+### DataTable Visual Spec
+
+To preserve visual consistency across dense grids (leaderboards, backtest results, optimization trials, walkforward windows), tables are built using the following structural rules:
+
+- **Header:** Sticky (`position: sticky; top: 0`), opaque background (`#141311`) to prevent rows from ghosting through when scrolled. Labels use small-caps tier-1 brass styling (11px, weight 560, tracking 0.08em) with a minimal sort indicator chevron.
+- **Row Heights:** Restrained row height target of `32px` to `36px` to maintain dense data presentation.
+- **Separators:** Hairline borders at low luminance (`rgba(255,255,255,0.045)`).
+- **Hover Lift:** Row hover causes a pure luminance lift (`rgba(255,255,255,0.035)`) and never applies warm/brass borders or gray tints.
+- **Row Selection:** Selected rows use the Tier-3 State accent treatment: a warm background fill (`rgba(217, 158, 34, 0.07)`), gold-400 label text, and a `brass-400` left accent border on the first cell.
+- **Numeric Cascading:** All numeric cells must utilize tabular numbers (`quant-tabular-nums` class / `font-variant-numeric: tabular-nums`) and align to the right, matching their column headers.
+
+### Overlay layer (+2)
+
+Transient surfaces share one material vocabulary and one motion contract. Radix owns focus traps, dismiss logic, and positioning; the design system owns pixels.
+
+| Primitive           | Role                                                             | Material                                    | Motion                                |
+| ------------------- | ---------------------------------------------------------------- | ------------------------------------------- | ------------------------------------- |
+| `Dialog`            | modal work (confirm, indicator config)                           | `surface-overlay` + `surface-overlay-scrim` | `overlayEnter` / `overlayExit`        |
+| `Popover`           | anchored panels (chart settings, filters)                        | `surface-float` (+ blur)                    | scale-in from anchor side, fast exit  |
+| `Menu`              | dropdown / context actions                                       | `surface-float`                             | same as popover                       |
+| `Tooltip`           | short labels and definitions (max 280px, text only)              | `surface-float` (compact)                   | delayed show (350ms), instant hide    |
+| `toast` + `Toaster` | transient confirmations (save, duplicate, background completion) | `surface-overlay` card stack                | `fadeRise` enter, `overlayExit` leave |
+
+**Toast vs inline feedback:** Errors that require user action stay in inline `Callout` surfaces. Toasts are for brief confirmations and passive completions only (max 3 visible, auto-dismiss 5s / errors 8s, hover pauses timer).
+
+**Motion contract:** Entrances use `--motion-slow` (280ms) or `--motion-base` (180ms); exits always use `--motion-fast` (120ms). `useReducedMotion()` collapses all overlay motion to instant.
+
+### Charts (WO198)
+
+All chart frames — recharts and visx — consume a single theme module at `src/lib/charts/chartTheme.ts`. Recharts consumers import prop bundles from `src/lib/charts/rechartsTheme.tsx` (`ThemedXAxis`, `ThemedCartesianGrid`, `ThemedTooltip`, etc.); visx layers read the same tokens for axes, grids, and crosshairs.
+
+**Rules:**
+
+- **Grids and axes are furniture:** low-luminance solid hairlines (`rgba(255,255,255,.045)` grid, `.10` axis stroke). No dashed gray defaults; no chart-drawn dark plot backgrounds (plots stay transparent on `surface-panel` glass).
+- **Light allocates attention:** hovered series brighten; non-focused series dim to ~45% (`chartTheme.focus.dimOpacity`). Brass crosshair + tabular axis readouts.
+- **Palette order:** gold/brass first for the primary series, then cream/silver/steel for comparisons. Pos/neg always match StatTile tones (`emerald-400` / `rose-400`).
+- **Tooltips:** one `ChartTooltip` component (`surface-float` material, `--text-xs` labels, tabular values, optional series chips). No inline axis/tooltip styling in chart consumers — extend the theme instead.
+
+New charts must import `chartTheme` / `rechartsTheme`; inline axis colors are forbidden.
+
+## Typography
+
+Establish premium typography foundation using self-hosted fonts and numeric discipline to ensure data readability.
+
+### Typeface Roles
+
+- **Body & Interface (`--font-sans`):** `Inter Variable` (with system fallback). Used for general UI text, body copy, form fields, and labels. Variable font enables precise weight tuning.
+- **Headings & Hero Metrics (`--font-display`):** `Inter Display` (with `Inter Variable` fallback). Used for panel headings, large statistics, and hero metrics. Tighter curves and optimized metrics for large sizes.
+- **Data & Tables (`--font-mono`):** `Cascadia Code` (with system fallbacks). Used for code blocks, terminal logs, and technical values that require full monospace rendering.
+
+### Type-scale & Tracking Tokens
+
+Explicitly defined tokens in `@theme` to prevent ad-hoc font sizing:
+
+- `--text-2xs: 10.5px/14px` (dense table meta)
+- `--text-xs: 11.5px/16px`
+- `--text-sm: 13px/18px` (standard body)
+- `--text-base: 14px/20px`
+- `--text-lg: 16px/22px`
+- `--text-xl: 19px/24px` (display tracking applied)
+- `--text-2xl: 24px/28px` (hero metrics, display tracking applied)
+- `--tracking-display: -0.015em` (applied to size `>= text-xl` to tighten tracking at large sizes)
+
+### Small-caps & Wayfinding
+
+- Brass section labels (`.accent-wayfinding`): `font-weight: 560`, `font-size: 11px`, `letter-spacing: 0.08em`, and `text-transform: uppercase`. Re-tuned for Inter to prevent blurriness and maintain design-system prominence.
+
+### Tabular Numeral Discipline
+
+Numbers are the central product of a quantitative terminal and must sit in perfect alignment.
+
+- **The Rule:** Numbers are always tabular in data contexts; proportional numerals are only used in prose.
+- **Default Application:** Built into `.q-table-td` (all table cells), `input[type="number"]`, `.number-input--steppers`, `.stat-tile-value`, `.chart-tooltip`, and `.chart-tick`.
+- **Escape Hatch:** Use the `.quant-tabular-nums` utility for one-off/ad-hoc numeric contexts.
+
+## Motion
+
+Coherent motion language focused on being fast, physical, and restrained. Transitions simulate physical controls.
+
+### Durations
+
+- **Fast (`--motion-fast: 120ms`):** Press feedback, exits, and hover-out transitions.
+- **Base (`--motion-base: 180ms`):** Hover-in, focus, and small reveals.
+- **Slow (`--motion-slow: 280ms`):** Overlay panels entering and panel-level reveals.
+- **The Limit:** No transition or animation should exceed `280ms`.
+
+### Easings
+
+- **Decisive Arrival (`--ease-out`):** `cubic-bezier(0.16, 1, 0.3, 1)`. Default curve for arrivals/entries.
+- **Reflows (`--ease-in-out`):** `cubic-bezier(0.65, 0, 0.35, 1)`. Used for layout shifts and reflows.
+- **Accelerate Exit (`--ease-exit`):** `cubic-bezier(0.4, 0, 1, 1)`. Used for leaving elements that slide/fade away.
+
+### Press & Hover Choreography
+
+All interactive controls (Buttons, SegmentedToggle options, FilterPills, RangeChips, steppers, EntityCards, and AppDock items) must follow this physical choreography:
+
+- **Hover-in:** `--motion-base` duration / `--ease-out` curve. Lift is handled by materials; **no scaling** is permitted on hover (prevents "bubbly" consumer web feel).
+- **Press (active state):** `--motion-fast` duration / `--ease-out` curve. Standard physical translation of `scale(0.985)` + `translateY(0.5px)` ("pushing the hardware button in").
+- **Hover-out / release:** `--motion-fast` duration / `--ease-exit` curve.
+- **Focus:** Outline indicator appears instantly (`0ms`), while outline shadows/glows fade in over `--motion-base`.
+
+### Reduced Motion Contract
+
+- **CSS Gate:** When `html[data-reduced-motion='true']` (synced from preferences) is active, all transitions and animations are globally set to `0ms !important`.
+- **JS Gate:** The hook `useReducedMotion()` combines `prefers-reduced-motion` and the user's `MotionToggle` state. Presets (`fadeRise`, `overlayEnter`, `overlayExit`, `staggerChildren`) collapse to duration-0/instant variants when true.
+
+## Material Vocabulary (v2)
+
+To create a physical, premium feel reminiscent of a professional quantitative terminal, the interface is governed by a distinct **Material Vocabulary** where different roles look and feel like different substances.
+
+### The Three Core Materials
+
+1. **Glass (`surface-panel` / `.surface-panel--living`) — Space (0 Reference)**
+   - **Role:** Structural workspace panels, main containers, and shells.
+   - **Appearance:** Frosted glass with backdrop-blur, subtle top edge light, and an opt-in pointer spotlight highlight.
+2. **Black Suede (`surface-suede` / `.surface-control`) — Touch (+1 Controls)**
+   - **Role:** Interactive controls, buttons, SegmentedToggle thumbs, pills, chips, and selected cards.
+   - **Appearance:** An ultra-matte, light-absorbing surface that is visually darker and flatter than the glass panels it sits on. It catches light via a soft pointer sheen (`::after` radial gradient) following the cursor.
+   - **Press state:** On active press, the suede nap compresses (sheen radius contracts by ~60% and lightens, while background fill darkens one step).
+3. **Machined Brass (`button-machined-brass` / Tier-4 Accent) — Significance**
+   - **Role:** Primary Call-To-Action buttons and extreme structural landmarks (Tier 4 of the accent ladder). Used very sparingly.
+   - **Appearance:** Milled/machined metal look with a high-contrast vertical gradient (`brass-500` to `brass-700`), a crisp 1px top bevel highlight, and a dark lower border. Text is rendered in high-contrast near-black.
+
+### The "No Printed Textures" Rule
+
+Richness must come exclusively from how a surface catches light (specular reflections, pointer sheen, edge bevels), **never from printed textures**. Repeating patterns, PNG noise images, and SVG `feTurbulence` are strictly prohibited. These patterns break scalability, create visual noise on dense screens, and feel like precision machinery rather than synthetic web design.
 
 ---
 
@@ -113,9 +244,28 @@ cva), `Card` (`ui/card.tsx`), `NumberInput` (`ui/number-input.tsx`), `ConfirmDia
   living-panel nesting (stuck-center sheen). Must land **before** WO122. ✅
 - **WO122** Discover ✅ · **WO123** Market Data ✅ · **WO124** Launcher ✅ · **WO125** Walkforward + Validate ✅ ·
   **WO126** Storage + System + News + app chrome ✅ — **batch complete** (full-UI design-system coverage).
+- **WO193–WO199** — Premium polish batch ✅ (typography, motion, materials, DataTable, overlays, chart
+  theme, page-by-page finishing sweep). See **Definition of premium** below.
+
+## Definition of premium
+
+Standing bar for all future UI work — the same 10-point checklist enforced in WO199:
+
+1. **Spacing rhythm** — gaps on the 4px grid; section gaps from the scale (8/12/16/24); no one-off pixel nudges.
+2. **Alignment** — labels, values, and controls on shared edges; numerics right-aligned in data contexts; button rows on one baseline.
+3. **Primitive adoption** — use `ui/` primitives where they exist; bespoke only when genuinely unique.
+4. **Typography conformance** — WO193 type scale only; wayfinding labels via `.accent-wayfinding` + `text-2xs font-[560]`; tabular numerals in data.
+5. **State coverage** — hover, press, focus-visible, disabled on interactives; loading/error/empty on async regions.
+6. **Accent-ladder audit** — gold only per tier table; structural chrome tier-0 (silver); no competing tier-4 moments on one screen.
+7. **Edge & scroll hygiene** — thin low-luminance scrollbars; no double scrollbars; no horizontal overflow at 1280px.
+8. **Icon discipline** — one size per context (16px inline, 18px buttons); consistent stroke; no emoji-as-icon.
+9. **Text selection + native artifacts** — single `::selection` in `globals.css`; `wellInputClass` on native controls; no default chrome leaks.
+10. **Dead styling removal** — delete superseded one-offs; extend the system instead of forking inline styles.
+
+Sweep log: `docs/work-orders/WO199-sweep-log.md`.
 
 ## Out of scope
 
 - No new runtime dependencies; no component framework (Radix is already present for primitives only).
 - No behavior/logic changes during migration — visual + structural swap only.
-- Charts' internal rendering (recharts/visx) unchanged; only their containing surfaces re-skin.
+- Chart _data_ logic and interaction hooks unchanged; chart _frame_ styling is centralized in WO198 (`chartTheme` / `rechartsTheme`).
