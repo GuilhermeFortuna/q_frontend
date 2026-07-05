@@ -1,14 +1,43 @@
 mod backend;
 mod report;
 
+use std::{borrow::Cow, env};
+
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, WindowEvent,
 };
 
+fn init_native_sentry() -> Option<sentry::ClientInitGuard> {
+    let dsn = env::var("SENTRY_DSN")
+        .ok()
+        .filter(|value| !value.trim().is_empty())?;
+    let Ok(dsn) = dsn.parse::<sentry::types::Dsn>() else {
+        eprintln!("Sentry native initialization skipped: invalid SENTRY_DSN");
+        return None;
+    };
+    let environment = env::var("SENTRY_ENVIRONMENT").unwrap_or_else(|_| "local".to_string());
+    let release = env::var("Q_RELEASE")
+        .or_else(|_| env::var("VITE_SENTRY_RELEASE"))
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .map(Cow::Owned);
+
+    Some(sentry::init((
+        dsn,
+        sentry::ClientOptions {
+            environment: Some(Cow::Owned(environment)),
+            release,
+            send_default_pii: false,
+            ..Default::default()
+        },
+    )))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let _sentry_guard = init_native_sentry();
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
@@ -86,4 +115,3 @@ pub fn run() {
         }
     });
 }
-

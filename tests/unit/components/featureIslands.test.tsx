@@ -132,6 +132,12 @@ describe('feature islands — AI Strategy Builder workspace', () => {
     await waitFor(() => {
       expect(screen.getByTestId('ai-strategy-panel')).toBeInTheDocument()
     })
+    expect(screen.getAllByRole('heading', { name: 'AI Strategy Builder' })).toHaveLength(1)
+    expect(screen.getByTestId('ai-strategy-draft-header')).toBeInTheDocument()
+    expect(screen.getByLabelText('Name')).toBeInTheDocument()
+    expect(screen.getByLabelText('Description')).toBeInTheDocument()
+    expect(screen.getByTestId('ai-chat-transcript')).toBeInTheDocument()
+    expect(screen.getByTestId('ai-strategy-message')).toBeInTheDocument()
   })
 })
 

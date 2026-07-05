@@ -14,3 +14,5 @@ interface Window {
   /** WO96/WO101 — dev-only perf snapshot for smoke scripts. */
   __Q_PERF_SNAPSHOT__?: () => import('@/lib/performance/performanceMonitor').PerformanceSnapshot
 }
+
+declare const __GIT_SHA__: string

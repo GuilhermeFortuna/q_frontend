@@ -3,7 +3,10 @@ import { createRoot } from 'react-dom/client'
 
 import { App } from '@/app/App'
 import { env } from '@/lib/env'
+import { initSentry } from '@/lib/observability/sentry'
 import '@/styles/globals.css'
+
+initSentry()
 
 async function enableMocking() {
   if (!env.enableMsw) {
