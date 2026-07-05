@@ -59,19 +59,22 @@ describe('Motion Presets & useReducedMotion', () => {
       removeEventListener: vi.fn(),
     }))
 
+    // The test store only carries the motion slice; widen it for the mock signature.
+    const mockMotionMode = (motionMode: AppStore['motionMode']) =>
+      vi
+        .mocked(useAppStore)
+        .mockImplementation(((selector: (state: AppStore) => unknown) =>
+          selector({ motionMode } as AppStore)) as unknown as typeof useAppStore)
+
     // Case 1: motionMode = 'full', prefers-reduced-motion = reduce
     // Even if prefers-reduced-motion is true, motionMode 'full' overrides it.
-    vi.mocked(useAppStore).mockImplementation((selector: (state: MotionStoreSlice) => unknown) =>
-      selector({ motionMode: 'full' }),
-    )
+    mockMotionMode('full')
     const { result: res1 } = renderHook(() => useReducedMotion())
     expect(res1.current).toBe(false)
 
     // Case 2: motionMode = 'system', prefers-reduced-motion = reduce
     // Under 'system', OS preference is respected.
-    vi.mocked(useAppStore).mockImplementation((selector: (state: MotionStoreSlice) => unknown) =>
-      selector({ motionMode: 'system' }),
-    )
+    mockMotionMode('system')
     const { result: res2 } = renderHook(() => useReducedMotion())
     expect(res2.current).toBe(true)
   })
