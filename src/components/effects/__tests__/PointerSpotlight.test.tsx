@@ -1,6 +1,7 @@
 import { describe, expect, it, afterEach } from 'vitest'
 
 import {
+  clearGlowVars,
   collectGlowAncestors,
   collectLivingAncestors,
   writeGlowSpotVars,
@@ -109,5 +110,50 @@ describe('pointerSpotlightUtils', () => {
     expect(outer.style.getPropertyValue('--y')).toBe('150.00px')
     expect(outer.style.getPropertyValue('--xp')).toBe('0.38')
     expect(outer.style.getPropertyValue('--yp')).toBe('0.38')
+  })
+
+  it('clears glow vars on hosts that are no longer under the pointer', () => {
+    document.body.innerHTML = `
+      <div data-glow="card" id="a">
+        <button type="button" id="target-a">A</button>
+      </div>
+      <div data-glow="card" id="b">
+        <button type="button" id="target-b">B</button>
+      </div>
+    `
+
+    const cardA = document.getElementById('a') as HTMLElement
+    const cardB = document.getElementById('b') as HTMLElement
+    const targetA = document.getElementById('target-a')
+    const targetB = document.getElementById('target-b')
+
+    stubRect(cardA, 0, 0, 100, 100)
+    stubRect(cardB, 0, 120, 100, 100)
+
+    const active = writeGlowSpotVars(targetA, 40, 40)
+    expect(cardA.style.getPropertyValue('--x')).toBe('40.00px')
+    expect(active).toEqual([cardA])
+
+    writeGlowSpotVars(targetB, 40, 160, active)
+    expect(cardA.style.getPropertyValue('--x')).toBe('-999px')
+    expect(cardA.style.getPropertyValue('--y')).toBe('-999px')
+    expect(cardB.style.getPropertyValue('--x')).toBe('40.00px')
+    expect(cardB.style.getPropertyValue('--y')).toBe('40.00px')
+  })
+
+  it('clearGlowVars parks the spotlight off-card', () => {
+    document.body.innerHTML = `<div data-glow="panel" id="card"></div>`
+    const card = document.getElementById('card') as HTMLElement
+    card.style.setProperty('--x', '12px')
+    card.style.setProperty('--y', '24px')
+    card.style.setProperty('--xp', '0.5')
+    card.style.setProperty('--yp', '0.5')
+
+    clearGlowVars(card)
+
+    expect(card.style.getPropertyValue('--x')).toBe('-999px')
+    expect(card.style.getPropertyValue('--y')).toBe('-999px')
+    expect(card.style.getPropertyValue('--xp')).toBe('')
+    expect(card.style.getPropertyValue('--yp')).toBe('')
   })
 })

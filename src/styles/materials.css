@@ -198,12 +198,12 @@
     --radius: 14;
     --border: 3;
     --size: 220;
-    --outer: 1;
-    --saturation: 78;
-    --lightness: 52;
-    --bg-spot-opacity: 0.14;
-    --border-spot-opacity: 1;
-    --border-light-opacity: 1;
+    --outer: 0.7;
+    --saturation: 68;
+    --lightness: 48;
+    --bg-spot-opacity: 0.09;
+    --border-spot-opacity: 0.55;
+    --border-light-opacity: 0.4;
     --glow-blur: var(--panel-blur);
     --x: -999px;
     --y: -999px;
@@ -221,8 +221,8 @@
     background-image: radial-gradient(
       var(--spotlight-size) circle at var(--x) var(--y),
       hsl(
-        var(--hue, 40) calc(var(--saturation, 78) * 1%) calc(var(--lightness, 52) * 1%) /
-          var(--bg-spot-opacity, 0.14)
+        var(--hue, 40) calc(var(--saturation, 68) * 1%) calc(var(--lightness, 48) * 1%) /
+          var(--bg-spot-opacity, 0.09)
       ),
       transparent 70%
     );
@@ -238,8 +238,10 @@
   [data-glow='card'] {
     --border: 2;
     --size: 180;
-    --bg-spot-opacity: 0.1;
-    --outer: 0.55;
+    --bg-spot-opacity: 0.07;
+    --border-spot-opacity: 0.42;
+    --border-light-opacity: 0.3;
+    --outer: 0.4;
     --radius: 12;
     --glow-blur: var(--glass-blur);
     --backdrop: color-mix(in srgb, var(--surface-base-1) 74%, transparent);
@@ -252,9 +254,9 @@
   [data-glow='tile'] {
     --border: 1;
     --size: 140;
-    --bg-spot-opacity: 0.06;
-    --border-spot-opacity: 0.55;
-    --border-light-opacity: 0.45;
+    --bg-spot-opacity: 0.04;
+    --border-spot-opacity: 0.32;
+    --border-light-opacity: 0.22;
     --outer: 0;
     --radius: 12;
     --glow-blur: 0px;
@@ -292,18 +294,18 @@
     background-image: radial-gradient(
       calc(var(--spotlight-size) * 0.85) circle at var(--x) var(--y),
       hsl(
-        var(--hue, 40) calc(var(--saturation, 78) * 1%) calc(var(--lightness, 58) * 1%) /
-          var(--border-spot-opacity, 1)
+        var(--hue, 40) calc(var(--saturation, 68) * 1%) calc(var(--lightness, 54) * 1%) /
+          var(--border-spot-opacity, 0.55)
       ),
       transparent 72%
     );
-    filter: brightness(1.45);
+    filter: brightness(1.12);
   }
 
   [data-glow]::after {
     background-image: radial-gradient(
       calc(var(--spotlight-size) * 0.45) circle at var(--x) var(--y),
-      hsl(43 95% 78% / var(--border-light-opacity, 1)),
+      hsl(42 82% 68% / var(--border-light-opacity, 0.4)),
       transparent 70%
     );
   }
@@ -314,7 +316,7 @@
     inset: 0;
     z-index: 0;
     will-change: filter;
-    opacity: var(--outer, 1);
+    opacity: var(--outer, 0.7);
     border-radius: inherit;
     border: none;
     padding: 0;
@@ -335,13 +337,13 @@
     z-index: 1;
     border-radius: inherit;
     padding: 10px;
-    opacity: 0.55;
+    opacity: 0.35;
     background-repeat: no-repeat;
     background-image: radial-gradient(
       calc(var(--spotlight-size) * 0.85) circle at var(--x) var(--y),
       hsl(
-        var(--hue, 40) calc(var(--saturation, 78) * 1%) calc(var(--lightness, 58) * 1%) /
-          var(--border-spot-opacity, 1)
+        var(--hue, 40) calc(var(--saturation, 68) * 1%) calc(var(--lightness, 54) * 1%) /
+          var(--border-spot-opacity, 0.55)
       ),
       transparent 72%
     );

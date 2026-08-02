@@ -1,7 +1,6 @@
 import { fieldErrorClass, inputClass } from '@/components/shared/InstrumentConfigFields'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
-import { Panel } from '@/components/ui/Panel'
 import { paramHint } from '@/lib/strategies/strategyPresentation'
 import type { StrategyParamValue } from '@/lib/strategies/strategyParams'
 import type { StrategyParamSpec } from '@/types/strategies'
@@ -33,14 +32,17 @@ export function StrategyParamFields({
   params,
   values,
   onChange,
-  className = 'space-y-3 p-3',
+  className = 'space-y-3',
   showHints = false,
   hintMode = 'paragraph',
 }: StrategyParamFieldsProps) {
   if (params.length === 0) return null
 
+  // Layout-only wrapper — callers own Panel/GlowCard chrome. Wrapping a `grid`
+  // className in GlowCard would put fields inside an inner content shell and
+  // break column layout (Thesis param labels overlapping inputs).
   return (
-    <Panel className={className}>
+    <div className={className}>
       {params.map((spec) => {
         const value = values[spec.name] ?? spec.default
         const id = `strategy-param-${spec.name}`
@@ -107,7 +109,7 @@ export function StrategyParamFields({
           </LabeledField>
         )
       })}
-    </Panel>
+    </div>
   )
 }
 
