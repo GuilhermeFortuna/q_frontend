@@ -30,12 +30,15 @@ Maps 1:1 onto the existing `surface-*` roles in `materials.css`. Level −2 is n
 |  Level | Role class                          | Used for                                                              | Build recipe (warm-black)                                                                                                                                                                                                                                  |
 | -----: | ----------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **−2** | `surface-well` _(new)_              | text inputs, number fields, segmented-track backgrounds, select wells | fill `linear-gradient(180deg,#0a0a09,#0d0d0c)`; `border 1px rgba(146,120,74,.34)`; inset shadow + lit bottom rim                                                                                                                                           |
-|  **0** | `surface-panel` / `quant-panel`     | workspace shells, primary panels (the reference plane)                | frosted glass: `color-mix` fills at ~72–78% (deep, not gray) + `backdrop-filter: blur(var(--panel-blur))`; defined outline border + inset sheen + drop shadow. **No grain texture**                                                                        |
-| **+1** | `surface-card` / `surface-control`  | repeated cards, list tiles, buttons                                   | fill `linear-gradient(165deg,#1a1916,#121211 75%)`; opaque (no blur)                                                                                                                                                                                       |
+|  **0** | `surface-panel` / `quant-panel`     | workspace shells, primary panels (the reference plane)                | frosted glass: `color-mix` fills at ~72–78% (deep, not gray) + `backdrop-filter: blur(var(--panel-blur))` (aliases `--glass-blur`); defined outline border + inset sheen + drop shadow. **No grain texture**                                               |
+| **+1** | `surface-card`                      | repeated cards, list tiles, metric tiles                              | frosted glass: same deep `color-mix` fills + `backdrop-filter: blur(var(--glass-blur))` as panels (WO98 card-blur ban superseded)                                                                                                                          |
+| **+1** | `surface-control` / `surface-suede` | buttons, inputs, selects, selected chips                              | matte suede: opaque fill `linear-gradient(178deg,#131312,#0e0e0d 85%)`; no backdrop blur (touch material)                                                                                                                                                   |
 | **+2** | `surface-overlay` / `surface-float` | modals, popovers, HUD, floating chart windows                         | fill `linear-gradient(165deg,#1d1814,#120f0b 72%)`; `border 1px rgba(168,139,82,.22)`, `border-top-color rgba(214,178,120,.3)`; `box-shadow: inset 0 1px 0 rgba(255,240,210,.12), 0 0 40px -10px rgba(196,165,116,.25), 0 26px 50px -18px rgba(0,0,0,.85)` |
 
+**Shared glass blur.** All frosted surfaces (panel, card, shell `--blur`, float `--blur`, overlay scrim, `q-table-container`) use one token: `--glass-blur` (default `20px`). `--panel-blur` aliases it for WO121-era references. Nested card-on-panel compounds blur by design.
+
 **Hover** lifts within the level (slightly stronger top highlight + shadow), never recolors to gray.
-`surface-shell` (header/dock) is unchanged in role but adopts the warm-black fill + edge-light.
+`surface-shell` (header/dock) is unchanged in role but adopts the warm-black fill + edge-light and the shared `--glass-blur` when `--blur` is applied.
 
 ### Living panels
 
@@ -210,11 +213,11 @@ To create a physical, premium feel reminiscent of a professional quantitative te
 
 ### The Three Core Materials
 
-1. **Glass (`surface-panel` / `.surface-panel--living`) — Space (0 Reference)**
-   - **Role:** Structural workspace panels, main containers, and shells.
-   - **Appearance:** Frosted glass with backdrop-blur, subtle top edge light, and an opt-in pointer spotlight highlight.
+1. **Glass (`surface-panel` / `surface-card` / `.surface-panel--living`) — Space**
+   - **Role:** Structural workspace panels, main containers, shells, and raised cards/tiles.
+   - **Appearance:** Frosted glass with shared `--glass-blur`, deep translucent fills (~72–78%), subtle top edge light; panels may opt into pointer spotlight / living light.
 2. **Black Suede (`surface-suede` / `.surface-control`) — Touch (+1 Controls)**
-   - **Role:** Interactive controls, buttons, SegmentedToggle thumbs, pills, chips, and selected cards.
+   - **Role:** Interactive controls, buttons, SegmentedToggle thumbs, pills, chips, and selected control states (not raised content cards — those use glass).
    - **Appearance:** An ultra-matte, light-absorbing surface that is visually darker and flatter than the glass panels it sits on. It catches light via a soft pointer sheen (`::after` radial gradient) following the cursor.
    - **Press state:** On active press, the suede nap compresses (sheen radius contracts by ~60% and lightens, while background fill darkens one step).
 3. **Machined Brass (`button-machined-brass` / Tier-4 Accent) — Significance**

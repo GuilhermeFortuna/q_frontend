@@ -54,6 +54,26 @@ describe('design-system material classes (WO116 regression guard)', () => {
     expect(panelBlock).toMatch(/color-mix\(in srgb, var\(--surface-base-1\) \d+%, transparent\)/)
   })
 
+  it('uses shared --glass-blur on shell, float, scrim, and surface-card', () => {
+    expect(globalsCss).toMatch(/--glass-blur:\s*20px/)
+    expect(globalsCss).toMatch(/--panel-blur:\s*var\(--glass-blur\)/)
+    expect(materialsCss).toMatch(
+      /\.surface-shell--blur\s*\{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-blur\)\)/,
+    )
+    expect(materialsCss).toMatch(
+      /\.surface-float--blur\s*\{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-blur\)\)/,
+    )
+    expect(materialsCss).toMatch(
+      /\.surface-overlay-scrim\s*\{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-blur\)\)/,
+    )
+    expect(materialsCss).toMatch(
+      /\.surface-card\s*\{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-blur\)\)/,
+    )
+    expect(materialsCss).toMatch(
+      /\.surface-card\s*\{[\s\S]*?color-mix\(in srgb, var\(--surface-base-1\) \d+%, transparent\)/,
+    )
+  })
+
   it('keeps living panels free of weave textures and grain (WO125 + WO121 Rev 1)', () => {
     const livingBlock = extractLivingBlock(materialsCss)
     expect(livingBlock.length).toBeGreaterThan(0)

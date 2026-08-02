@@ -138,7 +138,7 @@ export function FeatureStoreTable({
   return (
     <div className="min-h-0 flex-1 overflow-auto" data-testid="feature-store-table">
       <table className="w-full min-w-[720px] border-collapse text-sm">
-        <thead className="bg-silver-950/40 sticky top-0 z-10 backdrop-blur-sm">
+        <thead className="bg-silver-950/40 sticky top-0 z-10">
           <tr>
             {TABLE_COLUMNS.map((column) => (
               <th

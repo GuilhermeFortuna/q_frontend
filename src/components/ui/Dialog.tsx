@@ -68,7 +68,7 @@ export const DialogContent = forwardRef<
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: reduced ? 0 : 0.12 }}
-              className="surface-overlay-scrim fixed inset-0 z-50 backdrop-blur-[2px]"
+              className="surface-overlay-scrim fixed inset-0 z-50"
             />
           </DialogPrimitive.Overlay>
           <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">

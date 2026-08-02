@@ -1,14 +1,14 @@
 /**
- * Premium shell material system — baked depth without per-element compositor tax.
+ * Premium shell material system — frosted glass on shared --glass-blur.
  *
  * Roles (elevation ladder):
  * - surface-well (−2): recessed inputs, segmented tracks, select wells
  * - surface-panel (0): workspace shells / primary panels (frosted glass)
- * - surface-card (+1): repeated cards, list tiles (no blur, no animated shadows)
- * - surface-control (+1): buttons, inputs, selects
+ * - surface-card (+1): repeated cards, list tiles (frosted glass, same --glass-blur)
+ * - surface-control (+1): buttons, inputs, selects (matte suede — no glass)
  * - surface-overlay (+2): modals, popovers, HUD scrims
  * - surface-float (+2): chart / 3D workspace float overlays
- * - surface-shell: header, dock, major chrome (blur allowed, few instances)
+ * - surface-shell: header, dock, major chrome (frosted glass)
  */
 
 :root {
@@ -39,8 +39,8 @@
   }
 
   .surface-shell--blur {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
   }
 
   /* --- Well (−2 recessed: inputs, segmented tracks, select wells) --- */
@@ -309,11 +309,17 @@
     --outer: 0;
   }
 
-  /* --- Card (+1 raised; dense grids — static depth only) --- */
+  /* --- Card (+1 raised; frosted glass — same --glass-blur as panels) --- */
   .surface-card {
     isolation: isolate;
     position: relative;
-    background: linear-gradient(178deg, #131312, #0e0e0d 85%);
+    background: linear-gradient(
+      158deg,
+      color-mix(in srgb, var(--surface-base-1) 72%, transparent),
+      color-mix(in srgb, var(--surface-base-2) 78%, transparent)
+    );
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.04);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.04);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-top-color: rgba(255, 250, 240, 0.11);
     box-shadow:
@@ -456,8 +462,8 @@
   /* --- Overlay (+2 floats; modals / popovers) --- */
   .surface-overlay-scrim {
     background: color-mix(in srgb, var(--color-espresso-950) 72%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
   }
 
   .surface-overlay {
@@ -482,8 +488,8 @@
   }
 
   .surface-float--blur {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
   }
 
   /* --- Hero Aurora (single-use by decree; reserved dispensation) ---

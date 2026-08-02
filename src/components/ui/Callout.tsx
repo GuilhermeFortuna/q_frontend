@@ -57,7 +57,7 @@ export function Callout({
     <div
       {...rest}
       className={cn(
-        'relative flex items-start gap-3.5 rounded-lg border border-l-4 p-4 shadow-sm backdrop-blur-xs transition-colors duration-[var(--motion-base)]',
+        'surface-card relative flex items-start gap-3.5 rounded-lg border border-l-4 p-4 shadow-sm transition-colors duration-[var(--motion-base)]',
         typeStyles.container,
         className,
       )}

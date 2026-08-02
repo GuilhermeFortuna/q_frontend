@@ -23,15 +23,18 @@ describe('material system roles', () => {
     expect(materialsCss).toContain('.surface-overlay')
   })
 
-  it('restricts backdrop-filter to shell, panels, overlay scrims, and float overlays', () => {
+  it('restricts backdrop-filter to shell, panels, cards, overlay scrims, and float overlays', () => {
     const blurBlocks = materialsCss.match(/backdrop-filter/g) ?? []
-    expect(blurBlocks.length).toBeGreaterThanOrEqual(4)
-    expect(materialsCss).not.toMatch(/\.surface-card\s*\{[^}]*backdrop-filter/s)
+    expect(blurBlocks.length).toBeGreaterThanOrEqual(5)
     expect(materialsCss).not.toMatch(/\.surface-well\s*\{[^}]*backdrop-filter/s)
     expect(materialsCss).toMatch(/\.surface-panel,\s*\n\s*\.quant-panel[\s\S]*backdrop-filter/)
+    expect(materialsCss).toMatch(
+      /\.surface-card\s*\{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-blur\)\)/,
+    )
   })
 
   it('uses tunable frosted glass on panels, not a global quant-panel rule (WO121)', () => {
+    expect(globalsCss).toContain('--glass-blur')
     expect(globalsCss).toContain('--panel-blur')
     expect(materialsCss).toMatch(/backdrop-filter:\s*blur\(var\(--panel-blur\)\)/)
     expect(globalsCss).not.toMatch(/:where\(\.quant-panel\)[^}]*backdrop-filter/s)

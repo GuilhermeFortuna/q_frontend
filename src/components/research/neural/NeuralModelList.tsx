@@ -125,7 +125,7 @@ export function NeuralModelList({ selectedHash, onSelectModel }: NeuralModelList
   return (
     <div className="min-h-0 flex-1 overflow-auto" data-testid="neural-model-list">
       <table className="w-full min-w-[760px] border-collapse text-sm">
-        <thead className="bg-silver-950/40 sticky top-0 z-10 backdrop-blur-sm">
+        <thead className="bg-silver-950/40 sticky top-0 z-10">
           <tr>
             {['Model', 'Instrument', 'Kind', 'Latents', 'Status', 'Created'].map((label, index) => (
               <th
