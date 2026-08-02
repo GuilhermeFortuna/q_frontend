@@ -189,6 +189,126 @@
     transition: none;
   }
 
+  /* --- Glow card (brass/gold pointer spotlight shell) --- */
+  [data-glow] {
+    --base: 40;
+    --spread: 8;
+    --radius: 14;
+    --border: 3;
+    --size: 220;
+    --outer: 1;
+    --saturation: 78;
+    --lightness: 52;
+    --bg-spot-opacity: 0.14;
+    --border-spot-opacity: 1;
+    --border-light-opacity: 1;
+    --x: -999px;
+    --y: -999px;
+    --backdrop: color-mix(in srgb, var(--surface-base-1) 72%, transparent);
+    --backup-border: color-mix(in srgb, var(--surface-base-2) 78%, transparent);
+    --border-size: calc(var(--border, 2) * 1px);
+    --spotlight-size: calc(var(--size, 150) * 1px);
+    --hue: calc(var(--base) + (var(--xp, 0) * var(--spread, 0)));
+
+    isolation: isolate;
+    position: relative;
+    border: var(--border-size) solid var(--backup-border);
+    border-radius: calc(var(--radius) * 1px);
+    background-color: var(--backdrop);
+    background-image: radial-gradient(
+      var(--spotlight-size) circle at var(--x) var(--y),
+      hsl(
+        var(--hue, 40) calc(var(--saturation, 78) * 1%) calc(var(--lightness, 52) * 1%) /
+          var(--bg-spot-opacity, 0.14)
+      ),
+      transparent 70%
+    );
+    background-repeat: no-repeat;
+    backdrop-filter: blur(var(--panel-blur)) saturate(1.04);
+    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.04);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 236, 200, 0.1),
+      0 1rem 2rem -1rem rgba(0, 0, 0, 0.85);
+  }
+
+  /* Cursor-following border light — padding + mask-exclude (works with local --x/--y). */
+  [data-glow]::before,
+  [data-glow]::after {
+    pointer-events: none;
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: var(--border-size);
+    background-repeat: no-repeat;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  [data-glow]::before {
+    background-image: radial-gradient(
+      calc(var(--spotlight-size) * 0.85) circle at var(--x) var(--y),
+      hsl(
+        var(--hue, 40) calc(var(--saturation, 78) * 1%) calc(var(--lightness, 58) * 1%) /
+          var(--border-spot-opacity, 1)
+      ),
+      transparent 72%
+    );
+    filter: brightness(1.45);
+  }
+
+  [data-glow]::after {
+    background-image: radial-gradient(
+      calc(var(--spotlight-size) * 0.45) circle at var(--x) var(--y),
+      hsl(43 95% 78% / var(--border-light-opacity, 1)),
+      transparent 70%
+    );
+  }
+
+  /* Outer soft bloom ring (child marker node). */
+  [data-glow] > [data-glow] {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    will-change: filter;
+    opacity: var(--outer, 1);
+    border-radius: inherit;
+    border: none;
+    padding: 0;
+    background: none;
+    background-image: none;
+    pointer-events: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    filter: blur(12px);
+  }
+
+  [data-glow] > [data-glow]::before {
+    inset: -8px;
+    padding: 10px;
+    opacity: 0.55;
+    filter: none;
+  }
+
+  [data-glow] > [data-glow]::after {
+    content: none;
+  }
+
+  :root[data-reduced-motion='true'] [data-glow] {
+    --bg-spot-opacity: 0;
+    --border-spot-opacity: 0;
+    --border-light-opacity: 0;
+    --outer: 0;
+  }
+
   /* --- Card (+1 raised; dense grids — static depth only) --- */
   .surface-card {
     isolation: isolate;

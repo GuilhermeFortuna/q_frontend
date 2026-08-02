@@ -7,7 +7,6 @@ import {
   BarChart3,
   Database,
   HardDrive,
-  GripHorizontal,
   RefreshCw,
   Clock,
   TrendingUp,
@@ -28,7 +27,7 @@ import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { useSparklines } from '@/hooks/useSparklines'
 import { FlashOnChange } from '@/components/shared/FlashOnChange'
 import { EntityCard } from '@/components/ui/EntityCard'
-import { Panel } from '@/components/ui/Panel'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { StatTile } from '@/components/ui/StatTile'
 import { wellInputClass } from '@/components/ui/wellInputStyles'
@@ -247,11 +246,19 @@ function FloatingLauncherPanel({
       document.addEventListener('mouseup', handleMouseUp)
     }
 
+  /** Drag from the top band with no visible chrome; skip buttons/inputs. */
+  const startTopDrag = (event: React.MouseEvent<HTMLElement>) => {
+    if (event.button !== 0) return
+    const target = event.target as HTMLElement
+    if (target.closest('button, a, input, textarea, select, label, [role="button"]')) return
+    const rect = event.currentTarget.getBoundingClientRect()
+    if (event.clientY - rect.top > 48) return
+    startInteraction('drag')(event)
+  }
+
   return (
     <motion.div
-      className={cn(
-        'surface-panel quant-panel--spotlight absolute z-30 flex min-h-0 flex-col overflow-hidden rounded-2xl',
-      )}
+      className="absolute z-30"
       style={{
         position: 'absolute',
         left: layout.x,
@@ -264,48 +271,47 @@ function FloatingLauncherPanel({
       exit={exit}
       transition={transition}
     >
-      <div
-        role="presentation"
-        onMouseDown={startInteraction('drag')}
-        className="surface-well border-brass-600/15 absolute inset-x-0 top-0 z-20 flex h-9 cursor-grab touch-none items-center justify-center border-b active:cursor-grabbing"
-      >
-        <GripHorizontal className="text-silver-400 h-4 w-4" />
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col pt-9">
-        <div className="flex min-h-0 flex-1">
+      <GlowCard customSize className="h-full w-full min-h-0">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1">
+            <div
+              role="presentation"
+              aria-label={`Resize ${panel} panel width from left`}
+              title="Resize width"
+              onMouseDown={startInteraction('resize-w')}
+              className="hover:bg-brass-500/10 w-4 shrink-0 cursor-ew-resize touch-none transition-colors"
+            />
+            <div
+              className={cn('min-h-0 flex-1 overflow-y-auto', className)}
+              onMouseDown={startTopDrag}
+            >
+              {children}
+            </div>
+            <div
+              role="presentation"
+              aria-label={`Resize ${panel} panel width`}
+              title="Resize width"
+              onMouseDown={startInteraction('resize-e')}
+              className="hover:bg-brass-500/10 w-4 shrink-0 cursor-ew-resize touch-none transition-colors"
+            />
+          </div>
           <div
             role="presentation"
-            aria-label={`Resize ${panel} panel width from left`}
-            title="Resize width"
-            onMouseDown={startInteraction('resize-w')}
-            className="hover:bg-brass-500/10 w-4 shrink-0 cursor-ew-resize touch-none transition-colors"
-          />
-          <div className={cn('min-h-0 flex-1 overflow-y-auto', className)}>{children}</div>
-          <div
-            role="presentation"
-            aria-label={`Resize ${panel} panel width`}
-            title="Resize width"
-            onMouseDown={startInteraction('resize-e')}
-            className="hover:bg-brass-500/10 w-4 shrink-0 cursor-ew-resize touch-none transition-colors"
+            aria-label={`Resize ${panel} panel height`}
+            title="Resize height"
+            onMouseDown={startInteraction('resize-s')}
+            className="border-brass-600/15 hover:bg-brass-500/10 h-4 shrink-0 cursor-ns-resize touch-none border-t transition-colors"
           />
         </div>
+
         <div
           role="presentation"
-          aria-label={`Resize ${panel} panel height`}
-          title="Resize height"
-          onMouseDown={startInteraction('resize-s')}
-          className="border-brass-600/15 hover:bg-brass-500/10 h-4 shrink-0 cursor-ns-resize touch-none border-t transition-colors"
+          aria-label={`Resize ${panel} panel`}
+          title="Resize panel"
+          onMouseDown={startInteraction('resize-se')}
+          className="border-brass-500/40 absolute right-0 bottom-0 z-30 h-5 w-5 cursor-nwse-resize touch-none rounded-br-2xl border-r-2 border-b-2"
         />
-      </div>
-
-      <div
-        role="presentation"
-        aria-label={`Resize ${panel} panel`}
-        title="Resize panel"
-        onMouseDown={startInteraction('resize-se')}
-        className="border-brass-500/40 absolute right-0 bottom-0 z-30 h-5 w-5 cursor-nwse-resize touch-none rounded-br-2xl border-r-2 border-b-2"
-      />
+      </GlowCard>
     </motion.div>
   )
 }
@@ -620,13 +626,13 @@ export function LauncherDashboard() {
               )
             })
           ) : (
-            <Panel className="flex flex-col items-center justify-center border-2 border-dashed py-6 text-center">
+            <div className="surface-card flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-6 text-center">
               <BarChart3 className="text-silver-500 mb-1.5 h-6 w-6 animate-pulse opacity-30" />
               <span className="text-silver-400 text-2xs font-mono tracking-[0.08em] uppercase">
                 Watchlist Empty
               </span>
               <span className="text-silver-500 text-2xs mt-0.5">Add symbols in edit mode.</span>
-            </Panel>
+            </div>
           )}
         </div>
 
@@ -779,7 +785,7 @@ export function LauncherDashboard() {
                 )
               })
             ) : (
-              <Panel className="flex flex-1 flex-col items-center justify-center border-2 border-dashed py-4 text-center">
+              <div className="surface-card flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed py-4 text-center">
                 <Clock className="text-silver-500 mb-1.5 h-4.5 w-4.5 opacity-40" />
                 <span className="text-silver-400 font-mono text-[9px] tracking-wider uppercase">
                   No Simulations
@@ -787,7 +793,7 @@ export function LauncherDashboard() {
                 <span className="text-silver-500 mt-0.5 text-[9px]">
                   Simulate a strategy to see history here.
                 </span>
-              </Panel>
+              </div>
             )}
           </div>
         </div>
@@ -815,7 +821,7 @@ export function LauncherDashboard() {
         </div>
 
         {/* System Health Status */}
-        <Panel className="p-3.5">
+        <div className="surface-card rounded-lg p-3.5">
           <SectionHeader
             title="Backend API"
             right={
@@ -853,7 +859,7 @@ export function LauncherDashboard() {
               value={health?.backendVersion ?? '—'}
             />
           </div>
-        </Panel>
+        </div>
 
         {/* Resource Telemetry */}
         <div className="flex flex-col gap-3">
@@ -981,19 +987,19 @@ export function LauncherDashboard() {
 
           <div className="flex flex-col gap-2">
             {isNewsPending ? (
-              <Panel className="flex flex-col items-center justify-center border-2 border-dashed py-8 text-center">
+              <div className="surface-card flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-8 text-center">
                 <RefreshCw className="text-brass-400 h-4 w-4 animate-spin opacity-60" />
                 <span className="text-silver-500 mt-2 font-mono text-[9px] tracking-wider uppercase">
                   Loading Feed...
                 </span>
-              </Panel>
+              </div>
             ) : articles.length === 0 ? (
-              <Panel className="flex flex-col items-center justify-center border-2 border-dashed py-8 text-center">
+              <div className="surface-card flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-8 text-center">
                 <Newspaper className="text-silver-600 mb-1 h-4 w-4 opacity-40" />
                 <span className="text-silver-500 font-mono text-[9px] tracking-wider uppercase">
                   No articles available
                 </span>
-              </Panel>
+              </div>
             ) : (
               articles.map((article) => {
                 const formatPublishedAt = (dateStr: string) => {
