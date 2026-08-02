@@ -14,16 +14,12 @@
    * Soft rectangular feather: opaque core, fully transparent before the
    * framebuffer edge so the canvas bounds never read as a hard box.
    */
-  -webkit-mask-image: linear-gradient(
-      to right,
-      transparent 0%,
-      #000 18%,
-      #000 82%,
-      transparent 100%
-    ),
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%),
     linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%);
   -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%),
+  mask-image:
+    linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%),
     linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%);
   mask-composite: intersect;
 }
@@ -32,10 +28,18 @@
  * Hero spans the full panel width so horizontal bloom has room to dissolve
  * before the canvas edge — never a narrower floating strip.
  */
+/*
+ * Single source of truth for the hero strand's height. The empty state also needs this value
+ * to reserve the glow's visible extent above the copy, so it lives on :root rather than inside
+ * the rule. clamp's lower bound is the min-height — a separate min-height would contradict it.
+ */
+:root {
+  --ai-signal-hero-h: clamp(140px, 20vh, 280px);
+}
+
 .inference-signal--hero {
   width: 100%;
-  height: clamp(300px, 40vh, 420px);
-  min-height: 300px;
+  height: var(--ai-signal-hero-h);
 }
 
 .inference-signal--compact {

@@ -260,7 +260,7 @@ export function AiInferenceSignal({ state, variant, className }: AiInferenceSign
 
       if (container.clientWidth <= 0 || container.clientHeight <= 0) {
         container.style.minWidth = '100%'
-        container.style.minHeight = '300px'
+        container.style.minHeight = '240px'
         resize()
       }
 

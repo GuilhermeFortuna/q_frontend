@@ -81,7 +81,6 @@ describe('AiStrategyPanel inference signal', () => {
   it('mounts exactly one signal outside AnimatePresence in workspace mode', () => {
     render(<AiStrategyPanel session={buildSession()} hideHeader />)
     expect(screen.getAllByTestId('ai-inference-signal')).toHaveLength(1)
-    expect(screen.getByTestId('ai-inference-signal-slot')).toBeInTheDocument()
   })
 
   it('uses hero variant in empty state', () => {
@@ -91,6 +90,7 @@ describe('AiStrategyPanel inference signal', () => {
 
   it('keeps the same signal mounted and switches to compact when conversation starts', () => {
     const { rerender } = render(<AiStrategyPanel session={buildSession()} hideHeader />)
+    const before = screen.getByTestId('ai-inference-signal')
 
     rerender(
       <AiStrategyPanel
@@ -108,6 +108,9 @@ describe('AiStrategyPanel inference signal', () => {
     )
 
     expect(screen.getAllByTestId('ai-inference-signal')).toHaveLength(1)
+    // Same DOM node, not merely the same count: the branch swap must change the variant
+    // without remounting the WebGL canvas.
+    expect(screen.getByTestId('ai-inference-signal')).toBe(before)
     expect(screen.getByTestId('ai-inference-signal')).toHaveAttribute('data-variant', 'compact')
   })
 
@@ -120,7 +123,10 @@ describe('AiStrategyPanel inference signal', () => {
         hideHeader
       />,
     )
-    expect(screen.getByTestId('ai-inference-signal')).toHaveAttribute('data-visual-state', 'thinking')
+    expect(screen.getByTestId('ai-inference-signal')).toHaveAttribute(
+      'data-visual-state',
+      'thinking',
+    )
   })
 
   it('does not mount the signal in compact backtests panel mode', () => {

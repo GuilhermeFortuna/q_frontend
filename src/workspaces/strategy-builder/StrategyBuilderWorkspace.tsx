@@ -40,9 +40,20 @@ export function StrategyBuilderWorkspace() {
     onOptimize: handleOptimize,
   })
 
+  /*
+   * Height budget: AppShell's main is `flex-1 overflow-auto px-6 pt-6 pb-32` under a ~61px
+   * header, so its content box is 100dvh − 213px. 5.5rem covers the header + main's pt-6
+   * (88px, 3px slack); 8rem is main's pb-32 — which is what keeps content clear of the
+   * fixed dock, so the dock's own height is not the quantity to subtract here.
+   * Below a 728px viewport min-h takes over and main scrolls.
+   *
+   * The lock is sm-and-up only: on narrow widths the draft header wraps to ~3x its height and
+   * the empty state can no longer fit a locked column, so height goes auto there and main
+   * scrolls normally — pb-32 keeps the scroll end clear of the dock.
+   */
   return (
     <div
-      className="animate-fade-in-up mx-auto flex h-[calc(100dvh-4.5rem-7rem)] min-h-[36rem] w-full max-w-6xl flex-col gap-4 overflow-visible"
+      className="animate-fade-in-up mx-auto flex min-h-[32rem] w-full max-w-6xl flex-col gap-4 overflow-visible sm:h-[calc(100dvh-5.5rem-8rem)]"
       data-workspace-transition-root="strategy-builder"
     >
       <div className="flex items-center gap-3">

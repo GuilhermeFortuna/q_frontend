@@ -180,166 +180,186 @@ export function AiStrategyPanel({
       >
         {draftHeader}
 
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-visible">
+        <div
+          className={cn(
+            'relative flex min-h-0 flex-1 flex-col overflow-visible',
+            // Empty state: the strand sits on a zero-height seam immediately above the copy, so
+            // the seam IS the headline's top edge and the strand is anchored by the content it
+            // backs. Contributing no height, it leaves the copy alone to centre in the column.
+            !hasConversation && 'justify-center',
+          )}
+        >
           <motion.div
             layout
             layoutId="ai-inference-signal-wrapper"
             transition={layoutTransition}
             className={cn(
-              'z-10 flex shrink-0 overflow-visible',
+              'flex shrink-0 overflow-visible',
               hasConversation
-                ? 'relative mb-2 justify-start px-4'
-                : // Sit with the bottom-aligned empty stack (behind headline / above composer).
-                  'pointer-events-none absolute inset-x-0 bottom-[13.5rem] -translate-y-1/2 justify-center',
+                ? 'relative z-10 mb-2 justify-start px-4'
+                : // Reserves exactly the glow's visible extent above the copy (the mask shows
+                  // 22%–78% of the strand, and the offset below parks that band here), so the
+                  // column centres the glow and the copy as ONE object — the copy alone would
+                  // otherwise centre and leave the glow no room, forcing it over the draft header.
+                  // pointer-events-none is load-bearing: this overlays the hero. Never add a
+                  // transform utility here — motion writes style.transform on layoutId elements.
+                  'pointer-events-none z-0 h-[calc(var(--ai-signal-hero-h)*0.6)] w-full justify-center',
             )}
           >
             <AiInferenceSignal
               state={visualState}
               variant={hasConversation ? 'compact' : 'hero'}
-              className={hasConversation ? undefined : 'w-full'}
+              className={
+                hasConversation
+                  ? undefined
+                  : // Parks the masked band (22%–78% of the strand) inside the reserved seam
+                    // above: at -24% its bottom edge lands 6% of the strand's height clear of the
+                    // headline. The core's bottom edge — not its centre — is what has to clear the
+                    // text; overlap there is what made the headline unreadable.
+                    'w-full -translate-y-[24%]'
+              }
             />
           </motion.div>
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-visible">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {!hasConversation ? (
-              <motion.div
-                key="empty"
-                initial={isReduced ? {} : { opacity: 0 }}
-                animate={isReduced ? {} : { opacity: 1 }}
-                exit={isReduced ? {} : { opacity: 0, y: -20 }}
-                transition={{ duration: 0.28, ease: 'easeInOut' }}
-                className="relative flex flex-1 flex-col items-center justify-end overflow-visible rounded-xl pt-8 pb-15"
-              >
-                {/* Layout reserve for the optical strand core; canvas bleed draws outside. */}
-                {/* Gaps are split (48px above the hero, 96px below) rather than a uniform
-                    `gap-18`: the stack is bottom-anchored and the strand is pinned to
-                    `bottom-[13.5rem]`, so trading space across the hero moves only the hero. */}
-                <div
-                  className="mb-12 h-20 w-full max-w-[440px] shrink-0"
-                  aria-hidden
-                  data-testid="ai-inference-signal-slot"
-                />
-
-                <AiBuilderHero />
-
-                <motion.div
-                  layoutId="composer-pill"
-                  transition={layoutTransition}
-                  className="relative z-20 mt-24 flex w-full max-w-2xl flex-col items-center gap-4"
-                >
-                  <AiComposer
-                    session={session}
-                    composerRef={composerRef}
-                    variant="pill"
-                    docked={false}
-                    onFocusChange={setComposerFocused}
-                  />
-
-                  <div className="flex max-w-3xl flex-wrap justify-center gap-2">
-                    {STARTER_CHIPS.map((chip) => (
-                      <button
-                        key={chip.prompt}
-                        type="button"
-                        className={cn(
-                          chipClass(false),
-                          'flex h-auto items-baseline gap-1.5 rounded-full px-3.5 py-1.5',
-                        )}
-                        onClick={() => {
-                          setMessage(chip.prompt)
-                          composerRef.current?.focus()
-                        }}
-                        data-testid="ai-chat-example-chip"
-                      >
-                        <span className="text-brass-500 text-[10px] font-[560] tracking-wider uppercase select-none">
-                          {chip.caption}
-                        </span>
-                        <span className="text-silver-200 text-xs">{chip.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="active"
-                initial={isReduced ? {} : { opacity: 0 }}
-                animate={isReduced ? {} : { opacity: 1 }}
-                transition={{ duration: 0.28 }}
-                className="flex min-h-0 flex-1 flex-col gap-3"
-              >
-                <AiChatTranscript
-                  transcript={transcript}
-                  revisions={revisions}
-                  isPending={interpretMutation.isPending}
-                  onQuestionSelect={(prefill, question) => {
-                    setMessage(prefill)
-                    if (question) setAnsweringQuestion(question)
-                  }}
-                  composerRef={composerRef}
-                  fillHeight={fillHeight}
-                />
-
-                <motion.div
-                  layoutId="composer-pill"
-                  transition={layoutTransition}
-                  className="flex w-full flex-col gap-2"
-                >
-                  <AiComposer
-                    session={session}
-                    composerRef={composerRef}
-                    variant="pill"
-                    docked={true}
-                    onFocusChange={setComposerFocused}
-                  />
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {validationErrors.length > 0 ? (
-                      <Button
-                        type="button"
-                        variant="default"
-                        size="sm"
-                        onClick={handleAskAiToFix}
-                        disabled={interpretMutation.isPending}
-                        className="tracking-wider uppercase"
-                        data-testid="ai-strategy-ask-fix"
-                      >
-                        <Wand2 className="h-3.5 w-3.5" aria-hidden />
-                        Ask AI to fix
-                      </Button>
-                    ) : null}
-
-                    {response?.compiled_strategy ? (
-                      <Button
-                        type="button"
-                        variant="default"
-                        size="sm"
-                        onClick={handleApplyToSetup}
-                        className="tracking-wider uppercase"
-                        data-testid="ai-strategy-apply"
-                      >
-                        Apply to setup
-                      </Button>
-                    ) : null}
-
-                    {hasConversation || response ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={resetDraft}
-                        className="tracking-wider uppercase"
-                        data-testid="ai-strategy-reset"
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                        New conversation
-                      </Button>
-                    ) : null}
-                  </div>
-                </motion.div>
-              </motion.div>
+          <div
+            className={cn(
+              // z-10 puts the copy over the strand regardless of DOM order; relative also
+              // contains popLayout's absolutised exiting child.
+              'relative z-10 flex min-h-0 flex-col overflow-visible',
+              // Auto height in the empty state so the parent's justify-center can centre it;
+              // flex-1 only where the transcript needs to absorb the remaining space.
+              hasConversation ? 'flex-1' : 'w-full',
             )}
-          </AnimatePresence>
+          >
+            <AnimatePresence mode="popLayout" initial={false}>
+              {!hasConversation ? (
+                <motion.div
+                  key="empty"
+                  initial={isReduced ? {} : { opacity: 0 }}
+                  animate={isReduced ? {} : { opacity: 1 }}
+                  exit={isReduced ? {} : { opacity: 0, y: -20 }}
+                  transition={{ duration: 0.28, ease: 'easeInOut' }}
+                  className="flex w-full flex-col items-center gap-6 overflow-visible"
+                >
+                  <AiBuilderHero />
+
+                  <motion.div
+                    layoutId="composer-pill"
+                    transition={layoutTransition}
+                    className="relative z-20 flex w-full max-w-2xl flex-col items-center gap-4"
+                  >
+                    <AiComposer
+                      session={session}
+                      composerRef={composerRef}
+                      variant="pill"
+                      docked={false}
+                      onFocusChange={setComposerFocused}
+                    />
+
+                    <div className="flex max-w-3xl flex-wrap justify-center gap-2">
+                      {STARTER_CHIPS.map((chip) => (
+                        <button
+                          key={chip.prompt}
+                          type="button"
+                          className={cn(
+                            chipClass(false),
+                            'flex h-auto items-baseline gap-1.5 rounded-full px-3.5 py-1.5',
+                          )}
+                          onClick={() => {
+                            setMessage(chip.prompt)
+                            composerRef.current?.focus()
+                          }}
+                          data-testid="ai-chat-example-chip"
+                        >
+                          <span className="text-brass-500 text-[10px] font-[560] tracking-wider uppercase select-none">
+                            {chip.caption}
+                          </span>
+                          <span className="text-silver-200 text-xs">{chip.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="active"
+                  initial={isReduced ? {} : { opacity: 0 }}
+                  animate={isReduced ? {} : { opacity: 1 }}
+                  transition={{ duration: 0.28 }}
+                  className="flex min-h-0 flex-1 flex-col gap-3"
+                >
+                  <AiChatTranscript
+                    transcript={transcript}
+                    revisions={revisions}
+                    isPending={interpretMutation.isPending}
+                    onQuestionSelect={(prefill, question) => {
+                      setMessage(prefill)
+                      if (question) setAnsweringQuestion(question)
+                    }}
+                    composerRef={composerRef}
+                    fillHeight={fillHeight}
+                  />
+
+                  <motion.div
+                    layoutId="composer-pill"
+                    transition={layoutTransition}
+                    className="flex w-full flex-col gap-2"
+                  >
+                    <AiComposer
+                      session={session}
+                      composerRef={composerRef}
+                      variant="pill"
+                      docked={true}
+                      onFocusChange={setComposerFocused}
+                    />
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {validationErrors.length > 0 ? (
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={handleAskAiToFix}
+                          disabled={interpretMutation.isPending}
+                          className="tracking-wider uppercase"
+                          data-testid="ai-strategy-ask-fix"
+                        >
+                          <Wand2 className="h-3.5 w-3.5" aria-hidden />
+                          Ask AI to fix
+                        </Button>
+                      ) : null}
+
+                      {response?.compiled_strategy ? (
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={handleApplyToSetup}
+                          className="tracking-wider uppercase"
+                          data-testid="ai-strategy-apply"
+                        >
+                          Apply to setup
+                        </Button>
+                      ) : null}
+
+                      {hasConversation || response ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={resetDraft}
+                          className="tracking-wider uppercase"
+                          data-testid="ai-strategy-reset"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                          New conversation
+                        </Button>
+                      ) : null}
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </section>
