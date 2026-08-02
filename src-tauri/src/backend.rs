@@ -390,7 +390,7 @@ pub fn start_backend_services(app: &AppHandle) -> Result<(), String> {
         .or_insert_with(|| runtime_config_path.to_str().unwrap().to_string());
 
     envs.entry("Q_DATABASE_URL".to_string())
-        .or_insert_with(|| "postgresql+psycopg://q:q@localhost:5432/q".to_string());
+        .or_insert_with(|| "postgresql+psycopg://q:q@localhost:5434/q".to_string());
     envs.entry("Q_REDIS_URL".to_string())
         .or_insert_with(|| "redis://localhost:6380/0".to_string());
 
