@@ -1,5 +1,7 @@
 import type { KeyboardEvent, ReactNode } from 'react'
 import { Star } from 'lucide-react'
+
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 
 export type HistoryCardProps = {
@@ -65,14 +67,15 @@ export function HistoryCard({
   }
 
   return (
-    <div
+    <GlowCard
+      intensity="card"
       role="button"
       tabIndex={0}
       onClick={handleContainerClick}
       onKeyDown={handleKeyDown}
       aria-pressed={selected}
       className={cn(
-        'surface-suede relative flex w-full cursor-pointer flex-col gap-2 rounded-lg p-3 text-left',
+        'relative flex w-full cursor-pointer flex-col gap-2 p-3 text-left',
         'transition-[transform,border-color,box-shadow,background-color] duration-[var(--motion-fast)] ease-[var(--ease-exit)]',
         'focus-visible:outline-brass-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
         'hover:-translate-y-0.5 hover:duration-[var(--motion-base)] hover:ease-[var(--ease-out)] active:translate-y-[0.5px] active:scale-[0.985] active:duration-[var(--motion-fast)] active:ease-[var(--ease-out)]',
@@ -144,6 +147,6 @@ export function HistoryCard({
       {metrics && (
         <div className="border-carbon-800/60 mt-0.5 border-t pt-2 text-[10px]">{metrics}</div>
       )}
-    </div>
+    </GlowCard>
   )
 }

@@ -105,4 +105,14 @@ describe('design-system material classes (WO116 regression guard)', () => {
       /:root\[data-reduced-motion='true'\]\s*\[data-glow\]\s*\{[\s\S]*?--bg-spot-opacity:\s*0/,
     )
   })
+
+  it('defines panel / card / tile glow intensity variants and bloom marker', () => {
+    expect(materialsCss).toMatch(/\[data-glow='card'\]\s*\{/)
+    expect(materialsCss).toMatch(/\[data-glow='tile'\]\s*\{/)
+    expect(materialsCss).toMatch(/\[data-glow\]\s*>\s*\[data-glow-bloom\]/)
+    // tile intensity stays quiet: no outer bloom, no backdrop blur
+    expect(materialsCss).toMatch(
+      /\[data-glow='tile'\]\s*\{[\s\S]*?--outer:\s*0[\s\S]*?backdrop-filter:\s*none/,
+    )
+  })
 })

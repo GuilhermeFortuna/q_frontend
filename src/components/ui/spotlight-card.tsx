@@ -1,15 +1,21 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import type { CSSProperties, HTMLAttributes, ReactNode } from 'react'
 
-import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { cn } from '@/lib/utils'
 
-export type GlowCardProps = {
+export type GlowIntensity = 'panel' | 'card' | 'tile'
+
+export type GlowCardProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
   children: ReactNode
   className?: string
+  /** Glow strength / density. Defaults to `panel`. */
+  intensity?: GlowIntensity
   size?: 'sm' | 'md' | 'lg'
   width?: string | number
   height?: string | number
-  /** When true, ignores size prop and uses width/height or className for sizing. */
+  /**
+   * When true (default), ignores size presets and sizes via width/height or className.
+   * Set false only for fixed gallery/demo cards.
+   */
   customSize?: boolean
 }
 
@@ -22,42 +28,21 @@ const sizeMap = {
 /**
  * Brass/gold pointer-reactive glow shell.
  * Spotlight CSS lives in materials.css under `[data-glow]`.
+ * Pointer vars are written by the app-root PointerSpotlight (no per-instance listeners).
  */
 export function GlowCard({
   children,
   className,
+  intensity = 'panel',
   size = 'md',
   width,
   height,
-  customSize = false,
+  customSize = true,
+  style: styleProp,
+  ...rest
 }: GlowCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null)
-  const reducedMotion = usePrefersReducedMotion()
-
-  useEffect(() => {
-    if (reducedMotion) return
-
-    const syncPointer = (event: PointerEvent) => {
-      const node = cardRef.current
-      if (!node) return
-      // Local coords with px units. Viewport + background-attachment:fixed breaks under
-      // motion.div transforms (mirrored glow across panels).
-      const rect = node.getBoundingClientRect()
-      const localX = event.clientX - rect.left
-      const localY = event.clientY - rect.top
-      const width = rect.width || 1
-      const height = rect.height || 1
-      node.style.setProperty('--x', `${localX.toFixed(2)}px`)
-      node.style.setProperty('--y', `${localY.toFixed(2)}px`)
-      node.style.setProperty('--xp', (localX / width).toFixed(2))
-      node.style.setProperty('--yp', (localY / height).toFixed(2))
-    }
-
-    document.addEventListener('pointermove', syncPointer, { passive: true })
-    return () => document.removeEventListener('pointermove', syncPointer)
-  }, [reducedMotion])
-
   const style: CSSProperties = {
+    ...styleProp,
     ...(width !== undefined
       ? { width: typeof width === 'number' ? `${width}px` : width }
       : null),
@@ -68,8 +53,7 @@ export function GlowCard({
 
   return (
     <div
-      ref={cardRef}
-      data-glow
+      data-glow={intensity}
       style={style}
       className={cn(
         customSize
@@ -77,8 +61,9 @@ export function GlowCard({
           : cn(sizeMap[size], 'aspect-[3/4] grid grid-rows-[1fr_auto] gap-4 p-4'),
         className,
       )}
+      {...rest}
     >
-      <div data-glow aria-hidden="true" />
+      <div data-glow-bloom aria-hidden="true" />
       <div className="relative z-10 flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {children}
       </div>

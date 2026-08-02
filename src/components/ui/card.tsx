@@ -1,9 +1,10 @@
 import type { HTMLAttributes } from 'react'
 
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('surface-card rounded-lg', className)} {...props} />
+  return <GlowCard intensity="card" className={cn(className)} {...props} />
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

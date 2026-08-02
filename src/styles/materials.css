@@ -189,7 +189,9 @@
     transition: none;
   }
 
-  /* --- Glow card (brass/gold pointer spotlight shell) --- */
+  /* --- Glow shell (brass/gold pointer spotlight) — panel / card / tile intensities ---
+     Do not stack surface-panel / surface-card / surface-suede / --living / --edge on the
+     same node: those fight for ::before/::after. Glow owns the glass chrome. */
   [data-glow] {
     --base: 40;
     --spread: 8;
@@ -202,6 +204,7 @@
     --bg-spot-opacity: 0.14;
     --border-spot-opacity: 1;
     --border-light-opacity: 1;
+    --glow-blur: var(--panel-blur);
     --x: -999px;
     --y: -999px;
     --backdrop: color-mix(in srgb, var(--surface-base-1) 72%, transparent);
@@ -224,11 +227,44 @@
       transparent 70%
     );
     background-repeat: no-repeat;
-    backdrop-filter: blur(var(--panel-blur)) saturate(1.04);
-    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.04);
+    backdrop-filter: blur(var(--glow-blur)) saturate(1.04);
+    -webkit-backdrop-filter: blur(var(--glow-blur)) saturate(1.04);
     box-shadow:
       inset 0 1px 0 rgba(255, 236, 200, 0.1),
       0 1rem 2rem -1rem rgba(0, 0, 0, 0.85);
+  }
+
+  /* Medium content cards — slightly quieter than workspace panels. */
+  [data-glow='card'] {
+    --border: 2;
+    --size: 180;
+    --bg-spot-opacity: 0.1;
+    --outer: 0.55;
+    --radius: 12;
+    --glow-blur: var(--glass-blur);
+    --backdrop: color-mix(in srgb, var(--surface-base-1) 74%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 236, 200, 0.08),
+      0 4px 14px -8px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Dense metric / list tiles — no bloom, no blur, soft resting edge. */
+  [data-glow='tile'] {
+    --border: 1;
+    --size: 140;
+    --bg-spot-opacity: 0.06;
+    --border-spot-opacity: 0.55;
+    --border-light-opacity: 0.45;
+    --outer: 0;
+    --radius: 12;
+    --glow-blur: 0px;
+    --backdrop: color-mix(in srgb, var(--surface-base-1) 78%, transparent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 202, 71, 0.07),
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 4px 10px -6px rgba(0, 0, 0, 0.6);
   }
 
   /* Cursor-following border light — padding + mask-exclude (works with local --x/--y). */
@@ -272,8 +308,8 @@
     );
   }
 
-  /* Outer soft bloom ring (child marker node). */
-  [data-glow] > [data-glow] {
+  /* Outer soft bloom ring (child marker node — not a glow host). */
+  [data-glow] > [data-glow-bloom] {
     position: absolute;
     inset: 0;
     z-index: 0;
@@ -291,14 +327,35 @@
     filter: blur(12px);
   }
 
-  [data-glow] > [data-glow]::before {
+  [data-glow] > [data-glow-bloom]::before {
+    pointer-events: none;
+    content: '';
+    position: absolute;
     inset: -8px;
+    z-index: 1;
+    border-radius: inherit;
     padding: 10px;
     opacity: 0.55;
-    filter: none;
+    background-repeat: no-repeat;
+    background-image: radial-gradient(
+      calc(var(--spotlight-size) * 0.85) circle at var(--x) var(--y),
+      hsl(
+        var(--hue, 40) calc(var(--saturation, 78) * 1%) calc(var(--lightness, 58) * 1%) /
+          var(--border-spot-opacity, 1)
+      ),
+      transparent 72%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
   }
 
-  [data-glow] > [data-glow]::after {
+  [data-glow] > [data-glow-bloom]::after {
     content: none;
   }
 

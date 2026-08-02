@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 
 import {
   SPOTLIGHT_SELECTOR,
+  writeGlowSpotVars,
   writeLivingSpotVars,
   writeSpotVars,
 } from '@/components/effects/pointerSpotlightUtils'
@@ -9,11 +10,12 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useAppStore } from '@/store/useAppStore'
 
 /**
- * App-wide pointer-reactive lighting for living panels and launcher spotlights.
+ * App-wide pointer-reactive lighting for living panels, suede controls, and glow cards.
  *
- * One rAF-throttled `pointermove` listener writes panel-local `--spot-x` / `--spot-y`
- * to every `.surface-panel--living` ancestor of the pointer target, and toggles `.is-lit`
- * on leaf launcher spotlight panels.
+ * One rAF-throttled `pointermove` listener writes:
+ * - panel-local `--spot-x` / `--spot-y` to living / suede ancestors
+ * - local `--x` / `--y` / `--xp` / `--yp` to `[data-glow]` ancestors
+ * and toggles `.is-lit` on leaf launcher spotlight panels.
  *
  * Renders nothing; mount once near the app root.
  */
@@ -38,6 +40,7 @@ export function PointerSpotlight() {
 
       if (target) {
         writeLivingSpotVars(target, clientX, clientY)
+        writeGlowSpotVars(target, clientX, clientY)
       }
 
       if (activeWorkspace === 'launcher') {

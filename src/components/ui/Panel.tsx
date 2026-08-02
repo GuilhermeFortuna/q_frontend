@@ -1,19 +1,18 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 
 export type PanelProps = HTMLAttributes<HTMLDivElement> & {
-  /** Opt-in woven texture + cursor light-catch (panel-level only). */
+  /**
+   * Legacy living-panel opt-in. Absorbed into GlowCard chrome — kept for API
+   * compatibility; no longer stacks `surface-panel--living` (pseudo conflict).
+   */
   living?: boolean
 }
 
-export function Panel({ className, living = false, ...props }: PanelProps) {
-  return (
-    <div
-      className={cn('surface-panel rounded-lg', living && 'surface-panel--living', className)}
-      {...props}
-    />
-  )
+export function Panel({ className, living: _living = false, ...props }: PanelProps) {
+  return <GlowCard intensity="panel" className={cn(className)} {...props} />
 }
 
 export type PanelHeaderProps = {

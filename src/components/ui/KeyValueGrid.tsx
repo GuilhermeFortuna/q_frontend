@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 
 export type KeyValueGridProps = {
@@ -10,9 +12,7 @@ export type KeyValueGridProps = {
 
 export function KeyValueGrid({ title, children, className, cols = 2 }: KeyValueGridProps) {
   return (
-    <div
-      className={cn('surface-card border-carbon-700/60 rounded-xl border p-4 shadow-sm', className)}
-    >
+    <GlowCard intensity="card" className={cn('p-4', className)}>
       {title && <h4 className="text-silver-200 mb-3 text-sm font-medium tracking-wide">{title}</h4>}
       <dl
         className={cn(
@@ -25,7 +25,7 @@ export function KeyValueGrid({ title, children, className, cols = 2 }: KeyValueG
       >
         {children}
       </dl>
-    </div>
+    </GlowCard>
   )
 }
 

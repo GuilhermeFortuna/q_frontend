@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 
 import { Button } from '@/components/ui/button'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { formatMultiObjectiveTrialValues } from '@/lib/optimize/multiObjectiveMetrics'
 import { buildBacktestRequestFromTrial } from '@/lib/optimization/bridge'
 import { useAppStore } from '@/store/useAppStore'
@@ -57,7 +58,7 @@ export function BestParamsCard({ results, backtest, trial, title, onLoad }: Best
       : `Trial #${displayTrial?.number ?? '—'}`)
 
   return (
-    <div className="border-brass-600/30 bg-brass-600/5 flex flex-col gap-3 rounded-lg border p-4">
+    <GlowCard intensity="card" className="flex flex-col gap-3 p-4">
       <div className="flex items-center justify-between">
         <h4 className="text-brass-400 text-sm font-medium">{heading}</h4>
         <Button
@@ -105,6 +106,6 @@ export function BestParamsCard({ results, backtest, trial, title, onLoad }: Best
           </div>
         ))}
       </div>
-    </div>
+    </GlowCard>
   )
 }

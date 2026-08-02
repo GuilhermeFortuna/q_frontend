@@ -1,3 +1,4 @@
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 
 export type StatTileDeltaTone = 'up' | 'down' | 'neutral' | 'warning'
@@ -29,7 +30,7 @@ export function StatTile({
   className,
 }: StatTileProps) {
   return (
-    <div className={cn('surface-card surface-card--edge rounded-xl p-4', className)}>
+    <GlowCard intensity="tile" className={cn('p-4', className)}>
       <p className="accent-wayfinding text-[11px] font-[560] tracking-[0.08em] uppercase">
         {label}
       </p>
@@ -52,6 +53,6 @@ export function StatTile({
       {delta ? (
         <p className={cn('mt-1 text-xs font-medium', deltaToneClass[deltaTone])}>{delta}</p>
       ) : null}
-    </div>
+    </GlowCard>
   )
 }

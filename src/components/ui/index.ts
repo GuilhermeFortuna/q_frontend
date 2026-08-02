@@ -65,4 +65,4 @@ export {
 } from './Menu'
 export { Tooltip, TooltipProvider, type TooltipProps } from './Tooltip'
 export { toast, Toaster, useToasts, type ToastItem } from './toast'
-export { GlowCard, type GlowCardProps } from './spotlight-card'
+export { GlowCard, type GlowCardProps, type GlowIntensity } from './spotlight-card'
