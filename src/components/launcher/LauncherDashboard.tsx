@@ -563,76 +563,82 @@ export function LauncherDashboard() {
               const closes = sparklines[symbol]
 
               return (
-                <div
+                <GlowCard
                   key={symbol}
-                  className="surface-card surface-card--edge flex items-center justify-between p-3 transition-all duration-200"
+                  intensity="tile"
+                  className="p-3 transition-all duration-200"
                 >
-                  <div className="flex flex-col">
-                    <span className="text-silver-100 font-mono text-xs font-bold tracking-tight">
-                      {symbol}
-                    </span>
-                    <span className="text-silver-500 text-[10px] font-medium tracking-wider uppercase">
-                      {symbol.toLowerCase().includes('usd')
-                        ? 'Crypto'
-                        : symbol.toLowerCase().includes('eur')
-                          ? 'Forex'
-                          : 'Equity'}
-                    </span>
-                  </div>
-
-                  {isEditing ? (
-                    <button
-                      onClick={() => handleRemoveSymbol(symbol)}
-                      className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-1.5 text-rose-400 transition-colors hover:bg-rose-500/20"
-                      title={`Remove ${symbol}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-6 w-20 items-center justify-center">
-                        <MiniSparkline closes={closes} />
-                      </div>
-
-                      <div className="flex flex-col items-end">
-                        <FlashOnChange
-                          value={price}
-                          className="text-silver-100 font-mono text-xs font-semibold tabular-nums"
-                        >
-                          {price != null
-                            ? price.toLocaleString('en-US', {
-                                minimumFractionDigits: snapshot?.digits ?? 2,
-                              })
-                            : '—'}
-                        </FlashOnChange>
-                        <span
-                          className={cn(
-                            'text-2xs quant-tabular-nums flex items-center gap-0.5 font-mono font-[560]',
-                            isPositive ? 'text-emerald-400' : 'text-rose-400',
-                          )}
-                        >
-                          {isPositive ? (
-                            <TrendingUp className="h-2.5 w-2.5" />
-                          ) : (
-                            <TrendingDown className="h-2.5 w-2.5" />
-                          )}
-                          {change > 0 ? '+' : ''}
-                          {change.toFixed(2)}%
-                        </span>
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-silver-100 font-mono text-xs font-bold tracking-tight">
+                        {symbol}
+                      </span>
+                      <span className="text-silver-500 text-[10px] font-medium tracking-wider uppercase">
+                        {symbol.toLowerCase().includes('usd')
+                          ? 'Crypto'
+                          : symbol.toLowerCase().includes('eur')
+                            ? 'Forex'
+                            : 'Equity'}
+                      </span>
                     </div>
-                  )}
-                </div>
+
+                    {isEditing ? (
+                      <button
+                        onClick={() => handleRemoveSymbol(symbol)}
+                        className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-1.5 text-rose-400 transition-colors hover:bg-rose-500/20"
+                        title={`Remove ${symbol}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-6 w-20 items-center justify-center">
+                          <MiniSparkline closes={closes} />
+                        </div>
+
+                        <div className="flex flex-col items-end">
+                          <FlashOnChange
+                            value={price}
+                            className="text-silver-100 font-mono text-xs font-semibold tabular-nums"
+                          >
+                            {price != null
+                              ? price.toLocaleString('en-US', {
+                                  minimumFractionDigits: snapshot?.digits ?? 2,
+                                })
+                              : '—'}
+                          </FlashOnChange>
+                          <span
+                            className={cn(
+                              'text-2xs quant-tabular-nums flex items-center gap-0.5 font-mono font-[560]',
+                              isPositive ? 'text-emerald-400' : 'text-rose-400',
+                            )}
+                          >
+                            {isPositive ? (
+                              <TrendingUp className="h-2.5 w-2.5" />
+                            ) : (
+                              <TrendingDown className="h-2.5 w-2.5" />
+                            )}
+                            {change > 0 ? '+' : ''}
+                            {change.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </GlowCard>
               )
             })
           ) : (
-            <div className="surface-card flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-6 text-center">
+            <GlowCard
+              intensity="card"
+              className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-6 text-center"
+            >
               <BarChart3 className="text-silver-500 mb-1.5 h-6 w-6 animate-pulse opacity-30" />
               <span className="text-silver-400 text-2xs font-mono tracking-[0.08em] uppercase">
                 Watchlist Empty
               </span>
               <span className="text-silver-500 text-2xs mt-0.5">Add symbols in edit mode.</span>
-            </div>
+            </GlowCard>
           )}
         </div>
 
@@ -748,44 +754,50 @@ export function LauncherDashboard() {
               recentRuns.map((run) => {
                 const isProfit = (run.summary?.total_pnl ?? 0) >= 0
                 return (
-                  <div
+                  <GlowCard
                     key={run.run_id}
-                    className="surface-card surface-card--edge flex items-center justify-between p-2.5 transition-colors duration-200"
+                    intensity="tile"
+                    className="p-2.5 transition-colors duration-200"
                   >
-                    <div className="flex min-w-0 flex-col">
-                      <span className="text-silver-100 truncate font-mono text-[11px] font-bold">
-                        {run.symbol} · {run.strategy.replace(/Strategy$/, '')}
-                      </span>
-                      <span className="text-silver-500 font-mono text-[9px] tracking-wider uppercase">
-                        {run.timeframe} · Win Rate:{' '}
-                        {run.summary ? `${(run.summary.win_rate * 100).toFixed(0)}%` : '—'}
-                      </span>
-                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex min-w-0 flex-col">
+                        <span className="text-silver-100 truncate font-mono text-[11px] font-bold">
+                          {run.symbol} · {run.strategy.replace(/Strategy$/, '')}
+                        </span>
+                        <span className="text-silver-500 font-mono text-[9px] tracking-wider uppercase">
+                          {run.timeframe} · Win Rate:{' '}
+                          {run.summary ? `${(run.summary.win_rate * 100).toFixed(0)}%` : '—'}
+                        </span>
+                      </div>
 
-                    <div className="flex shrink-0 flex-col items-end">
-                      <span
-                        className={cn(
-                          'font-mono text-[11px] font-bold tabular-nums',
-                          isProfit ? 'text-emerald-400' : 'text-rose-400',
-                        )}
-                      >
-                        {run.summary
-                          ? `${isProfit ? '+' : ''}${run.summary.total_pnl.toLocaleString('en-US', {
-                              style: 'currency',
-                              currency: 'USD',
-                              maximumFractionDigits: 0,
-                            })}`
-                          : '—'}
-                      </span>
-                      <span className="text-silver-400 font-mono text-[9px]">
-                        PF: {run.summary?.profit_factor?.toFixed(2) ?? '—'}
-                      </span>
+                      <div className="flex shrink-0 flex-col items-end">
+                        <span
+                          className={cn(
+                            'font-mono text-[11px] font-bold tabular-nums',
+                            isProfit ? 'text-emerald-400' : 'text-rose-400',
+                          )}
+                        >
+                          {run.summary
+                            ? `${isProfit ? '+' : ''}${run.summary.total_pnl.toLocaleString('en-US', {
+                                style: 'currency',
+                                currency: 'USD',
+                                maximumFractionDigits: 0,
+                              })}`
+                            : '—'}
+                        </span>
+                        <span className="text-silver-400 font-mono text-[9px]">
+                          PF: {run.summary?.profit_factor?.toFixed(2) ?? '—'}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  </GlowCard>
                 )
               })
             ) : (
-              <div className="surface-card flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed py-4 text-center">
+              <GlowCard
+                intensity="card"
+                className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed py-4 text-center"
+              >
                 <Clock className="text-silver-500 mb-1.5 h-4.5 w-4.5 opacity-40" />
                 <span className="text-silver-400 font-mono text-[9px] tracking-wider uppercase">
                   No Simulations
@@ -793,7 +805,7 @@ export function LauncherDashboard() {
                 <span className="text-silver-500 mt-0.5 text-[9px]">
                   Simulate a strategy to see history here.
                 </span>
-              </div>
+              </GlowCard>
             )}
           </div>
         </div>
@@ -821,7 +833,7 @@ export function LauncherDashboard() {
         </div>
 
         {/* System Health Status */}
-        <div className="surface-card rounded-lg p-3.5">
+        <GlowCard intensity="card" className="rounded-lg p-3.5">
           <SectionHeader
             title="Backend API"
             right={
@@ -859,7 +871,7 @@ export function LauncherDashboard() {
               value={health?.backendVersion ?? '—'}
             />
           </div>
-        </div>
+        </GlowCard>
 
         {/* Resource Telemetry */}
         <div className="flex flex-col gap-3">
@@ -939,9 +951,10 @@ export function LauncherDashboard() {
                 {Object.entries(activeJobs).map(([workspaceId, job]) => {
                   if (!job) return null
                   return (
-                    <div
+                    <GlowCard
                       key={workspaceId}
-                      className="surface-card surface-card--edge flex flex-col gap-1.5 p-2.5 transition-colors duration-200"
+                      intensity="tile"
+                      className="flex flex-col gap-1.5 p-2.5 transition-colors duration-200"
                     >
                       <div className="flex items-center justify-between font-mono text-[9px] font-bold">
                         <span className="text-silver-200 tracking-wider uppercase">
@@ -956,7 +969,7 @@ export function LauncherDashboard() {
                         />
                       </div>
                       <span className="text-silver-400 truncate text-[9px]">{job.detail}</span>
-                    </div>
+                    </GlowCard>
                   )
                 })}
               </div>
@@ -987,19 +1000,25 @@ export function LauncherDashboard() {
 
           <div className="flex flex-col gap-2">
             {isNewsPending ? (
-              <div className="surface-card flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-8 text-center">
+              <GlowCard
+                intensity="card"
+                className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-8 text-center"
+              >
                 <RefreshCw className="text-brass-400 h-4 w-4 animate-spin opacity-60" />
                 <span className="text-silver-500 mt-2 font-mono text-[9px] tracking-wider uppercase">
                   Loading Feed...
                 </span>
-              </div>
+              </GlowCard>
             ) : articles.length === 0 ? (
-              <div className="surface-card flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-8 text-center">
+              <GlowCard
+                intensity="card"
+                className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-8 text-center"
+              >
                 <Newspaper className="text-silver-600 mb-1 h-4 w-4 opacity-40" />
                 <span className="text-silver-500 font-mono text-[9px] tracking-wider uppercase">
                   No articles available
                 </span>
-              </div>
+              </GlowCard>
             ) : (
               articles.map((article) => {
                 const formatPublishedAt = (dateStr: string) => {

@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 
 import {
   SPOTLIGHT_SELECTOR,
+  clearGlowSpotVars,
+  writeGlowSpotVars,
   writeLivingSpotVars,
   writeSpotVars,
 } from '@/components/effects/pointerSpotlightUtils'
@@ -9,11 +11,13 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useAppStore } from '@/store/useAppStore'
 
 /**
- * App-wide pointer-reactive lighting for living panels and launcher spotlights.
+ * App-wide pointer-reactive lighting for living panels, suede controls, and glow cards.
  *
- * One rAF-throttled `pointermove` listener writes panel-local `--spot-x` / `--spot-y`
- * to every `.surface-panel--living` ancestor of the pointer target, and toggles `.is-lit`
- * on leaf launcher spotlight panels.
+ * One rAF-throttled `pointermove` listener writes:
+ * - panel-local `--spot-x` / `--spot-y` to living / suede ancestors
+ * - local `--x` / `--y` / `--xp` / `--yp` to `[data-glow]` ancestors
+ * and clears glow vars on hosts that are no longer under the pointer
+ * (prevents frozen border light on random edges).
  *
  * Renders nothing; mount once near the app root.
  */
@@ -32,12 +36,14 @@ export function PointerSpotlight() {
     let target: Element | null = null
     let spotlightRaw: HTMLElement | null = null
     let spotlightLit: HTMLElement | null = null
+    let activeGlowHosts: HTMLElement[] = []
 
     const flush = () => {
       raf = 0
 
       if (target) {
         writeLivingSpotVars(target, clientX, clientY)
+        activeGlowHosts = writeGlowSpotVars(target, clientX, clientY, activeGlowHosts)
       }
 
       if (activeWorkspace === 'launcher') {
@@ -71,6 +77,8 @@ export function PointerSpotlight() {
       spotlightLit = null
       spotlightRaw = null
       target = null
+      clearGlowSpotVars(activeGlowHosts)
+      activeGlowHosts = []
     }
 
     document.addEventListener('pointermove', handleMove, { passive: true })

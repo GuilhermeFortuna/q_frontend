@@ -1,5 +1,6 @@
 import type { KeyboardEvent, ReactNode } from 'react'
 
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 
 export type EntityCardProps = {
@@ -38,7 +39,8 @@ export function EntityCard({
   }
 
   return (
-    <div
+    <GlowCard
+      intensity="card"
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-pressed={selected}
@@ -46,7 +48,7 @@ export function EntityCard({
       onClick={activate}
       onKeyDown={handleKeyDown}
       className={cn(
-        'surface-suede flex cursor-pointer flex-col gap-2 rounded-lg p-3 text-left',
+        'flex cursor-pointer flex-col gap-2 p-3 text-left',
         'transition-[transform,border-color,box-shadow,background-color] duration-[var(--motion-fast)] ease-[var(--ease-exit)]',
         'focus-visible:outline-brass-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
         !disabled &&
@@ -71,6 +73,6 @@ export function EntityCard({
         <p className="text-silver-400 line-clamp-2 text-xs leading-relaxed">{description}</p>
       ) : null}
       {meta ? <div className="text-silver-500 text-[10px]">{meta}</div> : null}
-    </div>
+    </GlowCard>
   )
 }

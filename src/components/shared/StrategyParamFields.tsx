@@ -32,12 +32,15 @@ export function StrategyParamFields({
   params,
   values,
   onChange,
-  className = 'surface-panel space-y-3 rounded-lg p-3',
+  className = 'space-y-3',
   showHints = false,
   hintMode = 'paragraph',
 }: StrategyParamFieldsProps) {
   if (params.length === 0) return null
 
+  // Layout-only wrapper — callers own Panel/GlowCard chrome. Wrapping a `grid`
+  // className in GlowCard would put fields inside an inner content shell and
+  // break column layout (Thesis param labels overlapping inputs).
   return (
     <div className={className}>
       {params.map((spec) => {

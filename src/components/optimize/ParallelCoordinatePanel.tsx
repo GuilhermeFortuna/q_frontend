@@ -8,6 +8,7 @@ import { LinePath } from '@visx/shape'
 import { interpolateViridis } from 'd3'
 
 import { CHART_COLORS } from '@/components/backtests/chartUtils'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 import type { ParallelCoordinatePayload, ParallelCoordinateRow } from '@/types/optimization'
 
@@ -249,15 +250,13 @@ function PanelFrame({
   className?: string
 }) {
   return (
-    <div
-      className={cn(
-        'border-carbon-600/40 flex min-h-0 flex-1 flex-col rounded-lg border p-4',
-        className,
-      )}
+    <GlowCard
+      intensity="card"
+      className={cn('flex min-h-0 flex-1 flex-col rounded-lg p-4', className)}
     >
       <h4 className="text-silver-200 mb-3 shrink-0 text-sm font-medium">{title}</h4>
       {children}
-    </div>
+    </GlowCard>
   )
 }
 

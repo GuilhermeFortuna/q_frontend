@@ -30,36 +30,27 @@ Maps 1:1 onto the existing `surface-*` roles in `materials.css`. Level −2 is n
 |  Level | Role class                          | Used for                                                              | Build recipe (warm-black)                                                                                                                                                                                                                                  |
 | -----: | ----------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **−2** | `surface-well` _(new)_              | text inputs, number fields, segmented-track backgrounds, select wells | fill `linear-gradient(180deg,#0a0a09,#0d0d0c)`; `border 1px rgba(146,120,74,.34)`; inset shadow + lit bottom rim                                                                                                                                           |
-|  **0** | `surface-panel` / `quant-panel`     | workspace shells, primary panels (the reference plane)                | frosted glass: `color-mix` fills at ~72–78% (deep, not gray) + `backdrop-filter: blur(var(--panel-blur))` (aliases `--glass-blur`); defined outline border + inset sheen + drop shadow. **No grain texture**                                               |
-| **+1** | `surface-card`                      | repeated cards, list tiles, metric tiles                              | frosted glass: same deep `color-mix` fills + `backdrop-filter: blur(var(--glass-blur))` as panels (WO98 card-blur ban superseded)                                                                                                                          |
+|  **0** | `[data-glow=panel]` / `Panel`       | workspace shells, primary panels (the reference plane)                | brass GlowCard shell: frosted `color-mix` fill + `backdrop-filter: blur(var(--panel-blur))` + pointer-reactive border light (`--x/--y` from `PointerSpotlight`). Legacy `surface-panel` / `quant-panel` CSS remains for non-card chrome only.               |
+| **+1** | `[data-glow=card]` / `[data-glow=tile]` / `Card` | content cards (`card`), dense metric/list tiles (`tile`)     | same GlowCard recipe at quieter intensity — `tile` drops outer bloom and backdrop blur so nested grids stay calm                                                                                                                                           |
 | **+1** | `surface-control` / `surface-suede` | buttons, inputs, selects, selected chips                              | matte suede: opaque fill `linear-gradient(178deg,#131312,#0e0e0d 85%)`; no backdrop blur (touch material)                                                                                                                                                   |
 | **+2** | `surface-overlay` / `surface-float` | modals, popovers, HUD, floating chart windows                         | fill `linear-gradient(165deg,#1d1814,#120f0b 72%)`; `border 1px rgba(168,139,82,.22)`, `border-top-color rgba(214,178,120,.3)`; `box-shadow: inset 0 1px 0 rgba(255,240,210,.12), 0 0 40px -10px rgba(196,165,116,.25), 0 26px 50px -18px rgba(0,0,0,.85)` |
 
-**Shared glass blur.** All frosted surfaces (panel, card, shell `--blur`, float `--blur`, overlay scrim, `q-table-container`) use one token: `--glass-blur` (default `20px`). `--panel-blur` aliases it for WO121-era references. Nested card-on-panel compounds blur by design.
+**Shared glass blur.** Frosted glow panels/cards, shell `--blur`, float `--blur`, overlay scrim, and `q-table-container` use `--glass-blur` (default `20px`). `--panel-blur` aliases it. Prefer `tile` intensity for nested metric grids so blur does not compound.
 
 **Hover** lifts within the level (slightly stronger top highlight + shadow), never recolors to gray.
 `surface-shell` (header/dock) is unchanged in role but adopts the warm-black fill + edge-light and the shared `--glass-blur` when `--blur` is applied.
 
-### Living panels
+### Glow shells (card-like glass)
 
-Opt-in modifier `surface-panel--living` (panel level 0 only — not cards or wells):
+Content panels and cards use `GlowCard` (`[data-glow]`) instead of stacking `surface-panel` /
+`surface-card` / `--living` on the same node (those fight for `::before` / `::after`).
 
-**Light, not pattern** (WO120 superseded WO119's rejected weave — a repeating texture read as cheap hatching
-and misscaled per panel):
-
-- **At rest:** static _lit-from-above volume_ via `::before` — warm top light + base shadow + a gentle
-  vertical falloff. Zero idle animation. Tunable via `--panel-light-strength` (default `1.8`). **No grain/
-  texture** (WO121 Rev 1 removed it — grain blows up on the frosted glass into sandpaper); the frosted glass
-  - lit volume carry the richness.
-- **On hover:** `::after` is a single soft warm cursor sheen following `--spot-x` / `--spot-y` (written by
-  `PointerSpotlight`); `opacity` 0→1. No mask, no weave.
-- **No nesting:** a `surface-panel--living` must never be an ancestor/descendant of another (WO121 removes
-  inner `living` from nested section panels; `PointerSpotlight` writes vars to **all** living ancestors as a
-  hardening guard).
-- **Reduced motion:** static lit volume remains; hover sheen disabled.
-- **Usage:** outermost Backtests section panels (WO119 + WO120 + WO121); WO122–126 adopt on their primary
-  section panels during rollout. Surfaces are neutral-black + frosted glass (WO121) — warmth lives in the
-  accents + light, not the fill.
+- **Intensities:** `panel` (full frost + bloom), `card` (medium), `tile` (quiet — no bloom, no blur).
+- **Pointer light:** one app-root `PointerSpotlight` writes local `--x/--y/--xp/--yp` to glow hosts
+  (and still writes `--spot-x/--spot-y` to living/suede controls). GlowCard itself has no listeners.
+- **`Panel.living`:** kept for API compatibility; absorbed into glow chrome (no `surface-panel--living`).
+- **Reduced motion:** spot fill, border lights, and outer bloom opacity go to 0.
+- **Do not glow:** overlays, dock/shell chrome, wells, suede controls, DataTable rows, HUD tooltips.
 
 ---
 
@@ -84,15 +75,17 @@ can express. Built on the material classes above so they inherit future token ch
 
 | Component                      | Role                                                                    | Elevation          | States / accent                                                      |
 | ------------------------------ | ----------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------- |
-| `Panel` + `PanelHeader`        | section container + its small-caps title                                | 0                  | header text = tier 1                                                 |
+| `GlowCard`                     | brass pointer-reactive glass shell (`panel` / `card` / `tile`)          | 0 / +1             | pointer border light; reduced-motion kills spot/bloom                |
+| `Panel` + `PanelHeader`        | section container + its small-caps title                                | 0 (`GlowCard`)     | header text = tier 1                                                 |
+| `Card`                         | generic content card shell                                              | +1 (`card`)        | composes `GlowCard`                                                  |
 | `SectionHeader`                | standalone small-caps brass label (+ optional count/affordance)         | —                  | tier 1                                                               |
 | `LabeledField`                 | label + control wrapper (consistent label/hint/error)                   | wraps a −2 control | error state; optional `labelEnd` adornment (compact hints)           |
 | `SegmentedToggle`              | pill group (`EMA/HMA/SMA`, `Any/All/Majority`)                          | track −2, thumb +1 | selected = tier 3; single or multi                                   |
 | `RangeChips`                   | preset chips (`1M/3M/6M/1Y/YTD/All`)                                    | +1 chips           | selected = tier 3; `value` may be `null` when no preset is active    |
 | `FilterPills`                  | category filter row (`All/Trend/Mean reversion/…`)                      | +1 chips           | active = tier 3; `radiogroup` / `radio` semantics                    |
-| `EntityCard`                   | selectable strategy/entity card (title + type tag + description + meta) | +1, active accent  | hover = tier 2, active = tier 3; optional `badges` slot in title row |
+| `EntityCard` / `HistoryCard`   | selectable strategy/entity / history cards                              | +1 (`card` glow)   | hover = tier 2, active = tier 3; optional `badges` slot in title row |
 | `RangeInput`                   | min/max/step triplet on top of existing `NumberInput`                   | −2 wells           | per-field error                                                      |
-| `StatTile`                     | metric tile (label + value, optional delta)                             | +1                 | `valueTone` / `highlight` for value color; delta up/down, not gold   |
+| `StatTile`                     | metric tile (label + value, optional delta)                             | +1 (`tile` glow)   | `valueTone` / `highlight` for value color; delta up/down, not gold   |
 | `DataTable`                    | premium quantitative tabular grid with column alignments and sorting    | 0 on panel         | hover = tier 2 (luminance lift), selected = tier 3 (warm fill)       |
 | `Dialog` / `ConfirmDialog`     | modal overlays                                                          | +2 overlay         | tier 1 header; scrim recedes workspace                               |
 | `Popover` / `Menu` / `Tooltip` | anchored floats and action menus                                        | +2 float           | luminance item hover; no arrows on popovers                          |
@@ -213,11 +206,11 @@ To create a physical, premium feel reminiscent of a professional quantitative te
 
 ### The Three Core Materials
 
-1. **Glass (`surface-panel` / `surface-card` / `.surface-panel--living`) — Space**
-   - **Role:** Structural workspace panels, main containers, shells, and raised cards/tiles.
-   - **Appearance:** Frosted glass with shared `--glass-blur`, deep translucent fills (~72–78%), subtle top edge light; panels may opt into pointer spotlight / living light.
+1. **Glow Glass (`GlowCard` / `[data-glow]`) — Space**
+   - **Role:** Structural workspace panels, content cards, and metric/list tiles (`panel` / `card` / `tile` intensities).
+   - **Appearance:** Frosted brass spotlight shell — translucent fill, mask-composite border light following the pointer, optional outer bloom. Quiet `tile` intensity for dense nested grids.
 2. **Black Suede (`surface-suede` / `.surface-control`) — Touch (+1 Controls)**
-   - **Role:** Interactive controls, buttons, SegmentedToggle thumbs, pills, chips, and selected control states (not raised content cards — those use glass).
+   - **Role:** Interactive controls, buttons, SegmentedToggle thumbs, pills, chips, and selected control states (not raised content cards — those use glow glass).
    - **Appearance:** An ultra-matte, light-absorbing surface that is visually darker and flatter than the glass panels it sits on. It catches light via a soft pointer sheen (`::after` radial gradient) following the cursor.
    - **Press state:** On active press, the suede nap compresses (sheen radius contracts by ~60% and lightens, while background fill darkens one step).
 3. **Machined Brass (`button-machined-brass` / Tier-4 Accent) — Significance**

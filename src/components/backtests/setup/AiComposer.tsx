@@ -2,6 +2,7 @@ import { type RefObject, useState } from 'react'
 import { ChevronDown, Loader2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
+import { Panel } from '@/components/ui/Panel'
 import type { AiStrategySession } from '@/lib/strategies/useAiStrategySession'
 
 type AiComposerProps = {
@@ -71,16 +72,17 @@ export function AiComposer({
   const canSend = !interpretMutation.isPending && message.trim().length > 0
 
   return (
-    <div
+    <Panel
       className={cn(
-        'surface-panel relative z-20 flex items-end gap-2 border p-2 transition-all duration-300',
+        'relative z-20 p-2 transition-all duration-300',
         borderRadiusClass,
         focused
           ? 'border-brass-500/80 shadow-[0_0_8px_rgba(217,158,34,0.3)]'
-          : 'border-carbon-700/40 shadow-md',
+          : 'shadow-md',
         docked ? 'w-full' : 'w-full max-w-2xl',
       )}
     >
+      <div className="flex items-end gap-2">
       {/* Model chip inside pill's left edge */}
       <div className="relative mb-1 ml-1 shrink-0 self-center">
         <div className="surface-suede text-silver-300 border-carbon-700/30 hover:border-carbon-600/50 hover:text-silver-100 flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all select-none active:scale-95">
@@ -182,6 +184,7 @@ export function AiComposer({
           )}
         </Button>
       </div>
-    </div>
+      </div>
+    </Panel>
   )
 }

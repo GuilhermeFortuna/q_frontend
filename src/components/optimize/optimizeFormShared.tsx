@@ -36,7 +36,7 @@ export type RiskMode = 'fixed_quantity' | 'fixed_safety_margin' | 'inverse_volat
 
 export const labelClass = 'text-silver-400 text-xs'
 export const sectionTitleClass = 'text-silver-200 text-sm font-medium'
-export const panelClass = 'surface-panel space-y-3 rounded-lg p-3'
+export const panelClass = 'space-y-3 rounded-lg p-3'
 
 export function RangeRow({
   label,

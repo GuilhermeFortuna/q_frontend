@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { FlashOnChange } from '@/components/shared/FlashOnChange'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { formatPrice } from '@/lib/market/format'
 import { cn } from '@/lib/utils'
 import type { Instrument, MarketSnapshot, OhlcvBar } from '@/types/api'
@@ -154,7 +155,7 @@ export function QuoteRibbon({
         </div>
 
         {snapshot && (
-          <div className="surface-card surface-card--edge border-carbon-800 rounded-xl border-l px-4 py-2">
+          <GlowCard intensity="tile" className="rounded-xl px-4 py-2">
             <p className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
               Last
             </p>
@@ -169,7 +170,7 @@ export function QuoteRibbon({
               </p>
             </FlashOnChange>
             <ChangeBadge changePct={snapshot.changePct} className="mt-1 text-xs font-medium" />
-          </div>
+          </GlowCard>
         )}
 
         <button

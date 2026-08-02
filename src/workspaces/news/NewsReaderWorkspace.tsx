@@ -123,7 +123,7 @@ export function NewsReaderWorkspace({
           />
         </Panel>
       ) : article.imageUrl ? (
-        <Panel className="surface-card flex max-h-[360px] items-center justify-center overflow-hidden p-0">
+        <Panel className="flex max-h-[360px] items-center justify-center overflow-hidden p-0">
           <img
             src={article.imageUrl}
             alt={article.title}

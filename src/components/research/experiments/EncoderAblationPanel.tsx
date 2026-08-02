@@ -19,6 +19,7 @@ import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
 import { Panel } from '@/components/ui/Panel'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import type { EncoderConfigSpec } from '@/types/experiments'
 import { defaultNeuralTrainStart, defaultNeuralTrainEnd } from '@/lib/backtesting/dateRange'
 
@@ -292,7 +293,10 @@ export function EncoderAblationPanel() {
             className="flex flex-1 flex-col items-center justify-center p-8 text-center"
             data-testid="ablation-empty-state"
           >
-            <div className="surface-card border-carbon-600/40 max-w-md rounded-2xl border border-dashed p-10">
+            <GlowCard
+              intensity="card"
+              className="max-w-md rounded-2xl border border-dashed p-10"
+            >
               <CheckCircle2 className="text-silver-400 mx-auto h-12 w-12 stroke-[1.25]" />
               <h3 className="text-silver-200 mt-4 text-base font-semibold">
                 No active ablation study
@@ -301,7 +305,7 @@ export function EncoderAblationPanel() {
                 Add PCA or autoencoder configs on the left panel and click launch. We will train
                 each model and evaluate their latent features against the IC gate.
               </p>
-            </div>
+            </GlowCard>
           </div>
         )}
 

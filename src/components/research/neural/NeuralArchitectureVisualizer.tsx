@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { RotateCcw, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { GlowCard } from '@/components/ui/spotlight-card'
 
 type Node = {
   id: string
@@ -440,13 +441,13 @@ export function NeuralArchitectureVisualizer() {
             </button>
           </div>
           <div className="text-silver-300 grid grid-cols-2 gap-2 font-mono text-[10px]">
-            <div className="surface-card border-carbon-800/40 rounded border p-1.5">
+            <GlowCard intensity="tile" className="rounded p-1.5">
               <span className="text-silver-500 block text-[9px]">ACTIVATION</span>
               <span className="text-sm font-semibold tabular-nums">
                 {focusedNode.activation.toFixed(4)}
               </span>
-            </div>
-            <div className="surface-card border-carbon-800/40 rounded border p-1.5">
+            </GlowCard>
+            <GlowCard intensity="tile" className="rounded p-1.5">
               <span className="text-silver-500 block text-[9px]">BOTTLENECK COMPRESSION</span>
               <span className="text-sm font-semibold">
                 {focusedNode.layer === 'latent'
@@ -455,7 +456,7 @@ export function NeuralArchitectureVisualizer() {
                     ? 'Encoder Input'
                     : 'Decoder Output'}
               </span>
-            </div>
+            </GlowCard>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-silver-500 font-mono text-[9px]">ACTIVATION WAVEFORM</span>

@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { RotateCcw, Eye, EyeOff, Sparkles, HelpCircle, Trophy } from 'lucide-react'
 import type { OptimizationResults } from '@/types/optimization'
 import { registerFeature3DSurface } from '@/lib/cinematic/feature3DRegistry'
+import { Panel } from '@/components/ui/Panel'
 import { wellInputClass } from '@/components/ui/wellInputStyles'
 
 // WebGL Canvas error boundary
@@ -293,7 +294,8 @@ export function OptimizationTerrain3D({
   }
 
   return (
-    <div className="surface-panel border-carbon-800 flex h-full w-full flex-col overflow-hidden rounded-xl border md:flex-row">
+    <Panel className="h-full w-full overflow-hidden rounded-xl">
+      <div className="flex h-full min-h-0 w-full flex-col md:flex-row">
       {/* Controls Sidebar */}
       <div className="border-carbon-800 bg-carbon-950/70 flex w-full shrink-0 flex-col gap-4 border-b p-4 md:w-64 md:border-r md:border-b-0">
         <div>
@@ -631,6 +633,7 @@ export function OptimizationTerrain3D({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Panel>
   )
 }

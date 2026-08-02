@@ -28,6 +28,7 @@ import {
   MenuSubContent,
   MenuSubTrigger,
   MenuTrigger,
+  GlowCard,
   Panel,
   PanelHeader,
   Popover,
@@ -190,18 +191,30 @@ export function DevUiGallery() {
               inspect their physical behaviors.
             </p>
             <div className="grid gap-6 md:grid-cols-3">
-              {/* Glass Material */}
+              {/* Glass / Glow Material */}
               <div className="space-y-3">
                 <h4 className="text-silver-200 text-xs font-semibold tracking-wider uppercase">
-                  Glass (Space - 0 Reference)
+                  Glow Glass (Space — panel / card / tile)
                 </h4>
                 <div className="space-y-2">
-                  <div className="surface-panel text-silver-300 flex min-h-[80px] items-center justify-center rounded-xl p-4 text-xs">
-                    Panel (Static)
-                  </div>
-                  <div className="surface-panel surface-panel--living text-silver-300 flex min-h-[80px] cursor-pointer items-center justify-center rounded-xl p-4 text-xs">
-                    Living Panel (Hover to see spotlight)
-                  </div>
+                  <GlowCard
+                    intensity="panel"
+                    className="text-silver-300 flex min-h-[80px] items-center justify-center p-4 text-xs"
+                  >
+                    Panel intensity (move pointer)
+                  </GlowCard>
+                  <GlowCard
+                    intensity="card"
+                    className="text-silver-300 flex min-h-[80px] items-center justify-center p-4 text-xs"
+                  >
+                    Card intensity
+                  </GlowCard>
+                  <GlowCard
+                    intensity="tile"
+                    className="text-silver-300 flex min-h-[64px] items-center justify-center p-3 text-xs"
+                  >
+                    Tile intensity (quiet)
+                  </GlowCard>
                 </div>
               </div>
 

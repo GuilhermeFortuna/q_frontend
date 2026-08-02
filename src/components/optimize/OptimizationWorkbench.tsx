@@ -2,6 +2,7 @@ import { ChevronLeft, SlidersHorizontal } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect } from 'react'
 
+import { Panel } from '@/components/ui/Panel'
 import { workbenchCollapse, workbenchTransition } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
@@ -40,26 +41,27 @@ export function OptimizationWorkbench({
       )}
 
       <div className="relative z-20 flex h-full shrink-0">
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-label={open ? 'Collapse optimization workbench' : 'Expand optimization workbench'}
-          onClick={() => onOpenChange(!open)}
-          className={cn(
-            'surface-panel border-carbon-600/60 flex shrink-0 flex-col items-center justify-center gap-2 border-r py-4',
-            'hover:bg-carbon-800/40 transition-colors',
-          )}
-          style={{ width: HANDLE_WIDTH }}
-        >
-          {open ? (
-            <ChevronLeft className="text-silver-400 h-4 w-4" />
-          ) : (
-            <SlidersHorizontal className="text-brass-400 h-4 w-4" />
-          )}
-          <span className="text-silver-500 rotate-180 text-[10px] tracking-wider uppercase [writing-mode:vertical-rl]">
-            Config
-          </span>
-        </button>
+        <Panel className="shrink-0" style={{ width: HANDLE_WIDTH }}>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-label={open ? 'Collapse optimization workbench' : 'Expand optimization workbench'}
+            onClick={() => onOpenChange(!open)}
+            className={cn(
+              'flex h-full w-full flex-col items-center justify-center gap-2 py-4',
+              'hover:bg-carbon-800/40 transition-colors',
+            )}
+          >
+            {open ? (
+              <ChevronLeft className="text-silver-400 h-4 w-4" />
+            ) : (
+              <SlidersHorizontal className="text-brass-400 h-4 w-4" />
+            )}
+            <span className="text-silver-500 rotate-180 text-[10px] tracking-wider uppercase [writing-mode:vertical-rl]">
+              Config
+            </span>
+          </button>
+        </Panel>
 
         <motion.div
           initial={false}
@@ -69,14 +71,14 @@ export function OptimizationWorkbench({
           }}
           transition={open ? workbenchTransition : workbenchCollapse}
           className={cn(
-            'border-carbon-600/60 surface-panel shrink-0 overflow-hidden border-r',
+            'shrink-0 overflow-hidden',
             open && 'fixed inset-y-0 left-0 z-20 md:relative md:inset-auto',
           )}
           style={{ maxHeight: '100%' }}
         >
-          <div className="flex h-full flex-col overflow-hidden" style={{ width: PANEL_WIDTH }}>
+          <Panel className="h-full overflow-hidden" style={{ width: PANEL_WIDTH }}>
             <div className="min-h-0 flex-1 overflow-y-auto p-5">{children}</div>
-          </div>
+          </Panel>
         </motion.div>
       </div>
     </>

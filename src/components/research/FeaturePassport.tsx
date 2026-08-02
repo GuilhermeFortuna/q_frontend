@@ -13,6 +13,7 @@ import { LabeledField } from '@/components/ui/LabeledField'
 import { Panel, PanelHeader } from '@/components/ui/Panel'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { StatTile } from '@/components/ui/StatTile'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
@@ -265,13 +266,16 @@ export function FeaturePassport({ name, onClose }: FeaturePassportProps) {
               .slice()
               .sort((left, right) => right.version - left.version)
               .map((versionRow) => (
-                <div
+                <GlowCard
                   key={versionRow.version}
-                  className="surface-card flex items-center justify-between rounded-lg px-3.5 py-2.5"
+                  intensity="tile"
+                  className="rounded-lg px-3.5 py-2.5"
                 >
-                  <span className="text-silver-200 font-mono text-sm">v{versionRow.version}</span>
-                  <span className={statusChipClass(versionRow.status)}>{versionRow.status}</span>
-                </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-silver-200 font-mono text-sm">v{versionRow.version}</span>
+                    <span className={statusChipClass(versionRow.status)}>{versionRow.status}</span>
+                  </div>
+                </GlowCard>
               ))}
           </div>
           <LabeledField label="Active version status">
@@ -312,7 +316,11 @@ export function FeaturePassport({ name, onClose }: FeaturePassportProps) {
           ) : (
             <div className="space-y-2">
               {sortedHistory.map((entry) => (
-                <div key={entry.run_id} className="surface-card rounded-lg px-3.5 py-2.5 text-xs">
+                <GlowCard
+                  key={entry.run_id}
+                  intensity="tile"
+                  className="rounded-lg px-3.5 py-2.5 text-xs"
+                >
                   <div className="text-silver-300 flex items-center justify-between gap-2">
                     <span className="font-mono">{entry.run_id}</span>
                     <span>{formatDisplayDateTime(entry.evaluated_at)}</span>
@@ -322,7 +330,7 @@ export function FeaturePassport({ name, onClose }: FeaturePassportProps) {
                     <span>Rank IC: {formatMetric(entry.rank_ic)}</span>
                     <span>Score: {formatMetric(entry.global_score)}</span>
                   </div>
-                </div>
+                </GlowCard>
               ))}
             </div>
           )}

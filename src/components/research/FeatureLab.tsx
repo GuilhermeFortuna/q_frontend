@@ -22,6 +22,7 @@ import { LabeledField } from '@/components/ui/LabeledField'
 import { NumberInput } from '@/components/ui/number-input'
 import { Panel } from '@/components/ui/Panel'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 
 export type FeatureLabRecentRun = {
@@ -282,15 +283,17 @@ export function FeatureLab({ onEvalStarted, onOpenRun, recentRuns }: FeatureLabP
           <ul className="space-y-2">
             {recentRuns.map((run) => (
               <li key={run.runId}>
-                <button
-                  type="button"
-                  className="surface-card hover:border-brass-600/40 flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors"
-                  onClick={() => onOpenRun(run.runId)}
-                  data-testid={`feature-lab-recent-run-${run.runId}`}
-                >
-                  <span className="text-cream-100 font-mono">{run.label}</span>
-                  <span className="text-silver-500 text-xs">{run.runId}</span>
-                </button>
+                <GlowCard intensity="tile" className="rounded-md">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors"
+                    onClick={() => onOpenRun(run.runId)}
+                    data-testid={`feature-lab-recent-run-${run.runId}`}
+                  >
+                    <span className="text-cream-100 font-mono">{run.label}</span>
+                    <span className="text-silver-500 text-xs">{run.runId}</span>
+                  </button>
+                </GlowCard>
               </li>
             ))}
           </ul>

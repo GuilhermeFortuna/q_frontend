@@ -15,6 +15,7 @@ import type { BacktestWorkflowMode, JobPanelTab } from '@/store/slices/jobSessio
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
 import { LazyOptimizeWorkflow, LazyValidateWorkflow } from '@/app/lazyWorkspaces'
+import { Panel } from '@/components/ui/Panel'
 
 const WORKFLOW_MODES: { id: BacktestWorkflowMode; label: string }[] = [
   { id: 'backtest', label: 'Simulation' },
@@ -111,8 +112,8 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
       <h1 className="sr-only" data-workspace-transition-anchor="backtests">
         Backtests
       </h1>
-      <div
-        className="surface-panel flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4"
+      <Panel
+        className="flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4"
         data-workspace-transition-surface="primary"
       >
         <div
@@ -216,7 +217,7 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
             )}
           </div>
         ) : null}
-      </div>
+      </Panel>
     </div>
   )
 }
