@@ -551,8 +551,8 @@ Phase B (WO50–WO51) adds ticks (tick engine offline).
 | 47  | [WO47-backend-market-data-provider-abstraction.md](WO47-backend-market-data-provider-abstraction.md)   | q_backend  | —                 |
 | 48  | [WO48-backend-local-ohlcv-store-and-ingestion.md](WO48-backend-local-ohlcv-store-and-ingestion.md)     | q_backend  | WO47 contract     |
 | 49  | [WO49-frontend-storage-workspace.md](WO49-frontend-storage-workspace.md)                               | q_frontend | WO47 + WO48       |
-| 50  | [WO50-backend-local-tick-store-and-ingestion.md](WO50-backend-local-tick-store-and-ingestion.md)       | q_backend  | WO48              |
-| 51  | [WO51-frontend-storage-tick-support.md](WO51-frontend-storage-tick-support.md)                         | q_frontend | WO49 + WO50       |
+| 50  | [WO50-backend-local-tick-store-and-ingestion.md](WO50-backend-local-tick-store-and-ingestion.md)         | q_backend  | WO48              |
+| 51  | [WO51-frontend-storage-tick-support.md](WO51-frontend-storage-tick-support.md)                           | q_frontend | WO49 + WO50       |
 
 ### Dispatch order
 
@@ -980,15 +980,15 @@ Elevates the existing Q interface with seven owner-selected public components. T
 signature interaction mechanics while retaining Q's visual system, chart stack, dock composition,
 and cinematic environment. Selection record: [premium-component-upgrades.md](../design/premium-component-upgrades.md).
 
-| #   | File                                                                                                           | Repo       | Depends on            |
-| --- | -------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
-| 215 | [WO215-frontend-workspace-stripe-shutter-transition.md](WO215-frontend-workspace-stripe-shutter-transition.md) | q_frontend | current shell/routing |
-| 216 | [WO216-frontend-execution-kill-switch-slide.md](WO216-frontend-execution-kill-switch-slide.md)                 | q_frontend | WO215 accepted        |
-| 217 | [WO217-frontend-ai-builder-state-orb.md](WO217-frontend-ai-builder-state-orb.md)                               | q_frontend | WO216 accepted        |
-| 218 | [WO218-frontend-active-job-status-island.md](WO218-frontend-active-job-status-island.md)                       | q_frontend | WO217 accepted        |
-| 219 | [WO219-frontend-operational-failure-terminal.md](WO219-frontend-operational-failure-terminal.md)               | q_frontend | WO218 accepted        |
-| 220 | [WO220-frontend-candidate-morphing-dialog.md](WO220-frontend-candidate-morphing-dialog.md)                     | q_frontend | WO219 accepted        |
-| 221 | [WO221-frontend-quantitative-number-flow.md](WO221-frontend-quantitative-number-flow.md)                       | q_frontend | WO220 accepted        |
+| #   | File                                                                                                                       | Repo       | Depends on            |
+| --- | -------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| 215 | [WO215-frontend-workspace-grid-reconfiguration-transition.md](WO215-frontend-workspace-grid-reconfiguration-transition.md) | q_frontend | current shell/routing |
+| 216 | [WO216-frontend-execution-kill-switch-slide.md](WO216-frontend-execution-kill-switch-slide.md)                             | q_frontend | WO215 accepted        |
+| 217 | [WO217-frontend-ai-builder-inference-strands.md](WO217-frontend-ai-builder-inference-strands.md)                           | q_frontend | WO216 accepted        |
+| 218 | [WO218-frontend-active-job-status-island.md](WO218-frontend-active-job-status-island.md)                                   | q_frontend | WO217 accepted        |
+| 219 | [WO219-frontend-operational-failure-terminal.md](WO219-frontend-operational-failure-terminal.md)                           | q_frontend | WO218 accepted        |
+| 220 | [WO220-frontend-candidate-morphing-dialog.md](WO220-frontend-candidate-morphing-dialog.md)                                 | q_frontend | WO219 accepted        |
+| 221 | [WO221-frontend-quantitative-number-flow.md](WO221-frontend-quantitative-number-flow.md)                                   | q_frontend | WO220 accepted        |
 
 ### Dispatch order
 
