@@ -23,6 +23,7 @@ import {
 } from '@/api/queries/execution'
 import { useBacktestHistory } from '@/api/queries/backtests'
 import { ExecutionLiveChartPanel } from '@/workspaces/execution/ExecutionLiveChartPanel'
+import { PowerOffSlide } from '@/components/execution/PowerOffSlide'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { Panel, PanelHeader } from '@/components/ui/Panel'
@@ -48,7 +49,7 @@ type ExecutionWorkspaceProps = {
   pollingEnabled?: boolean
 }
 
-type ConfirmKind = 'flatten' | 'kill_switch_on' | null
+type ConfirmKind = 'flatten' | null
 
 const HISTORY_TABS: { value: ExecutionHistoryKind; label: string }[] = [
   { value: 'decisions', label: 'Decisions' },
@@ -631,8 +632,6 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
           ? String(err.response?.data?.detail ?? err.message)
           : 'Kill switch rejected',
       )
-    } finally {
-      setConfirmKind(null)
     }
   }
 
@@ -704,19 +703,17 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                 className="border-silver-500/30 text-silver-300 hover:bg-silver-500/10 transition-all duration-150 active:scale-95"
                 disabled={updateKillSwitch.isPending}
                 onClick={() => void runKillSwitch(false)}
+                data-testid="execution-kill-switch-release"
               >
                 Release kill switch
               </Button>
             ) : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="border-rose-500/40 text-rose-300 hover:bg-rose-500/10 hover:border-rose-500 transition-all duration-150 active:scale-95"
-                onClick={() => setConfirmKind('kill_switch_on')}
-              >
-                Engage kill switch
-              </Button>
+              <PowerOffSlide
+                submitting={updateKillSwitch.isPending}
+                confirmed={Boolean(killSwitch?.enabled)}
+                rejected={Boolean(actionError)}
+                onConfirm={() => void runKillSwitch(true)}
+              />
             )}
           </div>
         </Panel>
@@ -1163,16 +1160,6 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
         confirmLabel="Flatten positions"
         loading={deploymentAction.isPending}
         onConfirm={() => void runFlatten()}
-        onCancel={() => setConfirmKind(null)}
-      />
-
-      <ConfirmDialog
-        open={confirmKind === 'kill_switch_on'}
-        title="Engage global kill switch?"
-        description="Paper deployments will stop accepting new risk. Existing positions remain until flattened. This requires backend confirmation."
-        confirmLabel="Engage kill switch"
-        loading={updateKillSwitch.isPending}
-        onConfirm={() => void runKillSwitch(true)}
         onCancel={() => setConfirmKind(null)}
       />
     </div>

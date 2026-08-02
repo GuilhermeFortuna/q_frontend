@@ -50,6 +50,23 @@ WO215-WO221 contain the implementation contracts.
   uses no shutter, stripe mask, full-screen cover, shader reveal, persistent canvas, or shell RAF.
 - Approved dependency: install exactly `gsap@3.15.0`; use `Flip` from the same package.
 
+## P-002 source and adaptation record
+
+- Owner revision: 2026-08-02. VISUAL A accepted; kill-switch engage uses deliberate slide-to-confirm.
+- Demo / docs: https://smoothui.dev/docs/components/power-off-slide
+- Registry capture: https://smoothui.dev/r/power-off-slide.json (captured 2026-08-02)
+- Inspected source files:
+  - `index.tsx` — SHA-256 `5baa7f67699a4b7c0f9224d0dfcd7bea73e232dbcf6d69b2fa46d9e3182d4038`
+- Provider dependencies already present: `motion`, `lucide-react` (no new install).
+- Signature behavior: horizontal drag thumb on a recessed track; zero elastic / zero momentum;
+  spring snap on release; interaction locks while an async confirm is in flight.
+- Q adaptation: `PowerOffSlide` in `src/components/execution/`. Threshold is 88% of available
+  track (not the provider's fixed ~95% pixels). Controlled states
+  `idle|dragging|armed|submitting|confirmed|rejected` with backend-authoritative Engaged.
+  Full slider keyboard/ARIA. Materials are `surface-well` track, black-suede thumb, restrained
+  rose danger edge, brass readiness marker, tabular progress. No auto-reset timeout, shimmer
+  label, playful bounce, or spinning Power icon. Release remains a conventional button.
+
 ## P-003 source and adaptation record
 
 - Owner revision: 2026-08-02. The Siri/voice-orb direction is rejected and must not ship.
@@ -82,8 +99,9 @@ orders do not compensate for it.
 
 Current dispatch state:
 
-- WO215 — `REVIEW` (implementation complete; awaiting VISUAL A)
-- WO216–WO221 — `BLOCKED` by the immediately preceding visual acceptance gate
+- WO215 — `ACCEPTED` (VISUAL A)
+- WO216 — `REVIEW` (implementation complete; awaiting VISUAL B)
+- WO217–WO221 — `BLOCKED` by the immediately preceding visual acceptance gate
 
 ## Explicit non-selections
 
