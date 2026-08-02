@@ -2,6 +2,7 @@ import { isAxiosError } from 'axios'
 
 import { useInstrumentInfo } from '@/api/queries/market-data'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import { GlowCard } from '@/components/ui/spotlight-card'
 
 import { formatSpecNumber } from './instrumentInfoUtils'
 
@@ -31,17 +32,20 @@ function InfoDefinitionList({ rows }: { rows: InfoRow[] }) {
       <SectionHeader title="Specifications" className="shrink-0 px-3 pt-3" />
       <dl className="flex flex-col gap-1 overflow-y-auto p-3">
         {rows.map((row) => (
-          <div
+          <GlowCard
             key={row.label}
-            className="surface-card surface-card--edge flex items-center justify-between gap-3 rounded-lg px-2.5 py-2 transition-all duration-150"
+            intensity="tile"
+            className="rounded-lg px-2.5 py-2 transition-all duration-150"
           >
-            <dt className="text-silver-500 shrink-0 font-mono text-[10px] tracking-wider uppercase">
-              {row.label}
-            </dt>
-            <dd className="text-silver-200 text-right font-mono text-xs font-semibold">
-              {row.value}
-            </dd>
-          </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-silver-500 shrink-0 font-mono text-[10px] tracking-wider uppercase">
+                {row.label}
+              </dt>
+              <dd className="text-silver-200 text-right font-mono text-xs font-semibold">
+                {row.value}
+              </dd>
+            </div>
+          </GlowCard>
         ))}
       </dl>
     </div>

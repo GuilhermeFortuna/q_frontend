@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Activity, ShieldAlert, Zap } from 'lucide-react'
+import { Panel } from '@/components/ui/Panel'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 import type { ExitRuleInfo, StrategyInfo } from '@/types/strategies'
 
@@ -125,11 +127,14 @@ export function StrategyFlowChart({
   }, [entryNodes, enabledExitRules, isComposite, entryManager])
 
   return (
-    <div
-      ref={containerRef}
-      className="surface-panel border-carbon-800/45 relative flex min-h-[16rem] w-full flex-col justify-between overflow-hidden rounded-lg border p-4"
+    <Panel
+      className="relative flex min-h-[16rem] w-full flex-col justify-between overflow-hidden rounded-lg p-4"
       data-testid="strategy-flow-chart"
     >
+      <div
+        ref={containerRef}
+        className="relative flex min-h-[16rem] w-full flex-1 flex-col justify-between"
+      >
       {/* Background Grid Accent */}
       <div
         className="pointer-events-none absolute inset-0 opacity-20"
@@ -201,16 +206,17 @@ export function StrategyFlowChart({
         {/* Column 1: Entry Instances */}
         <div className="flex flex-col gap-2.5">
           {entryNodes.map((entry) => (
-            <div
+            <GlowCard
               key={entry.id}
+              intensity="tile"
               data-node-id={entry.id}
-              className="surface-card border-carbon-700/60 hover:border-brass-600/40 rounded border px-2 py-1.5 text-center transition-all"
+              className="rounded px-2 py-1.5 text-center transition-all"
             >
               <div className="text-silver-400 font-mono text-[8px]">e{entry.index}</div>
               <div className="text-silver-200 truncate text-[10px] leading-tight font-medium">
                 {entry.label}
               </div>
-            </div>
+            </GlowCard>
           ))}
           {entryNodes.length === 0 && (
             <div className="text-silver-500 py-2 text-center text-[10px] italic">
@@ -264,10 +270,11 @@ export function StrategyFlowChart({
         {/* Column 4: Exit Strategy Cards */}
         <div className="flex flex-col gap-2.5">
           {enabledExitRules.map((rule) => (
-            <div
+            <GlowCard
               key={rule.id}
+              intensity="tile"
               data-node-id={`exit-${rule.id}`}
-              className="border-brass-600/20 surface-card hover:border-brass-500/40 rounded border px-2.5 py-1.5 text-center transition-all"
+              className="rounded px-2.5 py-1.5 text-center transition-all"
             >
               <div className="text-brass-500/70 text-[7px] font-bold tracking-wider uppercase">
                 {rule.exit_group.replace('_', ' ')}
@@ -275,7 +282,7 @@ export function StrategyFlowChart({
               <div className="text-silver-200 truncate text-[10px] leading-tight font-medium">
                 {rule.label}
               </div>
-            </div>
+            </GlowCard>
           ))}
           {enabledExitRules.length === 0 && (
             <div className="text-silver-500 flex items-center justify-center gap-1 py-2 text-center text-[10px] italic">
@@ -294,6 +301,7 @@ export function StrategyFlowChart({
           }
         }
       `}</style>
-    </div>
+      </div>
+    </Panel>
   )
 }

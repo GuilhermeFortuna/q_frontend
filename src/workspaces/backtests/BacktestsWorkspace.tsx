@@ -15,6 +15,7 @@ import type { BacktestWorkflowMode, JobPanelTab } from '@/store/slices/jobSessio
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
 import { LazyOptimizeWorkflow, LazyValidateWorkflow } from '@/app/lazyWorkspaces'
+import { Panel } from '@/components/ui/Panel'
 
 const WORKFLOW_MODES: { id: BacktestWorkflowMode; label: string }[] = [
   { id: 'backtest', label: 'Simulation' },
@@ -105,7 +106,7 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
 
   return (
     <div className="text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col overflow-hidden">
-      <div className="surface-panel flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
+      <Panel className="flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
         <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
           {WORKFLOW_MODES.map((mode) => (
             <button
@@ -203,7 +204,7 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
             )}
           </div>
         ) : null}
-      </div>
+      </Panel>
     </div>
   )
 }

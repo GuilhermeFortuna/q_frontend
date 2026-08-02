@@ -6,6 +6,7 @@ import {
 } from '@/components/research/featureScoringUtils'
 import { Panel } from '@/components/ui/Panel'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import type { FeatureEvalRun } from '@/types/features'
 
 type FeatureSetPanelsProps = {
@@ -25,17 +26,21 @@ export function FeatureRecommendedSetPanel({ run }: FeatureSetPanelsProps) {
           {recommendedIds.map((featureId) => {
             const row = run.leaderboard.find((entry) => entry.feature_id === featureId)
             return (
-              <li
-                key={featureId}
-                className="surface-card flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                data-testid={`recommended-feature-${featureNameById(run.leaderboard, featureId)}`}
-              >
-                <span className="text-cream-100 font-mono">
-                  {featureNameById(run.leaderboard, featureId)}
-                </span>
-                <span className="text-silver-300 font-mono">
-                  {formatFeatureScore(row?.global_score ?? null)}
-                </span>
+              <li key={featureId}>
+                <GlowCard
+                  intensity="tile"
+                  className="rounded-md px-3 py-2"
+                  data-testid={`recommended-feature-${featureNameById(run.leaderboard, featureId)}`}
+                >
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-cream-100 font-mono">
+                      {featureNameById(run.leaderboard, featureId)}
+                    </span>
+                    <span className="text-silver-300 font-mono">
+                      {formatFeatureScore(row?.global_score ?? null)}
+                    </span>
+                  </div>
+                </GlowCard>
               </li>
             )
           })}
@@ -57,15 +62,19 @@ export function FeatureWeakRedundantPanel({ run }: FeatureSetPanelsProps) {
       ) : (
         <ul className="space-y-2">
           {weakRows.map((row) => (
-            <li
-              key={row.feature_id}
-              className="surface-card flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-              data-testid={`weak-feature-${row.feature_name}`}
-            >
-              <span className="text-cream-100 font-mono">{row.feature_name}</span>
-              <span className="text-silver-400 text-xs">
-                {row.is_representative ? 'low score' : 'redundant'}
-              </span>
+            <li key={row.feature_id}>
+              <GlowCard
+                intensity="tile"
+                className="rounded-md px-3 py-2"
+                data-testid={`weak-feature-${row.feature_name}`}
+              >
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-cream-100 font-mono">{row.feature_name}</span>
+                  <span className="text-silver-400 text-xs">
+                    {row.is_representative ? 'low score' : 'redundant'}
+                  </span>
+                </div>
+              </GlowCard>
             </li>
           ))}
         </ul>

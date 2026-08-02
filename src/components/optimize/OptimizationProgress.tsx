@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ActiveOutline } from '@/components/ui/ActiveOutline'
 import { BestParamsCard } from '@/components/optimize/BestParamsCard'
 import { TrialsTable } from '@/components/optimize/TrialsTable'
+import { Panel } from '@/components/ui/Panel'
 import {
   computeBestMultiObjectiveMetrics,
   formatFractionAsPercent,
@@ -60,7 +61,7 @@ export function OptimizationProgress({
       {/* Left Column: Progress Card & Best Params Card */}
       <div className="flex w-full min-w-0 shrink-0 flex-col gap-4 lg:w-[380px]">
         {/* Progress Card */}
-        <div className="surface-panel relative w-full overflow-hidden rounded-2xl px-6 py-6">
+        <Panel className="relative w-full overflow-hidden rounded-2xl px-6 py-6">
           <ActiveOutline />
           <div className="relative z-20">
             {headerLabel ? (
@@ -118,7 +119,7 @@ export function OptimizationProgress({
               ) : null}
             </div>
           </div>
-        </div>
+        </Panel>
 
         {/* Best Params Card */}
         {showBestParams && (

@@ -3,6 +3,7 @@ import { Star } from 'lucide-react'
 import { featureNameById } from '@/components/research/featureScoringUtils'
 import { Panel } from '@/components/ui/Panel'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 import type { FeatureEvalCluster, FeatureScoreRow } from '@/types/features'
 
@@ -22,9 +23,10 @@ export function RedundancyClusterPanel({ clusters, leaderboard }: RedundancyClus
       ) : (
         <div className="space-y-3">
           {clusters.map((cluster) => (
-            <div
+            <GlowCard
               key={cluster.cluster_id}
-              className="surface-card rounded-lg border p-3"
+              intensity="card"
+              className="rounded-lg p-3"
               data-testid={`cluster-card-${cluster.cluster_id}`}
             >
               <div className="text-silver-400 mb-2 text-[10px] font-bold tracking-wider uppercase">
@@ -56,7 +58,7 @@ export function RedundancyClusterPanel({ clusters, leaderboard }: RedundancyClus
                   )
                 })}
               </div>
-            </div>
+            </GlowCard>
           ))}
         </div>
       )}

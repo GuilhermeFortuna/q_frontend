@@ -11,8 +11,12 @@ export type PanelProps = HTMLAttributes<HTMLDivElement> & {
   living?: boolean
 }
 
-export function Panel({ className, living: _living = false, ...props }: PanelProps) {
-  return <GlowCard intensity="panel" className={cn(className)} {...props} />
+export function Panel({ className, living: _living = false, children, ...props }: PanelProps) {
+  return (
+    <GlowCard intensity="panel" className={cn(className)} {...props}>
+      {children}
+    </GlowCard>
+  )
 }
 
 export type PanelHeaderProps = {

@@ -21,6 +21,7 @@ import { chipClass } from '@/components/ui/chipStyles'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { Panel, PanelHeader } from '@/components/ui/Panel'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { Callout } from '@/components/ui/Callout'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Database, Download, Trash2, Calendar, AlertTriangle, Info } from 'lucide-react'
@@ -42,7 +43,7 @@ import {
 const SYMBOL_SUGGESTION_LIMIT = 6
 
 const symbolSuggestionItemClass =
-  'surface-card w-full rounded-md border px-3 py-2 text-left transition-all duration-150'
+  'w-full px-3 py-2 text-left transition-all duration-150'
 
 function KindBadge({ kind }: { kind: StorageKind }) {
   const isTicks = kind === 'ticks'
@@ -301,32 +302,34 @@ export function StorageWorkspace() {
                           role="option"
                           aria-selected={isActive}
                         >
-                          <button
-                            type="button"
-                            className={cn(
-                              symbolSuggestionItemClass,
-                              isActive
-                                ? chipClass(true)
-                                : chipClass(false, 'text-silver-200 border-transparent'),
-                            )}
-                            // Keep the input focused so onBlur doesn't close the list
-                            // before this click registers.
-                            onMouseDown={(e) => e.preventDefault()}
-                            onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                            onClick={() => selectSuggestion(item)}
-                          >
-                            <span className="text-brass-400 font-mono font-semibold">
-                              {item.symbol}
-                            </span>
-                            <span
+                          <GlowCard intensity="tile" className="w-full rounded-md">
+                            <button
+                              type="button"
                               className={cn(
-                                'ml-2',
-                                isActive ? 'text-brass-200/80' : 'text-silver-500',
+                                symbolSuggestionItemClass,
+                                isActive
+                                  ? chipClass(true)
+                                  : chipClass(false, 'text-silver-200 border-transparent'),
                               )}
+                              // Keep the input focused so onBlur doesn't close the list
+                              // before this click registers.
+                              onMouseDown={(e) => e.preventDefault()}
+                              onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                              onClick={() => selectSuggestion(item)}
                             >
-                              {item.name}
-                            </span>
-                          </button>
+                              <span className="text-brass-400 font-mono font-semibold">
+                                {item.symbol}
+                              </span>
+                              <span
+                                className={cn(
+                                  'ml-2',
+                                  isActive ? 'text-brass-200/80' : 'text-silver-500',
+                                )}
+                              >
+                                {item.name}
+                              </span>
+                            </button>
+                          </GlowCard>
                         </li>
                       )
                     })}

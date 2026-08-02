@@ -21,6 +21,7 @@ import {
   StrategyBuilderIcon,
 } from '@/components/dock/DockIcons'
 import { SpotlightNavItem, SPOTLIGHT_NAV_MOTION, type SpotlightNavItemSize } from '@/components/ui/spotlight-button'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { cn } from '@/lib/utils'
 import type { WorkspaceId } from '@/types/api'
@@ -208,31 +209,36 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
               {runningJobs.map(({ item, job }) => {
                 const Icon = item.icon
                 return (
-                  <Link
+                  <GlowCard
                     key={item.id}
-                    to={item.to}
-                    title={`${item.label}: ${job.detail}`}
-                    className="surface-card hover:border-brass-500/30 flex w-40 shrink-0 flex-col gap-1.5 rounded-xl border px-3 py-2 transition-colors"
+                    intensity="tile"
+                    className="w-40 shrink-0 rounded-xl"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <Icon className="text-brass-400 h-3.5 w-3.5 shrink-0" />
-                      <span className="text-silver-200 text-2xs truncate font-mono font-[560] tracking-[0.08em] uppercase">
-                        {item.label}
-                      </span>
-                      <span className="text-silver-100 quant-tabular-nums text-2xs ml-auto font-mono font-[560]">
-                        {job.pct}%
-                      </span>
-                    </div>
-                    <div className="surface-well h-1.5 w-full overflow-hidden rounded-full">
-                      <motion.div
-                        className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r"
-                        initial={false}
-                        animate={{ width: `${job.pct}%` }}
-                        transition={{ duration: 0.5, ease: 'easeOut' }}
-                      />
-                    </div>
-                    <span className="text-silver-400 truncate text-[10px]">{job.detail}</span>
-                  </Link>
+                    <Link
+                      to={item.to}
+                      title={`${item.label}: ${job.detail}`}
+                      className="flex flex-col gap-1.5 px-3 py-2 transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Icon className="text-brass-400 h-3.5 w-3.5 shrink-0" />
+                        <span className="text-silver-200 text-2xs truncate font-mono font-[560] tracking-[0.08em] uppercase">
+                          {item.label}
+                        </span>
+                        <span className="text-silver-100 quant-tabular-nums text-2xs ml-auto font-mono font-[560]">
+                          {job.pct}%
+                        </span>
+                      </div>
+                      <div className="surface-well h-1.5 w-full overflow-hidden rounded-full">
+                        <motion.div
+                          className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r"
+                          initial={false}
+                          animate={{ width: `${job.pct}%` }}
+                          transition={{ duration: 0.5, ease: 'easeOut' }}
+                        />
+                      </div>
+                      <span className="text-silver-400 truncate text-[10px]">{job.detail}</span>
+                    </Link>
+                  </GlowCard>
                 )
               })}
             </div>

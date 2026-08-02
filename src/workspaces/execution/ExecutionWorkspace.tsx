@@ -27,6 +27,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { Panel, PanelHeader } from '@/components/ui/Panel'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { StatTile } from '@/components/ui/StatTile'
 import { Button } from '@/components/ui/button'
 import { chipClass } from '@/components/ui/chipStyles'
@@ -793,16 +794,17 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
               }
 
               return (
-                <div
+                <GlowCard
                   key={item.id}
+                  intensity="card"
                   role="button"
                   tabIndex={0}
                   className={cn(
-                    'surface-card mb-2 w-full rounded-lg border-y border-r border-l-4 p-3 text-left transition-all duration-155 hover:bg-carbon-800/40 cursor-pointer',
+                    'mb-2 w-full rounded-lg border-l-4 p-3 text-left transition-all duration-155 hover:bg-carbon-800/40 cursor-pointer',
                     statusBorder,
-                    isSelected 
-                      ? 'border-y-brass-600/30 border-r-brass-600/30 bg-brass-500/5 shadow-[0_0_12px_rgba(217,158,34,0.08)]' 
-                      : 'border-y-transparent border-r-transparent bg-transparent',
+                    isSelected
+                      ? 'bg-brass-500/5 shadow-[0_0_12px_rgba(217,158,34,0.08)]'
+                      : null,
                   )}
                   onClick={() => setSelectedDeploymentId(item.id)}
                   onKeyDown={(e) => {
@@ -813,18 +815,20 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                   }}
                   data-testid={`execution-deployment-${item.id}`}
                 >
-                  <div className="flex items-center justify-between gap-2 min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <p className={cn(
-                        'text-sm font-semibold transition-colors truncate',
-                        isSelected ? 'text-brass-400' : 'text-silver-100'
-                      )}>
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <p
+                        className={cn(
+                          'truncate text-sm font-semibold transition-colors',
+                          isSelected ? 'text-brass-400' : 'text-silver-100',
+                        )}
+                      >
                         {item.name}
                       </p>
                       <button
                         type="button"
                         title="Open monitor window"
-                        className="text-silver-500 hover:text-brass-400 p-0.5 rounded transition-colors shrink-0 cursor-pointer"
+                        className="text-silver-500 hover:text-brass-400 shrink-0 cursor-pointer rounded p-0.5 transition-colors"
                         onClick={(e) => {
                           e.stopPropagation()
                           openExecutionMonitor(item.id, item.name)
@@ -833,30 +837,32 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                         <ExternalLink className="h-3 w-3" />
                       </button>
                     </div>
-                    <span className={cn(
-                      'text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border',
-                      item.lifecycle === 'running'
-                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'
-                        : item.lifecycle === 'paused'
-                          ? 'bg-amber-500/10 text-amber-300 border-amber-500/25'
-                          : 'bg-rose-500/10 text-rose-300 border-rose-500/25'
-                    )}>
+                    <span
+                      className={cn(
+                        'rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase',
+                        item.lifecycle === 'running'
+                          ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                          : item.lifecycle === 'paused'
+                            ? 'border-amber-500/25 bg-amber-500/10 text-amber-300'
+                            : 'border-rose-500/25 bg-rose-500/10 text-rose-300',
+                      )}
+                    >
                       {item.lifecycle}
                     </span>
                   </div>
-                  <p className="text-silver-400 mt-1.5 font-mono text-[11px] flex items-center gap-1.5">
+                  <p className="text-silver-400 mt-1.5 flex items-center gap-1.5 font-mono text-[11px]">
                     <span>{item.symbol}</span>
                     <span className="text-carbon-600">·</span>
                     <span>{item.timeframe}</span>
                   </p>
                   {item.pending_action ? (
-                    <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-300 bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 rounded">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <div className="mt-2 flex items-center gap-1 rounded border border-amber-500/20 bg-amber-500/5 px-2 py-0.5 text-[11px] text-amber-300">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
                       <span>Pending: {item.pending_action}</span>
                     </div>
                   ) : null}
-                </div>
-              );
+                </GlowCard>
+              )
             })}
             {(deploymentsQuery.data?.items.length ?? 0) === 0 && !deploymentsQuery.isLoading ? (
               <p className="text-silver-500 p-2 text-sm">No deployments yet.</p>

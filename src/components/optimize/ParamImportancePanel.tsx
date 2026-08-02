@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Bar, BarChart, LabelList, ResponsiveContainer } from 'recharts'
 
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { chartTheme } from '@/lib/charts/chartTheme'
 import {
   ThemedCartesianGrid,
@@ -134,9 +135,9 @@ export function ParamImportancePanel({ analytics }: ParamImportancePanelProps) {
 
 function PanelFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="border-carbon-600/40 flex min-h-[160px] flex-col rounded-lg border p-4">
+    <GlowCard intensity="card" className="flex min-h-[160px] flex-col rounded-lg p-4">
       <h4 className="text-silver-200 mb-3 shrink-0 text-sm font-medium">Parameter Importance</h4>
       {children}
-    </div>
+    </GlowCard>
   )
 }

@@ -1,3 +1,4 @@
+import { Panel } from '@/components/ui/Panel'
 import { cn } from '@/lib/utils'
 
 type FeatureIslandFallbackProps = {
@@ -61,7 +62,7 @@ export function FeatureIslandFallback({
       aria-busy="true"
       data-testid="feature-island-fallback-route"
     >
-      <div className="surface-panel flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
+      <Panel className="flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
         <div className="flex flex-1 flex-col items-center justify-center gap-5">
           <div className="relative">
             <div className="border-brass-500/25 h-16 w-16 animate-spin rounded-full border-[3px] border-t-transparent" />
@@ -78,7 +79,7 @@ export function FeatureIslandFallback({
             <div className="bg-carbon-800/50 h-2 w-24 animate-pulse rounded-full" />
           </div>
         </div>
-      </div>
+      </Panel>
     </div>
   )
 }

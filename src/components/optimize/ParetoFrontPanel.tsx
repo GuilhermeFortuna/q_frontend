@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { Cell, ComposedChart, Line, ResponsiveContainer, Scatter } from 'recharts'
 
+import { GlowCard } from '@/components/ui/spotlight-card'
 import { cn } from '@/lib/utils'
 import { chartTheme } from '@/lib/charts/chartTheme'
 import {
@@ -217,11 +218,9 @@ function PanelFrame({
   className?: string
 }) {
   return (
-    <div
-      className={cn(
-        'border-carbon-600/40 flex min-h-0 flex-1 flex-col rounded-lg border p-4',
-        className,
-      )}
+    <GlowCard
+      intensity="card"
+      className={cn('flex min-h-0 flex-1 flex-col rounded-lg p-4', className)}
     >
       <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
         <h4 className="text-silver-200 text-sm font-medium">{title}</h4>
@@ -232,7 +231,7 @@ function PanelFrame({
         ) : null}
       </div>
       {children}
-    </div>
+    </GlowCard>
   )
 }
 

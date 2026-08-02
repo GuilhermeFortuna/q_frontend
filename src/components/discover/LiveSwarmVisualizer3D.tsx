@@ -10,6 +10,7 @@ import type {
 } from '@/types/strategySearch'
 import { formatObjectiveMetricValue, objectiveMetricLabel } from '@/lib/walkforward/objectiveMetric'
 import { registerFeature3DSurface } from '@/lib/cinematic/feature3DRegistry'
+import { Panel } from '@/components/ui/Panel'
 import { wellInputClass } from '@/components/ui/wellInputStyles'
 
 // WebGL Error Boundary
@@ -509,7 +510,8 @@ export function LiveSwarmVisualizer3D({
   const genNum = status?.generation ?? 0
 
   return (
-    <div className="surface-panel border-carbon-800 relative flex h-[480px] w-full flex-col overflow-hidden rounded-xl border md:flex-row">
+    <Panel className="relative h-[480px] w-full overflow-hidden rounded-xl">
+      <div className="flex h-full min-h-0 w-full flex-col md:flex-row">
       <div className="from-carbon-950 to-carbon-900 relative flex flex-1 flex-col overflow-hidden bg-gradient-to-b">
         <CanvasErrorBoundary
           fallback={
@@ -761,6 +763,7 @@ export function LiveSwarmVisualizer3D({
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </Panel>
   )
 }
