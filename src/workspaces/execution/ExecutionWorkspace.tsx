@@ -240,7 +240,7 @@ function PaginatedHistoryTable({
     }
   }
 
-  const renderRow = (row: any) => {
+  const renderRow = (row: unknown) => {
     switch (kind) {
       case 'decisions': {
         const item = row as Decision
