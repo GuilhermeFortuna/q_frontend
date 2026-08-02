@@ -76,4 +76,13 @@ describe('design-system material classes (WO116 regression guard)', () => {
     expect(matches).toHaveLength(1)
     expect(globalsCss).toMatch(/::selection\s*\{[\s\S]*?background-color:[\s\S]*?brass/)
   })
+
+  it('exports brass glow-card ([data-glow]) rules with reduced-motion kill switch', () => {
+    expect(materialsCss).toMatch(/\[data-glow\]\s*\{/)
+    expect(materialsCss).toMatch(/--base:\s*40/)
+    expect(materialsCss).toMatch(/mask-composite:\s*exclude/)
+    expect(materialsCss).toMatch(
+      /:root\[data-reduced-motion='true'\]\s*\[data-glow\]\s*\{[\s\S]*?--bg-spot-opacity:\s*0/,
+    )
+  })
 })
