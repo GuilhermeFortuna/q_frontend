@@ -101,7 +101,12 @@ function HealthSignals({
   unknownOrders: number
 }) {
   return (
-    <Panel className="p-4" living data-testid="execution-health-panel">
+    <Panel
+      className="p-4"
+      living
+      data-testid="execution-health-panel"
+      data-workspace-transition-surface="primary"
+    >
       <p className="text-silver-400 mb-3 text-xs">
         API reachability is separate from worker heartbeat and market-data freshness.
       </p>
@@ -635,11 +640,17 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
     <div
       className="mx-auto flex h-full min-h-0 max-w-6xl flex-col gap-4 overflow-hidden p-1"
       data-testid="execution-workspace"
+      data-workspace-transition-root="execution"
     >
       <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-brass-400 text-xl font-bold">Execution</h1>
+            <h1
+              className="text-brass-400 text-xl font-bold"
+              data-workspace-transition-anchor="execution"
+            >
+              Execution
+            </h1>
             <EnvironmentBadges />
           </div>
           <p className="text-silver-400 mt-1 text-sm">
@@ -668,7 +679,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
       ) : null}
 
       <div className="grid shrink-0 gap-4 lg:grid-cols-2">
-        <Panel className="p-4" living>
+        <Panel className="p-4" living data-workspace-transition-surface="secondary">
           <PanelHeader title="Global kill switch" />
           <p className="text-silver-400 -mt-1 mb-3 text-xs">
             Halts new risk across paper deployments. Requires explicit confirmation to enable.
@@ -763,7 +774,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-        <Panel className="flex min-h-0 flex-col p-0" living>
+        <Panel className="flex min-h-0 flex-col p-0" living data-workspace-transition-surface="tertiary">
           <PanelHeader
             title="Deployments"
             right={
@@ -1026,7 +1037,11 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
             pollingEnabled={isPolling}
           />
 
-          <Panel className="flex min-h-0 flex-1 flex-col p-0" living>
+          <Panel
+            className="flex min-h-0 flex-1 flex-col p-0"
+            living
+            data-workspace-transition-surface="utility"
+          >
             <PanelHeader title="History" />
             <div className="border-carbon-800 shrink-0 border-b px-3 py-2">
               <SegmentedToggle

@@ -82,7 +82,7 @@ orders do not compensate for it.
 
 Current dispatch state:
 
-- WO215 — `READY`
+- WO215 — `REVIEW` (implementation complete; awaiting VISUAL A)
 - WO216–WO221 — `BLOCKED` by the immediately preceding visual acceptance gate
 
 ## Explicit non-selections

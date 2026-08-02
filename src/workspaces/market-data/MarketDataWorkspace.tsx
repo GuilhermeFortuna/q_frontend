@@ -303,20 +303,25 @@ export function MarketDataWorkspace() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-210px)] w-full flex-col gap-4 overflow-hidden">
-      <QuoteRibbon
-        symbol={selectedSymbol}
-        instrument={selectedInstrument}
-        activeBar={activeBar}
-        snapshot={snapshot}
-        connectionStatus={mt5Status}
-        priceDigits={priceDigits}
-        sidebarCollapsed={sidebarCollapsed}
-        detailCollapsed={detailCollapsed}
-        isLoadingInstrument={instrumentsQuery.isLoading}
-        onToggleSidebar={handleToggleSidebar}
-        onToggleDetailPanel={handleToggleDetailPanel}
-      />
+    <div
+      className="flex h-[calc(100vh-210px)] w-full flex-col gap-4 overflow-hidden"
+      data-workspace-transition-root="market-data"
+    >
+      <div data-workspace-transition-surface="utility" data-workspace-transition-anchor="market-data">
+        <QuoteRibbon
+          symbol={selectedSymbol}
+          instrument={selectedInstrument}
+          activeBar={activeBar}
+          snapshot={snapshot}
+          connectionStatus={mt5Status}
+          priceDigits={priceDigits}
+          sidebarCollapsed={sidebarCollapsed}
+          detailCollapsed={detailCollapsed}
+          isLoadingInstrument={instrumentsQuery.isLoading}
+          onToggleSidebar={handleToggleSidebar}
+          onToggleDetailPanel={handleToggleDetailPanel}
+        />
+      </div>
 
       <Group
         id="quant-market-layout"
@@ -351,15 +356,17 @@ export function MarketDataWorkspace() {
           }}
         >
           {!sidebarCollapsed && (
-            <MarketWatchPanel
-              watchlist={watchlist}
-              snapshotsBySymbol={snapshotsBySymbol}
-              selectedSymbol={selectedSymbol}
-              isLoadingInstruments={instrumentsQuery.isLoading}
-              onSelectSymbol={setSelectedSymbol}
-              onAddInstrument={addToWatchlist}
-              onRemoveInstrument={removeFromWatchlist}
-            />
+            <div className="h-full min-h-0" data-workspace-transition-surface="primary">
+              <MarketWatchPanel
+                watchlist={watchlist}
+                snapshotsBySymbol={snapshotsBySymbol}
+                selectedSymbol={selectedSymbol}
+                isLoadingInstruments={instrumentsQuery.isLoading}
+                onSelectSymbol={setSelectedSymbol}
+                onAddInstrument={addToWatchlist}
+                onRemoveInstrument={removeFromWatchlist}
+              />
+            </div>
           )}
         </Panel>
 
@@ -370,6 +377,7 @@ export function MarketDataWorkspace() {
             <DesignPanel
               living
               className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0"
+              data-workspace-transition-surface="secondary"
             >
               <ChartToolbar
                 selectedTimeframe={selectedTimeframe}
@@ -454,7 +462,11 @@ export function MarketDataWorkspace() {
             }
           }}
         >
-          {!detailCollapsed && <DetailZone symbol={selectedSymbol} snapshot={snapshot} />}
+          {!detailCollapsed && (
+            <div className="h-full min-h-0" data-workspace-transition-surface="tertiary">
+              <DetailZone symbol={selectedSymbol} snapshot={snapshot} />
+            </div>
+          )}
         </Panel>
       </Group>
 

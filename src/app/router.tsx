@@ -27,6 +27,29 @@ import type { ResearchTab } from '@/types/features'
 
 let initialRedirectDone = false
 
+export const WORKSPACE_PATH_ORDER = [
+  '/',
+  '/market-data',
+  '/storage',
+  '/strategy-builder',
+  '/backtests',
+  '/validate',
+  '/discover',
+  '/research',
+  '/execution',
+  '/system',
+] as const
+
+export function workspaceTransitionDirection(
+  fromPathname: string,
+  toPathname: string,
+): 'forward' | 'backward' | null {
+  const fromIndex = WORKSPACE_PATH_ORDER.indexOf(fromPathname as (typeof WORKSPACE_PATH_ORDER)[number])
+  const toIndex = WORKSPACE_PATH_ORDER.indexOf(toPathname as (typeof WORKSPACE_PATH_ORDER)[number])
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return null
+  return toIndex > fromIndex ? 'forward' : 'backward'
+}
+
 function syncWorkspace(workspace: WorkspaceId) {
   initialRedirectDone = true
   useAppStore.getState().setActiveWorkspace(workspace)
@@ -282,29 +305,8 @@ export const router = createRouter({
   routeTree,
   defaultViewTransition: {
     types: ({ fromLocation, toLocation }) => {
-      const PATH_ORDER = [
-        '/',
-        '/market-data',
-        '/storage',
-        '/strategy-builder',
-        '/backtests',
-        '/validate',
-        '/discover',
-        '/research',
-        '/execution',
-        '/system',
-      ]
-      const fromIndex = fromLocation ? PATH_ORDER.indexOf(fromLocation.pathname) : -1
-      const toIndex = toLocation ? PATH_ORDER.indexOf(toLocation.pathname) : -1
-
-      if (fromIndex !== -1 && toIndex !== -1) {
-        if (toIndex > fromIndex) {
-          return ['forward']
-        } else if (toIndex < fromIndex) {
-          return ['backward']
-        }
-      }
-      return []
+      const direction = fromLocation && workspaceTransitionDirection(fromLocation.pathname, toLocation.pathname)
+      return direction ? [direction] : []
     },
   },
 })

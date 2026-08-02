@@ -62,9 +62,15 @@ export function SystemWorkspace() {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div
+      className="mx-auto flex max-w-3xl flex-col gap-6"
+      data-workspace-transition-root="system"
+    >
       <div>
-        <h1 className="font-display text-silver-100 tracking-display text-xl font-semibold">
+        <h1
+          className="font-display text-silver-100 tracking-display text-xl font-semibold"
+          data-workspace-transition-anchor="system"
+        >
           System
         </h1>
         <p className="text-silver-400 mt-1 text-sm">
@@ -72,7 +78,7 @@ export function SystemWorkspace() {
         </p>
       </div>
 
-      <Panel className="p-0">
+      <Panel className="p-0" data-workspace-transition-surface="primary">
         <PanelHeader title="Display & Brightness" />
         <div className="space-y-6 px-4 pb-4">
           <p className="text-silver-400 -mt-1 text-xs">
@@ -158,7 +164,7 @@ export function SystemWorkspace() {
         </div>
       </Panel>
 
-      <Panel className="p-0">
+      <Panel className="p-0" data-workspace-transition-surface="secondary">
         <PanelHeader title="Data Source" />
         <div className="space-y-4 px-4 pb-4">
           <p className="text-silver-400 -mt-1 text-xs">
@@ -201,7 +207,7 @@ export function SystemWorkspace() {
         </div>
       </Panel>
 
-      <Panel className="p-0">
+      <Panel className="p-0" data-workspace-transition-surface="tertiary">
         <PanelHeader title="Environment" />
         <div className="grid gap-3 px-4 pb-4 sm:grid-cols-3">
           <StatTile className="p-3" label="API base URL" value={env.apiBaseUrl} />
@@ -218,7 +224,7 @@ export function SystemWorkspace() {
         </div>
       </Panel>
 
-      <Panel className="p-0">
+      <Panel className="p-0" data-workspace-transition-surface="utility">
         <PanelHeader
           title="Backend health"
           right={

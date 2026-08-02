@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 
 import {
   shouldFetchStrategySearchResults,
@@ -27,6 +27,12 @@ export function DiscoverWorkspace() {
   const { runId, submittedBacktest, workbenchOpen, rightPanelTab, selectedHistoryRunId } =
     useAppStore((s) => s.discoverSession)
   const patchSession = useAppStore((s) => s.patchDiscoverSession)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const rail = rootRef.current?.querySelector<HTMLElement>('.relative.z-20.flex.h-full.shrink-0')
+    rail?.setAttribute('data-workspace-transition-surface', 'secondary')
+  }, [])
 
   const startSearch = useStartStrategySearch()
   const cancelSearch = useCancelStrategySearch()
@@ -72,7 +78,14 @@ export function DiscoverWorkspace() {
     null
 
   return (
-    <div className="text-silver-100 flex h-[calc(100dvh-4.5rem-7rem)] w-full overflow-hidden">
+    <div
+      ref={rootRef}
+      className="text-silver-100 flex h-[calc(100dvh-4.5rem-7rem)] w-full overflow-hidden"
+      data-workspace-transition-root="discover"
+    >
+      <h1 className="sr-only" data-workspace-transition-anchor="discover">
+        Discover
+      </h1>
       <OptimizationWorkbench
         open={workbenchOpen}
         onOpenChange={(open) => patchSession({ workbenchOpen: open })}
@@ -85,7 +98,11 @@ export function DiscoverWorkspace() {
         />
       </OptimizationWorkbench>
 
-      <Panel living className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6">
+      <Panel
+        living
+        className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl p-4 md:p-6"
+        data-workspace-transition-surface="primary"
+      >
         <SegmentedToggle
           aria-label="Discover panel"
           className="mb-4 shrink-0 self-start"

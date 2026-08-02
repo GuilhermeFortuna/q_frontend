@@ -228,13 +228,19 @@ export function StorageWorkspace() {
     : null
 
   return (
-    <div className="animate-fade-in-up mx-auto flex max-w-5xl flex-col gap-6 pb-28">
+    <div
+      className="animate-fade-in-up mx-auto flex max-w-5xl flex-col gap-6 pb-28"
+      data-workspace-transition-root="storage"
+    >
       <div className="flex items-center gap-3">
         <div className="border-carbon-700/60 bg-carbon-900/50 text-silver-300 flex h-10 w-10 items-center justify-center rounded-lg border">
           <Database className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="font-display text-silver-100 tracking-display text-xl font-semibold">
+          <h1
+            className="font-display text-silver-100 tracking-display text-xl font-semibold"
+            data-workspace-transition-anchor="storage"
+          >
             Storage
           </h1>
           <p className="text-silver-400 mt-0.5 text-sm">
@@ -244,7 +250,7 @@ export function StorageWorkspace() {
         </div>
       </div>
 
-      <Panel living className="p-0">
+      <Panel living className="p-0" data-workspace-transition-surface="primary">
         <PanelHeader title="Download from MT5" />
         <div className="space-y-5 px-4 pb-4">
           <p className="text-silver-400 -mt-1 text-xs">
@@ -539,7 +545,7 @@ export function StorageWorkspace() {
         </div>
       </Panel>
 
-      <Panel living className="p-0">
+      <Panel living className="p-0" data-workspace-transition-surface="secondary">
         <PanelHeader title="Inventory" />
         <div className="px-4 pb-4">
           <p className="text-silver-400 -mt-1 mb-4 text-xs">
