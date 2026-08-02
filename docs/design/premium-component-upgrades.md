@@ -83,6 +83,8 @@ WO215-WO221 contain the implementation contracts.
 - Q adaptation: the source becomes an `InferenceSignal`, not a background and not an orb. Its
   count, amplitude, speed, spread, intensity, glow, and palette are driven by real AI Builder state.
   No microphone, audio-reactivity, listening metaphor, rainbow palette, or glass ball is permitted.
+- Legacy removal (WO217): the prior `surface-aurora` empty-state backdrop and `QuantSpark` hero
+  mark are retired; `AiInferenceSignal` is the sole visual presence on `/strategy-builder`.
 - Approved dependency: install exactly `ogl@1.0.11`. The canvas and RAF are feature-route owned,
   instrumented, paused while hidden, and disposed immediately off `/strategy-builder`.
 

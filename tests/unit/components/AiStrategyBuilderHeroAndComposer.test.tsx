@@ -9,6 +9,12 @@ import { AiChatTranscript } from '@/components/backtests/setup/AiChatTranscript'
 import type { AiStrategySession } from '@/lib/strategies/useAiStrategySession'
 import { useAppStore } from '@/store/useAppStore'
 
+vi.mock('@/components/backtests/setup/AiInferenceSignal', () => ({
+  AiInferenceSignal: ({ state, variant }: { state: string; variant: string }) => (
+    <div data-testid="ai-inference-signal" data-visual-state={state} data-variant={variant} />
+  ),
+}))
+
 // Mock useAppStore for motion Mode
 vi.mock('@/store/useAppStore', () => {
   return {
@@ -30,6 +36,10 @@ function buildSession(overrides: Partial<AiStrategySession> = {}): AiStrategySes
     previewSpec: null,
     response: null,
     serviceError: null,
+    interpretFailed: false,
+    doneHoldActive: false,
+    clearDoneHold: vi.fn(),
+    hasIncrementalOutput: false,
     saveError: null,
     validationErrors: [],
     unsupportedRequests: [],
@@ -79,14 +89,13 @@ function buildSession(overrides: Partial<AiStrategySession> = {}): AiStrategySes
 }
 
 describe('AiBuilderHero', () => {
-  it('renders greeting and spark emblem in empty state', () => {
+  it('renders greeting without the retired spark emblem', () => {
     render(<AiBuilderHero />)
 
     expect(screen.getByText(/What are we/i)).toBeInTheDocument()
     expect(screen.getByText('building')).toBeInTheDocument()
     const hero = screen.getByTestId('ai-builder-hero')
-    // The emblem is an inline brass spark SVG (the quant.svg placeholder was retired).
-    expect(hero.querySelector('svg path')).toBeInTheDocument()
+    expect(hero.querySelector('svg path')).not.toBeInTheDocument()
   })
 
   it('reduced-motion → aurora disables animation via CSS media/classes', () => {
@@ -172,20 +181,22 @@ describe('AiStrategyPanel Choreography and Hosting', () => {
     expect(screen.getByTestId('ai-strategy-submit')).toHaveTextContent('Interpret')
   })
 
-  it('renders hero and centered composer when hideHeader is true and transcript is empty', () => {
+  it('renders hero, inference signal, and centered composer when hideHeader is true and transcript is empty', () => {
     const session = buildSession({ transcript: [] })
     render(<AiStrategyPanel session={session} hideHeader={true} />)
 
+    expect(screen.getByTestId('ai-inference-signal')).toHaveAttribute('data-variant', 'hero')
     expect(screen.getByTestId('ai-builder-hero')).toBeInTheDocument()
     expect(screen.getAllByTestId('ai-chat-example-chip')[0]).toBeInTheDocument()
   })
 
-  it('unmounts hero and renders docked variant when hasConversation is true', () => {
+  it('keeps inference signal mounted and compacts when hasConversation is true', () => {
     const session = buildSession({
       transcript: [{ id: '1', kind: 'user', content: 'test' }],
     })
     render(<AiStrategyPanel session={session} hideHeader={true} />)
 
+    expect(screen.getByTestId('ai-inference-signal')).toHaveAttribute('data-variant', 'compact')
     expect(screen.queryByTestId('ai-builder-hero')).toBeNull()
     expect(screen.getByTestId('ai-chat-transcript')).toBeInTheDocument()
   })

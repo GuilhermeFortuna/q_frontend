@@ -28,17 +28,6 @@ type AppShellProps = {
   children: ReactNode
 }
 
-function PhasePill() {
-  return (
-    <div className="surface-card accent-state flex items-center gap-1.5 rounded-full border px-3 py-1">
-      <span className="live-status-dot bg-brass-400 h-1 w-1 rounded-full" aria-hidden />
-      <span className="accent-wayfinding text-2xs font-mono font-[560] tracking-[0.08em] uppercase">
-        Phase 1 · Foundation
-      </span>
-    </div>
-  )
-}
-
 export function AppShell({ children }: AppShellProps) {
   const activeWorkspace = useAppStore((s) => s.activeWorkspace)
   const location = useLocation()
@@ -93,10 +82,9 @@ export function AppShell({ children }: AppShellProps) {
             </div>
           </div>
 
-          <div className="flex h-full items-center gap-6">
+          <div className="flex h-full items-center gap-2">
             <MotionToggle />
             <BrightnessToggle />
-            <PhasePill />
             <WindowControls />
           </div>
         </header>

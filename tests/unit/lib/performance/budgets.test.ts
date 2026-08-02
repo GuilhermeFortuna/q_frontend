@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_ALWAYS_ON_CANVASES_OUTSIDE_3D,
   MAX_APP_SHELL_ANIMATION_LOOPS,
+  routeFeatureRendererBudget,
   routeMountQueryBudget,
   TARGET_FPS,
 } from '@/lib/performance/budgets'
@@ -19,6 +20,15 @@ describe('performance budgets', () => {
     expect(routeMountQueryBudget('/backtests')).toBe(20)
     expect(routeMountQueryBudget('/discover')).toBe(16)
     expect(routeMountQueryBudget('/market-data')).toBe(18)
+    expect(routeMountQueryBudget('/strategy-builder')).toBe(20)
     expect(routeMountQueryBudget('/system')).toBeNull()
+  })
+
+  it('maps strategy-builder to feature renderer budget', () => {
+    expect(routeFeatureRendererBudget('/strategy-builder')).toEqual({
+      canvases: 1,
+      animationLoops: 1,
+    })
+    expect(routeFeatureRendererBudget('/backtests')).toBeNull()
   })
 })

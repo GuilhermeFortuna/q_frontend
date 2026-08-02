@@ -42,7 +42,7 @@ export function StrategyBuilderWorkspace() {
 
   return (
     <div
-      className="animate-fade-in-up mx-auto flex h-[calc(100dvh-4.5rem-7rem)] min-h-[36rem] w-full max-w-6xl flex-col gap-4 overflow-hidden"
+      className="animate-fade-in-up mx-auto flex h-[calc(100dvh-4.5rem-7rem)] min-h-[36rem] w-full max-w-6xl flex-col gap-4 overflow-visible"
       data-workspace-transition-root="strategy-builder"
     >
       <div className="flex items-center gap-3">
@@ -65,7 +65,8 @@ export function StrategyBuilderWorkspace() {
 
       <Panel
         living
-        className="flex min-h-0 flex-1 flex-col p-4"
+        overflowVisible
+        className="flex min-h-0 flex-1 flex-col overflow-visible p-4"
         data-workspace-transition-surface="primary"
       >
         <AiStrategyPanel

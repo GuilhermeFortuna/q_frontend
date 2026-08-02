@@ -20,6 +20,12 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
+vi.mock('@/components/backtests/setup/AiInferenceSignal', () => ({
+  AiInferenceSignal: ({ state, variant }: { state: string; variant: string }) => (
+    <div data-testid="ai-inference-signal" data-visual-state={state} data-variant={variant} />
+  ),
+}))
+
 const server = setupServer(...handlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
@@ -136,9 +142,10 @@ describe('feature islands — AI Strategy Builder workspace', () => {
     expect(screen.getByTestId('ai-strategy-draft-header')).toBeInTheDocument()
     expect(screen.getByLabelText('Name')).toBeInTheDocument()
     expect(screen.getByLabelText('Description')).toBeInTheDocument()
-    // Empty conversation renders the hero state (aurora backdrop + greeting), not the transcript.
+    // Empty conversation renders the hero state and inference signal, not the transcript.
     expect(screen.getByTestId('ai-builder-hero')).toBeInTheDocument()
-    expect(screen.getByTestId('ai-builder-aurora')).toBeInTheDocument()
+    expect(screen.getByTestId('ai-inference-signal')).toBeInTheDocument()
+    expect(screen.queryByTestId('ai-builder-aurora')).not.toBeInTheDocument()
     expect(screen.getByTestId('ai-strategy-message')).toBeInTheDocument()
   })
 })

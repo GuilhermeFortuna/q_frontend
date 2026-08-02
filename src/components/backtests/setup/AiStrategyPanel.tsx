@@ -1,5 +1,5 @@
 import { Copy, Download, Loader2, Play, RotateCcw, Save, Sparkles, Wand2, Zap } from 'lucide-react'
-import { type ReactNode, useEffect, useRef } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Callout } from '@/components/ui'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { AnimatePresence, motion } from 'motion/react'
@@ -7,6 +7,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { AiChatTranscript } from '@/components/backtests/setup/AiChatTranscript'
 import { AiComposer } from '@/components/backtests/setup/AiComposer'
 import { AiBuilderHero } from '@/components/backtests/setup/AiBuilderHero'
+import { AiInferenceSignal } from '@/components/backtests/setup/AiInferenceSignal'
+import { deriveAiVisualState } from '@/components/backtests/setup/aiVisualState'
 import { useReducedMotion } from '@/lib/motion/useReducedMotion'
 import { chipClass } from '@/components/ui/chipStyles'
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
@@ -84,6 +86,7 @@ export function AiStrategyPanel({
   fillHeight = false,
 }: AiStrategyPanelProps) {
   const composerRef = useRef<HTMLTextAreaElement>(null)
+  const [composerFocused, setComposerFocused] = useState(false)
   const {
     message,
     setMessage,
@@ -91,6 +94,9 @@ export function AiStrategyPanel({
     previewSpec,
     response,
     serviceError,
+    interpretFailed,
+    doneHoldActive,
+    hasIncrementalOutput,
     saveError,
     validationErrors,
     unsupportedRequests,
@@ -140,18 +146,61 @@ export function AiStrategyPanel({
 
   const layoutTransition =
     isReduced || isResetting ? { duration: 0 } : { duration: 0.28, ease: [0.4, 0, 0.2, 1] }
+
+  const visualState = useMemo(
+    () =>
+      deriveAiVisualState({
+        serviceError,
+        interpretFailed,
+        isPending: interpretMutation.isPending,
+        hasIncrementalOutput,
+        isDoneHold: doneHoldActive,
+        composerFocused,
+        message,
+      }),
+    [
+      composerFocused,
+      doneHoldActive,
+      hasIncrementalOutput,
+      interpretFailed,
+      interpretMutation.isPending,
+      message,
+      serviceError,
+    ],
+  )
+
   if (hideHeader) {
     return (
       <section
         className={cn(
-          'border-carbon-700/50 bg-carbon-950/40 relative rounded-xl border p-3',
+          'border-carbon-700/50 bg-carbon-950/40 relative overflow-visible rounded-xl border p-3',
           fillHeight ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-3',
         )}
         data-testid="ai-strategy-panel"
       >
         {draftHeader}
 
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-visible">
+          <motion.div
+            layout
+            layoutId="ai-inference-signal-wrapper"
+            transition={layoutTransition}
+            className={cn(
+              'z-10 flex shrink-0 overflow-visible',
+              hasConversation
+                ? 'relative mb-2 justify-start px-4'
+                : // Sit with the bottom-aligned empty stack (behind headline / above composer).
+                  'pointer-events-none absolute inset-x-0 bottom-[13.5rem] -translate-y-1/2 justify-center',
+            )}
+          >
+            <AiInferenceSignal
+              state={visualState}
+              variant={hasConversation ? 'compact' : 'hero'}
+              className={hasConversation ? undefined : 'w-full'}
+            />
+          </motion.div>
+
+          <div className="flex min-h-0 flex-1 flex-col overflow-visible">
           <AnimatePresence mode="popLayout" initial={false}>
             {!hasConversation ? (
               <motion.div
@@ -160,22 +209,31 @@ export function AiStrategyPanel({
                 animate={isReduced ? {} : { opacity: 1 }}
                 exit={isReduced ? {} : { opacity: 0, y: -20 }}
                 transition={{ duration: 0.28, ease: 'easeInOut' }}
-                className="relative flex flex-1 flex-col items-center justify-center gap-7 overflow-hidden rounded-xl py-8"
+                className="relative flex flex-1 flex-col items-center justify-end overflow-visible rounded-xl pt-8 pb-15"
               >
-                <div className="surface-aurora" aria-hidden data-testid="ai-builder-aurora" />
+                {/* Layout reserve for the optical strand core; canvas bleed draws outside. */}
+                {/* Gaps are split (48px above the hero, 96px below) rather than a uniform
+                    `gap-18`: the stack is bottom-anchored and the strand is pinned to
+                    `bottom-[13.5rem]`, so trading space across the hero moves only the hero. */}
+                <div
+                  className="mb-12 h-20 w-full max-w-[440px] shrink-0"
+                  aria-hidden
+                  data-testid="ai-inference-signal-slot"
+                />
 
                 <AiBuilderHero />
 
                 <motion.div
                   layoutId="composer-pill"
                   transition={layoutTransition}
-                  className="relative z-20 flex w-full max-w-2xl flex-col items-center gap-4"
+                  className="relative z-20 mt-24 flex w-full max-w-2xl flex-col items-center gap-4"
                 >
                   <AiComposer
                     session={session}
                     composerRef={composerRef}
                     variant="pill"
                     docked={false}
+                    onFocusChange={setComposerFocused}
                   />
 
                   <div className="flex max-w-3xl flex-wrap justify-center gap-2">
@@ -232,6 +290,7 @@ export function AiStrategyPanel({
                     composerRef={composerRef}
                     variant="pill"
                     docked={true}
+                    onFocusChange={setComposerFocused}
                   />
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -281,6 +340,7 @@ export function AiStrategyPanel({
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
         </div>
       </section>
     )

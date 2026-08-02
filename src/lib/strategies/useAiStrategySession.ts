@@ -69,6 +69,9 @@ export type TranscriptEntry = TranscriptUserEntry | TranscriptAssistantEntry | T
 
 export type AiModelSelection = { provider: string; model: string }
 
+/** Duration to hold the visual "done" state after a successful interpret (WO217). */
+export const AI_VISUAL_DONE_HOLD_MS = 900
+
 function extractInterpretError(error: unknown): string {
   if (!axios.isAxiosError(error)) {
     return error instanceof Error ? error.message : 'AI interpretation failed.'
@@ -97,6 +100,17 @@ export function useAiStrategySession({
   const persistedModelSelection = useAppStore((s) => s.backtestSession.aiModelSelection)
   const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
   const transcriptIdRef = useRef(0)
+  const doneHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearDoneHold = useCallback(() => {
+    if (doneHoldTimerRef.current !== null) {
+      clearTimeout(doneHoldTimerRef.current)
+      doneHoldTimerRef.current = null
+    }
+    setDoneHoldActive(false)
+  }, [])
+
+  useEffect(() => () => clearDoneHold(), [clearDoneHold])
 
   const [message, setMessage] = useState('')
   const [selectedModel, setSelectedModelState] = useState<AiModelSelection | null>(
@@ -107,6 +121,8 @@ export function useAiStrategySession({
   const [draftSpec, setDraftSpec] = useState<StrategySpec | null>(null)
   const [response, setResponse] = useState<AiStrategyResponse | null>(null)
   const [serviceError, setServiceError] = useState<string | null>(null)
+  const [interpretFailed, setInterpretFailed] = useState(false)
+  const [doneHoldActive, setDoneHoldActive] = useState(false)
   const [originalPrompt, setOriginalPrompt] = useState('')
   const [unsupportedAcknowledged, setUnsupportedAcknowledged] = useState(false)
   const [appliedToSetup, setAppliedToSetup] = useState(false)
@@ -207,6 +223,7 @@ export function useAiStrategySession({
   )
 
   const resetDraft = useCallback(() => {
+    clearDoneHold()
     setMessage('')
     setConversation([])
     setTranscript([])
@@ -214,6 +231,7 @@ export function useAiStrategySession({
     setDraftSpec(null)
     setResponse(null)
     setServiceError(null)
+    setInterpretFailed(false)
     setOriginalPrompt('')
     setUnsupportedAcknowledged(false)
     setAppliedToSetup(false)
@@ -221,7 +239,31 @@ export function useAiStrategySession({
     setSaveError(null)
     setRevisions([])
     setAnsweringQuestion(null)
-  }, [])
+  }, [clearDoneHold])
+
+  const startDoneHold = useCallback(() => {
+    clearDoneHold()
+    setDoneHoldActive(true)
+    doneHoldTimerRef.current = setTimeout(() => {
+      doneHoldTimerRef.current = null
+      setDoneHoldActive(false)
+    }, AI_VISUAL_DONE_HOLD_MS)
+  }, [clearDoneHold])
+
+  const setMessageWithVisualReset = useCallback(
+    (next: string | ((current: string) => string)) => {
+      setMessage((current) => {
+        const resolved = typeof next === 'function' ? next(current) : next
+        if (resolved !== current) {
+          setServiceError(null)
+          setInterpretFailed(false)
+          clearDoneHold()
+        }
+        return resolved
+      })
+    },
+    [clearDoneHold],
+  )
 
   const ensureCapabilitiesVersion = useCallback(async () => {
     const capabilities = await queryClient.fetchQuery({
@@ -301,7 +343,9 @@ export function useAiStrategySession({
       const trimmed = nextMessage.trim()
       if (!trimmed) return
 
+      clearDoneHold()
       setServiceError(null)
+      setInterpretFailed(false)
       setSaveError(null)
       const userTurn: ConversationMessage = { role: 'user', content: trimmed }
       const nextConversation = [...conversation, userTurn]
@@ -356,9 +400,12 @@ export function useAiStrategySession({
           },
         ])
         setMessage('')
+        startDoneHold()
       } catch (error) {
+        clearDoneHold()
         const errorMessage = extractInterpretError(error)
         setServiceError(errorMessage)
+        setInterpretFailed(true)
         setTranscript((current) => [
           ...current,
           { id: nextTranscriptId(), kind: 'notice', content: errorMessage },
@@ -366,6 +413,8 @@ export function useAiStrategySession({
       }
     },
     [
+      answeringQuestion,
+      clearDoneHold,
       conversation,
       draftSpec,
       ensureCapabilitiesVersion,
@@ -376,6 +425,7 @@ export function useAiStrategySession({
       revisions.length,
       hasProviderContract,
       selectedModel,
+      startDoneHold,
     ],
   )
 
@@ -504,15 +554,22 @@ export function useAiStrategySession({
     [nextTranscriptId],
   )
 
+  /** Incremental assistant output is not yet supported by the interpret API. */
+  const hasIncrementalOutput = false
+
   return {
     message,
-    setMessage,
+    setMessage: setMessageWithVisualReset,
     conversation,
     transcript,
     draftSpec,
     previewSpec,
     response,
     serviceError,
+    interpretFailed,
+    doneHoldActive,
+    clearDoneHold,
+    hasIncrementalOutput,
     saveError,
     validationErrors,
     unsupportedRequests,

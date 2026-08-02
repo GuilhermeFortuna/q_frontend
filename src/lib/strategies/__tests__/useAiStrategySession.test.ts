@@ -5,7 +5,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
-import { useAiStrategySession } from '@/lib/strategies/useAiStrategySession'
+import { useAiStrategySession, AI_VISUAL_DONE_HOLD_MS } from '@/lib/strategies/useAiStrategySession'
 import { useAppStore } from '@/store/useAppStore'
 import {
   compareRevisionSections,
@@ -190,6 +190,118 @@ describe('useAiStrategySession transcript', () => {
 
     expect(result.current.transcript.map((entry) => entry.kind)).toEqual(['user', 'notice'])
     expect(result.current.conversation).toEqual([{ role: 'user', content: 'Create a strategy' }])
+    expect(result.current.interpretFailed).toBe(true)
+  })
+
+  it('clears serviceError and interpretFailed when the composer message is edited', async () => {
+    server.use(
+      http.post('*/api/v1/strategy-builder/interpret', () =>
+        HttpResponse.json(
+          {
+            detail: {
+              status: 'ai_disabled',
+              message: 'AI strategy interpretation is disabled.',
+            },
+          },
+          { status: 503 },
+        ),
+      ),
+    )
+
+    const config = createMockConfig()
+    const { result } = renderHook(() => useAiStrategySession({ config: config as never }), {
+      wrapper,
+    })
+
+    await waitFor(() => {
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
+    })
+
+    await act(async () => {
+      await result.current.submitInterpret('Create a strategy')
+    })
+
+    await waitFor(() => {
+      expect(result.current.interpretFailed).toBe(true)
+    })
+
+    act(() => {
+      result.current.setMessage('Revised prompt')
+    })
+
+    expect(result.current.serviceError).toBeNull()
+    expect(result.current.interpretFailed).toBe(false)
+  })
+
+  it('activates doneHoldActive for 900ms after a successful interpret', async () => {
+    const config = createMockConfig()
+    const { result } = renderHook(() => useAiStrategySession({ config: config as never }), {
+      wrapper,
+    })
+
+    await waitFor(() => {
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
+    })
+
+    await act(async () => {
+      await result.current.submitInterpret('Create EMA crossover')
+    })
+
+    expect(result.current.doneHoldActive).toBe(true)
+    expect(AI_VISUAL_DONE_HOLD_MS).toBe(900)
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, AI_VISUAL_DONE_HOLD_MS + 50))
+    })
+    expect(result.current.doneHoldActive).toBe(false)
+  })
+
+  it('clears doneHoldActive on resetDraft', async () => {
+    const config = createMockConfig()
+    const { result } = renderHook(() => useAiStrategySession({ config: config as never }), {
+      wrapper,
+    })
+
+    await waitFor(() => {
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
+    })
+
+    await act(async () => {
+      await result.current.submitInterpret('Create EMA crossover')
+    })
+
+    expect(result.current.doneHoldActive).toBe(true)
+
+    act(() => {
+      result.current.resetDraft()
+    })
+
+    expect(result.current.doneHoldActive).toBe(false)
+  })
+
+  it('exposes hasIncrementalOutput as false until streaming API exists', async () => {
+    const config = createMockConfig()
+    const { result } = renderHook(() => useAiStrategySession({ config: config as never }), {
+      wrapper,
+    })
+
+    await waitFor(() => {
+      expect(result.current.selectedModel).toEqual({
+        provider: 'openai_compatible',
+        model: 'test-model-a',
+      })
+    })
+
+    expect(result.current.hasIncrementalOutput).toBe(false)
   })
 
   it('appends a manual-edit notice when updateDraft changes the spec', async () => {

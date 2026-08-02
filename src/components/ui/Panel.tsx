@@ -9,11 +9,24 @@ export type PanelProps = HTMLAttributes<HTMLDivElement> & {
    * compatibility; no longer stacks `surface-panel--living` (pseudo conflict).
    */
   living?: boolean
+  /** Allow children (e.g. inference bloom) to paint outside the panel clip. */
+  overflowVisible?: boolean
 }
 
-export function Panel({ className, living: _living = false, children, ...props }: PanelProps) {
+export function Panel({
+  className,
+  living: _living = false,
+  overflowVisible = false,
+  children,
+  ...props
+}: PanelProps) {
   return (
-    <GlowCard intensity="panel" className={cn(className)} {...props}>
+    <GlowCard
+      intensity="panel"
+      overflowVisible={overflowVisible}
+      className={cn(className)}
+      {...props}
+    >
       {children}
     </GlowCard>
   )

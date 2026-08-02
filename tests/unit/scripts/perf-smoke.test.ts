@@ -16,6 +16,7 @@ describe('perf-smoke-lib', () => {
       '/backtests',
       '/discover',
       '/market-data',
+      '/strategy-builder',
     ])
   })
 
@@ -71,6 +72,48 @@ describe('perf-smoke-lib', () => {
     expect(hot.issues.length).toBeGreaterThan(0)
     expect(hot.warnings.some((w) => w.includes('fps'))).toBe(true)
     expect(hot.warnings.some((w) => w.includes('mount queries'))).toBe(true)
+  })
+
+  it('allows strategy-builder feature canvas and loop budgets', () => {
+    const strategyBuilder = evaluateRouteSample({
+      path: '/strategy-builder',
+      label: 'strategy-builder',
+      workspace: 'strategy-builder',
+      navigationMs: 1200,
+      settleMs: 80,
+      canvasCount: 1,
+      animationLoops: 1,
+      routeMountQueries: 5,
+      fps: 58,
+      longTasks: 1,
+      hudVisible: false,
+      hasVisible3dWorkspace: false,
+      consoleErrors: [],
+      gpuWarnings: [],
+    })
+    expect(strategyBuilder.ok).toBe(true)
+    expect(strategyBuilder.warnings.some((w) => w.includes('shell budget'))).toBe(false)
+
+    const overBudget = evaluateRouteSample({
+      path: '/strategy-builder',
+      label: 'strategy-builder',
+      workspace: 'strategy-builder',
+      navigationMs: 1200,
+      settleMs: 80,
+      canvasCount: 2,
+      animationLoops: 2,
+      routeMountQueries: 5,
+      fps: 58,
+      longTasks: 1,
+      hudVisible: false,
+      hasVisible3dWorkspace: false,
+      consoleErrors: [],
+      gpuWarnings: [],
+    })
+    expect(overBudget.warnings.some((w) => w.includes('strategy-builder canvas'))).toBe(true)
+    expect(overBudget.warnings.some((w) => w.includes('strategy-builder animation loops'))).toBe(
+      true,
+    )
   })
 
   it('summarizes a smoke run', () => {

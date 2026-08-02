@@ -36,19 +36,40 @@ export const ROUTE_MOUNT_QUERY_BUDGETS = {
   backtests: 20,
   discover: 16,
   'market-data': 18,
+  'strategy-builder': 20,
+} as const
+
+/** Route-scoped feature renderer budgets (exception to global shell ceilings). */
+export const ROUTE_FEATURE_RENDERER_BUDGETS = {
+  'strategy-builder': { canvases: 1, animationLoops: 1 },
 } as const
 
 export type BudgetedRoute = keyof typeof ROUTE_MOUNT_QUERY_BUDGETS
+export type FeatureRendererBudgetedRoute = keyof typeof ROUTE_FEATURE_RENDERER_BUDGETS
 
 export function routeBudgetKey(pathname: string): BudgetedRoute | null {
   if (pathname === '/' || pathname === '') return 'launcher'
+  if (pathname.startsWith('/strategy-builder')) return 'strategy-builder'
   if (pathname.startsWith('/backtests')) return 'backtests'
   if (pathname.startsWith('/discover')) return 'discover'
   if (pathname.startsWith('/market-data')) return 'market-data'
   return null
 }
 
+export function routeFeatureRendererBudgetKey(pathname: string): FeatureRendererBudgetedRoute | null {
+  if (pathname.startsWith('/strategy-builder')) return 'strategy-builder'
+  return null
+}
+
 export function routeMountQueryBudget(pathname: string): number | null {
   const key = routeBudgetKey(pathname)
   return key ? ROUTE_MOUNT_QUERY_BUDGETS[key] : null
+}
+
+export function routeFeatureRendererBudget(pathname: string): {
+  canvases: number
+  animationLoops: number
+} | null {
+  const key = routeFeatureRendererBudgetKey(pathname)
+  return key ? ROUTE_FEATURE_RENDERER_BUDGETS[key] : null
 }
