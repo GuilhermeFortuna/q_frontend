@@ -551,8 +551,8 @@ Phase B (WO50–WO51) adds ticks (tick engine offline).
 | 47  | [WO47-backend-market-data-provider-abstraction.md](WO47-backend-market-data-provider-abstraction.md)   | q_backend  | —                 |
 | 48  | [WO48-backend-local-ohlcv-store-and-ingestion.md](WO48-backend-local-ohlcv-store-and-ingestion.md)     | q_backend  | WO47 contract     |
 | 49  | [WO49-frontend-storage-workspace.md](WO49-frontend-storage-workspace.md)                               | q_frontend | WO47 + WO48       |
-| 50  | [WO50-backend-local-tick-store-and-ingestion.md](WO50-backend-local-tick-store-and-ingestion.md)       | q_backend  | WO48              |
-| 51  | [WO51-frontend-storage-tick-support.md](WO51-frontend-storage-tick-support.md)                         | q_frontend | WO49 + WO50       |
+| 50  | [WO50-backend-local-tick-store-and-ingestion.md](WO50-backend-local-tick-store-and-ingestion.md)         | q_backend  | WO48              |
+| 51  | [WO51-frontend-storage-tick-support.md](WO51-frontend-storage-tick-support.md)                           | q_frontend | WO49 + WO50       |
 
 ### Dispatch order
 
@@ -973,6 +973,46 @@ against it. WO176 must degrade cleanly against a pre-WO175 backend.
 7. Are markers sourced from persisted decisions/fills only (no optimistic rendering), with `hold`
    skipped?
 8. Did the agent actually run `uv run pytest` / `pnpm test:run` for real, or just claim green?
+
+## Phase: Premium Interaction Upgrade
+
+Elevates the existing Q interface with seven owner-selected public components. The batch imports
+signature interaction mechanics while retaining Q's visual system, chart stack, dock composition,
+and cinematic environment. Selection record: [premium-component-upgrades.md](../design/premium-component-upgrades.md).
+
+| #   | File                                                                                                                       | Repo       | Depends on            |
+| --- | -------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| 215 | [WO215-frontend-workspace-grid-reconfiguration-transition.md](WO215-frontend-workspace-grid-reconfiguration-transition.md) | q_frontend | current shell/routing |
+| 216 | [WO216-frontend-execution-kill-switch-slide.md](WO216-frontend-execution-kill-switch-slide.md)                             | q_frontend | WO215 accepted        |
+| 217 | [WO217-frontend-ai-builder-inference-strands.md](WO217-frontend-ai-builder-inference-strands.md)                           | q_frontend | WO216 accepted        |
+| 218 | [WO218-frontend-active-job-status-island.md](WO218-frontend-active-job-status-island.md)                                   | q_frontend | WO217 accepted        |
+| 219 | [WO219-frontend-operational-failure-terminal.md](WO219-frontend-operational-failure-terminal.md)                           | q_frontend | WO218 accepted        |
+| 220 | [WO220-frontend-candidate-morphing-dialog.md](WO220-frontend-candidate-morphing-dialog.md)                                 | q_frontend | WO219 accepted        |
+| 221 | [WO221-frontend-quantitative-number-flow.md](WO221-frontend-quantitative-number-flow.md)                                   | q_frontend | WO220 accepted        |
+
+### Dispatch order
+
+```text
+WO215 -> VISUAL A -> WO216 -> VISUAL B -> WO217 -> VISUAL C -> WO218
+      -> VISUAL D -> WO219 -> VISUAL E -> WO220 -> VISUAL F -> WO221 -> VISUAL G
+```
+
+Strictly sequential. Each visual checkpoint is an owner review of the live component at desktop and
+mobile widths; passing automated checks alone does not unlock the next order. Work Orders must be
+returned to `REVIEW`, not self-declared accepted.
+
+### Batch-specific review checklist
+
+1. Is the selected source's signature behavior visibly present, rather than a generic approximation?
+2. Did Q keep its warm-black, brass, smoked-silver, typography, elevation, and chart language?
+3. Did the change avoid a new always-on canvas, shell RAF, root listener, or unbounded animation?
+4. Does reduced motion collapse decorative movement while preserving state, operation, and feedback?
+5. Are keyboard, focus, screen-reader naming, and backend acknowledgement semantics intact?
+6. Are screenshots and a short interaction capture included for the exact owner checkpoint?
+7. Did the agent run targeted tests, `pnpm test:run`, `pnpm typecheck`, `pnpm lint`, `pnpm build`,
+   `pnpm perf:smoke`, and the relevant Tauri/WebKitGTK check—or explicitly record an honest deferral?
+8. Did the implementation preserve unrelated worktree changes, especially active edits in
+   `spotlight-button.tsx` and `ExecutionWorkspace.tsx`?
 
 ## Review checklist (apply to every returned PR)
 

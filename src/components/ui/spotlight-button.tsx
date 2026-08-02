@@ -53,7 +53,9 @@ export function SpotlightNavItem({
   icon: Icon,
   label,
   isActive = false,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   indicatorPosition: _indicatorPosition,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   position: _position,
   size = 'default',
   className,

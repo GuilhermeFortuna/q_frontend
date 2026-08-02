@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect, lazy, Suspense } from 'react'
+import { type ReactNode, useEffect, lazy, Suspense, useCallback } from 'react'
 
 import { CinematicScene } from '@/components/cinematic/CinematicScene'
 import { AppDock } from '@/components/dock/AppDock'
@@ -7,6 +7,8 @@ import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
 import { DigitalClock } from '@/components/layout/DigitalClock'
 import { MotionToggle } from '@/components/layout/MotionToggle'
 import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'
+import { WorkspaceGridTransition } from '@/components/transitions/WorkspaceGridTransition'
+import { useWorkspaceTransitionStore } from '@/components/transitions/workspaceTransitionStore'
 import { WindowControls } from '@/components/layout/WindowControls'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { env } from '@/lib/env'
@@ -43,20 +45,19 @@ export function AppShell({ children }: AppShellProps) {
   const isLauncher = activeWorkspace === 'launcher'
   const isReader = location.pathname === '/news-reader'
 
-  const [rippleKey, setRippleKey] = useState(0)
   const reducedMotion = usePrefersReducedMotion()
+  const setTransitionReducedMotion = useWorkspaceTransitionStore((s) => s.setReducedMotion)
+
+  const focusWorkspaceMain = useCallback(() => {
+    document.getElementById('workspace-main')?.focus({ preventScroll: true })
+  }, [])
 
   // Drive reduced-motion CSS off a JS-set root attribute (not the @media query directly) so the
   // motion preference can override WebKitGTK's false `prefers-reduced-motion: reduce`.
   useEffect(() => {
     document.documentElement.dataset.reducedMotion = reducedMotion ? 'true' : 'false'
-  }, [reducedMotion])
-
-  useEffect(() => {
-    if (activeWorkspace) {
-      setRippleKey((prev) => prev + 1)
-    }
-  }, [activeWorkspace])
+    setTransitionReducedMotion(reducedMotion)
+  }, [reducedMotion, setTransitionReducedMotion])
 
   if (isReader) {
     return (
@@ -74,7 +75,6 @@ export function AppShell({ children }: AppShellProps) {
       <div className="relative flex min-h-full flex-col">
         <CinematicScene />
         <PointerSpotlight />
-        {rippleKey > 0 && <div key={rippleKey} className="quant-edge-ripple animate-edge-ripple" />}
         <header
           data-tauri-drag-region
           className="vt-header surface-shell surface-shell--blur border-brass-600/15 relative z-40 flex items-center justify-between border-b px-6 py-2.5 select-none"
@@ -101,14 +101,17 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </header>
         <main
+          id="workspace-main"
           key={location.pathname}
+          tabIndex={-1}
           className={cn(
-            'vt-main animate-fade-in-up flex-1 overflow-auto px-6 pt-6',
+            'flex-1 overflow-auto px-6 pt-6',
             isLauncher ? 'flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-0' : 'pb-32',
           )}
         >
           {children}
         </main>
+        <WorkspaceGridTransition onSettled={focusWorkspaceMain} />
         <AppDock activeWorkspace={activeWorkspace} />
         {env.perfHud ? (
           <Suspense fallback={null}>

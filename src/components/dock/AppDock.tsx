@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   useCallback,
@@ -20,6 +20,8 @@ import {
   SystemIcon,
   StrategyBuilderIcon,
 } from '@/components/dock/DockIcons'
+import { workspaceTransitionDirection } from '@/app/router'
+import { useWorkspaceTransitionStore } from '@/components/transitions/workspaceTransitionStore'
 import { SpotlightNavItem, SPOTLIGHT_NAV_MOTION, type SpotlightNavItemSize } from '@/components/ui/spotlight-button'
 import { GlowCard } from '@/components/ui/spotlight-card'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
@@ -61,6 +63,9 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
   const size: SpotlightNavItemSize = isLauncher ? 'large' : 'default'
   const activeJobs = useActiveJobs()
   const activeIndex = dockItems.findIndex((item) => item.id === activeWorkspace)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const runWorkspaceTransition = useWorkspaceTransitionStore((state) => state.runWorkspaceTransition)
 
   const itemsRowRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<Array<HTMLElement | null>>([])
@@ -97,6 +102,23 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
     const job = item.enabled ? activeJobs[item.id] : undefined
     return job ? [{ item, job }] : []
   })
+
+  const navigateToWorkspace = (item: DockItem, index: number) => {
+    const direction = workspaceTransitionDirection(location.pathname, item.to)
+    if (!direction) return
+    const destinationDockElement = itemRefs.current[index]
+    if (!destinationDockElement) {
+      void navigate({ to: item.to })
+      return
+    }
+    void runWorkspaceTransition({
+      from: activeWorkspace,
+      to: item.id,
+      direction,
+      destinationDockElement,
+      commit: () => navigate({ to: item.to }),
+    })
+  }
 
   return (
     <nav
@@ -163,10 +185,11 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
           }
 
           return (
-            <Link
+            <button
               key={item.id}
               ref={setItemRef}
-              to={item.to}
+              type="button"
+              onClick={() => navigateToWorkspace(item, index)}
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}
               className="group inline-flex"
@@ -190,7 +213,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
                   </span>
                 ) : null}
               </SpotlightNavItem>
-            </Link>
+            </button>
           )
         })}
       </div>

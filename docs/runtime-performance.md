@@ -50,6 +50,10 @@ window.__Q_PERF_SNAPSHOT__?.()
 | Route mount queries                      | launcher **12**, backtests **20**, discover **16**, market-data **18** | Soft ceilings from WO96                                       |
 | Inactive-route refetches                 | **0** ideal                                                            | Amber in HUD when background queries refetch after navigation |
 
+Workspace grid-reconfiguration (WO215 / P-001) uses transient GSAP Flip clones only. Idle canvas
+and shell animation-loop counts must stay unchanged across repeated dock navigations; no persistent
+RAF or always-on transition canvas is allowed.
+
 ---
 
 ## Browser smoke script

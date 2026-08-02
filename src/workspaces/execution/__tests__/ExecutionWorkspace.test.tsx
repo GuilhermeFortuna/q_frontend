@@ -5,7 +5,11 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { handlers } from '@/mocks/handlers'
-import { resetMockExecutionState, setMockExecutionScenario } from '@/mocks/execution'
+import {
+  resetMockExecutionState,
+  setMockExecutionScenario,
+  updateMockKillSwitch,
+} from '@/mocks/execution'
 import { ExecutionWorkspace } from '@/workspaces/execution/ExecutionWorkspace'
 import { renderWithQueryClient } from '../../../../tests/unit/testUtils'
 
@@ -69,6 +73,126 @@ describe('ExecutionWorkspace', () => {
     await waitFor(() =>
       expect(actionSpy).toHaveBeenCalledWith({ action: 'flatten', confirm: true }),
     )
+  })
+
+  it('engages kill switch via slide with exact mutation body and no optimistic Engaged', async () => {
+    let releasePut!: () => void
+    const putGate = new Promise<void>((resolve) => {
+      releasePut = resolve
+    })
+    const putSpy = vi.fn()
+    server.use(
+      http.put('*/api/v1/execution/kill-switch', async ({ request }) => {
+        const body = (await request.json()) as {
+          enabled: boolean
+          confirm?: boolean
+          reason?: string
+          updated_by?: string
+        }
+        putSpy(body)
+        await putGate
+        return HttpResponse.json(updateMockKillSwitch(body))
+      }),
+    )
+
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get: () => 320,
+    })
+    Element.prototype.setPointerCapture = vi.fn()
+    Element.prototype.releasePointerCapture = vi.fn()
+
+    const user = userEvent.setup()
+    renderWithQueryClient(<ExecutionWorkspace pollingEnabled />)
+    await screen.findByTestId('power-off-slide')
+    expect(screen.getByTestId('execution-kill-switch-state')).toHaveTextContent(/^Off$/i)
+
+    const thumb = screen.getByRole('slider', { name: /engage global kill switch/i })
+    thumb.focus()
+    await user.keyboard('{End}{Enter}')
+
+    await waitFor(() => expect(putSpy).toHaveBeenCalledTimes(1))
+    expect(putSpy).toHaveBeenCalledWith({
+      enabled: true,
+      confirm: true,
+      reason: 'Operator engaged kill switch from Execution workspace',
+      updated_by: 'operator',
+    })
+    expect(screen.getByTestId('execution-kill-switch-state')).toHaveTextContent(/^Off$/i)
+    expect(screen.getByTestId('power-off-slide')).toHaveAttribute('data-state', 'submitting')
+    expect(screen.getByTestId('power-off-slide-status')).toHaveTextContent(/awaiting control plane/i)
+
+    releasePut()
+    await waitFor(() =>
+      expect(screen.getByTestId('execution-kill-switch-state')).toHaveTextContent(/^Engaged$/i),
+    )
+    expect(screen.queryByTestId('power-off-slide')).not.toBeInTheDocument()
+    expect(screen.getByTestId('execution-kill-switch-release')).toBeInTheDocument()
+  })
+
+  it('resets the slide and shows inline error when kill-switch engage is rejected', async () => {
+    server.use(
+      http.put('*/api/v1/execution/kill-switch', () =>
+        HttpResponse.json({ detail: 'kill switch denied' }, { status: 409 }),
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderWithQueryClient(<ExecutionWorkspace pollingEnabled />)
+    await screen.findByTestId('power-off-slide')
+
+    const thumb = screen.getByRole('slider', { name: /engage global kill switch/i })
+    thumb.focus()
+    await user.keyboard('{End}{Enter}')
+
+    expect(await screen.findByTestId('execution-action-error')).toHaveTextContent(/kill switch denied/i)
+    await waitFor(() =>
+      expect(screen.getByTestId('power-off-slide')).toHaveAttribute('data-state', 'idle'),
+    )
+    expect(screen.getByTestId('execution-kill-switch-state')).toHaveTextContent(/^Off$/i)
+  })
+
+  it('releases kill switch with confirm:false and keeps flatten dialog available', async () => {
+    updateMockKillSwitch({
+      enabled: true,
+      confirm: true,
+      reason: 'pre-engaged',
+      updated_by: 'operator',
+    })
+
+    const putSpy = vi.fn()
+    server.use(
+      http.put('*/api/v1/execution/kill-switch', async ({ request }) => {
+        const body = (await request.json()) as {
+          enabled: boolean
+          confirm?: boolean
+          reason?: string
+          updated_by?: string
+        }
+        putSpy(body)
+        return HttpResponse.json(updateMockKillSwitch(body))
+      }),
+    )
+
+    const user = userEvent.setup()
+    renderWithQueryClient(<ExecutionWorkspace pollingEnabled />)
+    await waitFor(() =>
+      expect(screen.getByTestId('execution-kill-switch-state')).toHaveTextContent(/^Engaged$/i),
+    )
+
+    await user.click(screen.getByTestId('execution-kill-switch-release'))
+    await waitFor(() =>
+      expect(putSpy).toHaveBeenCalledWith({
+        enabled: false,
+        confirm: false,
+        updated_by: 'operator',
+      }),
+    )
+
+    await screen.findByTestId('execution-open-position')
+    await user.click(screen.getByRole('button', { name: /^flatten$/i }))
+    expect(screen.getByRole('button', { name: /flatten positions/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /engage kill switch/i })).not.toBeInTheDocument()
   })
 
   it('creates a paper account with WO171 decimal string payload', async () => {

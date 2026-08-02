@@ -29,7 +29,10 @@ function FeatureStoreTab() {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null)
 
   return (
-    <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
+    <div
+      className="flex min-h-0 flex-1 gap-4 overflow-hidden"
+      data-workspace-transition-surface="secondary"
+    >
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <FeatureStorePanel onSelectFeature={setSelectedFeature} />
       </div>
@@ -145,10 +148,16 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
     <div
       className="text-silver-100 flex h-[calc(100dvh-4.5rem-7rem)] w-full flex-col gap-4 overflow-hidden px-4 py-4"
       data-testid="research-workspace"
+      data-workspace-transition-root="research"
     >
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-cream-100 font-mono text-lg font-semibold tracking-wide">Research</h1>
+          <h1
+            className="text-cream-100 font-mono text-lg font-semibold tracking-wide"
+            data-workspace-transition-anchor="research"
+          >
+            Research
+          </h1>
           <p className="text-silver-400 text-sm">
             Feature intelligence workspace — store, scoring, lab, neural models, and experiments.
           </p>
@@ -161,7 +170,7 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
         />
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" data-workspace-transition-surface="primary">
         {tab === 'store' ? <FeatureStoreTab /> : null}
         {tab === 'scoring' ? (
           <FeatureScoringTab

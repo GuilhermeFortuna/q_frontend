@@ -105,9 +105,21 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
     : null
 
   return (
-    <div className="text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col overflow-hidden">
-      <Panel className="flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4">
-        <div className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b">
+    <div
+      className="text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col overflow-hidden"
+      data-workspace-transition-root="backtests"
+    >
+      <h1 className="sr-only" data-workspace-transition-anchor="backtests">
+        Backtests
+      </h1>
+      <Panel
+        className="flex flex-1 flex-col overflow-hidden rounded-xl px-5 py-4"
+        data-workspace-transition-surface="primary"
+      >
+        <div
+          className="border-carbon-600/60 mb-4 flex shrink-0 gap-1 border-b"
+          data-workspace-transition-surface="secondary"
+        >
           {WORKFLOW_MODES.map((mode) => (
             <button
               key={mode.id}
@@ -168,6 +180,7 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
         {workflowMode === 'backtest' ? (
           <div
             data-testid="backtest-workflow"
+            data-workspace-transition-surface="tertiary"
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
           >
             {backtestRightPanelTab === 'history' ? (
