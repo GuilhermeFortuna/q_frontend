@@ -48,11 +48,18 @@ describe('material system roles', () => {
 })
 
 describe('repeated card paint policy', () => {
-  it('uses surface-card via EntityCard in LibraryCard', () => {
+  it('uses EntityCard (GlowCard shell) in LibraryCard', () => {
     expect(libraryCardSource).toContain('EntityCard')
     expect(libraryCardSource).not.toMatch(/'quant-panel /)
     expect(libraryCardSource).not.toMatch(/drop-shadow|filter:/)
     expect(libraryCardSource).not.toContain('box-shadow')
+  })
+
+  it('exports glow intensity variants for card-like glass shells', () => {
+    expect(materialsCss).toContain('[data-glow]')
+    expect(materialsCss).toContain("[data-glow='card']")
+    expect(materialsCss).toContain("[data-glow='tile']")
+    expect(materialsCss).toContain('[data-glow-bloom]')
   })
 
   it('uses EntityCard for custom strategy tiles in StrategyLibrary', () => {
