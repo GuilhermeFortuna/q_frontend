@@ -20,10 +20,7 @@ import {
   SystemIcon,
   StrategyBuilderIcon,
 } from '@/components/dock/DockIcons'
-import {
-  SpotlightNavItem,
-  type SpotlightNavItemSize,
-} from '@/components/ui/spotlight-button'
+import { SpotlightNavItem, SPOTLIGHT_NAV_MOTION, type SpotlightNavItemSize } from '@/components/ui/spotlight-button'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { cn } from '@/lib/utils'
 import type { WorkspaceId } from '@/types/api'
@@ -116,9 +113,27 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
         {indicatorStyle ? (
           <div
             aria-hidden
-            className="pointer-events-none absolute top-0 h-0.5 bg-brass-400 shadow-[0_6px_12px_rgba(240,180,41,0.55)] transition-all duration-400 ease-in-out"
+            className={cn(
+              'pointer-events-none absolute top-0 h-4 overflow-visible transition-[left,width]',
+              SPOTLIGHT_NAV_MOTION,
+            )}
             style={indicatorStyle}
-          />
+          >
+            <span className="via-brass-500/70 absolute top-0 -left-[14%] h-px w-[128%] bg-gradient-to-r from-transparent to-transparent blur-[3px]" />
+            <span className="from-brass-300/50 via-brass-400/20 absolute top-0 -left-[5%] h-1 w-[110%] bg-gradient-to-b to-transparent blur-[5px]" />
+            <span className="absolute top-0 left-[8%] h-px w-[84%] bg-gradient-to-r from-transparent via-[#ffe4a6] to-transparent shadow-[0_1px_2px_rgba(255,235,183,0.8),_0_5px_10px_rgba(240,180,41,0.72),_0_12px_22px_rgba(196,132,28,0.36)]" />
+            {/* Icon wash rides with the top bar so both travel as one selection unit */}
+            <span
+              className={cn(
+                'pointer-events-none absolute top-0 left-1/2 w-[155%] -translate-x-1/2',
+                size === 'large' ? 'h-[5.75rem]' : 'h-[4.75rem]',
+              )}
+              style={{
+                background:
+                  'radial-gradient(ellipse 70% 90% at 50% 0%, rgba(240, 180, 41, 0.48) 0%, rgba(240, 180, 41, 0.2) 32%, rgba(240, 180, 41, 0.06) 58%, transparent 74%)',
+              }}
+            />
+          </div>
         ) : null}
 
         {dockItems.map((item, index) => {

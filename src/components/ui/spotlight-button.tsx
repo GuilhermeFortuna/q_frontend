@@ -2,6 +2,9 @@ import type { ComponentPropsWithoutRef, ComponentType, ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
+/** Keep in sync with AppDock sliding indicator (`duration-400 ease-in-out`). */
+export const SPOTLIGHT_NAV_MOTION = 'duration-400 ease-in-out'
+
 export type SpotlightNavItemSize = 'default' | 'large'
 
 const ITEM_METRICS = {
@@ -62,26 +65,18 @@ export function SpotlightNavItem({
   return (
     <span
       className={cn(
-        'relative flex items-center justify-center overflow-hidden transition-all duration-400',
+        'relative flex items-center justify-center overflow-hidden transition-all',
+        SPOTLIGHT_NAV_MOTION,
         metrics.hit,
         className,
       )}
       {...props}
     >
-      {isActive ? (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 transition-opacity duration-400"
-          style={{
-            background:
-              'radial-gradient(ellipse 75% 95% at 50% -5%, rgba(240, 180, 41, 0.5) 0%, rgba(240, 180, 41, 0.22) 28%, rgba(240, 180, 41, 0.06) 55%, transparent 72%)',
-          }}
-        />
-      ) : null}
       <span className="relative z-10 flex">
         <Icon
           className={cn(
-            'transition-all duration-200',
+            'transition-[color,opacity,transform,filter]',
+            SPOTLIGHT_NAV_MOTION,
             metrics.icon,
             isActive
               ? 'scale-110 brightness-110 text-brass-400'
@@ -93,7 +88,8 @@ export function SpotlightNavItem({
       {label ? (
         <span
           className={cn(
-            'relative z-10 whitespace-nowrap font-mono font-[560] tracking-[0.08em] uppercase transition-colors duration-200',
+            'relative z-10 whitespace-nowrap font-mono font-[560] tracking-[0.08em] uppercase transition-colors',
+            SPOTLIGHT_NAV_MOTION,
             metrics.label,
             isActive ? 'text-brass-400' : 'text-silver-400 group-hover:text-silver-200',
           )}
@@ -122,7 +118,8 @@ export function SpotlightTopIndicator({
     <div
       aria-hidden
       className={cn(
-        'pointer-events-none absolute top-0 h-0.5 bg-brass-400 shadow-[0_6px_12px_rgba(240,180,41,0.55)] transition-all duration-400 ease-in-out',
+        'pointer-events-none absolute top-0 h-0.5 bg-brass-400 shadow-[0_6px_12px_rgba(240,180,41,0.55)] transition-all',
+        SPOTLIGHT_NAV_MOTION,
         className,
       )}
       style={getSpotlightIndicatorStyle(activeIndex, size)}
