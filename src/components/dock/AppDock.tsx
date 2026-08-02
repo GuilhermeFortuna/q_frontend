@@ -1,5 +1,4 @@
-import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { AnimatePresence, motion } from 'motion/react'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import {
   useCallback,
   useLayoutEffect,
@@ -9,6 +8,11 @@ import {
   type CSSProperties,
 } from 'react'
 
+import {
+  ActiveJobIsland,
+  type ActiveJobIslandJob,
+  type ActiveJobIslandMode,
+} from '@/components/dock/ActiveJobIsland'
 import {
   LauncherIcon,
   MarketIcon,
@@ -23,7 +27,6 @@ import {
 import { workspaceTransitionDirection } from '@/app/router'
 import { useWorkspaceTransitionStore } from '@/components/transitions/workspaceTransitionStore'
 import { SpotlightNavItem, SPOTLIGHT_NAV_MOTION, type SpotlightNavItemSize } from '@/components/ui/spotlight-button'
-import { GlowCard } from '@/components/ui/spotlight-card'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { cn } from '@/lib/utils'
 import type { WorkspaceId } from '@/types/api'
@@ -54,6 +57,28 @@ const dockItems: DockItem[] = [
   { id: 'system', label: 'System', to: '/system', icon: SystemIcon, enabled: true },
 ]
 
+/** Island job order: dock workflow order, with validate after backtests. */
+const ACTIVE_JOB_ORDER: WorkspaceId[] = ['backtests', 'validate', 'discover']
+
+type JobDestination = {
+  to: '/backtests' | '/discover'
+  search?: { mode: 'validate' }
+  /** Workspace id used for WO215 transition / dock anchor. */
+  transitionTo: WorkspaceId
+  icon: ComponentType<{ className?: string }>
+}
+
+const JOB_DESTINATIONS: Partial<Record<WorkspaceId, JobDestination>> = {
+  backtests: { to: '/backtests', transitionTo: 'backtests', icon: BacktestsIcon },
+  validate: {
+    to: '/backtests',
+    search: { mode: 'validate' },
+    transitionTo: 'backtests',
+    icon: BacktestsIcon,
+  },
+  discover: { to: '/discover', transitionTo: 'discover', icon: DiscoverIcon },
+}
+
 type AppDockProps = {
   activeWorkspace: WorkspaceId
 }
@@ -70,6 +95,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
   const itemsRowRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<Array<HTMLElement | null>>([])
   const [indicatorStyle, setIndicatorStyle] = useState<CSSProperties | null>(null)
+  const [islandMode, setIslandMode] = useState<ActiveJobIslandMode>('compact')
 
   const updateIndicator = useCallback(() => {
     const row = itemsRowRef.current
@@ -98,10 +124,18 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
     return () => observer.disconnect()
   }, [updateIndicator, isLauncher])
 
-  const runningJobs = dockItems.flatMap((item) => {
-    const job = item.enabled ? activeJobs[item.id] : undefined
-    return job ? [{ item, job }] : []
+  const islandJobs: ActiveJobIslandJob[] = ACTIVE_JOB_ORDER.flatMap((workspaceId) => {
+    const job = activeJobs[workspaceId]
+    const destination = JOB_DESTINATIONS[workspaceId]
+    if (!job || !destination) return []
+    return [{ ...job, icon: destination.icon }]
   })
+
+  useLayoutEffect(() => {
+    if (islandJobs.length === 0 && islandMode !== 'compact') {
+      setIslandMode('compact')
+    }
+  }, [islandJobs.length, islandMode])
 
   const navigateToWorkspace = (item: DockItem, index: number) => {
     const direction = workspaceTransitionDirection(location.pathname, item.to)
@@ -118,6 +152,53 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
       destinationDockElement,
       commit: () => navigate({ to: item.to }),
     })
+  }
+
+  const navigateToJob = (job: ActiveJobIslandJob) => {
+    const destination = JOB_DESTINATIONS[job.workspaceId]
+    if (!destination) return
+
+    const dockIndex = dockItems.findIndex((item) => item.id === destination.transitionTo)
+    const destinationPath = destination.to
+    const direction = workspaceTransitionDirection(location.pathname, destinationPath)
+
+    const commit = () => {
+      if (destination.search) {
+        void navigate({ to: destination.to, search: destination.search })
+      } else {
+        void navigate({ to: destination.to })
+      }
+    }
+
+    if (!direction) {
+      commit()
+      setIslandMode('compact')
+      return
+    }
+
+    const destinationDockElement = dockIndex >= 0 ? itemRefs.current[dockIndex] : null
+    if (!destinationDockElement) {
+      commit()
+      setIslandMode('compact')
+      return
+    }
+
+    void runWorkspaceTransition({
+      from: activeWorkspace,
+      to: destination.transitionTo,
+      direction,
+      destinationDockElement,
+      commit,
+    })
+    setIslandMode('compact')
+  }
+
+  const iconHasRunningJob = (itemId: WorkspaceId) => {
+    if (!dockItems.find((item) => item.id === itemId)?.enabled) return false
+    if (itemId === 'backtests') {
+      return Boolean(activeJobs.backtests || activeJobs.validate)
+    }
+    return Boolean(activeJobs[itemId])
   }
 
   return (
@@ -161,7 +242,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
 
         {dockItems.map((item, index) => {
           const isActive = activeWorkspace === item.id
-          const hasRunningJob = item.enabled && Boolean(activeJobs[item.id])
+          const hasRunningJob = iconHasRunningJob(item.id)
 
           const setItemRef = (node: HTMLElement | null) => {
             itemRefs.current[index] = node
@@ -218,56 +299,14 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
         })}
       </div>
 
-      <AnimatePresence>
-        {runningJobs.length > 0 ? (
-          <motion.div
-            key="dock-jobs"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 'auto', opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
-            className="overflow-hidden"
-          >
-            <div className="border-brass-500/15 ml-1.5 flex items-center gap-2 border-l pl-2.5">
-              {runningJobs.map(({ item, job }) => {
-                const Icon = item.icon
-                return (
-                  <GlowCard
-                    key={item.id}
-                    intensity="tile"
-                    className="w-40 shrink-0 rounded-xl"
-                  >
-                    <Link
-                      to={item.to}
-                      title={`${item.label}: ${job.detail}`}
-                      className="flex flex-col gap-1.5 px-3 py-2 transition-colors"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Icon className="text-brass-400 h-3.5 w-3.5 shrink-0" />
-                        <span className="text-silver-200 text-2xs truncate font-mono font-[560] tracking-[0.08em] uppercase">
-                          {item.label}
-                        </span>
-                        <span className="text-silver-100 quant-tabular-nums text-2xs ml-auto font-mono font-[560]">
-                          {job.pct}%
-                        </span>
-                      </div>
-                      <div className="surface-well h-1.5 w-full overflow-hidden rounded-full">
-                        <motion.div
-                          className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r"
-                          initial={false}
-                          animate={{ width: `${job.pct}%` }}
-                          transition={{ duration: 0.5, ease: 'easeOut' }}
-                        />
-                      </div>
-                      <span className="text-silver-400 truncate text-[10px]">{job.detail}</span>
-                    </Link>
-                  </GlowCard>
-                )
-              })}
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {islandJobs.length > 0 ? (
+        <ActiveJobIsland
+          jobs={islandJobs}
+          mode={islandMode}
+          onModeChange={setIslandMode}
+          onNavigate={navigateToJob}
+        />
+      ) : null}
     </nav>
   )
 }

@@ -5,14 +5,25 @@ import { useWalkForwardStatus } from '@/api/queries/walkforward'
 import { useAppStore } from '@/store/useAppStore'
 import type { WorkspaceId } from '@/types/api'
 
+export type ActiveJobProgressKind = 'determinate' | 'indeterminate'
+
 export type ActiveJobInfo = {
-  /** Completion percentage, 0–100. */
+  workspaceId: WorkspaceId
+  workspaceLabel: string
+  /** Completion percentage, 0–100. Meaningful only when progressKind is determinate. */
   pct: number
   /** Short progress caption, e.g. "Trial 12 / 50" or "Candidate 3 / 9 · optimizing". */
   detail: string
+  progressKind: ActiveJobProgressKind
 }
 
 export type ActiveJobsMap = Partial<Record<WorkspaceId, ActiveJobInfo>>
+
+const WORKSPACE_LABELS: Partial<Record<WorkspaceId, string>> = {
+  backtests: 'Backtests',
+  validate: 'Validate',
+  discover: 'Discover',
+}
 
 const isActive = (status?: string) => status === 'pending' || status === 'running'
 
@@ -43,19 +54,31 @@ export function useActiveJobs(): ActiveJobsMap {
 
   if (isActive(optimize?.status) && optimize) {
     map.backtests = {
+      workspaceId: 'backtests',
+      workspaceLabel: WORKSPACE_LABELS.backtests!,
       pct: pctOf(optimize.completed_trials, optimize.n_trials),
       detail: `Optimize: Trial ${optimize.completed_trials} / ${optimize.n_trials}`,
+      progressKind: 'determinate',
     }
   } else if (backtest?.status === 'running') {
     // A single backtest has no granular progress; show an indeterminate caption.
-    map.backtests = { pct: 0, detail: 'Running…' }
+    map.backtests = {
+      workspaceId: 'backtests',
+      workspaceLabel: WORKSPACE_LABELS.backtests!,
+      pct: 0,
+      detail: 'Running…',
+      progressKind: 'indeterminate',
+    }
   }
 
   if (isActive(walkForward?.status) && walkForward) {
     const phase = walkForward.phase ? ` · ${walkForward.phase}` : ''
     map.validate = {
+      workspaceId: 'validate',
+      workspaceLabel: WORKSPACE_LABELS.validate!,
       pct: pctOf(walkForward.windows_completed, walkForward.total_windows),
       detail: `Window ${walkForward.windows_completed} / ${walkForward.total_windows}${phase}`,
+      progressKind: 'determinate',
     }
   }
 
@@ -63,12 +86,15 @@ export function useActiveJobs(): ActiveJobsMap {
     const phase = discover.phase ? ` · ${discover.phase}` : ''
     // current_candidate can be fractional (genetic reports completed windows); the
     // percentage stays smooth, but the caption shows a whole candidate count.
+    const hasCandidates = discover.total_candidates > 0
     map.discover = {
+      workspaceId: 'discover',
+      workspaceLabel: WORKSPACE_LABELS.discover!,
       pct: pctOf(discover.current_candidate, discover.total_candidates),
-      detail:
-        discover.total_candidates > 0
-          ? `Candidate ${Math.floor(discover.current_candidate)} / ${discover.total_candidates}${phase}`
-          : 'Preparing…',
+      detail: hasCandidates
+        ? `Candidate ${Math.floor(discover.current_candidate)} / ${discover.total_candidates}${phase}`
+        : 'Preparing…',
+      progressKind: hasCandidates ? 'determinate' : 'indeterminate',
     }
   }
 

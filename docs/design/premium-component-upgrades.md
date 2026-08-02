@@ -86,6 +86,23 @@ WO215-WO221 contain the implementation contracts.
 - Approved dependency: install exactly `ogl@1.0.11`. The canvas and RAF are feature-route owned,
   instrumented, paused while hidden, and disposed immediately off `/strategy-builder`.
 
+## P-004 source and adaptation record
+
+- Owner revision: 2026-08-02. VISUAL C accepted; dock job rail replaced by morphing status island.
+- Demo / docs: https://smoothui.dev/docs/components/dynamic-island
+- Registry capture: https://smoothui.dev/r/dynamic-island.json (captured 2026-08-02)
+- Inspected source files:
+  - `index.tsx` — SHA-256 `cc67c3b2d3c7663d90f08878efb158d50456df9e7ad41ea146c03a4ff727c62b`
+- Provider dependencies already present: `motion` (no new install).
+- Signature behavior: outer `layout` spring capsule morph; keyed content crossfade with
+  blur/scale entrance; spring bounce keyed by view transition; reduced motion collapses
+  layout and content transitions to zero duration.
+- Q adaptation: `ActiveJobIsland` in `src/components/dock/`. Controlled modes
+  `hidden|compact|expanded` (zero jobs unmount = hidden). Attaches to the existing dock; does
+  not restyle the dock as an Apple Dynamic Island. Materials are `surface-float` warm-black
+  glass, smoked silver type, and one brass live accent. Job truth comes only from
+  `useActiveJobs()` with no extra polling, RAF, Canvas, or root listeners.
+
 ## Sequential acceptance gates
 
 ```text
