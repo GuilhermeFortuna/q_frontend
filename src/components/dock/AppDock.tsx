@@ -1,6 +1,13 @@
 import { Link } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
-import type { ComponentType } from 'react'
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type CSSProperties,
+} from 'react'
 
 import {
   LauncherIcon,
@@ -13,6 +20,10 @@ import {
   SystemIcon,
   StrategyBuilderIcon,
 } from '@/components/dock/DockIcons'
+import {
+  SpotlightNavItem,
+  type SpotlightNavItemSize,
+} from '@/components/ui/spotlight-button'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { cn } from '@/lib/utils'
 import type { WorkspaceId } from '@/types/api'
@@ -49,7 +60,40 @@ type AppDockProps = {
 
 export function AppDock({ activeWorkspace }: AppDockProps) {
   const isLauncher = activeWorkspace === 'launcher'
+  const size: SpotlightNavItemSize = isLauncher ? 'large' : 'default'
   const activeJobs = useActiveJobs()
+  const activeIndex = dockItems.findIndex((item) => item.id === activeWorkspace)
+
+  const itemsRowRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<Array<HTMLElement | null>>([])
+  const [indicatorStyle, setIndicatorStyle] = useState<CSSProperties | null>(null)
+
+  const updateIndicator = useCallback(() => {
+    const row = itemsRowRef.current
+    const activeEl = itemRefs.current[activeIndex]
+    if (!row || !activeEl || activeIndex < 0) {
+      setIndicatorStyle(null)
+      return
+    }
+
+    const rowRect = row.getBoundingClientRect()
+    const itemRect = activeEl.getBoundingClientRect()
+    setIndicatorStyle({
+      left: `${itemRect.left - rowRect.left}px`,
+      width: `${itemRect.width}px`,
+      transform: 'translateY(-1px)',
+    })
+  }, [activeIndex])
+
+  useLayoutEffect(() => {
+    updateIndicator()
+    const row = itemsRowRef.current
+    if (!row || typeof ResizeObserver === 'undefined') return
+
+    const observer = new ResizeObserver(() => updateIndicator())
+    observer.observe(row)
+    return () => observer.disconnect()
+  }, [updateIndicator, isLauncher])
 
   const runningJobs = dockItems.flatMap((item) => {
     const job = item.enabled ? activeJobs[item.id] : undefined
@@ -60,99 +104,80 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
     <nav
       aria-label="Workspace dock"
       className={cn(
-        'vt-dock surface-shell--blur fixed left-1/2 z-20 flex -translate-x-1/2 items-end transition-[transform,opacity,border-color,box-shadow,background-color] duration-300 ease-in-out',
+        'vt-dock surface-shell--blur fixed left-1/2 z-20 flex -translate-x-1/2 items-center transition-[transform,opacity,border-color,box-shadow,background-color] duration-300 ease-in-out',
+        'border-brass-500/20 border-t-brass-400/50 from-espresso-900/80 via-espresso-950/92 to-carbon-950/96 border border-b-black/60 bg-gradient-to-b',
+        'hover:border-brass-500/30 hover:border-t-brass-400/80 hover:border-b-black/80',
         isLauncher
-          ? 'border-brass-500/20 border-t-brass-400/50 from-espresso-900/80 via-espresso-950/92 to-carbon-950/96 hover:border-brass-500/30 hover:border-t-brass-400/80 bottom-[12%] w-[min(980px,95vw)] justify-evenly gap-2.5 rounded-3xl border border-b-black/60 bg-gradient-to-b px-6 py-4 shadow-[inset_0_1.5px_0_rgba(255,255,255,0.16),_inset_0_-2px_0_rgba(0,0,0,0.65),_inset_0_0_0_1px_rgba(255,255,255,0.03),_0_25px_60px_-15px_rgba(0,0,0,0.9),_0_0_40px_rgba(196,165,116,0.08)] hover:border-b-black/80 hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.22),_inset_0_-2px_0_rgba(0,0,0,0.75),_inset_0_0_0_1px_rgba(255,255,255,0.05),_0_30px_70px_-10px_rgba(0,0,0,0.95),_0_0_50px_rgba(196,165,116,0.12)]'
-          : 'border-brass-500/20 border-t-brass-400/50 from-espresso-900/80 via-espresso-950/92 to-carbon-950/96 hover:border-brass-500/30 hover:border-t-brass-400/80 bottom-8 gap-1.5 rounded-2xl border border-b-black/60 bg-gradient-to-b px-3.5 py-2.5 shadow-[inset_0_1.5px_0_rgba(255,255,255,0.16),_inset_0_-2px_0_rgba(0,0,0,0.65),_inset_0_0_0_1px_rgba(255,255,255,0.03),_0_20px_50px_-10px_rgba(0,0,0,0.8),_0_0_30px_rgba(196,165,116,0.06)] hover:border-b-black/80 hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.22),_inset_0_-2px_0_rgba(0,0,0,0.75),_inset_0_0_0_1px_rgba(255,255,255,0.05),_0_25px_60px_-5px_rgba(0,0,0,0.85),_0_0_40px_rgba(196,165,116,0.1)]',
+          ? 'bottom-[12%] w-fit max-w-[min(1100px,96vw)] rounded-3xl px-5 py-3 shadow-[inset_0_1.5px_0_rgba(255,255,255,0.16),_inset_0_-2px_0_rgba(0,0,0,0.65),_inset_0_0_0_1px_rgba(255,255,255,0.03),_0_25px_60px_-15px_rgba(0,0,0,0.9),_0_0_40px_rgba(196,165,116,0.08)] hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.22),_inset_0_-2px_0_rgba(0,0,0,0.75),_inset_0_0_0_1px_rgba(255,255,255,0.05),_0_30px_70px_-10px_rgba(0,0,0,0.95),_0_0_50px_rgba(196,165,116,0.12)]'
+          : 'bottom-8 rounded-2xl px-2 py-2.5 shadow-[inset_0_1.5px_0_rgba(255,255,255,0.16),_inset_0_-2px_0_rgba(0,0,0,0.65),_inset_0_0_0_1px_rgba(255,255,255,0.03),_0_20px_50px_-10px_rgba(0,0,0,0.8),_0_0_30px_rgba(196,165,116,0.06)] hover:shadow-[inset_0_1.5px_0_rgba(255,255,255,0.22),_inset_0_-2px_0_rgba(0,0,0,0.75),_inset_0_0_0_1px_rgba(255,255,255,0.05),_0_25px_60px_-5px_rgba(0,0,0,0.85),_0_0_40px_rgba(196,165,116,0.1)]',
       )}
     >
-      {dockItems.map((item) => {
-        const Icon = item.icon
-        const isActive = activeWorkspace === item.id
-        const hasRunningJob = item.enabled && Boolean(activeJobs[item.id])
+      <div ref={itemsRowRef} className="relative flex items-center">
+        {indicatorStyle ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-0 h-0.5 bg-brass-400 shadow-[0_6px_12px_rgba(240,180,41,0.55)] transition-all duration-400 ease-in-out"
+            style={indicatorStyle}
+          />
+        ) : null}
 
-        if (!item.enabled) {
-          return (
-            <span
-              key={item.id}
-              title={`${item.label} (coming soon)`}
-              className={cn(
-                'text-silver-500 flex cursor-not-allowed flex-col items-center border border-transparent opacity-40 select-none',
-                isLauncher
-                  ? 'shrink-0 gap-1.5 rounded-xl px-4 py-3'
-                  : 'gap-1 rounded-lg px-4 py-2.5',
-              )}
-            >
-              <Icon className={cn(isLauncher ? 'h-9 w-9' : 'h-6 w-6', 'opacity-20 grayscale')} />
-              <span
-                className={cn(
-                  'font-mono font-[560] tracking-[0.08em] uppercase',
-                  isLauncher ? 'text-xs' : 'text-2xs',
-                )}
-              >
-                {item.label}
-              </span>
-            </span>
-          )
-        }
+        {dockItems.map((item, index) => {
+          const isActive = activeWorkspace === item.id
+          const hasRunningJob = item.enabled && Boolean(activeJobs[item.id])
 
-        return (
-          <Link
-            key={item.id}
-            to={item.to}
-            className={cn(
-              'text-cream-300 group relative flex flex-col items-center border border-transparent',
-              'transition-[transform,color,background-color,border-color] duration-[var(--motion-fast)] ease-[var(--ease-exit)]',
-              'hover:-translate-y-0.5 hover:duration-[var(--motion-base)] hover:ease-[var(--ease-out)]',
-              'active:translate-y-[0.5px] active:scale-[0.985] active:duration-[var(--motion-fast)] active:ease-[var(--ease-out)]',
-              isLauncher ? 'shrink-0 gap-1.5 rounded-xl px-4 py-3' : 'gap-1 rounded-lg px-4 py-2.5',
-              isActive ? 'text-brass-400 font-semibold' : 'text-silver-400 hover:text-silver-200',
-            )}
-          >
-            {isActive ? (
-              <>
-                <motion.span
-                  layoutId="dock-active"
-                  className={cn(
-                    'accent-state absolute inset-0 border',
-                    isLauncher ? 'rounded-xl' : 'rounded-lg',
-                  )}
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+          const setItemRef = (node: HTMLElement | null) => {
+            itemRefs.current[index] = node
+          }
+
+          if (!item.enabled) {
+            return (
+              <span key={item.id} ref={setItemRef} className="inline-flex">
+                <SpotlightNavItem
+                  icon={item.icon}
+                  label={item.label}
+                  isActive={false}
+                  indicatorPosition={activeIndex}
+                  position={index}
+                  size={size}
+                  title={`${item.label} (coming soon)`}
+                  className="cursor-not-allowed opacity-40 grayscale select-none"
                 />
-                <span className="bg-brass-400 absolute bottom-1.5 left-1/2 z-10 h-0.5 w-3.5 -translate-x-1/2 rounded-full shadow-[0_0_8px_rgba(240,180,41,0.9)]" />
-              </>
-            ) : null}
-            <span className="relative z-10 flex">
-              <Icon
-                className={cn(
-                  isLauncher ? 'h-9 w-9' : 'h-6 w-6',
-                  'transition-all duration-300 ease-out',
-                  isActive
-                    ? 'text-brass-400 scale-110 brightness-110'
-                    : 'scale-95 opacity-50 group-hover:scale-105 group-hover:opacity-100',
-                )}
-              />
-              {hasRunningJob ? (
-                <span
-                  className="absolute -top-0.5 -right-1 flex h-2 w-2"
-                  title={`${item.label} job running`}
-                  aria-label={`${item.label} job running`}
-                >
-                  <span className="bg-brass-400 absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" />
-                  <span className="bg-brass-400 relative inline-flex h-2 w-2 rounded-full shadow-[0_0_8px_rgba(196,165,116,0.8)]" />
-                </span>
-              ) : null}
-            </span>
-            <span
-              className={cn(
-                'text-2xs relative z-10 font-mono font-[560] tracking-[0.08em] uppercase',
-              )}
+              </span>
+            )
+          }
+
+          return (
+            <Link
+              key={item.id}
+              ref={setItemRef}
+              to={item.to}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
+              className="group inline-flex"
             >
-              {item.label}
-            </span>
-          </Link>
-        )
-      })}
+              <SpotlightNavItem
+                icon={item.icon}
+                label={item.label}
+                isActive={isActive}
+                indicatorPosition={activeIndex}
+                position={index}
+                size={size}
+              >
+                {hasRunningJob ? (
+                  <span
+                    className="absolute -top-0.5 -right-1 z-10 flex h-2 w-2"
+                    title={`${item.label} job running`}
+                    aria-label={`${item.label} job running`}
+                  >
+                    <span className="bg-brass-400 absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" />
+                    <span className="bg-brass-400 relative inline-flex h-2 w-2 rounded-full shadow-[0_0_8px_rgba(196,165,116,0.8)]" />
+                  </span>
+                ) : null}
+              </SpotlightNavItem>
+            </Link>
+          )
+        })}
+      </div>
 
       <AnimatePresence>
         {runningJobs.length > 0 ? (
