@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react'
 
+import { OperationalFailureState } from '@/components/status/OperationalFailureState'
 import { cn } from '@/lib/utils'
 
 type FeatureIslandBoundaryProps = {
@@ -45,26 +46,16 @@ export class FeatureIslandBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
+      const label = this.props.label ?? 'this view'
       return (
-        <div
-          className={cn(
-            'border-carbon-700/40 bg-carbon-950/30 flex min-h-[320px] flex-1 flex-col items-center justify-center gap-3 rounded-xl border',
-            this.props.className,
-          )}
-          role="alert"
-          data-testid="feature-island-error"
-        >
-          <p className="text-silver-300 text-sm">
-            Couldn’t load {this.props.label ?? 'this view'}.
-          </p>
-          <button
-            type="button"
-            onClick={this.props.onRetry}
-            className="border-brass-500/50 text-brass-300 hover:bg-brass-500/10 rounded-md border px-3 py-1.5 text-xs font-medium tracking-wide uppercase transition-colors"
-          >
-            Retry
-          </button>
-        </div>
+        <OperationalFailureState
+          compact
+          title="View unavailable"
+          description={`Couldn’t load ${label}.`}
+          onRetry={this.props.onRetry}
+          testId="feature-island-error"
+          className={cn('min-h-[320px] flex-1 rounded-xl', this.props.className)}
+        />
       )
     }
     return this.props.children

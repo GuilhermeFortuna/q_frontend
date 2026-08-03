@@ -105,6 +105,27 @@ WO215-WO221 contain the implementation contracts.
   glass, smoked silver type, and one brass live accent. Job truth comes only from
   `useActiveJobs()` with no extra polling, RAF, Canvas, or root listeners.
 
+## P-005 source and adaptation record
+
+- Owner revision: 2026-08-03. Faulty Terminal is selected only for genuine unavailable/offline/failure
+  surfaces; never loading, empty, or healthy/stale chart decoration.
+- Demo: https://reactbits.dev/backgrounds/faulty-terminal
+- Source: https://github.com/DavidHDev/react-bits at commit
+  `d26ed7a476148f1253cca3f5bc9f679fda53e1f5`.
+- Inspected source files:
+  - `src/ts-default/Backgrounds/FaultyTerminal/FaultyTerminal.tsx` — SHA-256
+    `1abec80d7bccfdf9d58da3344f28049cc4bcf3d501dc5e9f0400298edf410114`
+  - `src/ts-default/Backgrounds/FaultyTerminal/FaultyTerminal.css` — SHA-256
+    `d769937672090dfd768c6a46912defd9de0eefd64dc22a9d9bf5eb1ce7b3d4b6`
+- Signature behavior: low-density terminal digit grid with restrained horizontal scan/interference.
+- Q adaptation: `FaultyTerminalField` + `OperationalFailureState` in `src/components/status/`.
+  Brass/silver tint; rose reserved for the status glyph. Mouse-react, page-load spectacle, and
+  provider demo palette removed. Canvas mounts only while a failure surface is visible (Market
+  chart empty+error; FeatureIslandBoundary lazy-load failure). Loop capped ≤20 fps, registered as
+  `faulty-terminal-field`, paused when hidden/offscreen, static under reduced motion, fully disposed
+  on unmount. Always-on / AppShell budgets unchanged.
+- Approved dependency: reuse existing `ogl@1.0.11` (no new install).
+
 ## Sequential acceptance gates
 
 ```text

@@ -55,6 +55,13 @@ Workspace grid-reconfiguration (WO215 / P-001) uses transient GSAP Flip clones o
 and shell animation-loop counts must stay unchanged across repeated dock navigations; no persistent
 RAF or always-on transition canvas is allowed.
 
+Operational failure (WO219 / P-005) may mount **one** local `FaultyTerminalField` canvas and one
+registered `faulty-terminal-field` loop **only while** a genuine failure surface is visible
+(`OperationalFailureState` on Market empty+error or FeatureIslandBoundary). Healthy, loading,
+empty-without-error, and stale-chart states must show **0** failure canvases / loops. The loop is
+capped ≤20 fps, paused when the tab is hidden or the field is offscreen, static under reduced
+motion, and disposed on unmount. Always-on and AppShell ceilings above are unchanged.
+
 ---
 
 ## Browser smoke script

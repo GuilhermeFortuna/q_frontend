@@ -12,6 +12,7 @@ import type {
   ChartProfile,
 } from '@/components/charts/types/chart'
 import { DEFAULT_SETTINGS } from '@/components/charts/types/chart'
+import { OperationalFailureState } from '@/components/status/OperationalFailureState'
 import type { OhlcvBar } from '@/types/api'
 
 export type ChartPanelProps = {
@@ -143,12 +144,19 @@ export function ChartPanel({
           onViewportChange={onViewportChange}
           chartSettings={settings}
         />
+      ) : error ? (
+        <OperationalFailureState
+          title="Market data unavailable"
+          description={`Historical data for ${symbol} is unavailable right now.`}
+          testId="chart-panel-operational-failure"
+        />
       ) : (
         <div
-          className="border-carbon-700 flex h-full w-full items-center justify-center rounded-lg border text-rose-300"
+          className="border-carbon-700 text-silver-400 flex h-full w-full items-center justify-center rounded-lg border"
           style={bgStyle}
+          data-testid="chart-panel-empty"
         >
-          {error ? error.message : `Failed to load historical data for ${symbol}.`}
+          No market data for {symbol} in this range.
         </div>
       )}
       {/* Profiles tabs overlay */}
