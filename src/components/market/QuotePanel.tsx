@@ -1,4 +1,5 @@
 import { FlashOnChange } from '@/components/shared/FlashOnChange'
+import { QuantNumberFlow } from '@/components/ui/QuantNumberFlow'
 import { StatTile } from '@/components/ui/StatTile'
 import { formatDisplayTimeSeconds } from '@/lib/formatDate'
 import { formatPrice } from '@/lib/market/format'
@@ -47,7 +48,10 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
       <div className="text-right">
         <FlashOnChange value={snapshot.last}>
           <p className="text-silver-100 font-mono text-2xl font-bold tabular-nums">
-            {formatPrice(snapshot.last, digits)}
+            <QuantNumberFlow
+              value={snapshot.last}
+              format={(v) => formatPrice(v, digits)}
+            />
           </p>
         </FlashOnChange>
         <p
@@ -110,7 +114,14 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
       </div>
 
       <div className="border-brass-600/10 grid grid-cols-2 gap-2 border-t pt-3">
-        <StatTile label="Open" value={formatPrice(snapshot.dayOpen, digits)} className="p-3" />
+        <StatTile
+          label="Open"
+          value={formatPrice(snapshot.dayOpen, digits)}
+          numericValue={snapshot.dayOpen}
+          formatNumericValue={(v) => formatPrice(v, digits)}
+          animateValue
+          className="p-3"
+        />
         <StatTile
           label="Prev Close"
           value={formatPrice(snapshot.prevClose, digits)}
@@ -119,16 +130,29 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
         <StatTile
           label="Day High"
           value={formatPrice(snapshot.dayHigh, digits)}
+          numericValue={snapshot.dayHigh}
+          formatNumericValue={(v) => formatPrice(v, digits)}
+          animateValue
           className="p-3"
           valueTone="up"
         />
         <StatTile
           label="Day Low"
           value={formatPrice(snapshot.dayLow, digits)}
+          numericValue={snapshot.dayLow}
+          formatNumericValue={(v) => formatPrice(v, digits)}
+          animateValue
           className="p-3"
           valueTone="down"
         />
-        <StatTile label="Volume" value={snapshot.volume.toLocaleString()} className="p-3" />
+        <StatTile
+          label="Volume"
+          value={snapshot.volume.toLocaleString()}
+          numericValue={snapshot.volume}
+          formatNumericValue={(v) => v.toLocaleString()}
+          animateValue
+          className="p-3"
+        />
         <StatTile label="Last Update" value={lastUpdate} className="p-3" />
       </div>
     </div>

@@ -18,6 +18,10 @@ export {
   type SegmentedToggleSingleProps,
 } from './SegmentedToggle'
 export { StatTile, type StatTileDeltaTone, type StatTileProps } from './StatTile'
+export {
+  QuantNumberFlow,
+  type QuantNumberFlowProps,
+} from './QuantNumberFlow'
 export { Callout, type CalloutProps, type CalloutType } from './Callout'
 export {
   KeyValueGrid,

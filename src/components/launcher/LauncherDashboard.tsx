@@ -877,9 +877,30 @@ export function LauncherDashboard() {
         <div className="flex flex-col gap-3">
           <SectionHeader title="Performance Metrics" />
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <StatTile className="p-3" label="CPU Core Load" value={`${cpu}%`} />
-            <StatTile className="p-3" label="Engine Memory" value={`${ram.toFixed(1)}%`} />
-            <StatTile className="p-3" label="Database Disk I/O" value={`${io.toFixed(1)} MB/s`} />
+            <StatTile
+              className="p-3"
+              label="CPU Core Load"
+              value={`${cpu}%`}
+              numericValue={cpu}
+              formatNumericValue={(v) => `${v}%`}
+              animateValue
+            />
+            <StatTile
+              className="p-3"
+              label="Engine Memory"
+              value={`${ram.toFixed(1)}%`}
+              numericValue={ram}
+              formatNumericValue={(v) => `${v.toFixed(1)}%`}
+              animateValue
+            />
+            <StatTile
+              className="p-3"
+              label="Database Disk I/O"
+              value={`${io.toFixed(1)} MB/s`}
+              numericValue={io}
+              formatNumericValue={(v) => `${v.toFixed(1)} MB/s`}
+              animateValue
+            />
           </div>
           <div className="flex flex-col gap-2.5">
             {/* CPU Gauge */}

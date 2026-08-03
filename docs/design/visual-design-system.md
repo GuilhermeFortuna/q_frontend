@@ -85,7 +85,8 @@ can express. Built on the material classes above so they inherit future token ch
 | `FilterPills`                  | category filter row (`All/Trend/Mean reversion/…`)                      | +1 chips           | active = tier 3; `radiogroup` / `radio` semantics                    |
 | `EntityCard` / `HistoryCard`   | selectable strategy/entity / history cards                              | +1 (`card` glow)   | hover = tier 2, active = tier 3; optional `badges` slot in title row |
 | `RangeInput`                   | min/max/step triplet on top of existing `NumberInput`                   | −2 wells           | per-field error                                                      |
-| `StatTile`                     | metric tile (label + value, optional delta)                             | +1 (`tile` glow)   | `valueTone` / `highlight` for value color; delta up/down, not gold   |
+| `StatTile`                     | metric tile (label + value, optional delta)                             | +1 (`tile` glow)   | `valueTone` / `highlight` for value color; delta up/down, not gold; optional live digit flow via `animateValue` + `numericValue` / `formatNumericValue` (default off) |
+| `QuantNumberFlow`              | direction-aware tabular digit flow for live KPIs                        | inherits parent    | caller-owned `format`; Motion presence only; opt-in via StatTile or direct use |
 | `DataTable`                    | premium quantitative tabular grid with column alignments and sorting    | 0 on panel         | hover = tier 2 (luminance lift), selected = tier 3 (warm fill)       |
 | `Dialog` / `ConfirmDialog`     | modal overlays                                                          | +2 overlay         | tier 1 header; scrim recedes workspace                               |
 | `MorphingDialog`               | shared-element entity→detail overlay (Discover pilot)                   | +2 overlay         | layoutId morph; Radix a11y; not for confirms                         |
@@ -173,6 +174,7 @@ Numbers are the central product of a quantitative terminal and must sit in perfe
 - **The Rule:** Numbers are always tabular in data contexts; proportional numerals are only used in prose.
 - **Default Application:** Built into `.q-table-td` (all table cells), `input[type="number"]`, `.number-input--steppers`, `.stat-tile-value`, `.chart-tooltip`, and `.chart-tick`.
 - **Escape Hatch:** Use the `.quant-tabular-nums` utility for one-off/ad-hoc numeric contexts.
+- **Live digit flow:** `QuantNumberFlow` keeps tabular glyph width during directional transitions. It never re-parses formatted strings; callers pass a raw `number` plus their existing formatter. Do not animate IDs, timestamps, table cells, inputs, or static result tiles.
 
 ## Motion
 
@@ -204,6 +206,7 @@ All interactive controls (Buttons, SegmentedToggle options, FilterPills, RangeCh
 
 - **CSS Gate:** When `html[data-reduced-motion='true']` (synced from preferences) is active, all transitions and animations are globally set to `0ms !important`.
 - **JS Gate:** The hook `useReducedMotion()` combines `prefers-reduced-motion` and the user's `MotionToggle` state. Presets (`fadeRise`, `overlayEnter`, `overlayExit`, `staggerChildren`) collapse to duration-0/instant variants when true.
+- **Live KPI flow:** `QuantNumberFlow` (WO221 / P-007) uses Motion `AnimatePresence` only — no RAF loop and no per-instance `visibilitychange` listeners. Reduced motion and hidden tabs snap to the latest formatted value instantly.
 
 ## Material Vocabulary (v2)
 

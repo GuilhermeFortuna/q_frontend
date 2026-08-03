@@ -1,4 +1,5 @@
 import { GlowCard } from '@/components/ui/spotlight-card'
+import { QuantNumberFlow } from '@/components/ui/QuantNumberFlow'
 import { cn } from '@/lib/utils'
 
 export type StatTileDeltaTone = 'up' | 'down' | 'neutral' | 'warning'
@@ -11,6 +12,12 @@ export type StatTileProps = {
   valueTone?: StatTileDeltaTone
   highlight?: boolean
   className?: string
+  /** Raw numeric value for optional digit flow. Callers must not parse `value`. */
+  numericValue?: number
+  /** Formatter for `numericValue` when `animateValue` is enabled. */
+  formatNumericValue?: (value: number) => string
+  /** Opt-in live digit flow. Default false — legacy string `value` is unchanged. */
+  animateValue?: boolean
 }
 
 const deltaToneClass: Record<StatTileDeltaTone, string> = {
@@ -28,7 +35,13 @@ export function StatTile({
   valueTone = 'neutral',
   highlight = false,
   className,
+  numericValue,
+  formatNumericValue,
+  animateValue = false,
 }: StatTileProps) {
+  const useFlow =
+    animateValue && numericValue != null && typeof formatNumericValue === 'function'
+
   return (
     <GlowCard intensity="tile" className={cn('p-4', className)}>
       <p className="accent-wayfinding text-[11px] font-[560] tracking-[0.08em] uppercase">
@@ -48,7 +61,11 @@ export function StatTile({
                   : 'text-silver-100',
         )}
       >
-        {value}
+        {useFlow ? (
+          <QuantNumberFlow value={numericValue} format={formatNumericValue} />
+        ) : (
+          value
+        )}
       </p>
       {delta ? (
         <p className={cn('mt-1 text-xs font-medium', deltaToneClass[deltaTone])}>{delta}</p>

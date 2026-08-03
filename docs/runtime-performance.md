@@ -62,6 +62,10 @@ empty-without-error, and stale-chart states must show **0** failure canvases / l
 capped ≤20 fps, paused when the tab is hidden or the field is offscreen, static under reduced
 motion, and disposed on unmount. Always-on and AppShell ceilings above are unchanged.
 
+Quantitative number flow (WO221 / P-007) uses Motion presence animations on opt-in live KPI
+values only (`QuantNumberFlow` / `StatTile.animateValue`). It adds **0** canvases and **0**
+persistent RAF / app-shell animation loops. Hidden tabs and reduced motion snap without listeners.
+
 ---
 
 ## Browser smoke script

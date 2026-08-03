@@ -147,6 +147,31 @@ WO215-WO221 contain the implementation contracts.
   replacement. Provider focus-trap / click-outside helpers are not copied.
 - Approved dependency: reuse existing `motion` (no new install).
 
+## P-007 source and adaptation record
+
+- Owner revision: 2026-08-03. VISUAL F treated as done for dispatch; live KPI continuity ships via
+  `QuantNumberFlow` with explicit StatTile opt-in.
+- Demo / docs: https://smoothui.dev/docs/components/number-flow
+- Tutorial (Motion character-slot recipe): https://smoothui.dev/blog/building-number-flow
+- Registry capture: https://smoothui.dev/r/number-flow.json (captured 2026-08-03)
+- Inspected source files:
+  - `index.tsx` — SHA-256 `fdc61c45e68ee6bb2d80c2393f5d1523f3df6c093d44593508c7f0f838d46aed`
+- Provider dependencies already present: `motion` (no new install). Registry also lists
+  `lucide-react` for +/- controls; those controls are not adapted.
+- Signature behavior: vertically directional digit transition with stable-width tabular glyphs.
+  Registry source is a fixed 0–999 integer counter with CSS class slides and increment/decrement
+  buttons — not a formatter-aware KPI primitive.
+- Q adaptation: `QuantNumberFlow` in `src/components/ui/` rebuilds the signature with Motion
+  `AnimatePresence` character slots (caller-owned `format`, duration clamped 120–280ms, no bounce /
+  glow). Discard provider counter chrome, lucide +/- buttons, and fixed three-place layout.
+  `StatTile` gains opt-in `numericValue` / `formatNumericValue` / `animateValue` (default false).
+  Pilot inventory only: QuotePanel Open / Day High / Day Low / Last / Volume, and Launcher CPU Core
+  Load / Engine Memory / Database Disk I/O. Reduced motion and hidden tabs snap instantly; no
+  per-instance visibility listeners or RAF loops. Screen readers and copy see one final formatted
+  string.
+- Approved dependency: reuse existing `motion` (no new install). Do not install `@number-flow/*`
+  unless a later owner decision proves the signature cannot be retained.
+
 ## Sequential acceptance gates
 
 ```text
@@ -165,8 +190,8 @@ Current dispatch state:
 - WO217 — `ACCEPTED` (VISUAL C)
 - WO218 — `ACCEPTED` (VISUAL D)
 - WO219 — `ACCEPTED` (VISUAL E)
-- WO220 — `REVIEW` (implementation complete; awaiting VISUAL F)
-- WO221 — `BLOCKED` by VISUAL F
+- WO220 — `ACCEPTED` (VISUAL F)
+- WO221 — `REVIEW` (implementation complete; awaiting VISUAL G)
 
 ## Explicit non-selections
 
