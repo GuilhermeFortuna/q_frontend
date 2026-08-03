@@ -1,12 +1,15 @@
 import { useNavigate } from '@tanstack/react-router'
-import { ChevronDown, ChevronRight } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { CandidateDetailPanel } from '@/components/discover/CandidateDetailPanel'
+import {
+  CandidateMorphingDialog,
+  candidateMorphLayoutId,
+} from '@/components/discover/CandidateMorphingDialog'
 import { ComplexityLine } from '@/components/discover/GenomeViewer'
 import { Button } from '@/components/ui/button'
 import { DataTable, type DataColumn } from '@/components/ui/DataTable'
 import { LabeledField } from '@/components/ui/LabeledField'
+import { MorphingDialogTrigger } from '@/components/ui/MorphingDialog'
 import { Panel } from '@/components/ui/Panel'
 import { inputClass } from '@/components/optimize/optimizeFormShared'
 import { gateFlagsLabel } from '@/lib/discover/candidateMetrics'
@@ -46,6 +49,7 @@ type LeaderboardTableProps = {
 
 const ALL_GENERATIONS = 'all'
 const ROW_HEIGHT = 56
+const HISTORY_STATE_KEY = 'qCandidateMorph'
 
 function candidateTrades(candidate: CandidateResult): number | null {
   return candidate.oos_metrics?.total_trades ?? null
@@ -93,9 +97,16 @@ export function LeaderboardTable({
   const setPendingOptimizationConfig = useAppStore((s) => s.setPendingOptimizationConfig)
   const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
   const patchOptimizeSession = useAppStore((s) => s.patchOptimizeSession)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [openCandidateId, setOpenCandidateId] = useState<string | null>(null)
+  const [mountedCandidate, setMountedCandidate] = useState<CandidateResult | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('rank')
   const [sortAsc, setSortAsc] = useState(true)
+  const tableContainerRef = useRef<HTMLDivElement>(null)
+  const historyPushedRef = useRef(false)
+  const closingFromPopstateRef = useRef(false)
+  const originCandidateIdRef = useRef<string | null>(null)
+  const openCandidateIdRef = useRef<string | null>(null)
+  openCandidateIdRef.current = openCandidateId
 
   const isGenetic = isGeneticSearchConfig(searchConfig)
   const championGeneration = maxCandidateGeneration(candidates)
@@ -128,6 +139,86 @@ export function LeaderboardTable({
     () => sortLeaderboardCandidates(filteredCandidates, sortKey, sortAsc),
     [filteredCandidates, sortKey, sortAsc],
   )
+
+  const openCandidate =
+    openCandidateId == null
+      ? null
+      : (sortedCandidates.find((c) => c.candidate_id === openCandidateId) ??
+        candidates.find((c) => c.candidate_id === openCandidateId) ??
+        null)
+
+  useEffect(() => {
+    if (openCandidate) setMountedCandidate(openCandidate)
+  }, [openCandidate])
+
+  const openCandidateInspector = useCallback(
+    (candidateId: string) => {
+      const next =
+        sortedCandidates.find((c) => c.candidate_id === candidateId) ??
+        candidates.find((c) => c.candidate_id === candidateId) ??
+        null
+      if (!next) return
+      originCandidateIdRef.current = candidateId
+      setMountedCandidate(next)
+      setOpenCandidateId(candidateId)
+      if (!historyPushedRef.current) {
+        window.history.pushState({ [HISTORY_STATE_KEY]: candidateId }, '')
+        historyPushedRef.current = true
+      } else {
+        window.history.replaceState({ [HISTORY_STATE_KEY]: candidateId }, '')
+      }
+    },
+    [candidates, sortedCandidates],
+  )
+
+  const closeCandidateInspector = useCallback((nextOpen: boolean) => {
+    if (nextOpen) return
+    setOpenCandidateId(null)
+    if (historyPushedRef.current && !closingFromPopstateRef.current) {
+      historyPushedRef.current = false
+      window.history.back()
+    } else {
+      historyPushedRef.current = false
+    }
+    closingFromPopstateRef.current = false
+  }, [])
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (openCandidateId == null) return
+      closingFromPopstateRef.current = true
+      historyPushedRef.current = false
+      setOpenCandidateId(null)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [openCandidateId])
+
+  useEffect(() => {
+    return () => {
+      if (historyPushedRef.current) {
+        historyPushedRef.current = false
+        window.history.replaceState(null, '')
+      }
+    }
+  }, [])
+
+  const restoreFocusToOrigin = useCallback((event: Event) => {
+    event.preventDefault()
+    const originId = originCandidateIdRef.current
+    if (originId) {
+      const row = tableContainerRef.current?.querySelector(
+        `tr[data-row-key="${CSS.escape(originId)}"]`,
+      ) as HTMLElement | null
+      const focusTarget =
+        (row?.querySelector('button[data-candidate-open]') as HTMLElement | null) ?? row
+      if (focusTarget && tableContainerRef.current?.contains(focusTarget)) {
+        focusTarget.focus()
+        return
+      }
+    }
+    tableContainerRef.current?.focus()
+  }, [])
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc((value) => !value)
@@ -185,22 +276,19 @@ export function LeaderboardTable({
       {
         id: 'strategy',
         header: <SortHeader label="Entry" colKey="strategy" />,
-        render: (candidate) => {
-          const expanded = expandedId === candidate.candidate_id
-          return (
+        render: (candidate) => (
+          <MorphingDialogTrigger layoutId={candidateMorphLayoutId(candidate.candidate_id)}>
             <button
               type="button"
+              data-candidate-open
               className="hover:text-brass-400 flex items-start gap-1 text-left font-medium transition-colors"
+              aria-haspopup="dialog"
+              aria-expanded={openCandidateId === candidate.candidate_id}
               onClick={(event) => {
                 event.stopPropagation()
-                setExpandedId(expanded ? null : candidate.candidate_id)
+                openCandidateInspector(candidate.candidate_id)
               }}
             >
-              {expanded ? (
-                <ChevronDown className="mt-0.5 h-4 w-4 shrink-0" />
-              ) : (
-                <ChevronRight className="mt-0.5 h-4 w-4 shrink-0" />
-              )}
               <span>
                 <span className="flex flex-wrap items-center gap-1.5">
                   {candidate.strategy}
@@ -216,8 +304,8 @@ export function LeaderboardTable({
                 />
               </span>
             </button>
-          )
-        },
+          </MorphingDialogTrigger>
+        ),
       },
       {
         id: 'exit',
@@ -320,7 +408,8 @@ export function LeaderboardTable({
 
     return cols
   }, [
-    expandedId,
+    openCandidateId,
+    openCandidateInspector,
     objectiveHeader,
     objectiveMode,
     showGenerationFilter,
@@ -352,34 +441,48 @@ export function LeaderboardTable({
       ) : null}
 
       <Panel className="overflow-x-auto p-0">
-        <DataTable
-          columns={columns}
-          rows={sortedCandidates}
-          rowKey={(candidate) => candidate.candidate_id}
-          expandedKey={expandedId}
-          renderExpandedRow={(candidate) => (
-            <CandidateDetailPanel
-              runId={runId}
-              candidate={candidate}
-              backtest={backtest}
-              objectiveMode={objectiveMode}
-              searchConfig={searchConfig}
-            />
-          )}
-          getRowClassName={(candidate) =>
-            cn(isDeemphasized(candidate) ? 'text-silver-500 opacity-70' : 'text-silver-100')
-          }
-          virtualize={{
-            rowHeight: ROW_HEIGHT,
-            remeasureKey: expandedId,
-            estimateSize: (index) =>
-              expandedId === sortedCandidates[index]?.candidate_id ? 360 : ROW_HEIGHT,
-          }}
-          scrollContainerClassName="max-h-[min(70vh,640px)]"
-          tableClassName="min-w-[720px] text-xs"
-          theadClassName="tracking-wide uppercase"
-        />
+        <div
+          ref={tableContainerRef}
+          tabIndex={-1}
+          className="outline-none"
+          data-testid="leaderboard-table"
+        >
+          <DataTable
+            columns={columns}
+            rows={sortedCandidates}
+            rowKey={(candidate) => candidate.candidate_id}
+            onRowClick={(candidate) => openCandidateInspector(candidate.candidate_id)}
+            getRowClassName={(candidate) =>
+              cn(
+                isDeemphasized(candidate) ? 'text-silver-500 opacity-70' : 'text-silver-100',
+                openCandidateId === candidate.candidate_id && 'bg-brass-500/5',
+              )
+            }
+            virtualize={{
+              rowHeight: ROW_HEIGHT,
+            }}
+            scrollContainerClassName="max-h-[min(70vh,640px)]"
+            tableClassName="min-w-[720px] text-xs"
+            theadClassName="tracking-wide uppercase"
+          />
+        </div>
       </Panel>
+
+      {mountedCandidate ? (
+        <CandidateMorphingDialog
+          open={openCandidateId === mountedCandidate.candidate_id}
+          onOpenChange={closeCandidateInspector}
+          candidate={mountedCandidate}
+          runId={runId}
+          backtest={backtest}
+          objectiveMode={objectiveMode}
+          searchConfig={searchConfig}
+          onCloseAutoFocus={restoreFocusToOrigin}
+          onExitComplete={() => {
+            if (openCandidateIdRef.current == null) setMountedCandidate(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

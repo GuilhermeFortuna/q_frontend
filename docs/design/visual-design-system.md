@@ -88,6 +88,7 @@ can express. Built on the material classes above so they inherit future token ch
 | `StatTile`                     | metric tile (label + value, optional delta)                             | +1 (`tile` glow)   | `valueTone` / `highlight` for value color; delta up/down, not gold   |
 | `DataTable`                    | premium quantitative tabular grid with column alignments and sorting    | 0 on panel         | hover = tier 2 (luminance lift), selected = tier 3 (warm fill)       |
 | `Dialog` / `ConfirmDialog`     | modal overlays                                                          | +2 overlay         | tier 1 header; scrim recedes workspace                               |
+| `MorphingDialog`               | shared-element entity→detail overlay (Discover pilot)                   | +2 overlay         | layoutId morph; Radix a11y; not for confirms                         |
 | `Popover` / `Menu` / `Tooltip` | anchored floats and action menus                                        | +2 float           | luminance item hover; no arrows on popovers                          |
 | `toast` / `Toaster`            | transient top-right notifications                                       | +2 overlay cards   | success = tier-3 gold edge; errors = rose edge                       |
 
@@ -112,10 +113,14 @@ Transient surfaces share one material vocabulary and one motion contract. Radix 
 | Primitive           | Role                                                             | Material                                    | Motion                                |
 | ------------------- | ---------------------------------------------------------------- | ------------------------------------------- | ------------------------------------- |
 | `Dialog`            | modal work (confirm, indicator config)                           | `surface-overlay` + `surface-overlay-scrim` | `overlayEnter` / `overlayExit`        |
+| `MorphingDialog`    | reversible entity→detail inspection (Discover candidate pilot)   | `surface-overlay` + `surface-overlay-scrim` | shared `layoutId` morph ≤280ms; reduced motion = instant Radix dialog |
 | `Popover`           | anchored panels (chart settings, filters)                        | `surface-float` (+ blur)                    | scale-in from anchor side, fast exit  |
 | `Menu`              | dropdown / context actions                                       | `surface-float`                             | same as popover                       |
 | `Tooltip`           | short labels and definitions (max 280px, text only)              | `surface-float` (compact)                   | delayed show (350ms), instant hide    |
 | `toast` + `Toaster` | transient confirmations (save, duplicate, background completion) | `surface-overlay` card stack                | `fadeRise` enter, `overlayExit` leave |
+
+**Morphing Dialog:** Radix still owns focus trap, Escape, outside-dismiss, and title/description.
+Shared-layout morph is for reversible inspection only — never destructive confirmations.
 
 **Toast vs inline feedback:** Errors that require user action stay in inline `Callout` surfaces. Toasts are for brief confirmations and passive completions only (max 3 visible, auto-dismiss 5s / errors 8s, hover pauses timer).
 

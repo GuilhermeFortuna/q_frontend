@@ -51,6 +51,12 @@ export {
   DialogClose,
   DialogDescription,
 } from './Dialog'
+export {
+  MorphingDialog,
+  MorphingDialogTrigger,
+  type MorphingDialogProps,
+  type MorphingDialogTriggerProps,
+} from './MorphingDialog'
 export { Popover, PopoverTrigger, PopoverPortal, PopoverContent } from './Popover'
 export {
   Menu,

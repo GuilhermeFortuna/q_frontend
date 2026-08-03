@@ -40,6 +40,7 @@ afterAll(() => server.close())
 
 const results = mockStrategySearchResults['ss-run-petr4']
 const backtest = results.search_config!.backtest
+const geneticResults = mockStrategySearchResults['ss-run-genetic']
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -62,7 +63,7 @@ function renderLeaderboard(candidates: CandidateResult[] = results.candidates) {
 }
 
 function rowForStrategy(strategyName: string): HTMLElement {
-  const button = screen.getByRole('button', { name: new RegExp(`^${strategyName}`, 'i') })
+  const button = screen.getAllByRole('button', { name: new RegExp(`^${strategyName}`, 'i') })[0]!
   return button.closest('tr')!
 }
 
@@ -126,11 +127,12 @@ describe('LeaderboardTable', () => {
     expect(screen.getByTitle(/Low IS→OOS efficiency/i)).toBeInTheDocument()
   })
 
-  it('fires per-candidate equity query on row expansion', async () => {
+  it('fires per-candidate equity query when the morphing inspector opens', async () => {
     const user = userEvent.setup()
     const { queryClient } = renderLeaderboard()
 
     await user.click(screen.getAllByRole('button', { name: /MACrossover/i })[0]!)
+    expect(await screen.findByTestId('morphing-dialog-content')).toBeInTheDocument()
 
     await waitFor(() => {
       const queries = queryClient.getQueryCache().findAll({
@@ -140,7 +142,7 @@ describe('LeaderboardTable', () => {
     })
   })
 
-  it('expanding a row renders CandidateDetailPanel across the full table width', async () => {
+  it('opens CandidateDetailPanel in the morphing dialog, not an expanded table row', async () => {
     const user = userEvent.setup()
     renderLeaderboard()
 
@@ -151,8 +153,53 @@ describe('LeaderboardTable', () => {
       expect(screen.getByText('Exit policy')).toBeInTheDocument()
     })
 
-    const detailCell = screen.getByText('Exit policy').closest('td')!
-    expect(detailCell).toHaveAttribute('colspan', '8')
+    expect(screen.getByTestId('morphing-dialog-content')).toBeInTheDocument()
+    expect(screen.getByText('Exit policy').closest('td')).toBeNull()
+  })
+
+  it('does not open the inspector when promote actions are clicked', async () => {
+    const user = userEvent.setup()
+    renderLeaderboard()
+
+    await user.click(screen.getAllByRole('button', { name: 'Send to Backtest' })[0]!)
+    expect(screen.queryByTestId('morphing-dialog-content')).not.toBeInTheDocument()
+  })
+
+  it('opens from row click outside the Entry control', async () => {
+    const user = userEvent.setup()
+    renderLeaderboard()
+
+    const row = rowForStrategy('VMA')
+    const rankCell = within(row).getAllByRole('cell')[0]!
+    await user.click(rankCell)
+
+    expect(await screen.findByTestId('morphing-dialog-content')).toBeInTheDocument()
+  })
+
+  it('falls back focus to the table when the origin row is filtered away', async () => {
+    const user = userEvent.setup()
+    const geneticBacktest = geneticResults.search_config!.backtest
+
+    renderWithQueryClient(
+      <LeaderboardTable
+        runId="ss-run-genetic"
+        candidates={geneticResults.candidates}
+        objectiveMode={geneticResults.objective_mode}
+        backtest={geneticBacktest}
+        searchConfig={geneticResults.search_config}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /CompositeStrategy/i }))
+    expect(await screen.findByTestId('morphing-dialog-content')).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText(/Generation/i), '4')
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByTestId('morphing-dialog-content')).not.toBeInTheDocument()
+    })
+    expect(screen.getByTestId('leaderboard-table')).toHaveFocus()
   })
 
   it('Send to Backtest sets pendingBacktestConfig with candidate strategy and params', async () => {
@@ -190,7 +237,7 @@ describe('LeaderboardTable', () => {
     expect(optimizeSession.rightPanelTab).toBe('results')
   })
 
-  it('virtualizes large leaderboards and expands a row without nested tables', async () => {
+  it('virtualizes large leaderboards and keeps fixed row height when opening the inspector', async () => {
     const user = userEvent.setup()
     const template =
       results.candidates.find((c) => c.exit_preset_label === 'Chandelier trail') ??
@@ -208,9 +255,10 @@ describe('LeaderboardTable', () => {
     expect(container.querySelectorAll('table')).toHaveLength(1)
     expect(container.querySelectorAll('tbody table')).toHaveLength(0)
 
-    const bodyRows = container.querySelectorAll('tbody tr')
-    expect(bodyRows.length).toBeLessThan(20)
-    expect(bodyRows.length).toBeGreaterThan(0)
+    const bodyRowsBefore = container.querySelectorAll('tbody tr')
+    expect(bodyRowsBefore.length).toBeLessThan(20)
+    expect(bodyRowsBefore.length).toBeGreaterThan(0)
+    const rowCountBefore = bodyRowsBefore.length
 
     await user.click(screen.getByRole('button', { name: /Strategy0/i }))
 
@@ -218,7 +266,8 @@ describe('LeaderboardTable', () => {
       expect(screen.getByText('Exit policy')).toBeInTheDocument()
     })
 
-    const detailCell = screen.getByText('Exit policy').closest('td')!
-    expect(detailCell).toHaveAttribute('colspan', '8')
+    expect(screen.getByTestId('morphing-dialog-content')).toBeInTheDocument()
+    expect(screen.getByText('Exit policy').closest('td')).toBeNull()
+    expect(container.querySelectorAll('tbody tr').length).toBe(rowCountBefore)
   })
 })

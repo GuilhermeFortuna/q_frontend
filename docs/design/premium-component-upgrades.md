@@ -126,6 +126,27 @@ WO215-WO221 contain the implementation contracts.
   on unmount. Always-on / AppShell budgets unchanged.
 - Approved dependency: reuse existing `ogl@1.0.11` (no new install).
 
+## P-006 source and adaptation record
+
+- Owner revision: 2026-08-03. VISUAL E accepted; Discover leaderboard row morphs into a candidate
+  inspector.
+- Demo / docs: https://motion-primitives.com/docs/morphing-dialog
+- Source: https://github.com/ibelick/motion-primitives at commit
+  `92586e62a951eb9b6bfd1cc7c8a4e6e2ab6ba17d`.
+- Inspected source files:
+  - `components/core/morphing-dialog.tsx` — SHA-256
+    `3783289015c56be36cd74701468a4d2aa345b48676b7fa12964ace9558e4e33e`
+- Signature behavior: shared `layoutId` morph from trigger origin into a focused overlay, content
+  handoff, reverse close, click-outside / Escape dismiss.
+- Q adaptation: `MorphingDialog` in `src/components/ui/` plus Discover
+  `CandidateMorphingDialog`. Controlled `open` / `onOpenChange`; Radix owns portal, focus trap,
+  Escape, outside-dismiss, title/description, and focus restoration. Motion owns the shared-element
+  layout morph only (≤280ms, Q easing, one layout namespace). Reduced motion uses an instant Radix
+  dialog with no shared-layout interpolation. Materials are `surface-overlay` /
+  `surface-overlay-scrim`. Pilot is Discover leaderboard only — not confirmations or global Dialog
+  replacement. Provider focus-trap / click-outside helpers are not copied.
+- Approved dependency: reuse existing `motion` (no new install).
+
 ## Sequential acceptance gates
 
 ```text
@@ -140,8 +161,12 @@ orders do not compensate for it.
 Current dispatch state:
 
 - WO215 — `ACCEPTED` (VISUAL A)
-- WO216 — `REVIEW` (implementation complete; awaiting VISUAL B)
-- WO217–WO221 — `BLOCKED` by the immediately preceding visual acceptance gate
+- WO216 — `ACCEPTED` (VISUAL B)
+- WO217 — `ACCEPTED` (VISUAL C)
+- WO218 — `ACCEPTED` (VISUAL D)
+- WO219 — `ACCEPTED` (VISUAL E)
+- WO220 — `REVIEW` (implementation complete; awaiting VISUAL F)
+- WO221 — `BLOCKED` by VISUAL F
 
 ## Explicit non-selections
 
