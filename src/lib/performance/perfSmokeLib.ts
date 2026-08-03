@@ -5,6 +5,7 @@
 import {
   MAX_ALWAYS_ON_CANVASES_OUTSIDE_3D,
   MAX_APP_SHELL_ANIMATION_LOOPS,
+  ROUTE_FEATURE_RENDERER_BUDGETS,
   ROUTE_MOUNT_QUERY_BUDGETS,
   TARGET_FPS,
 } from '@/lib/performance/budgets'
@@ -14,6 +15,11 @@ export const ROUTE_SMOKE_PATHS = [
   { path: '/backtests', label: 'backtests', workspace: 'backtests' as const },
   { path: '/discover', label: 'discover', workspace: 'discover' as const },
   { path: '/market-data', label: 'market-data', workspace: 'market-data' as const },
+  {
+    path: '/strategy-builder',
+    label: 'strategy-builder',
+    workspace: 'strategy-builder' as const,
+  },
 ]
 
 export const PERF_BUDGETS = {
@@ -22,6 +28,7 @@ export const PERF_BUDGETS = {
   maxAlwaysOnCanvasesOutside3d: MAX_ALWAYS_ON_CANVASES_OUTSIDE_3D,
   maxAppShellAnimationLoops: MAX_APP_SHELL_ANIMATION_LOOPS,
   routeMountQueryBudgets: ROUTE_MOUNT_QUERY_BUDGETS,
+  routeFeatureRendererBudgets: ROUTE_FEATURE_RENDERER_BUDGETS,
 }
 
 export type RouteSample = {
@@ -105,11 +112,26 @@ export function evaluateRouteSample(sample: RouteSample): RouteEvalResult {
 
   if (
     sample.workspace !== 'launcher' &&
+    sample.workspace !== 'strategy-builder' &&
     sample.canvasCount > PERF_BUDGETS.maxAlwaysOnCanvasesOutside3d
   ) {
     warnings.push(
       `canvas count ${sample.canvasCount} > shell budget ${PERF_BUDGETS.maxAlwaysOnCanvasesOutside3d} outside launcher/3D`,
     )
+  }
+
+  if (sample.workspace === 'strategy-builder') {
+    const featureBudget = PERF_BUDGETS.routeFeatureRendererBudgets['strategy-builder']
+    if (sample.canvasCount > featureBudget.canvases) {
+      warnings.push(
+        `strategy-builder canvas count ${sample.canvasCount} > feature budget ${featureBudget.canvases}`,
+      )
+    }
+    if (sample.animationLoops > featureBudget.animationLoops) {
+      warnings.push(
+        `strategy-builder animation loops ${sample.animationLoops} > feature budget ${featureBudget.animationLoops}`,
+      )
+    }
   }
 
   if (sample.workspace === 'launcher' && sample.canvasCount > 1 && !sample.hasVisible3dWorkspace) {
@@ -118,7 +140,8 @@ export function evaluateRouteSample(sample: RouteSample): RouteEvalResult {
 
   if (
     sample.animationLoops > PERF_BUDGETS.maxAppShellAnimationLoops &&
-    sample.workspace !== 'launcher'
+    sample.workspace !== 'launcher' &&
+    sample.workspace !== 'strategy-builder'
   ) {
     warnings.push(
       `animation loops ${sample.animationLoops} > shell budget ${PERF_BUDGETS.maxAppShellAnimationLoops}`,

@@ -9,6 +9,12 @@ vi.mock('@/components/backtests/setup/AiChatTranscript', () => ({
   AiChatTranscript: () => null,
 }))
 
+vi.mock('@/components/backtests/setup/AiInferenceSignal', () => ({
+  AiInferenceSignal: ({ state, variant }: { state: string; variant: string }) => (
+    <div data-testid="ai-inference-signal" data-visual-state={state} data-variant={variant} />
+  ),
+}))
+
 function buildSession(overrides: Partial<AiStrategySession> = {}): AiStrategySession {
   return {
     message: '',
@@ -19,6 +25,10 @@ function buildSession(overrides: Partial<AiStrategySession> = {}): AiStrategySes
     previewSpec: null,
     response: null,
     serviceError: null,
+    interpretFailed: false,
+    doneHoldActive: false,
+    clearDoneHold: vi.fn(),
+    hasIncrementalOutput: false,
     saveError: null,
     validationErrors: [],
     unsupportedRequests: [],

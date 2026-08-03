@@ -17,6 +17,10 @@ export type GlowCardProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
    * Set false only for fixed gallery/demo cards.
    */
   customSize?: boolean
+  /**
+   * When true, content may paint outside the card (e.g. soft bloom). Defaults to clipped.
+   */
+  overflowVisible?: boolean
 }
 
 const sizeMap = {
@@ -38,6 +42,7 @@ export function GlowCard({
   width,
   height,
   customSize = true,
+  overflowVisible = false,
   style: styleProp,
   ...rest
 }: GlowCardProps) {
@@ -64,7 +69,12 @@ export function GlowCard({
       {...rest}
     >
       <div data-glow-bloom aria-hidden="true" />
-      <div className="relative z-10 flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div
+        className={cn(
+          'relative z-10 flex h-full min-h-0 min-w-0 flex-1 flex-col',
+          overflowVisible ? 'overflow-visible' : 'overflow-hidden',
+        )}
+      >
         {children}
       </div>
     </div>

@@ -1,4 +1,9 @@
-import { LONG_TASK_WARNING_MS, routeMountQueryBudget, TARGET_FPS } from '@/lib/performance/budgets'
+import {
+  LONG_TASK_WARNING_MS,
+  routeFeatureRendererBudget,
+  routeMountQueryBudget,
+  TARGET_FPS,
+} from '@/lib/performance/budgets'
 import { usePerformanceStore } from '@/lib/performance/usePerformanceStore'
 
 function formatSettle(ms: number | null): string {
@@ -25,8 +30,13 @@ export function PerformanceHud() {
   }
 
   const queryBudget = routeMountQueryBudget(currentRoute)
+  const featureRendererBudget = routeFeatureRendererBudget(currentRoute)
   const fpsWarn = fps > 0 && fps < TARGET_FPS
   const queryWarn = queryBudget !== null && routeMountQueryCount > queryBudget
+  const canvasWarn =
+    featureRendererBudget !== null && canvasCount > featureRendererBudget.canvases
+  const loopWarn =
+    featureRendererBudget !== null && animationLoopCount > featureRendererBudget.animationLoops
 
   return (
     <div
@@ -41,8 +51,12 @@ export function PerformanceHud() {
       <div>
         long tasks {longTaskCount} (≥{LONG_TASK_WARNING_MS}ms)
       </div>
-      <div>
-        canvas {canvasCount} · loops {animationLoopCount}
+      <div className={canvasWarn || loopWarn ? 'text-amber-300' : undefined}>
+        canvas {canvasCount}
+        {featureRendererBudget ? ` / ${featureRendererBudget.canvases}` : ''}
+        {' · '}
+        loops {animationLoopCount}
+        {featureRendererBudget ? ` / ${featureRendererBudget.animationLoops}` : ''}
       </div>
       <div className="truncate text-white/60">
         cinematic {cinematicQualityMode ?? '—'}

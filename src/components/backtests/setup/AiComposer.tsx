@@ -10,6 +10,7 @@ type AiComposerProps = {
   composerRef: RefObject<HTMLTextAreaElement | null>
   variant?: 'compact' | 'pill'
   docked?: boolean
+  onFocusChange?: (focused: boolean) => void
 }
 
 export function AiComposer({
@@ -17,6 +18,7 @@ export function AiComposer({
   composerRef,
   variant = 'compact',
   docked = false,
+  onFocusChange,
 }: AiComposerProps) {
   const {
     message,
@@ -31,6 +33,11 @@ export function AiComposer({
   } = session
 
   const [focused, setFocused] = useState(false)
+
+  const handleFocusChange = (next: boolean) => {
+    setFocused(next)
+    onFocusChange?.(next)
+  }
 
   const selectedModelInfo = availableModels.find(
     (m) => m.provider === selectedModel?.provider && m.id === selectedModel?.model,
@@ -56,6 +63,8 @@ export function AiComposer({
           className="bg-carbon-950/40 border-carbon-700/50 text-silver-100 focus:border-brass-500/80 min-h-[4.5rem] w-full resize-y rounded-lg border p-2 text-sm transition-all outline-none focus:shadow-[0_0_8px_rgba(217,158,34,0.3)]"
           disabled={interpretMutation.isPending}
           data-testid="ai-strategy-message"
+          onFocus={() => handleFocusChange(true)}
+          onBlur={() => handleFocusChange(false)}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
               event.preventDefault()
@@ -155,8 +164,8 @@ export function AiComposer({
               }
             }
           }}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={() => handleFocusChange(true)}
+          onBlur={() => handleFocusChange(false)}
         />
       </div>
 
