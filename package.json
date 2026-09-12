@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "ci": "bash scripts/ci.sh",
     "check": "bash scripts/ci.sh",
+    "contracts-check": "make contracts-check",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "node tauri-dev.js",
