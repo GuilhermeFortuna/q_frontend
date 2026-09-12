@@ -17,6 +17,10 @@ contracts-check:
 	git clone --quiet "$(CONTRACTS_REPO)" "$$contracts_tmp/q_contracts"; \
 	git -C "$$contracts_tmp/q_contracts" checkout --quiet "$$(cat CONTRACTS_REV)"; \
 	generated_tmp="$$contracts_tmp/generated"; \
-	uv run --project "$$contracts_tmp/q_contracts" python "$$contracts_tmp/q_contracts/tools/generate.py" \
-		--language typescript --out "$$generated_tmp"; \
+	if python3 -c 'import yaml' 2>/dev/null; then \
+		python3 "$$contracts_tmp/q_contracts/tools/generate.py" --language typescript --out "$$generated_tmp"; \
+	else \
+		uv run --project "$$contracts_tmp/q_contracts" python "$$contracts_tmp/q_contracts/tools/generate.py" \
+			--language typescript --out "$$generated_tmp"; \
+	fi; \
 	diff -ru contracts "$$generated_tmp/typescript"

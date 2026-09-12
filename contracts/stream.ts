@@ -20,23 +20,12 @@ export interface StreamEnvelope {
   epoch: string
   origin_ts: string
   payload: string | Record<string, unknown>
-  payload_kind: 'arrow_ipc' | 'control'
+  payload_kind: "arrow_ipc" | "control"
   payload_schema: string
   producer_id: string
   schema_major: number
   seq: number
-  topic:
-    | 'bars.completed'
-    | 'bars.forming'
-    | 'decisions'
-    | 'deployments'
-    | 'fills'
-    | 'jobs.progress'
-    | 'jobs.terminal'
-    | 'ledger'
-    | 'orders'
-    | 'quotes'
-    | 'risk'
+  topic: "bars.completed" | "bars.forming" | "decisions" | "deployments" | "fills" | "jobs.progress" | "jobs.terminal" | "ledger" | "orders" | "quotes" | "risk"
 }
 
 export interface SubscribeFrame {

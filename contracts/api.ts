@@ -45,7 +45,7 @@ export interface AiStrategyResponse {
 export interface AiStrategyServiceErrorResponse {
   detail?: string | null
   message: string
-  status: 'ai_disabled' | 'ai_misconfigured' | 'provider_error' | 'parse_error'
+  status: "ai_disabled" | "ai_misconfigured" | "provider_error" | "parse_error"
 }
 
 export interface AlphaResearchComputeBudget {
@@ -75,13 +75,13 @@ export interface AlphaResearchResult {
   provenance?: Record<string, unknown>
   split_manifest?: Record<string, unknown> | null
   stages?: Array<AlphaResearchStageStatus>
-  verdict: 'ready_for_paper' | 'inconclusive' | 'rejected'
+  verdict: "ready_for_paper" | "inconclusive" | "rejected"
 }
 
 export interface AlphaResearchStageStatus {
   detail?: string | null
   name: string
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped'
+  status: "pending" | "running" | "completed" | "failed" | "skipped"
 }
 
 export interface AlphaResearchStartResponse {
@@ -97,7 +97,7 @@ export interface AlphaResearchStatusResponse {
   progress?: number
   result?: AlphaResearchResult | null
   stages?: Array<AlphaResearchStageStatus>
-  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+  status: "queued" | "running" | "completed" | "failed" | "cancelled"
 }
 
 export interface ApiError {
@@ -131,7 +131,7 @@ export interface BacktestConfig {
   day_trade_start_time?: string
   display_timeframe?: string
   end: string
-  engine?: 'candle' | 'tick'
+  engine?: "candle" | "tick"
   entries?: Array<EntryInstance> | null
   entry_manager?: EntryManagerConfig
   exit_params?: Record<string, unknown>
@@ -167,17 +167,13 @@ export interface BacktestRequest {
   day_trade_start_time?: string
   display_timeframe?: string
   end?: string | null
-  engine?: 'candle' | 'tick'
+  engine?: "candle" | "tick"
   entries?: Array<EntryInstance> | null
   entry_manager?: EntryManagerConfig
   exit_params?: Record<string, unknown>
   initial_capital?: number
   point_value?: number
-  position_sizing?:
-    | FixedQuantityPositionSizing
-    | FixedSafetyMarginPositionSizing
-    | InverseVolatilityPositionSizing
-    | null
+  position_sizing?: FixedQuantityPositionSizing | FixedSafetyMarginPositionSizing | InverseVolatilityPositionSizing | null
   start?: string | null
   strategy?: string
   strategy_params?: Record<string, unknown>
@@ -271,27 +267,27 @@ export interface CapabilityRegistry {
   genome_param_bounds: Array<StrategyParamSpec>
   operators: Array<string>
   risk_sizing: Array<RiskSizingCapability>
-  schema_version?: 'q_capabilities.v1'
+  schema_version?: "q_capabilities.v1"
   strategies: Array<StrategyInfo>
   unsupported: Array<string>
 }
 
 export interface CategoricalParam {
   choices: Array<string | number | number>
-  type?: 'categorical'
+  type?: "categorical"
 }
 
 export interface ChartIndicatorSeries {
   color?: string | null
   key: string
   label: string
-  pane: 'price' | 'oscillator'
+  pane: "price" | "oscillator"
   values: Array<number | null>
 }
 
 export interface CompileStrategySpecErrorResponse {
   errors?: Array<ValidationErrorDetail>
-  status?: 'validation_failed' | 'compile_failed'
+  status?: "validation_failed" | "compile_failed"
 }
 
 export interface CompileStrategySpecRequest {
@@ -301,7 +297,7 @@ export interface CompileStrategySpecRequest {
 export interface CompileStrategySpecResponse {
   compiled_strategy: CompiledStrategy
   compiled_strategy_id: string
-  status?: 'compiled'
+  status?: "compiled"
 }
 
 export interface CompiledStrategy {
@@ -328,7 +324,7 @@ export interface CompiledStrategySummary {
 
 export interface ConversationMessage {
   content: string
-  role: 'user' | 'assistant' | 'system'
+  role: "user" | "assistant" | "system"
 }
 
 export interface CustomStrategySaveRequest {
@@ -341,7 +337,7 @@ export interface CustomStrategySaveRequest {
 
 export interface DataCapabilities {
   data_sources: Array<string>
-  engines: Array<'candle' | 'tick'>
+  engines: Array<"candle" | "tick">
   markets: Array<string>
   ohlcv_columns: Array<string>
   tick_columns: Array<string>
@@ -349,13 +345,13 @@ export interface DataCapabilities {
 }
 
 export interface DataSourceResponse {
-  active_provider: 'mt5' | 'remote' | 'local'
+  active_provider: "mt5" | "remote" | "local"
   mt5_available: boolean
-  source: 'auto' | 'mt5' | 'remote' | 'local'
+  source: "auto" | "mt5" | "remote" | "local"
 }
 
 export interface DataSourceUpdateRequest {
-  source: 'auto' | 'mt5' | 'remote' | 'local'
+  source: "auto" | "mt5" | "remote" | "local"
 }
 
 export interface DecisionListResponse {
@@ -382,7 +378,7 @@ export interface DecisionResponse {
 }
 
 export interface DeploymentActionRequest {
-  action: 'start' | 'pause' | 'stop' | 'flatten'
+  action: "start" | "pause" | "stop" | "flatten"
   actor?: string | null
   confirm?: boolean
 }
@@ -407,7 +403,7 @@ export interface DeploymentChartIndicator {
   color?: string | null
   key: string
   label: string
-  pane: 'price' | 'oscillator'
+  pane: "price" | "oscillator"
   values: Array<number | null>
 }
 
@@ -422,7 +418,7 @@ export interface DeploymentChartResponse {
 }
 
 export interface DeploymentCreateRequest {
-  broker_mode?: 'paper'
+  broker_mode?: "paper"
   identity?: DeploymentIdentityInput | null
   live_activation_enabled?: boolean
   name: string
@@ -530,13 +526,13 @@ export interface DiscoveryAbResult {
   complete_pairs: number
   control: DiscoveryAbArmSummary
   dropped_pair_reasons?: Array<string>
-  metric: 'lockbox_objective' | 'oos_objective'
+  metric: "lockbox_objective" | "oos_objective"
   minimum_complete_pairs?: number
   n_seeds: number
   paired_delta: DiscoveryAbPairedDelta
   requested_seeds: number
   treatment: DiscoveryAbArmSummary
-  verdict: 'helps' | 'no_effect' | 'hurts' | 'inconclusive'
+  verdict: "helps" | "no_effect" | "hurts" | "inconclusive"
 }
 
 export interface DiscoveryAbStartResponse {
@@ -550,7 +546,7 @@ export interface DiscoveryAbStatusResponse {
   job_id: string
   progress?: number
   result?: DiscoveryAbResult | null
-  status: 'queued' | 'running' | 'completed' | 'failed'
+  status: "queued" | "running" | "completed" | "failed"
 }
 
 export interface EncoderAblationRequest {
@@ -577,7 +573,7 @@ export interface EncoderAblationResult {
 export interface EncoderAblationRow {
   baseline_ic?: number | null
   best_latent_ic?: number | null
-  encoder_kind: 'pca' | 'ae'
+  encoder_kind: "pca" | "ae"
   gate_error?: string | null
   ic_delta_vs_baseline?: number | null
   label: string
@@ -600,7 +596,7 @@ export interface EncoderAblationStatusResponse {
 }
 
 export interface EncoderConfigSpec {
-  encoder_kind: 'pca' | 'ae'
+  encoder_kind: "pca" | "ae"
   hyperparams?: Record<string, unknown>
   label: string
 }
@@ -628,14 +624,14 @@ export interface ExecutionAssumptions {
 }
 
 export interface ExecutionHealthResponse {
-  api_status: 'ok' | 'degraded' | 'unavailable'
+  api_status: "ok" | "degraded" | "unavailable"
   checked_at: string
   deployments: Array<DeploymentHealthResponse>
   kill_switch_enabled: boolean
   live_capability_locked: boolean
-  market_data_status: 'online' | 'offline' | 'stale'
+  market_data_status: "online" | "offline" | "stale"
   unknown_order_count: number
-  worker_status: 'healthy' | 'stale' | 'offline'
+  worker_status: "healthy" | "stale" | "offline"
 }
 
 export interface ExitPreset {
@@ -668,7 +664,7 @@ export interface ExitRuleInfo {
   description: string
   enable_param: string
   enable_value: number | number
-  exit_group: 'stop_loss' | 'trailing' | 'target' | 'time' | 'general'
+  exit_group: "stop_loss" | "trailing" | "target" | "time" | "general"
   id: string
   label: string
   param_names: Array<string>
@@ -679,16 +675,8 @@ export interface ExogenousSeriesConfig {
   availability_lag_bars?: number
   corr_window?: number
   lookback_bars?: number
-  recipes?: Array<
-    | 'close'
-    | 'return'
-    | 'return_zscore'
-    | 'rolling_corr'
-    | 'relative_strength'
-    | 'vol_regime'
-    | 'direction_regime'
-  >
-  resampling_rule?: 'none' | 'last_completed'
+  recipes?: Array<"close" | "return" | "return_zscore" | "rolling_corr" | "relative_strength" | "vol_regime" | "direction_regime">
+  resampling_rule?: "none" | "last_completed"
   source_timeframe: string
   symbol: string
   target_timeframe?: string | null
@@ -808,7 +796,7 @@ export interface FeaturePassportResponse {
   versions: Array<FeatureVersionDetail>
 }
 
-export type FeatureStatus = 'experimental' | 'candidate' | 'production'
+export type FeatureStatus = "experimental" | "candidate" | "production"
 
 export interface FeatureStatusUpdateRequest {
   status: FeatureStatus
@@ -850,7 +838,7 @@ export interface FillResponse {
 export interface FixedQuantityPositionSizing {
   quantity?: number
   scale_by_signal_strength?: boolean
-  type?: 'fixed_quantity'
+  type?: "fixed_quantity"
 }
 
 export interface FixedSafetyMarginPositionSizing {
@@ -858,14 +846,14 @@ export interface FixedSafetyMarginPositionSizing {
   min_contracts?: number
   safety_margin_per_contract?: number
   scale_by_signal_strength?: boolean
-  type?: 'fixed_safety_margin'
+  type?: "fixed_safety_margin"
 }
 
 export interface FloatParam {
   high: number
   low: number
   step?: number | null
-  type?: 'float'
+  type?: "float"
 }
 
 export interface GateConfig {
@@ -912,7 +900,7 @@ export interface GenomeLimits {
 
 export interface GenomeNodeCapability {
   allowed_param_keys: Array<string>
-  input_series_types: Array<'price_series' | 'oscillator'> | null
+  input_series_types: Array<"price_series" | "oscillator"> | null
   kind: string
   max_inputs: number
   min_inputs: number
@@ -926,7 +914,7 @@ export interface HTTPValidationError {
 
 export interface IngestJobRequest {
   end: string
-  kind?: 'bars' | 'ticks'
+  kind?: "bars" | "ticks"
   start: string
   symbol: string
   timeframes?: Array<string>
@@ -960,7 +948,7 @@ export interface IntParam {
   high: number
   low: number
   step?: number
-  type?: 'int'
+  type?: "int"
 }
 
 export interface InverseVolatilityPositionSizing {
@@ -968,7 +956,7 @@ export interface InverseVolatilityPositionSizing {
   min_contracts?: number
   scale_by_signal_strength?: boolean
   target_volatility_pct?: number
-  type?: 'inverse_volatility'
+  type?: "inverse_volatility"
 }
 
 export interface KillSwitchResponse {
@@ -1031,7 +1019,7 @@ export interface LockboxConfig {
 export interface LogFloatParam {
   high: number
   low: number
-  type?: 'log-float'
+  type?: "log-float"
 }
 
 export interface MarketSnapshotResponse {
@@ -1059,7 +1047,7 @@ export interface MarketTapeTickResponse {
   ask: number
   bid: number
   last: number
-  side?: 'buy' | 'sell' | null
+  side?: "buy" | "sell" | null
   volume: number
 }
 
@@ -1099,7 +1087,7 @@ export interface NeuralModelListResponse {
   models: Array<NeuralModelListItem>
 }
 
-export type NeuralModelStatus = 'trained' | 'candidate' | 'production' | 'archived'
+export type NeuralModelStatus = "trained" | "candidate" | "production" | "archived"
 
 export interface NeuralModelStatusUpdateRequest {
   status: NeuralModelStatus
@@ -1114,7 +1102,7 @@ export interface NeuralTrainRequest {
   evaluate?: NeuralTrainEvaluateRequest | null
   hyperparams?: Record<string, unknown>
   input_features: Array<string>
-  kind?: 'pca' | 'autoencoder'
+  kind?: "pca" | "autoencoder"
   model_key?: string | null
   n_latents: number
   symbol: string
@@ -1165,12 +1153,7 @@ export interface ObjectiveConfig {
   mode: ObjectiveMode
 }
 
-export type ObjectiveMode =
-  | 'maximize_net_profit'
-  | 'maximize_sharpe'
-  | 'minimize_drawdown'
-  | 'maximize_return_drawdown'
-  | 'multi_objective_return_drawdown'
+export type ObjectiveMode = "maximize_net_profit" | "maximize_sharpe" | "minimize_drawdown" | "maximize_return_drawdown" | "multi_objective_return_drawdown"
 
 export interface OhlcvAvailableRangeResponse {
   bar_count: number
@@ -1267,7 +1250,7 @@ export interface OrderResolutionRequest {
   external_fill_id?: string | null
   fee?: number | string | null
   filled_at?: string | null
-  outcome: 'filled' | 'not_filled'
+  outcome: "filled" | "not_filled"
   price?: number | string | null
   quantity?: number | string | null
   reason: string
@@ -1342,7 +1325,7 @@ export interface ParallelCoordinateRow {
   values: Array<number>
 }
 
-export type ParallelMode = 'SEQUENTIAL' | 'DAY_TRADE'
+export type ParallelMode = "SEQUENTIAL" | "DAY_TRADE"
 
 export interface ParamImportanceEntry {
   importance: number
@@ -1431,7 +1414,7 @@ export interface SignalManagerInfo {
 
 export interface StorageConfig {
   path?: string | null
-  type?: 'memory' | 'sqlite' | 'url' | 'shared'
+  type?: "memory" | "sqlite" | "url" | "shared"
   url?: string | null
 }
 
@@ -1443,7 +1426,7 @@ export interface StorageDeleteResponse {
 
 export interface StorageIngestStartResponse {
   job_id: string
-  status: 'queued'
+  status: "queued"
 }
 
 export interface StorageIngestStatusResponse {
@@ -1452,13 +1435,13 @@ export interface StorageIngestStatusResponse {
   job_id: string
   progress: number
   results?: Array<Record<string, unknown>> | null
-  status: 'queued' | 'running' | 'completed' | 'failed'
+  status: "queued" | "running" | "completed" | "failed"
 }
 
 export interface StorageInventoryItem {
   bytes: number
   end: string
-  kind?: 'bars' | 'ticks'
+  kind?: "bars" | "ticks"
   rows: number
   start: string
   symbol: string
@@ -1473,7 +1456,7 @@ export interface StorageInventoryResponse {
 
 export interface StorageServiceStatus {
   error?: string | null
-  status: 'ok' | 'error'
+  status: "ok" | "error"
 }
 
 export interface StorageStatusResponse {
@@ -1486,9 +1469,9 @@ export interface StrategiesResponse {
 }
 
 export interface StrategyInfo {
-  category?: 'trend' | 'mean_reversion' | 'breakout' | 'momentum' | 'other'
+  category?: "trend" | "mean_reversion" | "breakout" | "momentum" | "other"
   description: string
-  engine?: 'candle' | 'tick'
+  engine?: "candle" | "tick"
   label: string
   name: string
   params: Array<StrategyParamSpec>
@@ -1510,7 +1493,7 @@ export interface StrategyInterpretRequest {
 export interface StrategyParamSpec {
   choices?: Array<string> | null
   default: number | number | string
-  exit_group?: 'stop_loss' | 'trailing' | 'target' | 'time' | 'general' | null
+  exit_group?: "stop_loss" | "trailing" | "target" | "time" | "general" | null
   hint?: string | null
   label: string
   max?: number | null
@@ -1518,11 +1501,11 @@ export interface StrategyParamSpec {
   name: string
   search_max?: number | null
   search_min?: number | null
-  search_scale?: 'linear' | 'log' | null
+  search_scale?: "linear" | "log" | null
   search_step?: number | null
   searchable?: boolean
   step?: number | null
-  type: 'int' | 'float' | 'categorical'
+  type: "int" | "float" | "categorical"
 }
 
 export interface StrategySearchCandidateEquityArtifactResponse {
@@ -1631,7 +1614,7 @@ export interface StrategySearchStatusResponse {
   error?: string | null
   generation?: number | null
   logs?: Array<string> | null
-  phase?: 'optimizing' | 'testing' | 'done' | null
+  phase?: "optimizing" | "testing" | "done" | null
   run_id: string
   search_config?: Record<string, unknown> | null
   status: string
@@ -1644,18 +1627,18 @@ export interface StrategySearchStatusResponse {
 
 export interface StudyConfig {
   continue_on_trial_error?: boolean
-  direction?: 'maximize' | 'minimize' | null
+  direction?: "maximize" | "minimize" | null
   max_workers?: number | null
   n_trials?: number
   name: string
-  pruner?: 'none' | 'median' | 'hyperband'
-  sampler?: 'tpe' | 'random' | 'nsgaii' | null
+  pruner?: "none" | "median" | "hyperband"
+  sampler?: "tpe" | "random" | "nsgaii" | null
   seed?: number
   storage?: StorageConfig
 }
 
 export interface SystemHealthResponse {
-  active_provider: 'mt5' | 'remote' | 'local'
+  active_provider: "mt5" | "remote" | "local"
   backendVersion: string
   dataLakeStatus: string
   lastSyncAt: string
@@ -1708,7 +1691,7 @@ export interface ValidationResult {
 export interface WalkForwardConfig {
   max_workers?: number | null
   min_windows?: number
-  mode?: 'rolling' | 'anchored'
+  mode?: "rolling" | "anchored"
   test_days: number
   train_days: number
 }
@@ -1758,7 +1741,7 @@ export interface WalkForwardStatusResponse {
   current_window: number
   error?: string | null
   optimization_config?: Record<string, unknown> | null
-  phase?: 'optimizing' | 'testing' | null
+  phase?: "optimizing" | "testing" | null
   run_id: string
   status: string
   total_windows: number

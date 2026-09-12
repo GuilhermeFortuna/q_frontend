@@ -22,18 +22,7 @@ export interface DealsRequest {
 export type DealsResponse = Array<ExecutionDeal>
 
 export interface EdgeErrorResponse {
-  code:
-    | 'invalid_timeframe'
-    | 'symbol_not_found'
-    | 'range_unavailable'
-    | 'tick_range_too_large'
-    | 'invalid_flags'
-    | 'mt5_unavailable'
-    | 'unauthorized'
-    | 'not_found'
-    | 'internal_error'
-    | 'duplicate_intent'
-    | 'schema_major_mismatch'
+  code: "invalid_timeframe" | "symbol_not_found" | "range_unavailable" | "tick_range_too_large" | "invalid_flags" | "mt5_unavailable" | "unauthorized" | "not_found" | "internal_error" | "duplicate_intent" | "schema_major_mismatch"
   error: string
 }
 
@@ -66,7 +55,7 @@ export interface ExecutionOrder {
   deviation?: number
   magic?: number
   price?: number
-  side?: 'buy' | 'sell'
+  side?: "buy" | "sell"
   sl?: number
   symbol: string
   tp?: number
@@ -91,11 +80,7 @@ export interface ExecutionPosition {
   volume: number
 }
 
-export type LookupOutcome =
-  | { closes_intent: true; deals: Array<ExecutionDeal>; outcome: 'filled' }
-  | { closes_intent: true; outcome: 'rejected'; reason?: string; retcode: number }
-  | { closes_intent: true; outcome: 'not_found' }
-  | { closes_intent: false; outcome: 'unavailable'; reason: string }
+export type LookupOutcome = { closes_intent: true; deals: Array<ExecutionDeal>; outcome: "filled" } | { closes_intent: true; outcome: "rejected"; reason?: string; retcode: number } | { closes_intent: true; outcome: "not_found" } | { closes_intent: false; outcome: "unavailable"; reason: string }
 
 export interface LookupRequest {
   intent_id: string
@@ -123,10 +108,7 @@ export interface QuoteResponse {
   time_msc: number
 }
 
-export type SubmitOutcome =
-  | { order_ticket: number; outcome: 'accepted'; retcode: number }
-  | { outcome: 'rejected'; reason: string; retcode: number }
-  | { outcome: 'indeterminate'; reason: string }
+export type SubmitOutcome = { order_ticket: number; outcome: "accepted"; retcode: number } | { outcome: "rejected"; reason: string; retcode: number } | { outcome: "indeterminate"; reason: string }
 
 export interface SubmitRequest {
   intent_id: string

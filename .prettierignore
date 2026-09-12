@@ -4,3 +4,4 @@ src-tauri/target
 coverage
 public/mockServiceWorker.js
 pnpm-lock.yaml
+contracts/
