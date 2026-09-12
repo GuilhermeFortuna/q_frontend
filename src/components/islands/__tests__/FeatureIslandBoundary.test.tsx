@@ -6,9 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { FeatureIslandBoundary } from '@/components/islands/FeatureIslandBoundary'
 
 vi.mock('@/components/status/FaultyTerminalField', () => ({
-  FaultyTerminalField: () => (
-    <div data-testid="faulty-terminal-field" aria-hidden="true" />
-  ),
+  FaultyTerminalField: () => <div data-testid="faulty-terminal-field" aria-hidden="true" />,
 }))
 
 class ThrowingChild extends Component<{ shouldThrow: boolean; children?: ReactNode }> {

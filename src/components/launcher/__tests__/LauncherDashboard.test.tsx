@@ -90,9 +90,7 @@ describe('LauncherDashboard telemetry number flow', () => {
       value: '24%',
     })
     expect(typeof byLabel['CPU Core Load'].formatNumericValue).toBe('function')
-    expect((byLabel['CPU Core Load'].formatNumericValue as (v: number) => string)(24)).toBe(
-      '24%',
-    )
+    expect((byLabel['CPU Core Load'].formatNumericValue as (v: number) => string)(24)).toBe('24%')
 
     expect(byLabel['Engine Memory']).toMatchObject({
       numericValue: 48.2,
@@ -108,9 +106,9 @@ describe('LauncherDashboard telemetry number flow', () => {
       animateValue: true,
       value: '8.4 MB/s',
     })
-    expect(
-      (byLabel['Database Disk I/O'].formatNumericValue as (v: number) => string)(8.4),
-    ).toBe('8.4 MB/s')
+    expect((byLabel['Database Disk I/O'].formatNumericValue as (v: number) => string)(8.4)).toBe(
+      '8.4 MB/s',
+    )
 
     expect(screen.getByTestId('stat-tile-CPU Core Load')).toHaveTextContent('CPU Core Load:24%')
   })

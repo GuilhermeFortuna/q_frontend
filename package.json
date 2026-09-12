@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "ci": "bash scripts/ci.sh",
+    "check": "bash scripts/ci.sh",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "node tauri-dev.js",

@@ -125,7 +125,10 @@ function JobProgress({ job, compact }: { job: ActiveJobIslandJob; compact?: bool
 
   return (
     <div
-      className={cn('surface-well overflow-hidden rounded-full', compact ? 'h-1 w-16' : 'h-1.5 w-full')}
+      className={cn(
+        'surface-well overflow-hidden rounded-full',
+        compact ? 'h-1 w-16' : 'h-1.5 w-full',
+      )}
       role="progressbar"
       aria-label={`${job.workspaceLabel} progress`}
       aria-valuemin={0}
@@ -144,13 +147,7 @@ function JobProgress({ job, compact }: { job: ActiveJobIslandJob; compact?: bool
   )
 }
 
-function CompactJobSummary({
-  job,
-  extraCount,
-}: {
-  job: ActiveJobIslandJob
-  extraCount: number
-}) {
+function CompactJobSummary({ job, extraCount }: { job: ActiveJobIslandJob; extraCount: number }) {
   const Icon = job.icon
   return (
     <div className="flex min-w-0 items-center gap-2 px-3 py-2" data-testid="active-job-compact">
@@ -353,13 +350,13 @@ export function ActiveJobIsland({
   return (
     <div
       ref={rootRef}
-      className={cn('relative ml-1.5 border-l border-brass-500/15 pl-2.5', className)}
+      className={cn('border-brass-500/15 relative ml-1.5 border-l pl-2.5', className)}
       data-testid="active-job-island"
       data-mode={mode}
     >
       <motion.div
         layout
-        className="surface-float surface-float--blur w-fit min-w-[7.5rem] overflow-hidden border-brass-500/25"
+        className="surface-float surface-float--blur border-brass-500/25 w-fit min-w-[7.5rem] overflow-hidden"
         style={{ borderRadius: expanded ? 18 : 999 }}
         transition={springTransition}
       >

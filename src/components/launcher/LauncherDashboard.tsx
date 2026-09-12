@@ -271,7 +271,7 @@ function FloatingLauncherPanel({
       exit={exit}
       transition={transition}
     >
-      <GlowCard customSize className="h-full w-full min-h-0">
+      <GlowCard customSize className="h-full min-h-0 w-full">
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex min-h-0 flex-1">
             <div
@@ -563,11 +563,7 @@ export function LauncherDashboard() {
               const closes = sparklines[symbol]
 
               return (
-                <GlowCard
-                  key={symbol}
-                  intensity="tile"
-                  className="p-3 transition-all duration-200"
-                >
+                <GlowCard key={symbol} intensity="tile" className="p-3 transition-all duration-200">
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
                       <span className="text-silver-100 font-mono text-xs font-bold tracking-tight">
@@ -778,11 +774,14 @@ export function LauncherDashboard() {
                           )}
                         >
                           {run.summary
-                            ? `${isProfit ? '+' : ''}${run.summary.total_pnl.toLocaleString('en-US', {
-                                style: 'currency',
-                                currency: 'USD',
-                                maximumFractionDigits: 0,
-                              })}`
+                            ? `${isProfit ? '+' : ''}${run.summary.total_pnl.toLocaleString(
+                                'en-US',
+                                {
+                                  style: 'currency',
+                                  currency: 'USD',
+                                  maximumFractionDigits: 0,
+                                },
+                              )}`
                             : '—'}
                         </span>
                         <span className="text-silver-400 font-mono text-[9px]">

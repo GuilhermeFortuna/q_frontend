@@ -10,11 +10,7 @@ afterEach(() => {
   useAppStore.setState({ motionMode: 'full' })
 })
 
-function Harness({
-  onCloseAutoFocus,
-}: {
-  onCloseAutoFocus?: (event: Event) => void
-}) {
+function Harness({ onCloseAutoFocus }: { onCloseAutoFocus?: (event: Event) => void }) {
   const [open, setOpen] = useState(false)
   return (
     <div>
@@ -96,17 +92,16 @@ describe('MorphingDialog', () => {
 
   it('skips shared layoutId under reduced motion', async () => {
     const matchMedia = window.matchMedia
-    window.matchMedia = ((query: string) =>
-      ({
-        matches: query.includes('prefers-reduced-motion'),
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      })) as typeof window.matchMedia
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia
 
     act(() => {
       useAppStore.setState({ motionMode: 'system' })

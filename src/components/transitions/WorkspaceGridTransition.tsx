@@ -114,9 +114,7 @@ function placeFixed(el: HTMLElement, rect: DOMRect) {
 }
 
 function queryWorkspaceRoot(workspaceId: string): HTMLElement | null {
-  return document.querySelector<HTMLElement>(
-    `[data-workspace-transition-root="${workspaceId}"]`,
-  )
+  return document.querySelector<HTMLElement>(`[data-workspace-transition-root="${workspaceId}"]`)
 }
 
 function querySurfaces(root: HTMLElement): Map<WorkspaceTransitionSurfaceRole, HTMLElement> {
@@ -290,9 +288,7 @@ export function WorkspaceGridTransition({ onSettled }: WorkspaceGridTransitionPr
       if (activeDock) {
         const rect = activeDock.getBoundingClientRect()
         const label =
-          activeDock.getAttribute('aria-label') ??
-          dockEl.getAttribute('aria-label') ??
-          ctx.to
+          activeDock.getAttribute('aria-label') ?? dockEl.getAttribute('aria-label') ?? ctx.to
         const clone = document.createElement('div')
         clone.className =
           'workspace-grid-transition__clone workspace-grid-transition__clone--identity'
@@ -338,7 +334,10 @@ export function WorkspaceGridTransition({ onSettled }: WorkspaceGridTransitionPr
         } else {
           gsap.to(captured.clone, {
             opacity: 0,
-            y: offset > 0 ? WORKSPACE_TRANSITION_TIMINGS.unmatchedRecedePx : -WORKSPACE_TRANSITION_TIMINGS.unmatchedRecedePx,
+            y:
+              offset > 0
+                ? WORKSPACE_TRANSITION_TIMINGS.unmatchedRecedePx
+                : -WORKSPACE_TRANSITION_TIMINGS.unmatchedRecedePx,
             duration: duration * 0.55,
             ease,
           })

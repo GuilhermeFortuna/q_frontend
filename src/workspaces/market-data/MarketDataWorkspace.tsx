@@ -307,7 +307,10 @@ export function MarketDataWorkspace() {
       className="flex h-[calc(100vh-210px)] w-full flex-col gap-4 overflow-hidden"
       data-workspace-transition-root="market-data"
     >
-      <div data-workspace-transition-surface="utility" data-workspace-transition-anchor="market-data">
+      <div
+        data-workspace-transition-surface="utility"
+        data-workspace-transition-anchor="market-data"
+      >
         <QuoteRibbon
           symbol={selectedSymbol}
           instrument={selectedInstrument}

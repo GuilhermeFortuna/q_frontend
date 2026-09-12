@@ -65,9 +65,9 @@ they do with Ollama today, with no frontend API changes.
    - `interpret(...)`: POST `{base_url}/models/{model}:generateContent`, header
      `x-goog-api-key`, body
      `{"system_instruction": {"parts": [{"text": system_prompt}]},
-  "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
-  "generationConfig": {"temperature": 0.2, "maxOutputTokens": …,
-  "responseMimeType": "application/json"}}`.
+"contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+"generationConfig": {"temperature": 0.2, "maxOutputTokens": …,
+"responseMimeType": "application/json"}}`.
      `responseMimeType` is deliberate — Gemini then emits bare JSON, which feeds
      `parse_ai_interpreter_response` without markdown-fence stripping.
      Extract `candidates[0].content.parts[0].text` (concatenate parts if several).

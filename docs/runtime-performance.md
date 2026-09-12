@@ -41,15 +41,15 @@ window.__Q_PERF_SNAPSHOT__?.()
 
 ## Expected budgets (observability)
 
-| Signal                                   | Target / ceiling                                                       | Notes                                                         |
-| ---------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
-| FPS                                      | **≥ 55** in browser dev                                                | Tauri may read lower during resize; watch for sustained drops |
-| Long tasks                               | warn at **≥ 50ms**                                                     | Spike on route change is OK; repeated spikes on hover are not |
-| Always-on canvases (non-3D routes)       | **0**                                                                  | Launcher may show **1** cinematic canvas                      |
-| Feature renderer (`/strategy-builder`)   | **1 canvas**, **1 RAF loop**                                           | WO217 AI inference signal; route-scoped exception             |
-| App-shell animation loops (non-launcher) | **0**                                                                  | Loops belong in `CinematicScene` / feature 3D                 |
+| Signal                                   | Target / ceiling                                                                                | Notes                                                         |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| FPS                                      | **≥ 55** in browser dev                                                                         | Tauri may read lower during resize; watch for sustained drops |
+| Long tasks                               | warn at **≥ 50ms**                                                                              | Spike on route change is OK; repeated spikes on hover are not |
+| Always-on canvases (non-3D routes)       | **0**                                                                                           | Launcher may show **1** cinematic canvas                      |
+| Feature renderer (`/strategy-builder`)   | **1 canvas**, **1 RAF loop**                                                                    | WO217 AI inference signal; route-scoped exception             |
+| App-shell animation loops (non-launcher) | **0**                                                                                           | Loops belong in `CinematicScene` / feature 3D                 |
 | Route mount queries                      | launcher **12**, backtests **20**, discover **16**, market-data **18**, strategy-builder **20** | Soft ceilings from WO96                                       |
-| Inactive-route refetches                 | **0** ideal                                                            | Amber in HUD when background queries refetch after navigation |
+| Inactive-route refetches                 | **0** ideal                                                                                     | Amber in HUD when background queries refetch after navigation |
 
 Workspace grid-reconfiguration (WO215 / P-001) uses transient GSAP Flip clones only. Idle canvas
 and shell animation-loop counts must stay unchanged across repeated dock navigations; no persistent

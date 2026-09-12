@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { PowerOffSlide } from '@/components/execution/PowerOffSlide'
@@ -32,7 +40,9 @@ function firePointer(
   type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel',
   clientX: number,
 ) {
-  const event = createEvent[type](thumb, { buttons: type === 'pointerUp' || type === 'pointerCancel' ? 0 : 1 })
+  const event = createEvent[type](thumb, {
+    buttons: type === 'pointerUp' || type === 'pointerCancel' ? 0 : 1,
+  })
   // jsdom/RTL createEvent omits pointer fields unless assigned explicitly.
   Object.assign(event, { pointerId: 1, clientX, clientY: 20 })
   fireEvent(thumb, event)
@@ -75,7 +85,9 @@ describe('PowerOffSlide', () => {
     })
 
     expect(onConfirm).not.toHaveBeenCalled()
-    await waitFor(() => expect(screen.getByTestId('power-off-slide')).toHaveAttribute('data-state', 'idle'))
+    await waitFor(() =>
+      expect(screen.getByTestId('power-off-slide')).toHaveAttribute('data-state', 'idle'),
+    )
   })
 
   it('calls onConfirm once when released at or above 88% travel', async () => {
@@ -100,7 +112,9 @@ describe('PowerOffSlide', () => {
     })
 
     expect(onConfirm).not.toHaveBeenCalled()
-    await waitFor(() => expect(screen.getByTestId('power-off-slide')).toHaveAttribute('data-state', 'idle'))
+    await waitFor(() =>
+      expect(screen.getByTestId('power-off-slide')).toHaveAttribute('data-state', 'idle'),
+    )
   })
 
   it('supports keyboard Home/End and confirms with Enter only while armed', async () => {
@@ -141,7 +155,9 @@ describe('PowerOffSlide', () => {
     const onConfirm = vi.fn()
     render(<PowerOffSlide onConfirm={onConfirm} submitting />)
     expect(screen.getByTestId('power-off-slide')).toHaveAttribute('data-state', 'submitting')
-    expect(screen.getByTestId('power-off-slide-status')).toHaveTextContent(/awaiting control plane/i)
+    expect(screen.getByTestId('power-off-slide-status')).toHaveTextContent(
+      /awaiting control plane/i,
+    )
 
     const thumb = screen.getByTestId('power-off-slide-thumb')
     await act(async () => {

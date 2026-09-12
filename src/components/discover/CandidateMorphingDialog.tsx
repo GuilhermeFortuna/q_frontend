@@ -1,10 +1,7 @@
 import { MorphingDialog } from '@/components/ui/MorphingDialog'
 import { CandidateDetailPanel } from '@/components/discover/CandidateDetailPanel'
 import { gateFlagsLabel } from '@/lib/discover/candidateMetrics'
-import {
-  formatObjectiveMetricValue,
-  objectiveMetricLabel,
-} from '@/lib/walkforward/objectiveMetric'
+import { formatObjectiveMetricValue, objectiveMetricLabel } from '@/lib/walkforward/objectiveMetric'
 import { cn } from '@/lib/utils'
 import type { ObjectiveMode, OptimizationBacktestConfig } from '@/types/optimization'
 import type { CandidateResult, StrategySearchConfig } from '@/types/strategySearch'

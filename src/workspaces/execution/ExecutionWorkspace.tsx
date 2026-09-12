@@ -36,13 +36,13 @@ import { wellInputClass } from '@/components/ui/wellInputStyles'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
-import type { 
+import type {
   ExecutionHistoryKind,
   Decision,
   ExecutionOrder,
   Fill,
   LedgerEntry,
-  RiskEvent
+  RiskEvent,
 } from '@/types/execution'
 
 type ExecutionWorkspaceProps = {
@@ -114,8 +114,16 @@ function HealthSignals({
       </p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="API" value={apiStatus} valueTone={statusToStatTileTone(apiStatus)} />
-        <StatTile label="Worker" value={workerStatus} valueTone={statusToStatTileTone(workerStatus)} />
-        <StatTile label="Market data" value={marketStatus} valueTone={statusToStatTileTone(marketStatus)} />
+        <StatTile
+          label="Worker"
+          value={workerStatus}
+          valueTone={statusToStatTileTone(workerStatus)}
+        />
+        <StatTile
+          label="Market data"
+          value={marketStatus}
+          valueTone={statusToStatTileTone(marketStatus)}
+        />
         <StatTile
           label="Unknown orders"
           value={String(unknownOrders)}
@@ -124,22 +132,54 @@ function HealthSignals({
         />
       </div>
       {apiStatus === 'ok' && workerStatus === 'offline' ? (
-        <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-300" data-testid="execution-worker-down-banner">
-          <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-400 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <div
+          className="mt-3 flex items-start gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-300"
+          data-testid="execution-worker-down-banner"
+        >
+          <svg
+            className="mt-0.5 h-4 w-4 shrink-0 animate-pulse text-amber-400"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
           <div>
-            <span className="font-semibold text-amber-200">Worker Lease offline:</span> Control API is up, but no healthy worker lease was detected. Lifecycle commands may queue until a worker reconnects.
+            <span className="font-semibold text-amber-200">Worker Lease offline:</span> Control API
+            is up, but no healthy worker lease was detected. Lifecycle commands may queue until a
+            worker reconnects.
           </div>
         </div>
       ) : null}
       {unknownOrders > 0 ? (
-        <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-300" data-testid="execution-unknown-orders-banner">
-          <svg className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <div
+          className="mt-3 flex items-start gap-2.5 rounded-lg border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-300"
+          data-testid="execution-unknown-orders-banner"
+        >
+          <svg
+            className="mt-0.5 h-4 w-4 shrink-0 text-rose-400"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
           <div>
-            <span className="font-semibold text-rose-200">Reconciliation Required:</span> {unknownOrders} order(s) need reconciliation — inspect the Orders tab and worker logs before flattening.
+            <span className="font-semibold text-rose-200">Reconciliation Required:</span>{' '}
+            {unknownOrders} order(s) need reconciliation — inspect the Orders tab and worker logs
+            before flattening.
           </div>
         </div>
       ) : null}
@@ -191,59 +231,61 @@ function PaginatedHistoryTable({
       case 'decisions':
         return (
           <>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Time</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Action</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Outcome</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Requested Qty</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Reason</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Time</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Action</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Outcome</th>
+            <th className="text-silver-400 px-4 py-2.5 text-right font-semibold">Requested Qty</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Reason</th>
           </>
         )
       case 'orders':
         return (
           <>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Time</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Order ID</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Side</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Type</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Qty</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Status</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Reconciliation</th>
+            <th className="text-silver-400 px-4 py-2.5 font-mono font-semibold">Time</th>
+            <th className="text-silver-400 px-4 py-2.5 font-mono font-semibold">Order ID</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Side</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Type</th>
+            <th className="text-silver-400 px-4 py-2.5 text-right font-semibold">Qty</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Status</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Reconciliation</th>
           </>
         )
       case 'fills':
         return (
           <>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Time</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Fill ID</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono">Order ID</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Side</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Price</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Qty</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Fee</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Slippage</th>
+            <th className="text-silver-400 px-4 py-2.5 font-mono font-semibold">Time</th>
+            <th className="text-silver-400 px-4 py-2.5 font-mono font-semibold">Fill ID</th>
+            <th className="text-silver-400 px-4 py-2.5 font-mono font-semibold">Order ID</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Side</th>
+            <th className="text-silver-400 px-4 py-2.5 text-right font-semibold">Price</th>
+            <th className="text-silver-400 px-4 py-2.5 text-right font-semibold">Qty</th>
+            <th className="text-silver-400 px-4 py-2.5 text-right font-semibold">Fee</th>
+            <th className="text-silver-400 px-4 py-2.5 text-right font-semibold">Slippage</th>
           </>
         )
       case 'ledger':
         return (
           <>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Time</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Type</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Amount</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 text-right">Balance After</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Description</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Time</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Type</th>
+            <th className="text-silver-400 px-4 py-2.5 text-right font-semibold">Amount</th>
+            <th className="text-silver-400 px-4 py-2.5 text-right font-semibold">Balance After</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Description</th>
           </>
         )
       case 'risk-events':
         return (
           <>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Time</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Rejection Code</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400">Message</th>
-            <th className="px-4 py-2.5 font-semibold text-silver-400 font-mono text-right">Context</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Time</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Rejection Code</th>
+            <th className="text-silver-400 px-4 py-2.5 font-semibold">Message</th>
+            <th className="text-silver-400 px-4 py-2.5 text-right font-mono font-semibold">
+              Context
+            </th>
           </>
         )
       default:
-        return <th className="px-4 py-2.5 font-semibold text-silver-400">Raw Data</th>
+        return <th className="text-silver-400 px-4 py-2.5 font-semibold">Raw Data</th>
     }
   }
 
@@ -253,35 +295,45 @@ function PaginatedHistoryTable({
         const item = row as Decision
         return (
           <>
-            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.created_at || item.bar_close_time)}</td>
+            <td className="text-silver-300 px-4 py-2 font-mono whitespace-nowrap">
+              {formatDisplayDateTime(item.created_at || item.bar_close_time)}
+            </td>
             <td className="px-4 py-2 whitespace-nowrap">
-              <span className={cn(
-                "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
-                item.signal_action === 'buy'
-                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
-                  : item.signal_action === 'sell'
-                    ? "bg-rose-500/10 text-rose-300 border-rose-500/25"
-                    : item.signal_action === 'hold'
-                      ? "bg-silver-500/10 text-silver-300 border-silver-500/25"
-                      : "bg-amber-500/10 text-amber-300 border-amber-500/25"
-              )}>
+              <span
+                className={cn(
+                  'rounded border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+                  item.signal_action === 'buy'
+                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                    : item.signal_action === 'sell'
+                      ? 'border-rose-500/25 bg-rose-500/10 text-rose-300'
+                      : item.signal_action === 'hold'
+                        ? 'bg-silver-500/10 text-silver-300 border-silver-500/25'
+                        : 'border-amber-500/25 bg-amber-500/10 text-amber-300',
+                )}
+              >
                 {item.signal_action}
               </span>
             </td>
             <td className="px-4 py-2 whitespace-nowrap">
-              <span className={cn(
-                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
-                item.outcome === 'executed' || item.outcome === 'submitted'
-                  ? "bg-emerald-500/5 text-emerald-400 border border-emerald-500/15"
-                  : item.outcome === 'no_trade'
-                    ? "bg-carbon-800 text-silver-400 border border-carbon-700"
-                    : "bg-rose-500/5 text-rose-400 border border-rose-500/15"
-              )}>
+              <span
+                className={cn(
+                  'rounded px-1.5 py-0.5 text-[10px] font-semibold',
+                  item.outcome === 'executed' || item.outcome === 'submitted'
+                    ? 'border border-emerald-500/15 bg-emerald-500/5 text-emerald-400'
+                    : item.outcome === 'no_trade'
+                      ? 'bg-carbon-800 text-silver-400 border-carbon-700 border'
+                      : 'border border-rose-500/15 bg-rose-500/5 text-rose-400',
+                )}
+              >
                 {item.outcome}
               </span>
             </td>
-            <td className="px-4 py-2 text-silver-300 text-right font-mono font-medium">{item.requested_quantity ?? '—'}</td>
-            <td className="px-4 py-2 text-silver-400 truncate max-w-xs" title={item.reason ?? ''}>{item.reason ?? '—'}</td>
+            <td className="text-silver-300 px-4 py-2 text-right font-mono font-medium">
+              {item.requested_quantity ?? '—'}
+            </td>
+            <td className="text-silver-400 max-w-xs truncate px-4 py-2" title={item.reason ?? ''}>
+              {item.reason ?? '—'}
+            </td>
           </>
         )
       }
@@ -289,33 +341,47 @@ function PaginatedHistoryTable({
         const item = row as ExecutionOrder
         return (
           <>
-            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.created_at)}</td>
-            <td className="px-4 py-2 text-silver-400 font-mono" title={item.id}>{item.id.slice(0, 8)}…</td>
+            <td className="text-silver-300 px-4 py-2 font-mono whitespace-nowrap">
+              {formatDisplayDateTime(item.created_at)}
+            </td>
+            <td className="text-silver-400 px-4 py-2 font-mono" title={item.id}>
+              {item.id.slice(0, 8)}…
+            </td>
             <td className="px-4 py-2 whitespace-nowrap">
-              <span className={cn(
-                "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
-                item.side === 'buy'
-                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
-                  : "bg-rose-500/10 text-rose-300 border-rose-500/25"
-              )}>
+              <span
+                className={cn(
+                  'rounded border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+                  item.side === 'buy'
+                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                    : 'border-rose-500/25 bg-rose-500/10 text-rose-300',
+                )}
+              >
                 {item.side}
               </span>
             </td>
-            <td className="px-4 py-2 text-silver-300 font-medium uppercase text-[10px] tracking-wide">{item.order_type}</td>
-            <td className="px-4 py-2 text-silver-300 text-right font-mono font-medium">{item.quantity}</td>
+            <td className="text-silver-300 px-4 py-2 text-[10px] font-medium tracking-wide uppercase">
+              {item.order_type}
+            </td>
+            <td className="text-silver-300 px-4 py-2 text-right font-mono font-medium">
+              {item.quantity}
+            </td>
             <td className="px-4 py-2 whitespace-nowrap">
-              <span className={cn(
-                "text-[10px] font-semibold px-1.5 py-0.5 rounded border",
-                item.status === 'filled'
-                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
-                  : item.status === 'pending'
-                    ? "bg-amber-500/10 text-amber-300 border-amber-500/20"
-                    : "bg-rose-500/10 text-rose-300 border-rose-500/20"
-              )}>
+              <span
+                className={cn(
+                  'rounded border px-1.5 py-0.5 text-[10px] font-semibold',
+                  item.status === 'filled'
+                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                    : item.status === 'pending'
+                      ? 'border-amber-500/20 bg-amber-500/10 text-amber-300'
+                      : 'border-rose-500/20 bg-rose-500/10 text-rose-300',
+                )}
+              >
                 {item.status}
               </span>
             </td>
-            <td className="px-4 py-2 text-silver-400 font-mono text-[10px]">{item.reconciliation_state}</td>
+            <td className="text-silver-400 px-4 py-2 font-mono text-[10px]">
+              {item.reconciliation_state}
+            </td>
           </>
         )
       }
@@ -323,23 +389,39 @@ function PaginatedHistoryTable({
         const item = row as Fill
         return (
           <>
-            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.filled_at || item.created_at)}</td>
-            <td className="px-4 py-2 text-silver-400 font-mono" title={item.id}>{item.id.slice(0, 8)}…</td>
-            <td className="px-4 py-2 text-silver-400 font-mono" title={item.order_id}>{item.order_id.slice(0, 8)}…</td>
+            <td className="text-silver-300 px-4 py-2 font-mono whitespace-nowrap">
+              {formatDisplayDateTime(item.filled_at || item.created_at)}
+            </td>
+            <td className="text-silver-400 px-4 py-2 font-mono" title={item.id}>
+              {item.id.slice(0, 8)}…
+            </td>
+            <td className="text-silver-400 px-4 py-2 font-mono" title={item.order_id}>
+              {item.order_id.slice(0, 8)}…
+            </td>
             <td className="px-4 py-2 whitespace-nowrap">
-              <span className={cn(
-                "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
-                item.side === 'buy'
-                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
-                  : "bg-rose-500/10 text-rose-300 border-rose-500/25"
-              )}>
+              <span
+                className={cn(
+                  'rounded border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+                  item.side === 'buy'
+                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                    : 'border-rose-500/25 bg-rose-500/10 text-rose-300',
+                )}
+              >
                 {item.side}
               </span>
             </td>
-            <td className="px-4 py-2 text-silver-100 text-right font-mono font-semibold">{Number(item.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-            <td className="px-4 py-2 text-silver-300 text-right font-mono font-medium">{item.quantity}</td>
-            <td className="px-4 py-2 text-silver-400 text-right font-mono">{Number(item.fee).toFixed(2)}</td>
-            <td className="px-4 py-2 text-silver-400 text-right font-mono">{Number(item.slippage).toFixed(2)}</td>
+            <td className="text-silver-100 px-4 py-2 text-right font-mono font-semibold">
+              {Number(item.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </td>
+            <td className="text-silver-300 px-4 py-2 text-right font-mono font-medium">
+              {item.quantity}
+            </td>
+            <td className="text-silver-400 px-4 py-2 text-right font-mono">
+              {Number(item.fee).toFixed(2)}
+            </td>
+            <td className="text-silver-400 px-4 py-2 text-right font-mono">
+              {Number(item.slippage).toFixed(2)}
+            </td>
           </>
         )
       }
@@ -349,16 +431,30 @@ function PaginatedHistoryTable({
         const isPositive = amt >= 0
         return (
           <>
-            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.created_at)}</td>
-            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-medium text-[10px] uppercase tracking-wider">{item.entry_type.replace('_', ' ')}</td>
-            <td className={cn(
-              "px-4 py-2 text-right font-mono font-semibold whitespace-nowrap",
-              isPositive ? "text-emerald-400" : "text-rose-400"
-            )}>
-              {isPositive ? '+' : ''}{amt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            <td className="text-silver-300 px-4 py-2 font-mono whitespace-nowrap">
+              {formatDisplayDateTime(item.created_at)}
             </td>
-            <td className="px-4 py-2 text-silver-100 text-right font-mono font-medium">{Number(item.balance_after).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-            <td className="px-4 py-2 text-silver-400 truncate max-w-xs" title={item.description ?? ''}>{item.description ?? '—'}</td>
+            <td className="text-silver-300 px-4 py-2 text-[10px] font-medium tracking-wider whitespace-nowrap uppercase">
+              {item.entry_type.replace('_', ' ')}
+            </td>
+            <td
+              className={cn(
+                'px-4 py-2 text-right font-mono font-semibold whitespace-nowrap',
+                isPositive ? 'text-emerald-400' : 'text-rose-400',
+              )}
+            >
+              {isPositive ? '+' : ''}
+              {amt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </td>
+            <td className="text-silver-100 px-4 py-2 text-right font-mono font-medium">
+              {Number(item.balance_after).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </td>
+            <td
+              className="text-silver-400 max-w-xs truncate px-4 py-2"
+              title={item.description ?? ''}
+            >
+              {item.description ?? '—'}
+            </td>
           </>
         )
       }
@@ -366,14 +462,21 @@ function PaginatedHistoryTable({
         const item = row as RiskEvent
         return (
           <>
-            <td className="px-4 py-2 text-silver-300 whitespace-nowrap font-mono">{formatDisplayDateTime(item.created_at)}</td>
+            <td className="text-silver-300 px-4 py-2 font-mono whitespace-nowrap">
+              {formatDisplayDateTime(item.created_at)}
+            </td>
             <td className="px-4 py-2 whitespace-nowrap">
-              <span className="bg-rose-500/10 text-rose-300 border border-rose-500/25 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded">
+              <span className="rounded border border-rose-500/25 bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-rose-300 uppercase">
                 {item.rejection_code}
               </span>
             </td>
-            <td className="px-4 py-2 text-silver-200 leading-normal" title={item.message}>{item.message}</td>
-            <td className="px-4 py-2 text-silver-400 font-mono text-[10px] text-right truncate max-w-xs" title={JSON.stringify(item.context)}>
+            <td className="text-silver-200 px-4 py-2 leading-normal" title={item.message}>
+              {item.message}
+            </td>
+            <td
+              className="text-silver-400 max-w-xs truncate px-4 py-2 text-right font-mono text-[10px]"
+              title={JSON.stringify(item.context)}
+            >
               {JSON.stringify(item.context)}
             </td>
           </>
@@ -381,7 +484,7 @@ function PaginatedHistoryTable({
       }
       default:
         return (
-          <td className="px-4 py-2 text-silver-300 font-mono">
+          <td className="text-silver-300 px-4 py-2 font-mono">
             <pre className="whitespace-pre-wrap">{JSON.stringify(row, null, 0)}</pre>
           </td>
         )
@@ -399,15 +502,13 @@ function PaginatedHistoryTable({
       ) : null}
       <table className="w-full text-left text-xs">
         <thead className="bg-carbon-950/60 border-carbon-800 border-b text-[10px] font-bold tracking-wider uppercase">
-          <tr>
-            {renderHeaders()}
-          </tr>
+          <tr>{renderHeaders()}</tr>
         </thead>
         <tbody className="divide-carbon-800/60 divide-y">
           {items.map((row) => (
             <tr
               key={'id' in row ? String(row.id) : JSON.stringify(row)}
-              className="border-carbon-800 border-b hover:bg-carbon-800/25 transition-colors"
+              className="border-carbon-800 hover:bg-carbon-800/25 border-b transition-colors"
             >
               {renderRow(row)}
             </tr>
@@ -687,10 +788,10 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
           <div className="flex flex-wrap items-center gap-3">
             <span
               className={cn(
-                'rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider border',
+                'rounded-md border px-2.5 py-1 text-xs font-bold tracking-wider uppercase',
                 killSwitch?.enabled
-                  ? 'bg-rose-500/15 text-rose-300 border-rose-500/25 animate-pulse'
-                  : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
+                  ? 'animate-pulse border-rose-500/25 bg-rose-500/15 text-rose-300'
+                  : 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300',
               )}
               data-testid="execution-kill-switch-state"
             >
@@ -721,14 +822,14 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
 
         <Panel className="p-4" living>
           <PanelHeader title="Paper account" />
-          <div className="mb-3 flex flex-wrap gap-2 items-center">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             {accountsQuery.data?.items.map((account) => (
               <button
                 key={account.id}
                 type="button"
                 className={cn(
                   chipClass(account.id === activeAccountId),
-                  'transition-all duration-150 active:scale-95'
+                  'transition-all duration-150 active:scale-95',
                 )}
                 onClick={() => {
                   setSelectedAccountId(account.id)
@@ -750,18 +851,28 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
           </div>
           {activeAccount ? (
             <div className="grid gap-3 sm:grid-cols-3">
-              <StatTile 
-                label="Cash balance" 
-                value={Number(activeAccount.cash_balance).toLocaleString('pt-BR', { style: 'currency', currency: activeAccount.currency })} 
+              <StatTile
+                label="Cash balance"
+                value={Number(activeAccount.cash_balance).toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: activeAccount.currency,
+                })}
               />
               <StatTile
                 label="Equity (cash)"
-                value={Number(activeAccount.cash_balance).toLocaleString('pt-BR', { style: 'currency', currency: activeAccount.currency })}
+                value={Number(activeAccount.cash_balance).toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: activeAccount.currency,
+                })}
                 delta="Uses worker quotes when a position is open"
               />
               <StatTile
                 label="Session P&L vs initial"
-                value={dailyPnl == null ? '—' : `${dailyPnl >= 0 ? '+' : ''}${dailyPnl.toLocaleString('pt-BR', { style: 'currency', currency: activeAccount.currency })}`}
+                value={
+                  dailyPnl == null
+                    ? '—'
+                    : `${dailyPnl >= 0 ? '+' : ''}${dailyPnl.toLocaleString('pt-BR', { style: 'currency', currency: activeAccount.currency })}`
+                }
                 valueTone={dailyPnl != null && dailyPnl >= 0 ? 'up' : 'down'}
               />
             </div>
@@ -772,7 +883,11 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-        <Panel className="flex min-h-0 flex-col p-0" living data-workspace-transition-surface="tertiary">
+        <Panel
+          className="flex min-h-0 flex-col p-0"
+          living
+          data-workspace-transition-surface="tertiary"
+        >
           <PanelHeader
             title="Deployments"
             right={
@@ -780,7 +895,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-brass-400 hover:text-brass-350 hover:bg-brass-500/10 transition-colors font-medium text-xs"
+                className="text-brass-400 hover:text-brass-350 hover:bg-brass-500/10 text-xs font-medium transition-colors"
                 disabled={!activeAccountId}
                 onClick={() => setShowCreateDeployment(true)}
               >
@@ -793,12 +908,12 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
               <p className="text-silver-400 p-2 text-sm">Loading deployments…</p>
             ) : null}
             {(deploymentsQuery.data?.items ?? []).map((item) => {
-              const isSelected = item.id === deploymentId;
-              let statusBorder = 'border-l-rose-500';
+              const isSelected = item.id === deploymentId
+              let statusBorder = 'border-l-rose-500'
               if (item.lifecycle === 'running') {
-                statusBorder = 'border-l-emerald-500';
+                statusBorder = 'border-l-emerald-500'
               } else if (item.lifecycle === 'paused' || item.lifecycle === 'draft') {
-                statusBorder = 'border-l-amber-500';
+                statusBorder = 'border-l-amber-500'
               }
 
               return (
@@ -808,11 +923,9 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                   role="button"
                   tabIndex={0}
                   className={cn(
-                    'mb-2 w-full rounded-lg border-l-4 p-3 text-left transition-all duration-155 hover:bg-carbon-800/40 cursor-pointer',
+                    'hover:bg-carbon-800/40 mb-2 w-full cursor-pointer rounded-lg border-l-4 p-3 text-left transition-all duration-155',
                     statusBorder,
-                    isSelected
-                      ? 'bg-brass-500/5 shadow-[0_0_12px_rgba(217,158,34,0.08)]'
-                      : null,
+                    isSelected ? 'bg-brass-500/5 shadow-[0_0_12px_rgba(217,158,34,0.08)]' : null,
                   )}
                   onClick={() => setSelectedDeploymentId(item.id)}
                   onKeyDown={(e) => {
@@ -883,38 +996,42 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
             <PanelHeader title="Deployment control" />
             {deployment ? (
               <>
-                <div className="mb-4 flex flex-wrap gap-x-4 gap-y-2 text-xs border-b border-carbon-800 pb-3">
+                <div className="border-carbon-800 mb-4 flex flex-wrap gap-x-4 gap-y-2 border-b pb-3 text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className="text-silver-400">Current Status:</span>
-                    <span className={cn(
-                      'font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border',
-                      deployment.lifecycle === 'running'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                        : deployment.lifecycle === 'paused'
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/25'
-                          : 'bg-rose-500/10 text-rose-400 border-rose-500/25'
-                    )}>
+                    <span
+                      className={cn(
+                        'rounded border px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+                        deployment.lifecycle === 'running'
+                          ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
+                          : deployment.lifecycle === 'paused'
+                            ? 'border-amber-500/25 bg-amber-500/10 text-amber-400'
+                            : 'border-rose-500/25 bg-rose-500/10 text-rose-400',
+                      )}
+                    >
                       {deployment.lifecycle}
                     </span>
                   </div>
                   {deployment.pending_action ? (
-                    <div className="flex items-center gap-1.5 text-amber-350 bg-amber-500/5 border border-amber-500/15 px-2 py-0.5 rounded">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <div className="text-amber-350 flex items-center gap-1.5 rounded border border-amber-500/15 bg-amber-500/5 px-2 py-0.5">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
                       <span>Desired: {deployment.pending_action}</span>
                     </div>
                   ) : null}
                   {deployment.last_bar_close_time ? (
-                    <div className="flex items-center gap-1 text-silver-500">
+                    <div className="text-silver-500 flex items-center gap-1">
                       <span>Last bar:</span>
-                      <span className="font-mono">{formatDisplayDateTime(deployment.last_bar_close_time)}</span>
+                      <span className="font-mono">
+                        {formatDisplayDateTime(deployment.last_bar_close_time)}
+                      </span>
                     </div>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors shadow-lg shadow-emerald-950/20 active:scale-95 cursor-pointer"
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="cursor-pointer bg-emerald-600 font-semibold text-white shadow-lg shadow-emerald-950/20 transition-colors hover:bg-emerald-700 active:scale-95"
                     onClick={() => void runLifecycleAction('start')}
                   >
                     Start
@@ -923,7 +1040,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10 hover:border-amber-500 transition-colors font-semibold active:scale-95 cursor-pointer"
+                    className="cursor-pointer border-amber-500/30 font-semibold text-amber-300 transition-colors hover:border-amber-500 hover:bg-amber-500/10 active:scale-95"
                     onClick={() => void runLifecycleAction('pause')}
                   >
                     Pause
@@ -932,7 +1049,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10 hover:border-rose-500 transition-colors font-semibold active:scale-95 cursor-pointer"
+                    className="cursor-pointer border-rose-500/30 font-semibold text-rose-300 transition-colors hover:border-rose-500 hover:bg-rose-500/10 active:scale-95"
                     onClick={() => void runLifecycleAction('stop')}
                   >
                     Stop
@@ -941,7 +1058,7 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="border-brass-500/30 text-brass-300 hover:bg-brass-500/10 hover:border-brass-450 transition-colors font-semibold active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    className="border-brass-500/30 text-brass-300 hover:bg-brass-500/10 hover:border-brass-450 flex cursor-pointer items-center gap-1.5 font-semibold transition-colors active:scale-95"
                     onClick={() => openExecutionMonitor(deployment.id, deployment.name)}
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -951,14 +1068,14 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="border-red-500/40 text-red-200 bg-red-950/15 hover:bg-red-950/30 hover:border-red-500 hover:text-red-100 transition-all font-semibold active:scale-95 cursor-pointer ml-auto"
+                    className="ml-auto cursor-pointer border-red-500/40 bg-red-950/15 font-semibold text-red-200 transition-all hover:border-red-500 hover:bg-red-950/30 hover:text-red-100 active:scale-95"
                     onClick={() => setConfirmKind('flatten')}
                   >
                     Flatten
                   </Button>
                 </div>
                 <p
-                  className="text-silver-400 mt-4 text-xs bg-carbon-900/40 border border-carbon-800 p-2.5 rounded-lg leading-relaxed"
+                  className="text-silver-400 bg-carbon-900/40 border-carbon-800 mt-4 rounded-lg border p-2.5 text-xs leading-relaxed"
                   data-testid="execution-retained-position-note"
                 >
                   Pause and stop halt new entries; open positions remain until you flatten or the
@@ -967,68 +1084,84 @@ export function ExecutionWorkspace({ pollingEnabled }: ExecutionWorkspaceProps) 
                 {deployment.open_position ? (
                   <div
                     className={cn(
-                      "mt-4 rounded-lg border-y border-r border-l-4 p-4 shadow-md bg-carbon-900/50",
-                      deployment.open_position.side === 'long' 
-                        ? 'border-l-emerald-500 border-y-emerald-950/20 border-r-emerald-950/20' 
-                        : 'border-l-rose-500 border-y-rose-950/20 border-r-rose-950/20'
+                      'bg-carbon-900/50 mt-4 rounded-lg border-y border-r border-l-4 p-4 shadow-md',
+                      deployment.open_position.side === 'long'
+                        ? 'border-y-emerald-950/20 border-r-emerald-950/20 border-l-emerald-500'
+                        : 'border-y-rose-950/20 border-r-rose-950/20 border-l-rose-500',
                     )}
                     data-testid="execution-open-position"
                   >
-                    <div className="flex items-center justify-between border-b border-carbon-800 pb-2 mb-3">
-                      <p className="text-silver-100 text-sm font-bold flex items-center gap-1.5">
-                        <span className={cn(
-                          "h-2 w-2 rounded-full",
-                          deployment.open_position.side === 'long' ? 'bg-emerald-400' : 'bg-rose-400'
-                        )} />
+                    <div className="border-carbon-800 mb-3 flex items-center justify-between border-b pb-2">
+                      <p className="text-silver-100 flex items-center gap-1.5 text-sm font-bold">
+                        <span
+                          className={cn(
+                            'h-2 w-2 rounded-full',
+                            deployment.open_position.side === 'long'
+                              ? 'bg-emerald-400'
+                              : 'bg-rose-400',
+                          )}
+                        />
                         <span>Open Position</span>
                       </p>
-                      <span className={cn(
-                        "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border",
-                        deployment.open_position.side === 'long'
-                          ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
-                          : "bg-rose-500/10 text-rose-300 border-rose-500/25"
-                      )}>
+                      <span
+                        className={cn(
+                          'rounded border px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+                          deployment.open_position.side === 'long'
+                            ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                            : 'border-rose-500/25 bg-rose-500/10 text-rose-300',
+                        )}
+                      >
                         {deployment.open_position.side}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-silver-500 text-[10px] font-semibold uppercase tracking-wider">Quantity</p>
-                        <p className="text-silver-100 font-mono text-base font-bold mt-0.5">
+                        <p className="text-silver-500 text-[10px] font-semibold tracking-wider uppercase">
+                          Quantity
+                        </p>
+                        <p className="text-silver-100 mt-0.5 font-mono text-base font-bold">
                           {deployment.open_position.quantity}
                         </p>
                       </div>
                       <div>
-                        <p className="text-silver-500 text-[10px] font-semibold uppercase tracking-wider">Avg Entry Price</p>
-                        <p className="text-silver-100 font-mono text-base font-bold mt-0.5">
+                        <p className="text-silver-500 text-[10px] font-semibold tracking-wider uppercase">
+                          Avg Entry Price
+                        </p>
+                        <p className="text-silver-100 mt-0.5 font-mono text-base font-bold">
                           {deployment.open_position.average_entry_price ?? '—'}
                         </p>
                       </div>
                     </div>
-                    <p className="text-silver-500 mt-3 text-xs italic leading-relaxed border-t border-carbon-800/60 pt-2.5">
+                    <p className="text-silver-500 border-carbon-800/60 mt-3 border-t pt-2.5 text-xs leading-relaxed italic">
                       Mark-to-market updates when the worker receives fresh quotes — not simulated
                       here.
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-4 flex items-center gap-2 rounded-lg border border-dashed border-carbon-800 bg-carbon-950/20 p-4 text-silver-450 text-sm">
-                    <span className="h-2 w-2 rounded-full bg-silver-500" />
+                  <div className="border-carbon-800 bg-carbon-950/20 text-silver-450 mt-4 flex items-center gap-2 rounded-lg border border-dashed p-4 text-sm">
+                    <span className="bg-silver-500 h-2 w-2 rounded-full" />
                     <span>Flat — no open net position.</span>
                   </div>
                 )}
               </>
             ) : (
-              <p className="text-silver-500 text-sm py-2">Select a deployment.</p>
+              <p className="text-silver-500 py-2 text-sm">Select a deployment.</p>
             )}
             {actionFeedback ? (
-              <div className="mt-3 flex items-center gap-2 text-sm text-emerald-350 bg-emerald-500/5 border border-emerald-500/15 p-2.5 rounded-lg" data-testid="execution-action-feedback">
+              <div
+                className="text-emerald-350 mt-3 flex items-center gap-2 rounded-lg border border-emerald-500/15 bg-emerald-500/5 p-2.5 text-sm"
+                data-testid="execution-action-feedback"
+              >
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 <span>{actionFeedback}</span>
               </div>
             ) : null}
             {actionError ? (
-              <div className="mt-3 flex items-center gap-2 text-sm text-rose-350 bg-rose-500/5 border border-rose-500/15 p-2.5 rounded-lg" data-testid="execution-action-error">
-                <span className="h-1.5 w-1.5 rounded-full bg-rose-450" />
+              <div
+                className="text-rose-350 mt-3 flex items-center gap-2 rounded-lg border border-rose-500/15 bg-rose-500/5 p-2.5 text-sm"
+                data-testid="execution-action-error"
+              >
+                <span className="bg-rose-450 h-1.5 w-1.5 rounded-full" />
                 <span>{actionError}</span>
               </div>
             ) : null}

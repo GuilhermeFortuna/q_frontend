@@ -44,7 +44,9 @@ export function workspaceTransitionDirection(
   fromPathname: string,
   toPathname: string,
 ): 'forward' | 'backward' | null {
-  const fromIndex = WORKSPACE_PATH_ORDER.indexOf(fromPathname as (typeof WORKSPACE_PATH_ORDER)[number])
+  const fromIndex = WORKSPACE_PATH_ORDER.indexOf(
+    fromPathname as (typeof WORKSPACE_PATH_ORDER)[number],
+  )
   const toIndex = WORKSPACE_PATH_ORDER.indexOf(toPathname as (typeof WORKSPACE_PATH_ORDER)[number])
   if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return null
   return toIndex > fromIndex ? 'forward' : 'backward'
@@ -305,7 +307,8 @@ export const router = createRouter({
   routeTree,
   defaultViewTransition: {
     types: ({ fromLocation, toLocation }) => {
-      const direction = fromLocation && workspaceTransitionDirection(fromLocation.pathname, toLocation.pathname)
+      const direction =
+        fromLocation && workspaceTransitionDirection(fromLocation.pathname, toLocation.pathname)
       return direction ? [direction] : []
     },
   },

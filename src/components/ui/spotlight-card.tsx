@@ -48,9 +48,7 @@ export function GlowCard({
 }: GlowCardProps) {
   const style: CSSProperties = {
     ...styleProp,
-    ...(width !== undefined
-      ? { width: typeof width === 'number' ? `${width}px` : width }
-      : null),
+    ...(width !== undefined ? { width: typeof width === 'number' ? `${width}px` : width } : null),
     ...(height !== undefined
       ? { height: typeof height === 'number' ? `${height}px` : height }
       : null),
@@ -63,7 +61,7 @@ export function GlowCard({
       className={cn(
         customSize
           ? 'flex min-h-0 flex-col'
-          : cn(sizeMap[size], 'aspect-[3/4] grid grid-rows-[1fr_auto] gap-4 p-4'),
+          : cn(sizeMap[size], 'grid aspect-[3/4] grid-rows-[1fr_auto] gap-4 p-4'),
         className,
       )}
       {...rest}

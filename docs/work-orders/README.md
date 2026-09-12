@@ -546,13 +546,13 @@ self-describing `catalog.json`, copy-the-folder portability for the USB workflow
 app reads the same store with `local` selected. Phase A ships OHLCV (candle engine offline);
 Phase B (WO50–WO51) adds ticks (tick engine offline).
 
-| #   | File                                                                                                   | Repo       | Depends on        |
-| --- | ------------------------------------------------------------------------------------------------------ | ---------- | ----------------- |
-| 47  | [WO47-backend-market-data-provider-abstraction.md](WO47-backend-market-data-provider-abstraction.md)   | q_backend  | —                 |
-| 48  | [WO48-backend-local-ohlcv-store-and-ingestion.md](WO48-backend-local-ohlcv-store-and-ingestion.md)     | q_backend  | WO47 contract     |
-| 49  | [WO49-frontend-storage-workspace.md](WO49-frontend-storage-workspace.md)                               | q_frontend | WO47 + WO48       |
-| 50  | [WO50-backend-local-tick-store-and-ingestion.md](WO50-backend-local-tick-store-and-ingestion.md)         | q_backend  | WO48              |
-| 51  | [WO51-frontend-storage-tick-support.md](WO51-frontend-storage-tick-support.md)                           | q_frontend | WO49 + WO50       |
+| #   | File                                                                                                 | Repo       | Depends on    |
+| --- | ---------------------------------------------------------------------------------------------------- | ---------- | ------------- |
+| 47  | [WO47-backend-market-data-provider-abstraction.md](WO47-backend-market-data-provider-abstraction.md) | q_backend  | —             |
+| 48  | [WO48-backend-local-ohlcv-store-and-ingestion.md](WO48-backend-local-ohlcv-store-and-ingestion.md)   | q_backend  | WO47 contract |
+| 49  | [WO49-frontend-storage-workspace.md](WO49-frontend-storage-workspace.md)                             | q_frontend | WO47 + WO48   |
+| 50  | [WO50-backend-local-tick-store-and-ingestion.md](WO50-backend-local-tick-store-and-ingestion.md)     | q_backend  | WO48          |
+| 51  | [WO51-frontend-storage-tick-support.md](WO51-frontend-storage-tick-support.md)                       | q_frontend | WO49 + WO50   |
 
 ### Dispatch order
 
@@ -941,10 +941,10 @@ backtest/forward parity is guaranteed by construction), and the frontend renders
 decision/fill markers, the live forming bar, and a bar-close countdown that makes the closed-bar
 evaluation contract obvious.
 
-| #   | File                                                                                             | Repo       | Depends on     |
-| --- | ------------------------------------------------------------------------------------------------ | ---------- | -------------- |
-| 175 | [WO175-backend-deployment-chart-endpoint.md](WO175-backend-deployment-chart-endpoint.md)         | q_backend  | WO169 + WO171  |
-| 176 | [WO176-frontend-execution-live-chart.md](WO176-frontend-execution-live-chart.md)                 | q_frontend | WO175 contract |
+| #   | File                                                                                     | Repo       | Depends on     |
+| --- | ---------------------------------------------------------------------------------------- | ---------- | -------------- |
+| 175 | [WO175-backend-deployment-chart-endpoint.md](WO175-backend-deployment-chart-endpoint.md) | q_backend  | WO169 + WO171  |
+| 176 | [WO176-frontend-execution-live-chart.md](WO176-frontend-execution-live-chart.md)         | q_frontend | WO175 contract |
 
 ### Dispatch order
 

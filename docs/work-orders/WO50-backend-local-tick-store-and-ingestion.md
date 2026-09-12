@@ -82,6 +82,7 @@ Catalog gains tick entries (distinct `kind`): `{"symbol","kind":"ticks","start",
 ### 3. Ingestion — `kind: "ticks"`
 
 In `storage_jobs.py`, extend the ingest worker so `kind:"ticks"`:
+
 - calls `market_data_service.get_ticks_columnar(symbol, start, end)` (MT5 source) — **chunk the
   range by month** before fetching so a multi-year request doesn't hit the engine's max-tick
   guard or exhaust memory; write each chunk via `write_ticks` and publish progress per month.

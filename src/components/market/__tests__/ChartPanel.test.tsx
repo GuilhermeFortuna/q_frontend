@@ -10,9 +10,7 @@ vi.mock('@/components/charts/CandlestickChart', () => ({
 }))
 
 vi.mock('@/components/status/FaultyTerminalField', () => ({
-  FaultyTerminalField: () => (
-    <div data-testid="faulty-terminal-field" aria-hidden="true" />
-  ),
+  FaultyTerminalField: () => <div data-testid="faulty-terminal-field" aria-hidden="true" />,
 }))
 
 const sampleBar: OhlcvBar = {

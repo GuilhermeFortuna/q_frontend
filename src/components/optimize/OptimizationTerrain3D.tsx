@@ -296,343 +296,343 @@ export function OptimizationTerrain3D({
   return (
     <Panel className="h-full w-full overflow-hidden rounded-xl">
       <div className="flex h-full min-h-0 w-full flex-col md:flex-row">
-      {/* Controls Sidebar */}
-      <div className="border-carbon-800 bg-carbon-950/70 flex w-full shrink-0 flex-col gap-4 border-b p-4 md:w-64 md:border-r md:border-b-0">
-        <div>
-          <h3 className="text-silver-200 text-sm font-semibold tracking-wide uppercase">
-            3D Landscape
-          </h3>
-          <p className="text-silver-500 mt-1 text-[11px]">
-            Visualize parameters and objective metrics in real-time.
-          </p>
+        {/* Controls Sidebar */}
+        <div className="border-carbon-800 bg-carbon-950/70 flex w-full shrink-0 flex-col gap-4 border-b p-4 md:w-64 md:border-r md:border-b-0">
+          <div>
+            <h3 className="text-silver-200 text-sm font-semibold tracking-wide uppercase">
+              3D Landscape
+            </h3>
+            <p className="text-silver-500 mt-1 text-[11px]">
+              Visualize parameters and objective metrics in real-time.
+            </p>
+          </div>
+
+          <hr className="border-carbon-800" />
+
+          {/* X Axis Selector */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="x-axis-select" className="text-silver-400 text-xs font-medium">
+              X Axis (Width)
+            </label>
+            <select
+              id="x-axis-select"
+              value={xKey}
+              onChange={(e) => setXKey(e.target.value)}
+              className={wellInputClass}
+            >
+              {parameterKeys.map((k) => (
+                <option key={`x-${k}`} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Y Axis Selector */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="y-axis-select" className="text-silver-400 text-xs font-medium">
+              Y Axis (Depth)
+            </label>
+            <select
+              id="y-axis-select"
+              value={yKey}
+              onChange={(e) => setYKey(e.target.value)}
+              className={wellInputClass}
+            >
+              {parameterKeys.map((k) => (
+                <option key={`y-${k}`} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Z Axis Selector */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="z-axis-select" className="text-silver-400 text-xs font-medium">
+              Z Axis (Height)
+            </label>
+            <select
+              id="z-axis-select"
+              value={zKey}
+              onChange={(e) => setZKey(e.target.value)}
+              className={wellInputClass}
+            >
+              <option value="objective">Primary Objective</option>
+              {metricKeys.map((k) => (
+                <option key={`z-${k}`} value={k}>
+                  Metric: {k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <hr className="border-carbon-800" />
+
+          {/* Display Settings */}
+          <div className="flex flex-col gap-2">
+            <span className="text-silver-400 mb-1 text-xs font-medium">Display Settings</span>
+
+            <button
+              type="button"
+              onClick={() => setShowWireframe(!showWireframe)}
+              className="bg-carbon-900/50 hover:bg-carbon-900 hover:text-silver-200 text-silver-400 flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors"
+            >
+              {showWireframe ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              {showWireframe ? 'Hide Wireframe Grid' : 'Show Wireframe Grid'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowParticles(!showParticles)}
+              className="bg-carbon-900/50 hover:bg-carbon-900 hover:text-silver-200 text-silver-400 flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors"
+            >
+              <Sparkles className="text-brass-400 h-3.5 w-3.5" />
+              {showParticles ? 'Hide Ambient Dust' : 'Show Ambient Dust'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setResetCounter((prev) => prev + 1)}
+              className="bg-carbon-900/50 hover:bg-carbon-900 hover:text-silver-200 text-silver-400 flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset 3D Camera
+            </button>
+          </div>
         </div>
 
-        <hr className="border-carbon-800" />
-
-        {/* X Axis Selector */}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="x-axis-select" className="text-silver-400 text-xs font-medium">
-            X Axis (Width)
-          </label>
-          <select
-            id="x-axis-select"
-            value={xKey}
-            onChange={(e) => setXKey(e.target.value)}
-            className={wellInputClass}
+        {/* 3D Viewport Area */}
+        <div className="from-carbon-950 to-carbon-900 relative flex flex-1 flex-col overflow-hidden bg-gradient-to-b">
+          <CanvasErrorBoundary
+            fallback={
+              <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-rose-400">
+                WebGL is disabled or unsupported in your browser. Cannot display 3D Landscape.
+              </div>
+            }
           >
-            {parameterKeys.map((k) => (
-              <option key={`x-${k}`} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
-        </div>
+            <Canvas
+              shadows
+              camera={{ position: [16, 12, 16], fov: 45 }}
+              className="h-full w-full cursor-grab active:cursor-grabbing"
+              gl={{ antialias: true }}
+            >
+              {/* Lights */}
+              <ambientLight intensity={0.3} />
+              <pointLight position={[18, 18, 18]} intensity={1.5} color="#fff8e7" castShadow />
+              <spotLight
+                position={[-18, 24, -18]}
+                angle={0.3}
+                penumbra={1}
+                intensity={1}
+                color="#ffd899"
+                castShadow
+              />
+              <directionalLight position={[0, 18, 0]} intensity={0.4} color="#ffffff" />
 
-        {/* Y Axis Selector */}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="y-axis-select" className="text-silver-400 text-xs font-medium">
-            Y Axis (Depth)
-          </label>
-          <select
-            id="y-axis-select"
-            value={yKey}
-            onChange={(e) => setYKey(e.target.value)}
-            className={wellInputClass}
-          >
-            {parameterKeys.map((k) => (
-              <option key={`y-${k}`} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Z Axis Selector */}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="z-axis-select" className="text-silver-400 text-xs font-medium">
-            Z Axis (Height)
-          </label>
-          <select
-            id="z-axis-select"
-            value={zKey}
-            onChange={(e) => setZKey(e.target.value)}
-            className={wellInputClass}
-          >
-            <option value="objective">Primary Objective</option>
-            {metricKeys.map((k) => (
-              <option key={`z-${k}`} value={k}>
-                Metric: {k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <hr className="border-carbon-800" />
-
-        {/* Display Settings */}
-        <div className="flex flex-col gap-2">
-          <span className="text-silver-400 mb-1 text-xs font-medium">Display Settings</span>
-
-          <button
-            type="button"
-            onClick={() => setShowWireframe(!showWireframe)}
-            className="bg-carbon-900/50 hover:bg-carbon-900 hover:text-silver-200 text-silver-400 flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors"
-          >
-            {showWireframe ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            {showWireframe ? 'Hide Wireframe Grid' : 'Show Wireframe Grid'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowParticles(!showParticles)}
-            className="bg-carbon-900/50 hover:bg-carbon-900 hover:text-silver-200 text-silver-400 flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors"
-          >
-            <Sparkles className="text-brass-400 h-3.5 w-3.5" />
-            {showParticles ? 'Hide Ambient Dust' : 'Show Ambient Dust'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setResetCounter((prev) => prev + 1)}
-            className="bg-carbon-900/50 hover:bg-carbon-900 hover:text-silver-200 text-silver-400 flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Reset 3D Camera
-          </button>
-        </div>
-      </div>
-
-      {/* 3D Viewport Area */}
-      <div className="from-carbon-950 to-carbon-900 relative flex flex-1 flex-col overflow-hidden bg-gradient-to-b">
-        <CanvasErrorBoundary
-          fallback={
-            <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-rose-400">
-              WebGL is disabled or unsupported in your browser. Cannot display 3D Landscape.
-            </div>
-          }
-        >
-          <Canvas
-            shadows
-            camera={{ position: [16, 12, 16], fov: 45 }}
-            className="h-full w-full cursor-grab active:cursor-grabbing"
-            gl={{ antialias: true }}
-          >
-            {/* Lights */}
-            <ambientLight intensity={0.3} />
-            <pointLight position={[18, 18, 18]} intensity={1.5} color="#fff8e7" castShadow />
-            <spotLight
-              position={[-18, 24, -18]}
-              angle={0.3}
-              penumbra={1}
-              intensity={1}
-              color="#ffd899"
-              castShadow
-            />
-            <directionalLight position={[0, 18, 0]} intensity={0.4} color="#ffffff" />
-
-            {/* Custom Procedural Terrain Mesh */}
-            {vertices.length > 0 && (
-              <group>
-                {/* Solid surface */}
-                <mesh castShadow receiveShadow>
-                  <bufferGeometry ref={geomRef}>
-                    <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
-                    <bufferAttribute attach="index" args={[indices, 1]} />
-                  </bufferGeometry>
-                  <meshStandardMaterial
-                    color="#141416"
-                    roughness={0.8}
-                    metalness={0.2}
-                    side={THREE.DoubleSide}
-                  />
-                </mesh>
-
-                {/* Wireframe overlay */}
-                {showWireframe && (
-                  <mesh position={[0, 0.005, 0]}>
-                    <bufferGeometry>
+              {/* Custom Procedural Terrain Mesh */}
+              {vertices.length > 0 && (
+                <group>
+                  {/* Solid surface */}
+                  <mesh castShadow receiveShadow>
+                    <bufferGeometry ref={geomRef}>
                       <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
                       <bufferAttribute attach="index" args={[indices, 1]} />
                     </bufferGeometry>
-                    <meshBasicMaterial
-                      color="#c5a880"
-                      wireframe={true}
-                      transparent={true}
-                      opacity={0.3}
+                    <meshStandardMaterial
+                      color="#141416"
+                      roughness={0.8}
+                      metalness={0.2}
                       side={THREE.DoubleSide}
                     />
                   </mesh>
-                )}
-              </group>
-            )}
 
-            {/* Floating Particles Dust */}
-            {showParticles && <ParticleField />}
-
-            {/* Trial Markers */}
-            {normalizedTrials.map((nt) => {
-              const isBest = nt.number === bestTrialNumber
-              const isSelected = nt.number === selectedTrialNumber
-              const isHovered = nt.number === hoveredTrial
-
-              // Set sphere size and color based on state
-              const size = isSelected ? 0.22 : isHovered ? 0.2 : isBest ? 0.16 : 0.12
-
-              let markerColor = '#8e8e93' // Smoked Silver
-              if (isSelected) {
-                markerColor = '#ffd700' // Glowing selected yellow/brass
-              } else if (isBest) {
-                markerColor = '#d4af37' // Golden/Brass
-              } else if (isHovered) {
-                markerColor = '#ffd700'
-              }
-
-              return (
-                <group key={`marker-${nt.number}`}>
-                  {/* Sphere Marker */}
-                  <mesh
-                    position={[nt.x, nt.y, nt.z]}
-                    data-testid={`trial-marker-${nt.number}`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onSelectTrial(nt.number === selectedTrialNumber ? null : nt.number)
-                    }}
-                    onPointerOver={(e) => {
-                      e.stopPropagation()
-                      setHoveredTrial(nt.number)
-                      document.body.style.cursor = 'pointer'
-                    }}
-                    onPointerOut={() => {
-                      setHoveredTrial(null)
-                      document.body.style.cursor = 'auto'
-                    }}
-                  >
-                    <sphereGeometry args={[size, 16, 16]} />
-                    <meshStandardMaterial
-                      color={markerColor}
-                      roughness={0.2}
-                      metalness={0.8}
-                      emissive={isSelected || isHovered ? markerColor : '#000000'}
-                      emissiveIntensity={isSelected || isHovered ? 0.4 : 0}
-                    />
-                  </mesh>
-
-                  {/* Dropdown line projection to bottom plane (floor at y = -3) */}
-                  {isSelected && (
-                    <Line
-                      points={[
-                        [nt.x, -3, nt.z],
-                        [nt.x, nt.y, nt.z],
-                      ]}
-                      color="#ffd700"
-                      lineWidth={1.5}
-                      dashed={true}
-                      dashScale={6}
-                      gapSize={0.15}
-                      dashSize={0.15}
-                    />
+                  {/* Wireframe overlay */}
+                  {showWireframe && (
+                    <mesh position={[0, 0.005, 0]}>
+                      <bufferGeometry>
+                        <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
+                        <bufferAttribute attach="index" args={[indices, 1]} />
+                      </bufferGeometry>
+                      <meshBasicMaterial
+                        color="#c5a880"
+                        wireframe={true}
+                        transparent={true}
+                        opacity={0.3}
+                        side={THREE.DoubleSide}
+                      />
+                    </mesh>
                   )}
                 </group>
-              )
-            })}
+              )}
 
-            {/* Scene controls */}
-            <SceneControls resetCounter={resetCounter} />
-          </Canvas>
-        </CanvasErrorBoundary>
+              {/* Floating Particles Dust */}
+              {showParticles && <ParticleField />}
 
-        {/* Hover / Click Details HUD */}
-        <div className="surface-float surface-float--blur pointer-events-none absolute top-4 right-4 z-10 max-w-sm rounded-lg p-3.5">
-          {activeDetailTrial ? (
-            <div className="flex flex-col gap-1.5 text-xs">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-silver-100 flex items-center gap-1 font-semibold">
-                  Trial #{activeDetailTrial.number}
-                  {activeDetailTrial.number === bestTrialNumber && (
-                    <Trophy className="text-brass-400 fill-brass-400/20 h-3.5 w-3.5" />
-                  )}
-                </span>
-                <span className="text-silver-400 bg-carbon-800 rounded px-1.5 py-0.5 text-[10px] capitalize">
-                  {hoveredTrial === activeDetailTrial.number ? 'Hovered' : 'Selected'}
-                </span>
-              </div>
+              {/* Trial Markers */}
+              {normalizedTrials.map((nt) => {
+                const isBest = nt.number === bestTrialNumber
+                const isSelected = nt.number === selectedTrialNumber
+                const isHovered = nt.number === hoveredTrial
 
-              <div className="border-carbon-800 my-1 border-t" />
+                // Set sphere size and color based on state
+                const size = isSelected ? 0.22 : isHovered ? 0.2 : isBest ? 0.16 : 0.12
 
-              {/* Display primary parameter values */}
-              <div className="text-silver-300 grid grid-cols-2 gap-x-4 gap-y-0.5">
-                <span className="text-silver-500 font-medium">X ({xKey}):</span>
-                <span className="text-silver-100 text-right font-mono">
-                  {formatVal(activeDetailTrial.params[xKey])}
-                </span>
+                let markerColor = '#8e8e93' // Smoked Silver
+                if (isSelected) {
+                  markerColor = '#ffd700' // Glowing selected yellow/brass
+                } else if (isBest) {
+                  markerColor = '#d4af37' // Golden/Brass
+                } else if (isHovered) {
+                  markerColor = '#ffd700'
+                }
 
-                <span className="text-silver-500 font-medium">Y ({yKey}):</span>
-                <span className="text-silver-100 text-right font-mono">
-                  {formatVal(activeDetailTrial.params[yKey])}
-                </span>
-              </div>
+                return (
+                  <group key={`marker-${nt.number}`}>
+                    {/* Sphere Marker */}
+                    <mesh
+                      position={[nt.x, nt.y, nt.z]}
+                      data-testid={`trial-marker-${nt.number}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSelectTrial(nt.number === selectedTrialNumber ? null : nt.number)
+                      }}
+                      onPointerOver={(e) => {
+                        e.stopPropagation()
+                        setHoveredTrial(nt.number)
+                        document.body.style.cursor = 'pointer'
+                      }}
+                      onPointerOut={() => {
+                        setHoveredTrial(null)
+                        document.body.style.cursor = 'auto'
+                      }}
+                    >
+                      <sphereGeometry args={[size, 16, 16]} />
+                      <meshStandardMaterial
+                        color={markerColor}
+                        roughness={0.2}
+                        metalness={0.8}
+                        emissive={isSelected || isHovered ? markerColor : '#000000'}
+                        emissiveIntensity={isSelected || isHovered ? 0.4 : 0}
+                      />
+                    </mesh>
 
-              <div className="border-carbon-800 my-1 border-t" />
+                    {/* Dropdown line projection to bottom plane (floor at y = -3) */}
+                    {isSelected && (
+                      <Line
+                        points={[
+                          [nt.x, -3, nt.z],
+                          [nt.x, nt.y, nt.z],
+                        ]}
+                        color="#ffd700"
+                        lineWidth={1.5}
+                        dashed={true}
+                        dashScale={6}
+                        gapSize={0.15}
+                        dashSize={0.15}
+                      />
+                    )}
+                  </group>
+                )
+              })}
 
-              {/* Display objective values & metrics */}
-              <div className="text-silver-300 flex flex-col gap-0.5">
-                <div className="flex justify-between">
-                  <span className="text-silver-500 font-medium">Objective Value:</span>
-                  <span className="text-brass-400 font-mono font-bold">
-                    {activeDetailTrial.values?.map((v) => v.toFixed(4)).join(', ') || '—'}
+              {/* Scene controls */}
+              <SceneControls resetCounter={resetCounter} />
+            </Canvas>
+          </CanvasErrorBoundary>
+
+          {/* Hover / Click Details HUD */}
+          <div className="surface-float surface-float--blur pointer-events-none absolute top-4 right-4 z-10 max-w-sm rounded-lg p-3.5">
+            {activeDetailTrial ? (
+              <div className="flex flex-col gap-1.5 text-xs">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-silver-100 flex items-center gap-1 font-semibold">
+                    Trial #{activeDetailTrial.number}
+                    {activeDetailTrial.number === bestTrialNumber && (
+                      <Trophy className="text-brass-400 fill-brass-400/20 h-3.5 w-3.5" />
+                    )}
+                  </span>
+                  <span className="text-silver-400 bg-carbon-800 rounded px-1.5 py-0.5 text-[10px] capitalize">
+                    {hoveredTrial === activeDetailTrial.number ? 'Hovered' : 'Selected'}
                   </span>
                 </div>
-                {activeDetailTrial.user_attrs.metrics && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-silver-500 font-medium">Net Profit:</span>
-                      <span className="text-silver-200 font-mono">
-                        ${formatVal(activeDetailTrial.user_attrs.metrics.total_pnl)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-silver-500 font-medium">Sharpe Ratio:</span>
-                      <span className="text-silver-200 font-mono">
-                        {formatVal(activeDetailTrial.user_attrs.metrics.sharpe_ratio)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-silver-500 font-medium">Max Drawdown:</span>
-                      <span className="font-mono text-rose-400">
-                        {formatVal(activeDetailTrial.user_attrs.metrics.max_drawdown_pct)}%
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-silver-400 flex max-w-[200px] items-start gap-2 text-[11px]">
-              <HelpCircle className="text-silver-500 h-4 w-4 shrink-0" />
-              <span>
-                Click or hover on a 3D sphere marker to inspect trial details. Drag to rotate
-                terrain.
-              </span>
-            </div>
-          )}
-        </div>
 
-        {/* Legend */}
-        <div className="surface-float text-silver-400 border-carbon-800 absolute bottom-4 left-4 z-10 flex gap-4 rounded-md px-3 py-2 text-[10px]">
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-[#8e8e93]" />
-            <span>Completed Trial</span>
+                <div className="border-carbon-800 my-1 border-t" />
+
+                {/* Display primary parameter values */}
+                <div className="text-silver-300 grid grid-cols-2 gap-x-4 gap-y-0.5">
+                  <span className="text-silver-500 font-medium">X ({xKey}):</span>
+                  <span className="text-silver-100 text-right font-mono">
+                    {formatVal(activeDetailTrial.params[xKey])}
+                  </span>
+
+                  <span className="text-silver-500 font-medium">Y ({yKey}):</span>
+                  <span className="text-silver-100 text-right font-mono">
+                    {formatVal(activeDetailTrial.params[yKey])}
+                  </span>
+                </div>
+
+                <div className="border-carbon-800 my-1 border-t" />
+
+                {/* Display objective values & metrics */}
+                <div className="text-silver-300 flex flex-col gap-0.5">
+                  <div className="flex justify-between">
+                    <span className="text-silver-500 font-medium">Objective Value:</span>
+                    <span className="text-brass-400 font-mono font-bold">
+                      {activeDetailTrial.values?.map((v) => v.toFixed(4)).join(', ') || '—'}
+                    </span>
+                  </div>
+                  {activeDetailTrial.user_attrs.metrics && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-silver-500 font-medium">Net Profit:</span>
+                        <span className="text-silver-200 font-mono">
+                          ${formatVal(activeDetailTrial.user_attrs.metrics.total_pnl)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-silver-500 font-medium">Sharpe Ratio:</span>
+                        <span className="text-silver-200 font-mono">
+                          {formatVal(activeDetailTrial.user_attrs.metrics.sharpe_ratio)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-silver-500 font-medium">Max Drawdown:</span>
+                        <span className="font-mono text-rose-400">
+                          {formatVal(activeDetailTrial.user_attrs.metrics.max_drawdown_pct)}%
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-silver-400 flex max-w-[200px] items-start gap-2 text-[11px]">
+                <HelpCircle className="text-silver-500 h-4 w-4 shrink-0" />
+                <span>
+                  Click or hover on a 3D sphere marker to inspect trial details. Drag to rotate
+                  terrain.
+                </span>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-[#d4af37]" />
-            <span>Best Trial</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-[#ffd700]" />
-            <span>Selected Trial</span>
+
+          {/* Legend */}
+          <div className="surface-float text-silver-400 border-carbon-800 absolute bottom-4 left-4 z-10 flex gap-4 rounded-md px-3 py-2 text-[10px]">
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-[#8e8e93]" />
+              <span>Completed Trial</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-[#d4af37]" />
+              <span>Best Trial</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-[#ffd700]" />
+              <span>Selected Trial</span>
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </Panel>
   )

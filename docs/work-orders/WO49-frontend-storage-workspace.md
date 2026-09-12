@@ -73,7 +73,7 @@ between MT5 and the local store.
 - `src/types/storage.ts` (or add to `types/api.ts`): `StorageInventoryItem`
   (`symbol, timeframe, start, end, rows, bytes, updatedAt`), `IngestRequest`
   (`symbol, timeframes[], start, end, kind`), `IngestJob` (`jobId, status, progress, detail,
-  results, error`), plus an `isIngestTerminalStatus` helper. **Match WO48's pasted shapes.**
+results, error`), plus an `isIngestTerminalStatus` helper. **Match WO48's pasted shapes.**
 - `src/api/queries/storage.ts`: `useStorageInventory()` (GET inventory),
   `useStartIngest()` (POST), `useIngestStatus(jobId)` (GET, polls while running, stops on
   terminal — mirror the walk-forward status hook), `useDeleteStorage()` (DELETE; invalidate

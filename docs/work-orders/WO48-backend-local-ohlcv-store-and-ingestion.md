@@ -28,11 +28,11 @@ WO49 UI drives. **Ticks are out of scope here — WO50.** This work order is **b
   replace its `get_ohlcv` / `get_available_ohlcv_range` / `search_symbols` / `get_symbol_info`
   bodies with parquet/catalog reads.
 - `src/q_backend/market_data/clients/metatrader.py` — `MetaTraderClient.get_ohlcv(symbol,
-  timeframe, start, end) -> list[OHLCV]` is the **ingestion source**. It already chunks large
+timeframe, start, end) -> list[OHLCV]` is the **ingestion source**. It already chunks large
   ranges safely (`_fetch_ohlcv_range_chunked`, the `_get_chunk_days` map) — reuse it; do not
   re-implement chunking. The accepted timeframe **names** come from WO47's name map.
 - `src/q_backend/market_data/models.py` — `OHLCV` (fields: `time, open, high, low, close,
-  tick_volume, spread?, real_volume?`). The store round-trips these exact fields.
+tick_volume, spread?, real_volume?`). The store round-trips these exact fields.
 - `src/q_backend/market_data/tick_cache.py` — the parquet precedent: configurable root via
   env (`cache_dir()`), project-relative resolution, symbol slugging (`_slug_symbol`),
   pyarrow `pq.write_table`/`read_table`. Mirror this style.

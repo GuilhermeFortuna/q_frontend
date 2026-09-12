@@ -48,10 +48,7 @@ export function QuotePanel({ snapshot }: QuotePanelProps) {
       <div className="text-right">
         <FlashOnChange value={snapshot.last}>
           <p className="text-silver-100 font-mono text-2xl font-bold tabular-nums">
-            <QuantNumberFlow
-              value={snapshot.last}
-              format={(v) => formatPrice(v, digits)}
-            />
+            <QuantNumberFlow value={snapshot.last} format={(v) => formatPrice(v, digits)} />
           </p>
         </FlashOnChange>
         <p

@@ -17,7 +17,7 @@ Frontend repo: `q_frontend`, pnpm (never npm). Verify with `pnpm test:run`, type
 - `src/workspaces/execution/ExecutionWorkspace.tsx` and its tests
 - `src/api/queries/execution.ts` — polling/queries pattern (`EXECUTION_POLL_MS`, key factory)
 - `src/components/charts/CandlestickChart.tsx` and `src/components/charts/types/chart.ts` —
-  `IndicatorConfig` is a union of *client-computed* types; this WO adds a precomputed-series path
+  `IndicatorConfig` is a union of _client-computed_ types; this WO adds a precomputed-series path
 - `src/components/charts/layers/IndicatorLayer.tsx`, `layers/OscillatorPane.tsx`
 - `src/api/queries/market.ts` (or equivalent) — live snapshot/OHLCV for the forming bar
 - `src/types/execution.ts`, `src/types/api.ts` (`OhlcvBar`)

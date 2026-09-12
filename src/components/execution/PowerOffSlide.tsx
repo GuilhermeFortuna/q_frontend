@@ -179,10 +179,13 @@ export function PowerOffSlide({
     if (!rising) return
     confirmedRef.current = false
     snapTo(0, 'rejected')
-    const timer = window.setTimeout(() => {
-      setPhase('idle')
-      phaseRef.current = 'idle'
-    }, reduceMotion ? 0 : 120)
+    const timer = window.setTimeout(
+      () => {
+        setPhase('idle')
+        phaseRef.current = 'idle'
+      },
+      reduceMotion ? 0 : 120,
+    )
     return () => window.clearTimeout(timer)
   }, [rejected, reduceMotion, snapTo])
 
@@ -267,7 +270,11 @@ export function PowerOffSlide({
         const next = clamp(current - step, 0, travel)
         snapTo(
           next,
-          next <= 0 ? 'idle' : travel > 0 && next / travel >= THRESHOLD_RATIO ? 'armed' : 'dragging',
+          next <= 0
+            ? 'idle'
+            : travel > 0 && next / travel >= THRESHOLD_RATIO
+              ? 'armed'
+              : 'dragging',
         )
         break
       }
@@ -287,10 +294,7 @@ export function PowerOffSlide({
       case ' ': {
         event.preventDefault()
         if (lockedRef.current) return
-        if (
-          phaseRef.current === 'armed' ||
-          (travel > 0 && current / travel >= THRESHOLD_RATIO)
-        ) {
+        if (phaseRef.current === 'armed' || (travel > 0 && current / travel >= THRESHOLD_RATIO)) {
           snapTo(travel, 'armed')
           fireConfirmOnce()
         }

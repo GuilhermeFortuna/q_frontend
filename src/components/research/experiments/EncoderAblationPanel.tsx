@@ -293,10 +293,7 @@ export function EncoderAblationPanel() {
             className="flex flex-1 flex-col items-center justify-center p-8 text-center"
             data-testid="ablation-empty-state"
           >
-            <GlowCard
-              intensity="card"
-              className="max-w-md rounded-2xl border border-dashed p-10"
-            >
+            <GlowCard intensity="card" className="max-w-md rounded-2xl border border-dashed p-10">
               <CheckCircle2 className="text-silver-400 mx-auto h-12 w-12 stroke-[1.25]" />
               <h3 className="text-silver-200 mt-4 text-base font-semibold">
                 No active ablation study

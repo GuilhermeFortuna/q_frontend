@@ -2,7 +2,11 @@ import { useMemo } from 'react'
 import { RouterProvider } from '@tanstack/react-router'
 
 import { AppProviders } from '@/app/providers'
-import { LazyNewsReaderWorkspace, LazyStandaloneChartWindow, LazyExecutionLiveWorkspace } from '@/app/lazyWorkspaces'
+import {
+  LazyNewsReaderWorkspace,
+  LazyStandaloneChartWindow,
+  LazyExecutionLiveWorkspace,
+} from '@/app/lazyWorkspaces'
 import { router } from '@/app/router'
 import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
 import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'

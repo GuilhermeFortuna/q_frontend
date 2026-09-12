@@ -225,7 +225,10 @@ export function AiInferenceSignal({ state, variant, className }: AiInferenceSign
         const props = visualStateToSignalProps(stateRef.current)
         program.uniforms.uColors.value = buildPalette(props.colors)
         program.uniforms.uColorCount.value = Math.min(props.colors.length, MAX_COLORS)
-        program.uniforms.uStrandCount.value = Math.min(Math.max(Math.round(props.count), 1), MAX_STRANDS)
+        program.uniforms.uStrandCount.value = Math.min(
+          Math.max(Math.round(props.count), 1),
+          MAX_STRANDS,
+        )
         program.uniforms.uSpeed.value = props.speed
         program.uniforms.uAmplitude.value = props.amplitude
         program.uniforms.uWaviness.value = props.waviness

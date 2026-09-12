@@ -38,9 +38,7 @@ describe('QuantNumberFlow', () => {
     rerender(<QuantNumberFlow value={-42.25} format={(v) => v.toFixed(2)} />)
     expect(flowText(container)).toBe('-42.25')
 
-    rerender(
-      <QuantNumberFlow value={1_250_000} format={(v) => v.toLocaleString('en-US')} />,
-    )
+    rerender(<QuantNumberFlow value={1_250_000} format={(v) => v.toLocaleString('en-US')} />)
     expect(flowText(container)).toBe('1,250,000')
 
     rerender(<QuantNumberFlow value={24} format={(v) => `${v}%`} />)
@@ -113,17 +111,16 @@ describe('QuantNumberFlow', () => {
 
   it('snaps instantly under reduced motion', () => {
     const matchMedia = window.matchMedia
-    window.matchMedia = ((query: string) =>
-      ({
-        matches: query.includes('prefers-reduced-motion'),
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      })) as typeof window.matchMedia
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia
 
     act(() => {
       useAppStore.setState({ motionMode: 'system' })

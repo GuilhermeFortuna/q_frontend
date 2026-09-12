@@ -47,8 +47,8 @@ is the seam, and the reason this refactor is small.
   - `.mt5_client._is_initialized` (~lines 805, 908, 956)
   - `.mt5_client.connect()` (~lines 985, 1196, 1223, 1246, 1276, 1371, 1449)
   - `.mt5_client.get_symbol_info(symbol)` (~lines 815, 1256, 1281)
-  These couplings must move onto the service so no endpoint imports mt5 or assumes the active
-  provider is MT5.
+    These couplings must move onto the service so no endpoint imports mt5 or assumes the active
+    provider is MT5.
 - `src/q_backend/tasks/worker_context.py` — each Dramatiq worker process builds its **own**
   `MarketDataService` lazily (`get_worker_market_data_service`, ~line 36). The data-source
   setting must therefore be readable from a **separate process**, not held in API memory.
@@ -146,7 +146,7 @@ New `src/q_backend/storage/runtime_config.py`:
 Rewrite `service.py` so the service:
 
 - Builds the available providers once: a `MetaTraderClient` (always constructable — it just
-  won't be *available* without MT5) and a `LocalParquetClient` (Task 5).
+  won't be _available_ without MT5) and a `LocalParquetClient` (Task 5).
 - `_resolve_provider() -> MarketDataProvider`: read `get_data_source()`:
   - `"mt5"` → MetaTrader client (raise a clear `ConnectionError` if not available).
   - `"local"` → local client.

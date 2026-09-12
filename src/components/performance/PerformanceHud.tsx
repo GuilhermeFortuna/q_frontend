@@ -33,8 +33,7 @@ export function PerformanceHud() {
   const featureRendererBudget = routeFeatureRendererBudget(currentRoute)
   const fpsWarn = fps > 0 && fps < TARGET_FPS
   const queryWarn = queryBudget !== null && routeMountQueryCount > queryBudget
-  const canvasWarn =
-    featureRendererBudget !== null && canvasCount > featureRendererBudget.canvases
+  const canvasWarn = featureRendererBudget !== null && canvasCount > featureRendererBudget.canvases
   const loopWarn =
     featureRendererBudget !== null && animationLoopCount > featureRendererBudget.animationLoops
 

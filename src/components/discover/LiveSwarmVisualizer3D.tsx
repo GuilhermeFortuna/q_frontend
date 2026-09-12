@@ -512,257 +512,257 @@ export function LiveSwarmVisualizer3D({
   return (
     <Panel className="relative h-[480px] w-full overflow-hidden rounded-xl">
       <div className="flex h-full min-h-0 w-full flex-col md:flex-row">
-      <div className="from-carbon-950 to-carbon-900 relative flex flex-1 flex-col overflow-hidden bg-gradient-to-b">
-        <CanvasErrorBoundary
-          fallback={
-            <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-rose-400">
-              WebGL is unsupported or disabled in your browser. Live Swarm cannot load.
-            </div>
-          }
-        >
-          <Canvas
-            camera={{ position: [0, 10, 16], fov: 45 }}
-            className="h-full w-full cursor-grab active:cursor-grabbing"
+        <div className="from-carbon-950 to-carbon-900 relative flex flex-1 flex-col overflow-hidden bg-gradient-to-b">
+          <CanvasErrorBoundary
+            fallback={
+              <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-rose-400">
+                WebGL is unsupported or disabled in your browser. Live Swarm cannot load.
+              </div>
+            }
           >
-            <ambientLight intensity={0.4} />
-            <pointLight position={[15, 15, 15]} intensity={1.2} color="#fff8e7" />
-            <spotLight
-              position={[-15, 20, -15]}
-              angle={0.3}
-              penumbra={1}
-              intensity={0.8}
-              color="#ffd899"
-            />
-            <directionalLight position={[0, 10, 0]} intensity={0.3} />
-
-            <gridHelper args={[16, 16, '#c5a880', '#22262c']} position={[0, -3.5, 0]} />
-            <gridHelper args={[16, 16, '#22262c', '#181b1f']} position={[0, 3.5, 0]} />
-
-            <Line
-              points={[
-                [-8, -3.5, -8],
-                [-8, 3.5, -8],
-              ]}
-              color="rgba(168, 139, 82, 0.15)"
-              lineWidth={1}
-            />
-            <Line
-              points={[
-                [8, -3.5, -8],
-                [8, 3.5, -8],
-              ]}
-              color="rgba(168, 139, 82, 0.15)"
-              lineWidth={1}
-            />
-            <Line
-              points={[
-                [-8, -3.5, 8],
-                [-8, 3.5, 8],
-              ]}
-              color="rgba(168, 139, 82, 0.15)"
-              lineWidth={1}
-            />
-            <Line
-              points={[
-                [8, -3.5, 8],
-                [8, 3.5, 8],
-              ]}
-              color="rgba(168, 139, 82, 0.15)"
-              lineWidth={1}
-            />
-
-            {isRunning ? (
-              <SimulatedSwarm generation={genNum} populationSize={popSize} />
-            ) : (
-              <CompletedSwarm
-                candidates={candidatesList}
-                bestCandidateId={results?.summary?.best_candidate_id ?? null}
-                zMetric={zMetric}
-                hoveredTrial={localHover}
-                setHoveredTrial={setLocalHover}
-                selectedTrial={activeSelected}
-                setSelectedTrial={setActiveSelected}
-              />
-            )}
-
-            <SceneControls resetCounter={resetCounter} />
-          </Canvas>
-        </CanvasErrorBoundary>
-
-        {isRunning && (
-          <div className="surface-float surface-float--blur absolute top-4 left-4 z-10 flex flex-col gap-1 rounded-lg px-3 py-2 text-xs">
-            <span className="text-brass-400 flex items-center gap-1.5 font-bold tracking-wider uppercase">
-              <span className="live-status-dot h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Live GA Swarm
-            </span>
-            <span className="text-silver-300">
-              Gen: <span className="text-silver-100 font-mono font-bold">{genNum}</span>
-            </span>
-            <span className="text-silver-300">
-              Pop Size: <span className="text-silver-100 font-mono font-bold">{popSize}</span>
-            </span>
-          </div>
-        )}
-
-        {!isRunning && activeDetailCandidate && (
-          <div className="surface-float surface-float--blur absolute top-4 right-4 z-10 w-64 rounded-lg p-3.5 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-silver-100 truncate font-bold">
-                {activeDetailCandidate.strategy.replace(/Strategy$/, '')}
-              </span>
-              {activeDetailCandidate.candidate_id === results?.summary?.best_candidate_id && (
-                <Trophy className="text-brass-400 fill-brass-400/20 h-4 w-4 shrink-0" />
-              )}
-            </div>
-            <p className="text-silver-500 mt-0.5 truncate font-mono text-[9px]">
-              ID: {activeDetailCandidate.candidate_id.slice(0, 8)}...
-            </p>
-
-            <hr className="border-carbon-800 my-2" />
-
-            <div className="text-silver-300 grid grid-cols-2 gap-y-1.5">
-              <span className="text-silver-500 font-semibold">Gen Born:</span>
-              <span className="text-silver-100 text-right font-mono font-semibold">
-                {activeDetailCandidate.generation ?? 0}
-              </span>
-
-              <span className="text-silver-500 font-semibold">Objective Val:</span>
-              <span className="text-brass-400 text-right font-mono font-bold">
-                {formatObjectiveMetricValue(activeDetailCandidate.objective_value, objectiveMode)}
-              </span>
-
-              <span className="text-silver-500 font-semibold">Robustness:</span>
-              <span className="text-silver-100 text-right font-mono">
-                {activeDetailCandidate.robustness_score?.toFixed(2) ?? '—'}
-              </span>
-
-              <span className="text-silver-500 font-semibold">Node Complexity:</span>
-              <span className="text-silver-100 text-right font-mono">
-                {activeDetailCandidate.genome_node_count ?? 0} nodes
-              </span>
-
-              {activeDetailCandidate.oos_metrics?.win_rate != null && (
-                <>
-                  <span className="text-silver-500 font-semibold">OOS Win Rate:</span>
-                  <span className="text-silver-100 text-right font-mono">
-                    {(activeDetailCandidate.oos_metrics.win_rate * 100).toFixed(1)}%
-                  </span>
-                </>
-              )}
-            </div>
-
-            {activeDetailCandidate.genome?.metadata?.parent_ids && (
-              <div className="text-silver-400 mt-2 text-[10px] italic">
-                * Green lines highlight lineage to parents
-              </div>
-            )}
-          </div>
-        )}
-
-        {!isRunning && !activeDetailCandidate && (
-          <div className="surface-float surface-float--blur text-silver-400 absolute top-4 right-4 z-10 flex max-w-[220px] gap-1.5 rounded-lg p-3 text-[11px]">
-            <HelpCircle className="text-silver-500 mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              Hover or click on candidate nodes to trace lineage, examine performance details, or
-              select for review.
-            </span>
-          </div>
-        )}
-
-        <div className="surface-float text-silver-400 border-carbon-800 absolute bottom-4 left-4 z-10 flex flex-wrap gap-x-4 gap-y-1.5 rounded-lg px-3 py-2 text-[10px]">
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-[#6f7785]" />
-            <span>Low Fitness</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-[#b8831c]" />
-            <span>Avg Fitness</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-[#f0b429]" />
-            <span>High Fitness</span>
-          </div>
-          {!isRunning && (
-            <>
-              <div className="flex items-center gap-1.5">
-                <div className="h-2 w-2 rounded-full bg-[#ffd700] shadow-[0_0_8px_rgba(255,215,0,0.6)]" />
-                <span>Selected Node</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="h-1.5 w-4 rounded-full bg-[#34d399]" />
-                <span>Lineage Wire</span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="border-carbon-800 bg-carbon-950/75 flex w-full shrink-0 flex-col gap-4 border-t p-4 md:w-60 md:border-t-0 md:border-l">
-        <div>
-          <h3 className="text-silver-200 flex items-center gap-1.5 text-sm font-semibold tracking-wide uppercase">
-            <Sliders className="text-brass-400 h-4 w-4" />
-            Swarm Control
-          </h3>
-          <p className="text-silver-500 mt-1 text-[11px]">
-            {isRunning
-              ? 'Monitoring live generation mutation structures.'
-              : 'Examine strategy population distribution and lineage.'}
-          </p>
-        </div>
-
-        <hr className="border-carbon-800" />
-
-        {!isRunning ? (
-          <div className="flex flex-col gap-2.5">
-            <label htmlFor="z-metric-select" className="text-silver-400 text-xs font-semibold">
-              Z Axis (Depth)
-            </label>
-            <select
-              id="z-metric-select"
-              value={zMetric}
-              onChange={(e) => setZMetric(e.target.value as ZAxisMetric)}
-              className={wellInputClass}
+            <Canvas
+              camera={{ position: [0, 10, 16], fov: 45 }}
+              className="h-full w-full cursor-grab active:cursor-grabbing"
             >
-              <option value="complexity">Node Complexity (Count)</option>
-              <option value="robustness">Robustness Score</option>
-              <option value="efficiency">Out-of-sample Efficiency</option>
-            </select>
+              <ambientLight intensity={0.4} />
+              <pointLight position={[15, 15, 15]} intensity={1.2} color="#fff8e7" />
+              <spotLight
+                position={[-15, 20, -15]}
+                angle={0.3}
+                penumbra={1}
+                intensity={0.8}
+                color="#ffd899"
+              />
+              <directionalLight position={[0, 10, 0]} intensity={0.3} />
 
-            <div className="text-silver-400 mt-1 space-y-1.5 text-[11px]">
-              <p>
-                <strong>X-Axis (Width)</strong>: Generation born
-              </p>
-              <p>
-                <strong>Y-Axis (Height)</strong>: IS {objectiveMetricLabel(objectiveMode)}
-              </p>
+              <gridHelper args={[16, 16, '#c5a880', '#22262c']} position={[0, -3.5, 0]} />
+              <gridHelper args={[16, 16, '#22262c', '#181b1f']} position={[0, 3.5, 0]} />
+
+              <Line
+                points={[
+                  [-8, -3.5, -8],
+                  [-8, 3.5, -8],
+                ]}
+                color="rgba(168, 139, 82, 0.15)"
+                lineWidth={1}
+              />
+              <Line
+                points={[
+                  [8, -3.5, -8],
+                  [8, 3.5, -8],
+                ]}
+                color="rgba(168, 139, 82, 0.15)"
+                lineWidth={1}
+              />
+              <Line
+                points={[
+                  [-8, -3.5, 8],
+                  [-8, 3.5, 8],
+                ]}
+                color="rgba(168, 139, 82, 0.15)"
+                lineWidth={1}
+              />
+              <Line
+                points={[
+                  [8, -3.5, 8],
+                  [8, 3.5, 8],
+                ]}
+                color="rgba(168, 139, 82, 0.15)"
+                lineWidth={1}
+              />
+
+              {isRunning ? (
+                <SimulatedSwarm generation={genNum} populationSize={popSize} />
+              ) : (
+                <CompletedSwarm
+                  candidates={candidatesList}
+                  bestCandidateId={results?.summary?.best_candidate_id ?? null}
+                  zMetric={zMetric}
+                  hoveredTrial={localHover}
+                  setHoveredTrial={setLocalHover}
+                  selectedTrial={activeSelected}
+                  setSelectedTrial={setActiveSelected}
+                />
+              )}
+
+              <SceneControls resetCounter={resetCounter} />
+            </Canvas>
+          </CanvasErrorBoundary>
+
+          {isRunning && (
+            <div className="surface-float surface-float--blur absolute top-4 left-4 z-10 flex flex-col gap-1 rounded-lg px-3 py-2 text-xs">
+              <span className="text-brass-400 flex items-center gap-1.5 font-bold tracking-wider uppercase">
+                <span className="live-status-dot h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Live GA Swarm
+              </span>
+              <span className="text-silver-300">
+                Gen: <span className="text-silver-100 font-mono font-bold">{genNum}</span>
+              </span>
+              <span className="text-silver-300">
+                Pop Size: <span className="text-silver-100 font-mono font-bold">{popSize}</span>
+              </span>
             </div>
+          )}
+
+          {!isRunning && activeDetailCandidate && (
+            <div className="surface-float surface-float--blur absolute top-4 right-4 z-10 w-64 rounded-lg p-3.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-silver-100 truncate font-bold">
+                  {activeDetailCandidate.strategy.replace(/Strategy$/, '')}
+                </span>
+                {activeDetailCandidate.candidate_id === results?.summary?.best_candidate_id && (
+                  <Trophy className="text-brass-400 fill-brass-400/20 h-4 w-4 shrink-0" />
+                )}
+              </div>
+              <p className="text-silver-500 mt-0.5 truncate font-mono text-[9px]">
+                ID: {activeDetailCandidate.candidate_id.slice(0, 8)}...
+              </p>
+
+              <hr className="border-carbon-800 my-2" />
+
+              <div className="text-silver-300 grid grid-cols-2 gap-y-1.5">
+                <span className="text-silver-500 font-semibold">Gen Born:</span>
+                <span className="text-silver-100 text-right font-mono font-semibold">
+                  {activeDetailCandidate.generation ?? 0}
+                </span>
+
+                <span className="text-silver-500 font-semibold">Objective Val:</span>
+                <span className="text-brass-400 text-right font-mono font-bold">
+                  {formatObjectiveMetricValue(activeDetailCandidate.objective_value, objectiveMode)}
+                </span>
+
+                <span className="text-silver-500 font-semibold">Robustness:</span>
+                <span className="text-silver-100 text-right font-mono">
+                  {activeDetailCandidate.robustness_score?.toFixed(2) ?? '—'}
+                </span>
+
+                <span className="text-silver-500 font-semibold">Node Complexity:</span>
+                <span className="text-silver-100 text-right font-mono">
+                  {activeDetailCandidate.genome_node_count ?? 0} nodes
+                </span>
+
+                {activeDetailCandidate.oos_metrics?.win_rate != null && (
+                  <>
+                    <span className="text-silver-500 font-semibold">OOS Win Rate:</span>
+                    <span className="text-silver-100 text-right font-mono">
+                      {(activeDetailCandidate.oos_metrics.win_rate * 100).toFixed(1)}%
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {activeDetailCandidate.genome?.metadata?.parent_ids && (
+                <div className="text-silver-400 mt-2 text-[10px] italic">
+                  * Green lines highlight lineage to parents
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isRunning && !activeDetailCandidate && (
+            <div className="surface-float surface-float--blur text-silver-400 absolute top-4 right-4 z-10 flex max-w-[220px] gap-1.5 rounded-lg p-3 text-[11px]">
+              <HelpCircle className="text-silver-500 mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Hover or click on candidate nodes to trace lineage, examine performance details, or
+                select for review.
+              </span>
+            </div>
+          )}
+
+          <div className="surface-float text-silver-400 border-carbon-800 absolute bottom-4 left-4 z-10 flex flex-wrap gap-x-4 gap-y-1.5 rounded-lg px-3 py-2 text-[10px]">
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-[#6f7785]" />
+              <span>Low Fitness</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-[#b8831c]" />
+              <span>Avg Fitness</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-[#f0b429]" />
+              <span>High Fitness</span>
+            </div>
+            {!isRunning && (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-[#ffd700] shadow-[0_0_8px_rgba(255,215,0,0.6)]" />
+                  <span>Selected Node</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="h-1.5 w-4 rounded-full bg-[#34d399]" />
+                  <span>Lineage Wire</span>
+                </div>
+              </>
+            )}
           </div>
-        ) : (
-          <div className="border-carbon-800 bg-carbon-900/30 flex flex-col gap-2.5 rounded-lg border p-3">
-            <div className="text-silver-300 flex items-center gap-1.5 text-xs font-medium">
-              <Play className="h-3 w-3 animate-pulse fill-emerald-400/20 text-emerald-400" />
-              Evolution Active
-            </div>
-            <p className="text-silver-500 text-[10px] leading-relaxed">
-              Selection wipes out weaker nodes, crossover joins parents, and mutation flashes purple
-              nodes with sparks.
+        </div>
+
+        <div className="border-carbon-800 bg-carbon-950/75 flex w-full shrink-0 flex-col gap-4 border-t p-4 md:w-60 md:border-t-0 md:border-l">
+          <div>
+            <h3 className="text-silver-200 flex items-center gap-1.5 text-sm font-semibold tracking-wide uppercase">
+              <Sliders className="text-brass-400 h-4 w-4" />
+              Swarm Control
+            </h3>
+            <p className="text-silver-500 mt-1 text-[11px]">
+              {isRunning
+                ? 'Monitoring live generation mutation structures.'
+                : 'Examine strategy population distribution and lineage.'}
             </p>
           </div>
-        )}
 
-        <hr className="border-carbon-800 mt-auto" />
+          <hr className="border-carbon-800" />
 
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => setResetCounter((prev) => prev + 1)}
-            className="bg-carbon-900/60 hover:bg-carbon-800 hover:text-silver-100 border-carbon-700/60 text-silver-300 flex items-center justify-center gap-1.5 rounded-lg border py-2 text-xs font-semibold transition-all duration-200 active:scale-95"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Reset 3D Camera
-          </button>
+          {!isRunning ? (
+            <div className="flex flex-col gap-2.5">
+              <label htmlFor="z-metric-select" className="text-silver-400 text-xs font-semibold">
+                Z Axis (Depth)
+              </label>
+              <select
+                id="z-metric-select"
+                value={zMetric}
+                onChange={(e) => setZMetric(e.target.value as ZAxisMetric)}
+                className={wellInputClass}
+              >
+                <option value="complexity">Node Complexity (Count)</option>
+                <option value="robustness">Robustness Score</option>
+                <option value="efficiency">Out-of-sample Efficiency</option>
+              </select>
+
+              <div className="text-silver-400 mt-1 space-y-1.5 text-[11px]">
+                <p>
+                  <strong>X-Axis (Width)</strong>: Generation born
+                </p>
+                <p>
+                  <strong>Y-Axis (Height)</strong>: IS {objectiveMetricLabel(objectiveMode)}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="border-carbon-800 bg-carbon-900/30 flex flex-col gap-2.5 rounded-lg border p-3">
+              <div className="text-silver-300 flex items-center gap-1.5 text-xs font-medium">
+                <Play className="h-3 w-3 animate-pulse fill-emerald-400/20 text-emerald-400" />
+                Evolution Active
+              </div>
+              <p className="text-silver-500 text-[10px] leading-relaxed">
+                Selection wipes out weaker nodes, crossover joins parents, and mutation flashes
+                purple nodes with sparks.
+              </p>
+            </div>
+          )}
+
+          <hr className="border-carbon-800 mt-auto" />
+
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setResetCounter((prev) => prev + 1)}
+              className="bg-carbon-900/60 hover:bg-carbon-800 hover:text-silver-100 border-carbon-700/60 text-silver-300 flex items-center justify-center gap-1.5 rounded-lg border py-2 text-xs font-semibold transition-all duration-200 active:scale-95"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset 3D Camera
+            </button>
+          </div>
         </div>
-      </div>
       </div>
     </Panel>
   )

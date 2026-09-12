@@ -11,9 +11,7 @@ describe('QuotePanel', () => {
 
     render(<QuotePanel snapshot={snapshot} />)
 
-    expect(
-      screen.getByLabelText(formatPrice(snapshot.last, snapshot.digits)),
-    ).toBeInTheDocument()
+    expect(screen.getByLabelText(formatPrice(snapshot.last, snapshot.digits))).toBeInTheDocument()
     expect(screen.getByText('Open')).toBeInTheDocument()
     expect(
       screen.getByLabelText(formatPrice(snapshot.dayOpen, snapshot.digits)),
@@ -25,9 +23,7 @@ describe('QuotePanel', () => {
       screen.getByLabelText(formatPrice(snapshot.dayHigh, snapshot.digits)),
     ).toBeInTheDocument()
     expect(screen.getByText('Day Low')).toBeInTheDocument()
-    expect(
-      screen.getByLabelText(formatPrice(snapshot.dayLow, snapshot.digits)),
-    ).toBeInTheDocument()
+    expect(screen.getByLabelText(formatPrice(snapshot.dayLow, snapshot.digits))).toBeInTheDocument()
     expect(screen.getByText('Volume')).toBeInTheDocument()
     expect(screen.getByLabelText(snapshot.volume.toLocaleString())).toBeInTheDocument()
     expect(screen.getByText('Last Update')).toBeInTheDocument()

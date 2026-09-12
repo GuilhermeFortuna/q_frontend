@@ -40,7 +40,7 @@ export function OperationalFailureState({
       <FaultyTerminalField />
       <div className="relative z-10 flex max-w-md flex-col items-center text-center">
         <AlertCircle
-          className={cn('text-rose-400 mb-2 shrink-0', compact ? 'h-5 w-5' : 'h-6 w-6')}
+          className={cn('mb-2 shrink-0 text-rose-400', compact ? 'h-5 w-5' : 'h-6 w-6')}
           aria-hidden
         />
         <h3
@@ -52,10 +52,7 @@ export function OperationalFailureState({
           {title}
         </h3>
         <p
-          className={cn(
-            'text-silver-300 mt-1.5 leading-relaxed',
-            compact ? 'text-xs' : 'text-sm',
-          )}
+          className={cn('text-silver-300 mt-1.5 leading-relaxed', compact ? 'text-xs' : 'text-sm')}
         >
           {description}
         </p>

@@ -340,8 +340,7 @@ export function FaultyTerminalField({ className }: FaultyTerminalFieldProps) {
         renderer.render({ scene: mesh })
       }
 
-      const shouldAnimate = () =>
-        !disposed && !document.hidden && onScreenRef.current && !isReduced
+      const shouldAnimate = () => !disposed && !document.hidden && onScreenRef.current && !isReduced
 
       const tick = (t: number) => {
         animateId = requestAnimationFrame(tick)

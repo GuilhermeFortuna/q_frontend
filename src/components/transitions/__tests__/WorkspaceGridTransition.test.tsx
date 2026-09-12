@@ -15,7 +15,9 @@ function dockEl() {
   return el
 }
 
-function makeExecutor(overrides: Partial<WorkspaceTransitionExecutor> = {}): WorkspaceTransitionExecutor {
+function makeExecutor(
+  overrides: Partial<WorkspaceTransitionExecutor> = {},
+): WorkspaceTransitionExecutor {
   return {
     onCapture: vi.fn(async () => undefined),
     onReconfigure: vi.fn(async () => undefined),

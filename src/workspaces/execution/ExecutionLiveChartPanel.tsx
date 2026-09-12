@@ -78,7 +78,9 @@ function formatCountdown(ms: number): string {
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
   const pad = (value: number) => String(value).padStart(2, '0')
-  return hours > 0 ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`
+  return hours > 0
+    ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+    : `${pad(minutes)}:${pad(seconds)}`
 }
 
 function useCountdown(target: string | null | undefined, active: boolean): string | null {
@@ -182,7 +184,7 @@ export function ExecutionLiveChartPanel({
             Loading chart…
           </p>
         ) : (
-          <p className="text-amber-300 text-sm" data-testid="live-chart-market-unavailable">
+          <p className="text-sm text-amber-300" data-testid="live-chart-market-unavailable">
             Market data is unavailable right now — the chart will appear once bars can be loaded.
           </p>
         )}
@@ -191,13 +193,10 @@ export function ExecutionLiveChartPanel({
   }
 
   return (
-    <Panel className={cn("p-4", className)} data-testid="execution-live-chart-panel">
+    <Panel className={cn('p-4', className)} data-testid="execution-live-chart-panel">
       {header}
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p
-          className="text-silver-500 text-xs"
-          data-testid="live-chart-bar-close-note"
-        >
+        <p className="text-silver-500 text-xs" data-testid="live-chart-bar-close-note">
           Decisions occur at bar close — indicators reflect exactly what the worker evaluates.
         </p>
         {countdown ? (
@@ -215,7 +214,7 @@ export function ExecutionLiveChartPanel({
           Market data is stale — showing the last chart the worker could load.
         </p>
       ) : null}
-      <div className="flex-1 min-h-0 w-full flex flex-col">
+      <div className="flex min-h-0 w-full flex-1 flex-col">
         <LiveStrategyChart
           bars={completedBars}
           formingBar={formingBar}

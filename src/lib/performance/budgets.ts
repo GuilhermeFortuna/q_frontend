@@ -56,7 +56,9 @@ export function routeBudgetKey(pathname: string): BudgetedRoute | null {
   return null
 }
 
-export function routeFeatureRendererBudgetKey(pathname: string): FeatureRendererBudgetedRoute | null {
+export function routeFeatureRendererBudgetKey(
+  pathname: string,
+): FeatureRendererBudgetedRoute | null {
   if (pathname.startsWith('/strategy-builder')) return 'strategy-builder'
   return null
 }

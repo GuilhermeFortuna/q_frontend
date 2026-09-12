@@ -120,7 +120,9 @@ describe('ExecutionWorkspace', () => {
     })
     expect(screen.getByTestId('execution-kill-switch-state')).toHaveTextContent(/^Off$/i)
     expect(screen.getByTestId('power-off-slide')).toHaveAttribute('data-state', 'submitting')
-    expect(screen.getByTestId('power-off-slide-status')).toHaveTextContent(/awaiting control plane/i)
+    expect(screen.getByTestId('power-off-slide-status')).toHaveTextContent(
+      /awaiting control plane/i,
+    )
 
     releasePut()
     await waitFor(() =>
@@ -145,7 +147,9 @@ describe('ExecutionWorkspace', () => {
     thumb.focus()
     await user.keyboard('{End}{Enter}')
 
-    expect(await screen.findByTestId('execution-action-error')).toHaveTextContent(/kill switch denied/i)
+    expect(await screen.findByTestId('execution-action-error')).toHaveTextContent(
+      /kill switch denied/i,
+    )
     await waitFor(() =>
       expect(screen.getByTestId('power-off-slide')).toHaveAttribute('data-state', 'idle'),
     )
@@ -250,7 +254,9 @@ describe('ExecutionWorkspace', () => {
 
     expect(await screen.findByTestId('execution-live-chart-panel')).toBeInTheDocument()
     expect(await screen.findByTestId('live-strategy-chart')).toBeInTheDocument()
-    expect(screen.getByTestId('live-chart-bar-close-note')).toHaveTextContent(/decisions occur at bar close/i)
+    expect(screen.getByTestId('live-chart-bar-close-note')).toHaveTextContent(
+      /decisions occur at bar close/i,
+    )
   })
 
   it('degrades to a chart-unavailable state against a pre-WO175 backend (404)', async () => {

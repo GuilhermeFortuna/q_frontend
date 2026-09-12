@@ -81,7 +81,7 @@ export function SpotlightNavItem({
             SPOTLIGHT_NAV_MOTION,
             metrics.icon,
             isActive
-              ? 'scale-110 brightness-110 text-brass-400'
+              ? 'text-brass-400 scale-110 brightness-110'
               : 'scale-95 opacity-50 group-hover:scale-105 group-hover:opacity-100',
           )}
         />
@@ -90,7 +90,7 @@ export function SpotlightNavItem({
       {label ? (
         <span
           className={cn(
-            'relative z-10 whitespace-nowrap font-mono font-[560] tracking-[0.08em] uppercase transition-colors',
+            'relative z-10 font-mono font-[560] tracking-[0.08em] whitespace-nowrap uppercase transition-colors',
             SPOTLIGHT_NAV_MOTION,
             metrics.label,
             isActive ? 'text-brass-400' : 'text-silver-400 group-hover:text-silver-200',
@@ -120,7 +120,7 @@ export function SpotlightTopIndicator({
     <div
       aria-hidden
       className={cn(
-        'pointer-events-none absolute top-0 h-0.5 bg-brass-400 shadow-[0_6px_12px_rgba(240,180,41,0.55)] transition-all',
+        'bg-brass-400 pointer-events-none absolute top-0 h-0.5 shadow-[0_6px_12px_rgba(240,180,41,0.55)] transition-all',
         SPOTLIGHT_NAV_MOTION,
         className,
       )}

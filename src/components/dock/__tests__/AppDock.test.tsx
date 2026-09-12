@@ -18,7 +18,9 @@ const activeJobsState = vi.hoisted(() => ({
 vi.mock('@tanstack/react-router', () => ({
   useLocation: () => ({ pathname: '/' }),
   useNavigate: () => navigate,
-  Link: ({ children, to }: { children: unknown; to: string }) => <a href={to}>{children as never}</a>,
+  Link: ({ children, to }: { children: unknown; to: string }) => (
+    <a href={to}>{children as never}</a>
+  ),
 }))
 
 vi.mock('@/hooks/useActiveJobs', () => ({
@@ -139,9 +141,9 @@ describe('AppDock active job island', () => {
     render(<AppDock activeWorkspace="launcher" />)
     await user.click(screen.getByTestId('active-job-island-trigger'))
 
-    const rows = screen.getAllByRole('button').filter((el) =>
-      el.getAttribute('data-testid')?.startsWith('active-job-row-'),
-    )
+    const rows = screen
+      .getAllByRole('button')
+      .filter((el) => el.getAttribute('data-testid')?.startsWith('active-job-row-'))
     expect(rows.map((row) => row.getAttribute('data-testid'))).toEqual([
       'active-job-row-backtests',
       'active-job-row-validate',

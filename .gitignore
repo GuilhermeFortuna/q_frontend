@@ -19,7 +19,7 @@ src/assets/fonts/
 
 # Editor / local tooling
 .vscode/
-.husky/
+.husky/_
 .idea
 
 # Env

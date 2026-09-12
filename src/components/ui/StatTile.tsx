@@ -39,8 +39,7 @@ export function StatTile({
   formatNumericValue,
   animateValue = false,
 }: StatTileProps) {
-  const useFlow =
-    animateValue && numericValue != null && typeof formatNumericValue === 'function'
+  const useFlow = animateValue && numericValue != null && typeof formatNumericValue === 'function'
 
   return (
     <GlowCard intensity="tile" className={cn('p-4', className)}>
@@ -61,11 +60,7 @@ export function StatTile({
                   : 'text-silver-100',
         )}
       >
-        {useFlow ? (
-          <QuantNumberFlow value={numericValue} format={formatNumericValue} />
-        ) : (
-          value
-        )}
+        {useFlow ? <QuantNumberFlow value={numericValue} format={formatNumericValue} /> : value}
       </p>
       {delta ? (
         <p className={cn('mt-1 text-xs font-medium', deltaToneClass[deltaTone])}>{delta}</p>

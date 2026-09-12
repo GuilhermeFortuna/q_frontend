@@ -42,8 +42,7 @@ import {
 
 const SYMBOL_SUGGESTION_LIMIT = 6
 
-const symbolSuggestionItemClass =
-  'w-full px-3 py-2 text-left transition-all duration-150'
+const symbolSuggestionItemClass = 'w-full px-3 py-2 text-left transition-all duration-150'
 
 function KindBadge({ kind }: { kind: StorageKind }) {
   const isTicks = kind === 'ticks'

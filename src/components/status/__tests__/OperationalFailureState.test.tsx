@@ -128,16 +128,12 @@ describe('OperationalFailureState', () => {
   })
 
   it('omits Retry when onRetry is not provided', () => {
-    render(
-      <OperationalFailureState title="Unavailable" description="No retry path." />,
-    )
+    render(<OperationalFailureState title="Unavailable" description="No retry path." />)
     expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument()
   })
 
   it('marks the terminal field aria-hidden and mounts under the failure surface', () => {
-    render(
-      <OperationalFailureState title="Unavailable" description="System offline." />,
-    )
+    render(<OperationalFailureState title="Unavailable" description="System offline." />)
     const field = screen.getByTestId('faulty-terminal-field')
     expect(field).toHaveAttribute('aria-hidden', 'true')
     expect(MockRenderer).toHaveBeenCalled()
@@ -145,9 +141,7 @@ describe('OperationalFailureState', () => {
 
   it('renders a static field under reduced motion with no animation loop', async () => {
     vi.mocked(useReducedMotion).mockReturnValue(true)
-    render(
-      <OperationalFailureState title="Unavailable" description="Static grid." />,
-    )
+    render(<OperationalFailureState title="Unavailable" description="Static grid." />)
 
     const field = screen.getByTestId('faulty-terminal-field')
     expect(field).toHaveAttribute('data-reduced-motion', 'true')
@@ -163,7 +157,11 @@ describe('OperationalFailureState', () => {
     })
 
     render(
-      <OperationalFailureState title="Unavailable" description="Still readable." onRetry={vi.fn()} />,
+      <OperationalFailureState
+        title="Unavailable"
+        description="Still readable."
+        onRetry={vi.fn()}
+      />,
     )
 
     expect(screen.getByTestId('faulty-terminal-field')).toHaveAttribute('data-webgl-failed', 'true')

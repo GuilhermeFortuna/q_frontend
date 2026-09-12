@@ -3,7 +3,7 @@
 ## Shared context (read first)
 
 Read `docs/design/paper-live-execution.md` and the WO169/WO171 completion contracts. The Execution
-workspace can start/pause/stop a paper deployment but shows nothing about *what the strategy sees*.
+workspace can start/pause/stop a paper deployment but shows nothing about _what the strategy sees_.
 This WO exposes a read-only chart payload per deployment: the same bounded OHLCV window the forward
 evaluator consumes, augmented with the strategy's own indicator series, serialized in the exact
 shape the backtest chart already uses. The value proposition is **parity** — the chart must be
@@ -44,14 +44,13 @@ evaluates on each bar close.
    - trim the returned payload to the last `bars` bars **after** indicator computation, so
      leading warm-up NaNs never reach the display window.
 3. Response schema: reuse/mirror the backtest chart shapes (`bars: [{timestamp, open, high, low,
-   close, volume}]`, `indicators: [{key, label, pane, color, values}]`) plus additive metadata:
+close, volume}]`, `indicators: [{key, label, pane, color, values}]`) plus additive metadata:
    `symbol`, `timeframe`, `last_bar_close_time`, `next_bar_close_time` (for the frontend
    countdown), and `window_bound_bars`.
 4. Cache the computed payload in-process keyed on `(deployment_id, bars, last completed bar open
-   time)`; 5-second polling must not recompute indicators until a new bar lands.
+time)`; 5-second polling must not recompute indicators until a new bar lands.
 5. Degrade honestly: deployment not found → 404; market data unavailable (MT5 down in `mt5` mode,
-   empty local store in `local` mode) → 503 with a clear detail message, never a 500 or an empty
-   200.
+   empty local store in `local` mode) → 503 with a clear detail message, never a 500 or an empty 200.
 
 ## Guardrails
 

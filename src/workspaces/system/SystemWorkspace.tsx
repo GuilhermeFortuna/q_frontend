@@ -62,10 +62,7 @@ export function SystemWorkspace() {
   }
 
   return (
-    <div
-      className="mx-auto flex max-w-3xl flex-col gap-6"
-      data-workspace-transition-root="system"
-    >
+    <div className="mx-auto flex max-w-3xl flex-col gap-6" data-workspace-transition-root="system">
       <div>
         <h1
           className="font-display text-silver-100 tracking-display text-xl font-semibold"

@@ -26,7 +26,11 @@ import {
 } from '@/components/dock/DockIcons'
 import { workspaceTransitionDirection } from '@/app/router'
 import { useWorkspaceTransitionStore } from '@/components/transitions/workspaceTransitionStore'
-import { SpotlightNavItem, SPOTLIGHT_NAV_MOTION, type SpotlightNavItemSize } from '@/components/ui/spotlight-button'
+import {
+  SpotlightNavItem,
+  SPOTLIGHT_NAV_MOTION,
+  type SpotlightNavItemSize,
+} from '@/components/ui/spotlight-button'
 import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { cn } from '@/lib/utils'
 import type { WorkspaceId } from '@/types/api'
@@ -90,7 +94,9 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
   const activeIndex = dockItems.findIndex((item) => item.id === activeWorkspace)
   const location = useLocation()
   const navigate = useNavigate()
-  const runWorkspaceTransition = useWorkspaceTransitionStore((state) => state.runWorkspaceTransition)
+  const runWorkspaceTransition = useWorkspaceTransitionStore(
+    (state) => state.runWorkspaceTransition,
+  )
 
   const itemsRowRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<Array<HTMLElement | null>>([])

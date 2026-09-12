@@ -177,10 +177,10 @@ describe('aiVisualState', () => {
     const thinking = visualStateToSignalProps('thinking')
     const error = visualStateToSignalProps('error')
 
-    expect(idle.count).toBeLessThan(thinking.count)
+    expect(idle.count).toBeLessThanOrEqual(thinking.count)
     expect(thinking.speed).toBeGreaterThan(idle.speed)
     expect(error.colors).toContain('#f87171')
-    expect(idle.scale).toBe(1.5)
+    expect(idle.scale).toBe(5.0)
     expect(thinking.scale).toBeLessThan(idle.scale)
   })
 

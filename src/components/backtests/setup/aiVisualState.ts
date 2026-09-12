@@ -1,10 +1,4 @@
-export type AiVisualState =
-  | 'idle'
-  | 'composing'
-  | 'thinking'
-  | 'streaming'
-  | 'done'
-  | 'error'
+export type AiVisualState = 'idle' | 'composing' | 'thinking' | 'streaming' | 'done' | 'error'
 
 export type SignalUniformProps = {
   count: number

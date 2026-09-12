@@ -49,9 +49,7 @@ function ControlledIsland({
 }) {
   const [mode, setMode] = useState<ActiveJobIslandMode>('compact')
   if (jobs.length === 0) return null
-  return (
-    <ActiveJobIsland jobs={jobs} mode={mode} onModeChange={setMode} onNavigate={onNavigate} />
-  )
+  return <ActiveJobIsland jobs={jobs} mode={mode} onModeChange={setMode} onNavigate={onNavigate} />
 }
 
 describe('ActiveJobIsland', () => {
@@ -166,10 +164,7 @@ describe('ActiveJobIsland', () => {
 
     rerender(
       <ActiveJobIsland
-        jobs={[
-          jobs[0],
-          { ...jobs[1], pct: 40, detail: 'Candidate 3 / 9' },
-        ]}
+        jobs={[jobs[0], { ...jobs[1], pct: 40, detail: 'Candidate 3 / 9' }]}
         mode="compact"
         onModeChange={() => undefined}
         onNavigate={() => undefined}
@@ -188,10 +183,7 @@ describe('ActiveJobIsland', () => {
           Outside
         </button>
         <ControlledIsland
-          jobs={[
-            makeJob({ workspaceId: 'backtests' }),
-            makeJob({ workspaceId: 'discover' }),
-          ]}
+          jobs={[makeJob({ workspaceId: 'backtests' }), makeJob({ workspaceId: 'discover' })]}
         />
       </div>,
     )
@@ -216,10 +208,7 @@ describe('ActiveJobIsland', () => {
   it('navigates from an expanded job row', async () => {
     const user = userEvent.setup()
     const onNavigate = vi.fn()
-    const jobs = [
-      makeJob({ workspaceId: 'backtests' }),
-      makeJob({ workspaceId: 'discover' }),
-    ]
+    const jobs = [makeJob({ workspaceId: 'backtests' }), makeJob({ workspaceId: 'discover' })]
     render(<ControlledIsland jobs={jobs} onNavigate={onNavigate} />)
 
     await user.click(screen.getByTestId('active-job-island-trigger'))
@@ -266,10 +255,7 @@ describe('ActiveJobIsland', () => {
   })
 
   it('announces completion when a job leaves while others remain', () => {
-    const jobs = [
-      makeJob({ workspaceId: 'backtests' }),
-      makeJob({ workspaceId: 'discover' }),
-    ]
+    const jobs = [makeJob({ workspaceId: 'backtests' }), makeJob({ workspaceId: 'discover' })]
     const { rerender } = render(
       <ActiveJobIsland
         jobs={jobs}

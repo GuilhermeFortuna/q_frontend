@@ -110,9 +110,7 @@ describe('LiveStrategyChart', () => {
         price: 104,
       },
     ]
-    render(
-      <LiveStrategyChart bars={BARS} markers={markers} symbol="WIN$" timeframe="H1" />,
-    )
+    render(<LiveStrategyChart bars={BARS} markers={markers} symbol="WIN$" timeframe="H1" />)
     const buyMarker = await screen.findByTestId('live-chart-marker-d1')
     expect(buyMarker).toHaveAttribute('data-kind', 'buy')
     expect(buyMarker.querySelector('title')?.textContent).toContain('fast crossed slow')
