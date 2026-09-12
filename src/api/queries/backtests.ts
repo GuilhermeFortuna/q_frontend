@@ -9,6 +9,7 @@ import axios from 'axios'
 import { useEffect } from 'react'
 
 import { apiClient } from '@/api/client'
+import type { BacktestStatusResponse } from '../../../contracts/api'
 import { useAppStore } from '@/store/useAppStore'
 import type {
   BacktestEquityArtifactResponse,
@@ -20,12 +21,6 @@ import type {
   BacktestRunListResponse,
   BulkDeleteResponse,
 } from '@/types/backtesting'
-
-export type BacktestJobStatus = {
-  run_id: string
-  status: 'running' | 'completed' | 'failed' | 'cancelled'
-  error?: string | null
-}
 
 export type BacktestStartResponse = { run_id: string; status: string }
 
@@ -55,8 +50,8 @@ export async function startBacktest(request: BacktestRequest): Promise<BacktestS
   return data
 }
 
-export async function fetchBacktestJobStatus(runId: string): Promise<BacktestJobStatus> {
-  const { data } = await apiClient.get<BacktestJobStatus>(`/api/v1/backtest/${runId}`)
+export async function fetchBacktestJobStatus(runId: string): Promise<BacktestStatusResponse> {
+  const { data } = await apiClient.get<BacktestStatusResponse>(`/api/v1/backtest/${runId}`)
   return data
 }
 
