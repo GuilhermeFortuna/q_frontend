@@ -182,9 +182,10 @@ pnpm tauri icon public/quant.svg
 
 ### Full pipeline and git hooks
 
-`./scripts/ci.sh` runs every stage CI runs — vendored contract drift,
-typecheck, lint, format, tests, build. The contract stage reaches the
-`q_contracts` repository; when working offline, point it at a local clone:
+`./scripts/ci.sh` runs every stage CI runs — frozen lockfile check,
+vendored contract drift, typecheck, lint, format, tests, build. The contract
+stage reaches the `q_contracts` repository; when working offline, point it at
+a local clone:
 
 ```bash
 CONTRACTS_REPO=/path/to/q_contracts ./scripts/ci.sh
