@@ -180,6 +180,20 @@ pnpm tauri icon public/quant.svg
 | **Installer Bundle** | `pnpm tauri:build` | Generates a distribution desktop installer (MSI/EXE).                                          |
 | **Perf smoke**       | `pnpm perf:smoke`  | Headless browser route smoke (see [docs/runtime-performance.md](docs/runtime-performance.md)). |
 
+### Full pipeline and git hooks
+
+`./scripts/ci.sh` runs every stage CI runs — vendored contract drift,
+typecheck, lint, format, tests, build. The contract stage reaches the
+`q_contracts` repository; when working offline, point it at a local clone:
+
+```bash
+CONTRACTS_REPO=/path/to/q_contracts ./scripts/ci.sh
+```
+
+Husky installs the hooks through the `prepare` script on `pnpm install`, so a
+fresh clone gets them automatically. `pre-commit` runs lint-staged and
+`pnpm typecheck`; `pre-push` runs `scripts/ci.sh`.
+
 ### Runtime performance gates (WO101)
 
 Shell and cinematic PRs must follow [docs/runtime-performance.md](docs/runtime-performance.md):

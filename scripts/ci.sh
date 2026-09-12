@@ -12,19 +12,26 @@ echo "=================================================="
 # Ensure timezone parity for timezone-sensitive snapshot tests (UTC-3)
 export TZ="${TZ:-America/Sao_Paulo}"
 
-echo "--> [1/5] Typecheck (tsc -b --noEmit)..."
+# Runs here rather than only in the GitHub workflow, so that the pre-push hook
+# catches vendored contract drift instead of leaving it for CI to find. Needs
+# to reach the contracts repository; point CONTRACTS_REPO at a local clone when
+# working offline.
+echo "--> [1/6] Vendored contracts (make contracts-check)..."
+make contracts-check
+
+echo "--> [2/6] Typecheck (tsc -b --noEmit)..."
 pnpm typecheck
 
-echo "--> [2/5] Lint (eslint)..."
+echo "--> [3/6] Lint (eslint)..."
 pnpm lint
 
-echo "--> [3/5] Format check (prettier --check)..."
+echo "--> [4/6] Format check (prettier --check)..."
 pnpm format:check
 
-echo "--> [4/5] Tests (vitest run)..."
+echo "--> [5/6] Tests (vitest run)..."
 pnpm test:run
 
-echo "--> [5/5] Production Build (vite build)..."
+echo "--> [6/6] Production Build (vite build)..."
 pnpm build
 
 echo "=================================================="

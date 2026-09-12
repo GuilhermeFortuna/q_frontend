@@ -39,8 +39,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check vendored contracts
-        run: make contracts-check
-
       - name: Run CI Pipeline
         run: ./scripts/ci.sh
