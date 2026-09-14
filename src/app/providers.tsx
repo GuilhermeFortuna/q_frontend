@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useState } from 'react'
 
 import { env } from '@/lib/env'
+import { JobStreamProvider } from '@/lib/stream/JobStreamProvider'
 import { AppErrorBoundary } from '@/app/AppErrorBoundary'
 import {
   addMutationErrorBreadcrumb,
@@ -37,10 +38,12 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        {children}
-        {env.isDev ? (
-          <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
-        ) : null}
+        <JobStreamProvider>
+          {children}
+          {env.isDev ? (
+            <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+          ) : null}
+        </JobStreamProvider>
       </QueryClientProvider>
     </AppErrorBoundary>
   )
