@@ -183,10 +183,11 @@ pnpm tauri icon public/quant.svg
 ### Full pipeline and git hooks
 
 `./scripts/ci.sh` runs every stage CI runs — frozen lockfile check,
-vendored contract drift, typecheck, lint, format, tests, build. The contract
-stage clones GitHub for `CONTRACTS_REV` (same as remote CI), so the pin must
-already be pushed to `q_contracts`. When working offline, point it at a local
-clone:
+vendored contract drift, typecheck, lint, format, tests, build. Locally it
+enters the host user `ci.slice` when available; do not wrap it in `systemd-run`.
+The contract stage clones GitHub for `CONTRACTS_REV` (same as remote CI), so the
+pin must already be pushed to `q_contracts`. When working offline, point it at a
+local clone:
 
 ```bash
 CONTRACTS_REPO=/path/to/q_contracts ./scripts/ci.sh
