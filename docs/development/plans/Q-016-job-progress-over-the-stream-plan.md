@@ -12,17 +12,17 @@ Axios client is `src/api/client.ts` (`baseURL: env.apiBaseUrl`, default
 true in development unless `VITE_ENABLE_MSW=false`. Nine job status hooks poll
 through a `refetchInterval` function that stops at terminal states:
 
-| Hook | File |
-| --- | --- |
-| `useBacktestJobStatus` | `src/api/queries/backtests.ts:139` (1000 ms while `running`) |
-| `useOptimizationStatus` | `src/api/queries/optimize.ts:140` |
-| `useWalkForwardStatus` | `src/api/queries/walkforward.ts:113` (1000 ms until terminal) |
-| `useStrategySearchStatus` | `src/api/queries/strategySearch.ts:143` |
-| `useNeuralTrainingRun` | `src/api/queries/neural.ts:110`, through `neuralTrainingRunRefetchInterval` |
-| `useIngestStatus` | `src/api/queries/storage.ts:62` |
-| `useDiscoveryAbRun` | `src/api/queries/experiments.ts:58` |
-| `useEncoderAblationRun` | `src/api/queries/experiments.ts:127` |
-| `useAlphaResearchRun` | `src/api/queries/experiments.ts:159` |
+| Hook                      | File                                                                        |
+| ------------------------- | --------------------------------------------------------------------------- |
+| `useBacktestJobStatus`    | `src/api/queries/backtests.ts:139` (1000 ms while `running`)                |
+| `useOptimizationStatus`   | `src/api/queries/optimize.ts:140`                                           |
+| `useWalkForwardStatus`    | `src/api/queries/walkforward.ts:113` (1000 ms until terminal)               |
+| `useStrategySearchStatus` | `src/api/queries/strategySearch.ts:143`                                     |
+| `useNeuralTrainingRun`    | `src/api/queries/neural.ts:110`, through `neuralTrainingRunRefetchInterval` |
+| `useIngestStatus`         | `src/api/queries/storage.ts:62`                                             |
+| `useDiscoveryAbRun`       | `src/api/queries/experiments.ts:58`                                         |
+| `useEncoderAblationRun`   | `src/api/queries/experiments.ts:127`                                        |
+| `useAlphaResearchRun`     | `src/api/queries/experiments.ts:159`                                        |
 
 Each hook's query key comes from a per-domain key factory (`backtestKeys.jobStatus`,
 `walkforwardKeys.status`, and so on), and each payload has its own REST shape
@@ -52,25 +52,45 @@ export type InboundFrame =
   | { kind: 'cursor_expired'; frame: CursorExpiredFrame }
   | { kind: 'epoch_changed'; frame: EpochChangedFrame }
   | { kind: 'entry'; envelope: StreamEnvelope }
-export function parseTextFrame(data: string): InboundFrame   // throws StreamFrameError
+export function parseTextFrame(data: string): InboundFrame // by `type`; throws StreamFrameError
 ```
 
 ```ts
 // src/lib/stream/reconciler.ts   (pure; no I/O)
 export type JobKey = `${JobKind}:${string}`
-export interface ReconcilerState { /* phase, buffer, watermark, lastSeq per topic, epochs */ }
+export interface ReconcilerState {
+  /* phase, buffer, watermark, lastSeq per topic, epochs */
+}
 export type ReconcilerEffect =
   | { type: 'fetchSnapshot' }
   | { type: 'fetchHistory'; topic: 'jobs.terminal'; epoch: string; fromSeq: number }
   | { type: 'jobProgress'; key: JobKey; payload: JobProgressPayload }
   | { type: 'jobTerminal'; key: JobKey; payload: JobTerminalPayload }
-  | { type: 'resync'; reason: 'epoch_changed' | 'lagging' | 'cursor_expired' | 'history_expired' | 'rejected' }
+  | {
+      type: 'resync'
+      reason: 'epoch_changed' | 'lagging' | 'cursor_expired' | 'history_expired' | 'rejected'
+    }
 export function initialState(): ReconcilerState
-export function onSubscribed(s: ReconcilerState, f: SubscribedFrame): [ReconcilerState, ReconcilerEffect[]]
-export function onEntry(s: ReconcilerState, e: StreamEnvelope): [ReconcilerState, ReconcilerEffect[]]
-export function onSnapshot(s: ReconcilerState, snap: JobSnapshotResponse): [ReconcilerState, ReconcilerEffect[]]
-export function onHistory(s: ReconcilerState, page: HistoryPage | HistoryExpired): [ReconcilerState, ReconcilerEffect[]]
-export function onControl(s: ReconcilerState, f: InboundFrame): [ReconcilerState, ReconcilerEffect[]]
+export function onSubscribed(
+  s: ReconcilerState,
+  f: SubscribedFrame,
+): [ReconcilerState, ReconcilerEffect[]]
+export function onEntry(
+  s: ReconcilerState,
+  e: StreamEnvelope,
+): [ReconcilerState, ReconcilerEffect[]]
+export function onSnapshot(
+  s: ReconcilerState,
+  snap: JobSnapshotResponse,
+): [ReconcilerState, ReconcilerEffect[]]
+export function onHistory(
+  s: ReconcilerState,
+  page: HistoryPage | HistoryExpired,
+): [ReconcilerState, ReconcilerEffect[]]
+export function onControl(
+  s: ReconcilerState,
+  f: InboundFrame,
+): [ReconcilerState, ReconcilerEffect[]]
 ```
 
 ```ts
@@ -79,7 +99,11 @@ export type StreamStatus = 'disabled' | 'connecting' | 'live' | 'unavailable'
 export interface StreamClientDeps {
   socketFactory: (url: string) => WebSocket
   fetchSnapshot: () => Promise<JobSnapshotResponse>
-  fetchHistory: (topic: string, epoch: string, fromSeq: number) => Promise<HistoryPage | HistoryExpired>
+  fetchHistory: (
+    topic: string,
+    epoch: string,
+    fromSeq: number,
+  ) => Promise<HistoryPage | HistoryExpired>
   now: () => number
   setTimer: (fn: () => void, ms: number) => unknown
   clearTimer: (h: unknown) => void
@@ -87,19 +111,22 @@ export interface StreamClientDeps {
 export const MAX_BACKOFF_MS = 30_000
 export class JobStreamClient {
   constructor(url: string, deps: StreamClientDeps)
-  retain(): () => void                                  // ref-counted open; returns release
+  retain(): () => void // ref-counted open; returns release
   status(): StreamStatus
   onStatus(fn: (s: StreamStatus) => void): () => void
   onJobEvent(fn: (e: JobProgressEffect | JobTerminalEffect) => void): () => void
 }
-export function backoffDelay(attempt: number): number   // 500 * 2^attempt, capped, full jitter
+export function backoffDelay(attempt: number): number // 500 * 2^attempt, capped, full jitter
 ```
 
 ```ts
 // src/lib/stream/jobQueryBridge.ts
 export const JOB_STATUS_QUERY_KEYS: Record<JobKind, (jobId: string) => QueryKey>
 export const PROGRESS_REFRESH_MIN_INTERVAL_MS = 1_000
-export function connectJobStreamToQueryClient(client: JobStreamClient, queryClient: QueryClient): () => void
+export function connectJobStreamToQueryClient(
+  client: JobStreamClient,
+  queryClient: QueryClient,
+): () => void
 export function streamAwareRefetchInterval<T>(
   kind: JobKind,
   pollingInterval: (query: Query<T>) => number | false,
@@ -109,20 +136,28 @@ export function streamAwareRefetchInterval<T>(
 ```tsx
 // src/lib/stream/JobStreamProvider.tsx
 export function JobStreamProvider({ children }: { children: React.ReactNode }): JSX.Element
-export function useJobStream(): JobStreamClient          // retains while mounted
+export function useJobStream(): JobStreamClient // retains while mounted
 export function useStreamStatus(): StreamStatus
 
 // src/components/layout/LiveUpdatesIndicator.tsx
-export function LiveUpdatesIndicator(): JSX.Element | null   // renders only when status === 'unavailable'
+export function LiveUpdatesIndicator(): JSX.Element | null // renders only when status === 'unavailable'
 ```
 
 ```
 src/lib/env.ts        + enableStream: VITE_ENABLE_STREAM !== 'false' && !enableMsw
-CONTRACTS_REV         → q_contracts commit carrying Q-009 and Q-015's recapture
+CONTRACTS_REV         → q_contracts commit carrying Q-009, the control-frame `type` discriminator (09400d7), and Q-015's recapture
 contracts/            regenerated (stream.ts, topics.ts, api.ts)
 ```
 
 ## Implementation decisions
+
+- **A text frame is classified by its `type` field alone: present means the
+  control frame it names, absent means a stream envelope.** Server control frames
+  carry `type` from `q_contracts` `09400d7` on, and envelopes never do. Inferring
+  the kind from which other keys are present would break the first time two
+  frames share a key, and `cursor_expired` and `lagging` already share `topic`.
+  An unknown `type` throws `StreamFrameError` rather than falling through to
+  `entry`, so a newer server frame is never processed as a job event.
 
 - **Stream events invalidate the existing status queries. They do not write
   stream payloads into the query cache.** The nine views render nine different
@@ -221,8 +256,9 @@ contracts/            regenerated (stream.ts, topics.ts, api.ts)
    Confirm `make contracts-check` passes and the full test suite still passes.
    Commit.
 3. Write failing tests in `tests/unit/lib/stream/framing.test.ts`: a `subscribed`
-   JSON frame parses to `{kind: 'subscribed'}`; a `jobs.terminal` envelope parses
-   to `{kind: 'entry'}`; malformed JSON throws `StreamFrameError`. Confirm they
+   JSON frame (`{"type": "subscribed", ...}`) parses to `{kind: 'subscribed'}`; a
+   `jobs.terminal` envelope, which has no `type`, parses to `{kind: 'entry'}`; a
+   frame with `type: "unknown"` and malformed JSON both throw `StreamFrameError`. Confirm they
    fail, implement, confirm they pass. Commit.
 4. Write failing tests in `tests/unit/lib/stream/reconciler.test.ts`:
    - after `onSubscribed`, the effects are `[fetchSnapshot]`
@@ -236,7 +272,7 @@ contracts/            regenerated (stream.ts, topics.ts, api.ts)
      `rejected{stream_unavailable}` each give `resync` with the matching reason
    - a terminal entry already applied (duplicate seq) gives no effect
    - a progress gap gives no `fetchHistory`
-   Confirm they fail, implement the reducer, confirm they pass. Commit.
+     Confirm they fail, implement the reducer, confirm they pass. Commit.
 5. Write failing tests in `tests/unit/lib/stream/client.test.ts` with a fake
    socket and fake timers:
    - `retain()` opens one socket, and a second `retain()` opens none
@@ -246,7 +282,7 @@ contracts/            regenerated (stream.ts, topics.ts, api.ts)
    - closing the socket sets `unavailable`, and reconnect delays for attempts 0 to
      8 are each ≤ 30,000 ms, with attempt 6 onward capped
    - a `resync` effect re-sends subscribe and re-fetches the snapshot
-   Confirm they fail, implement, confirm they pass. Commit.
+     Confirm they fail, implement, confirm they pass. Commit.
 6. Write failing tests in `tests/unit/lib/stream/jobQueryBridge.test.ts` with a real
    `QueryClient`:
    - a `jobTerminal` effect for `backtest:r1` invalidates
@@ -261,7 +297,7 @@ contracts/            regenerated (stream.ts, topics.ts, api.ts)
      compile time by typing it `Record<JobKind, ...>` over the generated union,
      so `pnpm typecheck` fails if Q-009's kind enum gains a member the bridge
      does not map
-   Confirm they fail, implement, confirm they pass. Commit.
+     Confirm they fail, implement, confirm they pass. Commit.
 7. Add `JobStreamProvider`, `useJobStream`, and `useStreamStatus`, and mount the
    provider in `src/app/providers.tsx`. Add `enableStream` to `env.ts`. Write
    failing tests: with `enableMsw` true, status is `disabled` and no socket is
@@ -305,6 +341,9 @@ contracts/            regenerated (stream.ts, topics.ts, api.ts)
     optimization on the pre-task commit and on this branch, and record the count of
     `/api/v1/optimize/*` status requests from the network panel for each.
 16. Run `scripts/ci.sh`. Commit.
+17. Update the `q_frontend` row in `q_contracts/COMPAT.md` with this branch's
+    merged commit, the pinned contracts commit, and the step 16 results. Commit
+    in `q_contracts` on `development`.
 
 ## Validation
 
@@ -321,6 +360,8 @@ contracts/            regenerated (stream.ts, topics.ts, api.ts)
 - **Manual:** steps 12 to 14.
 - **Measurement:** status request count for one 200-trial optimization, before and
   after.
+- **Pins:** `CONTRACTS_REV` changed, so the `q_frontend` row in
+  `q_contracts/COMPAT.md` is updated (step 17).
 
 ```bash
 cd /home/gui/projects/q/q_frontend
