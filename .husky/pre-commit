@@ -1,2 +1,9 @@
+#!/usr/bin/env sh
+set -e
+
+# Husky may invoke this with sh; use `.` not bash `source`.
+# shellcheck disable=SC1091
+. "$(dirname "$0")/../scripts/ensure-node-env.sh"
+
 pnpm exec lint-staged
 pnpm typecheck

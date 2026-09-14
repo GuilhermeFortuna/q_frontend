@@ -195,7 +195,9 @@ CONTRACTS_REPO=/path/to/q_contracts ./scripts/ci.sh
 
 Husky installs the hooks through the `prepare` script on `pnpm install`, so a
 fresh clone gets them automatically. `pre-commit` runs lint-staged and
-`pnpm typecheck`; `pre-push` runs `scripts/ci.sh`.
+`pnpm typecheck`; `pre-push` runs `scripts/ci.sh`. Both hooks (and `ci.sh`)
+source `scripts/ensure-node-env.sh` so GUI clients with a thin PATH still pick
+up fnm-managed Node/pnpm instead of a broken system Corepack shim.
 
 ### Runtime performance gates (WO101)
 
