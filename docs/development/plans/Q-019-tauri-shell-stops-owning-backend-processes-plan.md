@@ -60,7 +60,7 @@ pub fn run();                                   // tray, window events, report c
 
 ```ts
 // src/lib/backend/connectionStatus.ts
-import type { SystemHealthResponse } from '../../../contracts/api'   // relative, as in api/queries/backtests.ts
+import type { SystemHealthResponse } from '../../../contracts/api' // relative, as in api/queries/backtests.ts
 
 export type BackendConnection =
   | { state: 'mocked' }
@@ -69,14 +69,14 @@ export type BackendConnection =
   | { state: 'offline'; apiBaseUrl: string; nextRetryMs: number; since: number }
 
 export const BACKEND_START_COMMAND = 'systemctl --user start q-backend.target'
-export function retryDelayMs(attempt: number): number   // 1000 * 2^attempt, capped at 30_000
+export function retryDelayMs(attempt: number): number // 1000 * 2^attempt, capped at 30_000
 export function classifyHealth(health: SystemHealthResponse): BackendConnection
 
 // src/api/queries/backendConnection.ts
 export function useBackendConnection(): BackendConnection
 
 // src/components/layout/BackendStatusIndicator.tsx
-export function BackendStatusIndicator(): JSX.Element  // rendered in AppShell next to LiveUpdatesIndicator
+export function BackendStatusIndicator(): JSX.Element // rendered in AppShell next to LiveUpdatesIndicator
 ```
 
 ```js
@@ -209,9 +209,9 @@ tests/unit/scripts/checkCrossRepoPaths.test.ts
    Confirm `pnpm tauri:dev --help` still resolves. Commit.
 4. Write failing tests in `tests/unit/lib/backend/connectionStatus.test.ts`:
    `retryDelayMs` for attempts 0 to 6 is `[1000, 2000, 4000, 8000, 16000, 30000,
-   30000]`; `classifyHealth` with both stores `ok` and `status: "degraded"` gives
+30000]`; `classifyHealth` with both stores `ok` and `status: "degraded"` gives
    `connected`; with `redis.status: "error"` it gives `degraded` with `failing:
-   ['redis']`; with both in error it gives `failing: ['postgres', 'redis']`.
+['redis']`; with both in error it gives `failing: ['postgres', 'redis']`.
    Confirm they fail, implement, and confirm they pass. Commit.
 5. Write failing tests in `tests/unit/api/backendConnection.test.ts` with MSW and
    fake timers: when the health request errors, the hook returns `offline` with
@@ -223,7 +223,7 @@ tests/unit/scripts/checkCrossRepoPaths.test.ts
    fail, implement, and confirm they pass. Commit.
 6. Write failing tests in `tests/unit/layout/BackendStatusIndicator.test.tsx`:
    offline renders the API address and the text `systemctl --user start
-   q-backend.target`; degraded renders "Redis"; connected renders a compact status
+q-backend.target`; degraded renders "Redis"; connected renders a compact status
    with `role="status"`; mocked renders "Mock data". Add a test that fails if a
    type declaring `storageStatus` exists under `src`. Confirm they fail. Implement
    the component, render it in `AppShell` beside `LiveUpdatesIndicator`, and
