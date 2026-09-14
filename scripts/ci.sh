@@ -23,19 +23,22 @@ echo "--> [2/7] Vendored contracts (make contracts-check)..."
 make contracts-check
 
 
-echo "--> [3/7] Typecheck (tsc -b --noEmit)..."
+echo "--> [3/8] Cross-repository relative path check (check-cross-repo-paths)..."
+node scripts/check-cross-repo-paths.mjs
+
+echo "--> [4/8] Typecheck (tsc -b --noEmit)..."
 pnpm typecheck
 
-echo "--> [4/7] Lint (eslint)..."
+echo "--> [5/8] Lint (eslint)..."
 pnpm lint
 
-echo "--> [5/7] Format check (prettier --check)..."
+echo "--> [6/8] Format check (prettier --check)..."
 pnpm format:check
 
-echo "--> [6/7] Tests (vitest run)..."
+echo "--> [7/8] Tests (vitest run)..."
 pnpm test:run
 
-echo "--> [7/7] Production Build (vite build)..."
+echo "--> [8/8] Production Build (vite build)..."
 pnpm build
 
 echo "=================================================="

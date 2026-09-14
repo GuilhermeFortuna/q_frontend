@@ -5,7 +5,7 @@ Proves the Wine MT5 remote gateway feeds **every** consumer surface with fresh
 actual gaps only, and that offline degrade remains honest.
 
 **Prerequisites:** WO183–WO189 landed; `mt5-gateway.service` running on
-`127.0.0.1:18812` (see [`q_backend/docs/mt5-wine-gateway.md`](../../q_backend/docs/mt5-wine-gateway.md));
+`127.0.0.1:18812` (see [`q_backend/docs/mt5-wine-gateway.md`](https://github.com/GuilhermeFortuna/q_backend/blob/144345acc68ed1586f7e17ea2b2a119cb1195d08/docs/mt5-wine-gateway.md));
 backend on `data_source=auto` with `Q_MT5_GATEWAY_URL` set; `./dev.sh` stack up
 (Postgres :5432, Redis :6380, API + worker).
 
