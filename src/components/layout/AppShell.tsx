@@ -5,6 +5,7 @@ import { AppDock } from '@/components/dock/AppDock'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
 import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
 import { DigitalClock } from '@/components/layout/DigitalClock'
+import { LiveUpdatesIndicator } from '@/components/layout/LiveUpdatesIndicator'
 import { MotionToggle } from '@/components/layout/MotionToggle'
 import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'
 import { WorkspaceGridTransition } from '@/components/transitions/WorkspaceGridTransition'
@@ -83,6 +84,7 @@ export function AppShell({ children }: AppShellProps) {
           </div>
 
           <div className="flex h-full items-center gap-2">
+            <LiveUpdatesIndicator />
             <MotionToggle />
             <BrightnessToggle />
             <WindowControls />
