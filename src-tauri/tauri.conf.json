@@ -35,16 +35,6 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "resources": [
-      "../../q_backend/src/**/*",
-      "../../q_backend/alembic/**/*",
-      "../../q_backend/docker/metatrader5-stub/**/*",
-      "../../q_backend/pyproject.toml",
-      "../../q_backend/uv.lock",
-      "../../q_backend/alembic.ini",
-      "../../q_backend/docker-compose.yml",
-      "../../q_backend/.env.example"
     ]
   }
 }

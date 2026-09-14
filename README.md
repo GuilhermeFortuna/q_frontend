@@ -212,25 +212,22 @@ To transition from mock data to the live `q_backend` service:
 
 1. Open your `.env` file.
 2. Set `VITE_ENABLE_MSW` to `false` to disable the MSW network interceptors.
-3. Point `VITE_API_BASE_URL` to your running FastAPI server address:
+3. Point `VITE_API_BASE_URL` to your running FastAPI server address (default is `http://127.0.0.1:8000`):
    ```ini
-   VITE_API_BASE_URL=http://localhost:8000
+   VITE_API_BASE_URL=http://127.0.0.1:8000
    VITE_ENABLE_MSW=false
    ```
-4. Start `q_backend` with MetaTrader 5 active:
+4. Start the backend services via systemd user units (see the [systemd user units runbook](https://github.com/GuilhermeFortuna/q_backend/blob/144345acc68ed1586f7e17ea2b2a119cb1195d08/docs/operations/systemd-user-units.md)):
    ```bash
-   docker compose up -d          # Postgres + Redis
-   uv run alembic upgrade head
-   uv run uvicorn q_backend.api.main:app --reload --port 8000
-   uv run worker                 # required for backtests, optimize, walk-forward, discover
+   systemctl --user start q-backend.target
    ```
 5. Launch `pnpm dev` or `pnpm tauri:dev`.
 
-Without the Dramatiq worker, async jobs enqueue successfully but never execute.
+The desktop app connects to the API wherever it runs, shows connection status in the chrome, and does not supervise backend processes.
 
 ### Integrated API Integrations (q_backend ↔ q_frontend)
 
-The frontend communicates with the following FastAPI endpoints (see `q_backend/README.md` for full request/response shapes):
+The frontend communicates with the following FastAPI endpoints (see [q_backend/README.md](https://github.com/GuilhermeFortuna/q_backend/blob/144345acc68ed1586f7e17ea2b2a119cb1195d08/README.md) for full request/response shapes):
 
 #### Core System & Market Data
 

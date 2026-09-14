@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, lazy, Suspense, useCallback } from 'react'
 import { CinematicScene } from '@/components/cinematic/CinematicScene'
 import { AppDock } from '@/components/dock/AppDock'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
+import { BackendStatusIndicator } from '@/components/layout/BackendStatusIndicator'
 import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
 import { DigitalClock } from '@/components/layout/DigitalClock'
 import { LiveUpdatesIndicator } from '@/components/layout/LiveUpdatesIndicator'
@@ -84,6 +85,7 @@ export function AppShell({ children }: AppShellProps) {
           </div>
 
           <div className="flex h-full items-center gap-2">
+            <BackendStatusIndicator />
             <LiveUpdatesIndicator />
             <MotionToggle />
             <BrightnessToggle />
