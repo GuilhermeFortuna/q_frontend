@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
+import { useJobStream } from '@/lib/stream/jobStreamContext'
+import { streamAwareRefetchInterval } from '@/lib/stream/jobQueryBridge'
 import type {
   WalkForwardEquityPoint,
   WalkForwardRequest,
@@ -110,14 +112,15 @@ export function useDeleteWalkForward() {
 }
 
 export function useWalkForwardStatus(runId: string | null) {
+  useJobStream()
   return useQuery({
     queryKey: walkforwardKeys.status(runId ?? ''),
     queryFn: () => fetchWalkForwardStatus(runId as string),
     enabled: !!runId,
-    refetchInterval: (query) => {
+    refetchInterval: streamAwareRefetchInterval('walkforward', (query) => {
       const status = query.state.data?.status
       return status && !isWalkForwardTerminalStatus(status) ? 1000 : false
-    },
+    }),
   })
 }
 

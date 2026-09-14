@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
+import { useJobStream } from '@/lib/stream/jobStreamContext'
+import { streamAwareRefetchInterval } from '@/lib/stream/jobQueryBridge'
 import type {
   AlphaResearchRequest,
   AlphaResearchStartResponse,
@@ -56,17 +58,18 @@ export function discoveryAbRunRefetchInterval(
 }
 
 export function useDiscoveryAbRun(jobId: string | null) {
+  useJobStream()
   return useQuery({
     queryKey: experimentKeys.discoveryAb(jobId ?? ''),
     queryFn: () => fetchDiscoveryAbRun(jobId as string),
     enabled: !!jobId,
     staleTime: 500,
-    refetchInterval: (query) => {
+    refetchInterval: streamAwareRefetchInterval('discovery_ab', (query) => {
       if (!jobId) return false
       const status = query.state.data?.status
       if (status == null) return 1000
       return discoveryAbRunRefetchInterval(status)
-    },
+    }),
   })
 }
 
@@ -125,17 +128,18 @@ export function encoderAblationRunRefetchInterval(
 }
 
 export function useEncoderAblationRun(jobId: string | null) {
+  useJobStream()
   return useQuery({
     queryKey: experimentKeys.encoderAblation(jobId ?? ''),
     queryFn: () => fetchEncoderAblationRun(jobId as string),
     enabled: !!jobId,
     staleTime: 500,
-    refetchInterval: (query) => {
+    refetchInterval: streamAwareRefetchInterval('encoder_ablation', (query) => {
       if (!jobId) return false
       const status = query.state.data?.status
       if (status == null) return 1000
       return encoderAblationRunRefetchInterval(status)
-    },
+    }),
   })
 }
 
@@ -158,16 +162,17 @@ export function alphaResearchRunRefetchInterval(
 
 export function useAlphaResearchRun(jobId: string | null, options?: { enabled?: boolean }) {
   const enabled = (options?.enabled ?? true) && !!jobId
+  useJobStream()
   return useQuery({
     queryKey: experimentKeys.alphaResearch(jobId ?? ''),
     queryFn: () => fetchAlphaResearchRun(jobId as string),
     enabled,
     staleTime: 500,
-    refetchInterval: (query) => {
+    refetchInterval: streamAwareRefetchInterval('alpha_research', (query) => {
       if (!enabled || !jobId) return false
       const status = query.state.data?.status
       if (status == null) return 1000
       return alphaResearchRunRefetchInterval(status)
-    },
+    }),
   })
 }

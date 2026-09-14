@@ -1,16 +1,15 @@
-/* eslint-disable react-refresh/only-export-components -- hooks share the provider module */
+/* eslint-disable react-refresh/only-export-components -- hook re-exports keep the plan's public API */
 import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 
 import { apiClient } from '@/api/client'
 import type { JobSnapshotResponse } from '../../../contracts/api'
 import type { HistoryExpiredResponse, HistoryPageResponse } from '../../../contracts/stream'
 import { env } from '@/lib/env'
-import { JobStreamClient, type StreamClientDeps, type StreamStatus } from '@/lib/stream/client'
+import { JobStreamClient, type StreamClientDeps } from '@/lib/stream/client'
 import { connectJobStreamToQueryClient } from '@/lib/stream/jobQueryBridge'
-
-const JobStreamContext = createContext<JobStreamClient | null>(null)
+import { JobStreamContext } from '@/lib/stream/jobStreamContext'
 
 function streamUrl(): string {
   return `${env.apiBaseUrl.replace(/^http/i, 'ws')}/api/v1/stream`
@@ -71,24 +70,4 @@ export function JobStreamProvider({
   return <JobStreamContext.Provider value={client}>{children}</JobStreamContext.Provider>
 }
 
-export function useJobStream(): JobStreamClient {
-  const client = useContext(JobStreamContext)
-  if (!client) {
-    throw new Error('useJobStream must be used within JobStreamProvider')
-  }
-  useEffect(() => client.retain(), [client])
-  return client
-}
-
-export function useStreamStatus(): StreamStatus {
-  const client = useContext(JobStreamContext)
-  if (!client) {
-    throw new Error('useStreamStatus must be used within JobStreamProvider')
-  }
-  const [status, setStatus] = useState(() => client.status())
-  useEffect(() => {
-    setStatus(client.status())
-    return client.onStatus(setStatus)
-  }, [client])
-  return status
-}
+export { useJobStream, useStreamStatus } from '@/lib/stream/jobStreamContext'

@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
@@ -18,6 +18,7 @@ import {
   useStartNeuralTraining,
 } from '@/api/queries/neural'
 import { handlers, resetMockFeatureDeletes } from '@/mocks/handlers'
+import { createTestProviders } from '../../../../tests/unit/testUtils'
 import {
   MOCK_NEURAL_ARCHIVED_HASH,
   MOCK_NEURAL_CANDIDATE_HASH,
@@ -45,7 +46,8 @@ function createWrapper() {
   return {
     queryClient,
     Wrapper({ children }: { children: ReactNode }) {
-      return createElement(QueryClientProvider, { client: queryClient }, children)
+      const Providers = createTestProviders(queryClient)
+      return createElement(Providers, null, children)
     },
   }
 }

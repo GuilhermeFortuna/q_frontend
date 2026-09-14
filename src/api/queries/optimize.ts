@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
+import { useJobStream } from '@/lib/stream/jobStreamContext'
+import { streamAwareRefetchInterval } from '@/lib/stream/jobQueryBridge'
 import type {
   OptimizationAnalytics,
   OptimizationConfig,
@@ -138,15 +140,15 @@ export function useDeleteOptimization() {
 }
 
 export function useOptimizationStatus(studyId: string | null) {
+  useJobStream()
   return useQuery({
     queryKey: optimizeKeys.status(studyId ?? ''),
     queryFn: () => fetchOptimizationStatus(studyId as string),
     enabled: !!studyId,
-    // Poll while the study is still running; stop once it reaches a terminal state.
-    refetchInterval: (query) => {
+    refetchInterval: streamAwareRefetchInterval('optimization', (query) => {
       const status = query.state.data?.status
       return status === 'pending' || status === 'running' ? 1000 : false
-    },
+    }),
   })
 }
 

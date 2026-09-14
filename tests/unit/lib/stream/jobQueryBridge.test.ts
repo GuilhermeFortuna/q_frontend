@@ -2,6 +2,12 @@ import { QueryClient, QueryObserver } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { backtestKeys } from '@/api/queries/backtests'
+import { experimentKeys } from '@/api/queries/experiments'
+import { neuralKeys } from '@/api/queries/neural'
+import { optimizeKeys } from '@/api/queries/optimize'
+import { storageKeys } from '@/api/queries/storage'
+import { strategySearchKeys } from '@/api/queries/strategySearch'
+import { walkforwardKeys } from '@/api/queries/walkforward'
 import type { JobProgressEffect, JobTerminalEffect } from '@/lib/stream/reconciler'
 import {
   connectJobStreamToQueryClient,
@@ -138,7 +144,18 @@ describe('jobQueryBridge', () => {
     stop()
   })
 
-  it('maps all nine job kinds', () => {
+  it('maps all nine job kinds onto the existing status query keys', () => {
     expect(Object.keys(JOB_STATUS_QUERY_KEYS)).toHaveLength(9)
+    expect(JOB_STATUS_QUERY_KEYS.backtest('r1')).toEqual(backtestKeys.jobStatus('r1'))
+    expect(JOB_STATUS_QUERY_KEYS.optimization('r1')).toEqual(optimizeKeys.status('r1'))
+    expect(JOB_STATUS_QUERY_KEYS.walkforward('r1')).toEqual(walkforwardKeys.status('r1'))
+    expect(JOB_STATUS_QUERY_KEYS.strategy_search('r1')).toEqual(strategySearchKeys.status('r1'))
+    expect(JOB_STATUS_QUERY_KEYS.neural_training('r1')).toEqual(neuralKeys.trainingRun('r1'))
+    expect(JOB_STATUS_QUERY_KEYS.storage_ingest('r1')).toEqual(storageKeys.ingestStatus('r1'))
+    expect(JOB_STATUS_QUERY_KEYS.discovery_ab('r1')).toEqual(experimentKeys.discoveryAb('r1'))
+    expect(JOB_STATUS_QUERY_KEYS.encoder_ablation('r1')).toEqual(
+      experimentKeys.encoderAblation('r1'),
+    )
+    expect(JOB_STATUS_QUERY_KEYS.alpha_research('r1')).toEqual(experimentKeys.alphaResearch('r1'))
   })
 })

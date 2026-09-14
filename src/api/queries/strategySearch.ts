@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
+import { useJobStream } from '@/lib/stream/jobStreamContext'
+import { streamAwareRefetchInterval } from '@/lib/stream/jobQueryBridge'
 import type {
   StrategySearchCandidateEquityArtifact,
   StrategySearchCandidateGenomeArtifact,
@@ -141,14 +143,15 @@ export function useDeleteStrategySearch() {
 }
 
 export function useStrategySearchStatus(runId: string | null) {
+  useJobStream()
   return useQuery({
     queryKey: strategySearchKeys.status(runId ?? ''),
     queryFn: () => fetchStrategySearchStatus(runId as string),
     enabled: !!runId,
-    refetchInterval: (query) => {
+    refetchInterval: streamAwareRefetchInterval('strategy_search', (query) => {
       const status = query.state.data?.status
       return status && !isStrategySearchTerminalStatus(status) ? 1000 : false
-    },
+    }),
   })
 }
 

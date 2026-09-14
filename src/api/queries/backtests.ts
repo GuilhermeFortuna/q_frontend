@@ -10,6 +10,8 @@ import { useEffect } from 'react'
 
 import { apiClient } from '@/api/client'
 import type { BacktestStatusResponse } from '../../../contracts/api'
+import { useJobStream } from '@/lib/stream/jobStreamContext'
+import { streamAwareRefetchInterval } from '@/lib/stream/jobQueryBridge'
 import { useAppStore } from '@/store/useAppStore'
 import type {
   BacktestEquityArtifactResponse,
@@ -137,12 +139,14 @@ export function useBacktestEquityArtifacts(runIds: string[]) {
 }
 
 export function useBacktestJobStatus(runId: string | null, enabled = true) {
+  useJobStream()
   return useQuery({
     queryKey: backtestKeys.jobStatus(runId ?? ''),
     queryFn: () => fetchBacktestJobStatus(runId as string),
     enabled: enabled && !!runId,
-    // Poll while the backtest is still running; stop at a terminal state.
-    refetchInterval: (query) => (query.state.data?.status === 'running' ? 1000 : false),
+    refetchInterval: streamAwareRefetchInterval('backtest', (query) =>
+      query.state.data?.status === 'running' ? 1000 : false,
+    ),
   })
 }
 

@@ -1,27 +1,20 @@
 import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 
-import { backtestKeys } from '@/api/queries/backtests'
-import { experimentKeys } from '@/api/queries/experiments'
-import { neuralKeys } from '@/api/queries/neural'
-import { optimizeKeys } from '@/api/queries/optimize'
-import { storageKeys } from '@/api/queries/storage'
-import { strategySearchKeys } from '@/api/queries/strategySearch'
-import { walkforwardKeys } from '@/api/queries/walkforward'
 import type { JobStreamClient, StreamStatus } from '@/lib/stream/client'
 import type { JobKey, JobKind, JobProgressEffect, JobTerminalEffect } from '@/lib/stream/reconciler'
 
 export const PROGRESS_REFRESH_MIN_INTERVAL_MS = 1_000
 
 export const JOB_STATUS_QUERY_KEYS: Record<JobKind, (jobId: string) => QueryKey> = {
-  alpha_research: experimentKeys.alphaResearch,
-  backtest: backtestKeys.jobStatus,
-  discovery_ab: experimentKeys.discoveryAb,
-  encoder_ablation: experimentKeys.encoderAblation,
-  neural_training: neuralKeys.trainingRun,
-  optimization: optimizeKeys.status,
-  storage_ingest: storageKeys.ingestStatus,
-  strategy_search: strategySearchKeys.status,
-  walkforward: walkforwardKeys.status,
+  alpha_research: (jobId) => ['experiments', 'alphaResearch', jobId],
+  backtest: (jobId) => ['backtests', 'job-status', jobId],
+  discovery_ab: (jobId) => ['experiments', 'discoveryAb', jobId],
+  encoder_ablation: (jobId) => ['experiments', 'encoderAblation', jobId],
+  neural_training: (jobId) => ['neural', 'trainingRun', jobId],
+  optimization: (jobId) => ['optimize', 'status', jobId],
+  storage_ingest: (jobId) => ['storage', 'ingest', jobId],
+  strategy_search: (jobId) => ['strategySearch', 'status', jobId],
+  walkforward: (jobId) => ['walkforward', 'status', jobId],
 }
 
 let currentStreamStatus: StreamStatus = 'disabled'

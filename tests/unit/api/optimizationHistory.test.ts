@@ -1,7 +1,6 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { createElement, type ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
@@ -12,6 +11,7 @@ import {
   useOptimizationStatus,
 } from '@/api/queries/optimize'
 import { handlers, resetMockOptimizationDeletes } from '@/mocks/handlers'
+import { createTestProviders } from '../testUtils'
 
 const server = setupServer(...handlers)
 
@@ -23,16 +23,14 @@ afterEach(() => {
 afterAll(() => server.close())
 
 function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  })
-
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children)
-  }
+  return createTestProviders(
+    new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    }),
+  )
 }
 
 describe('optimization history API', () => {

@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 
 import { apiClient } from '@/api/client'
+import { useJobStream } from '@/lib/stream/jobStreamContext'
+import { streamAwareRefetchInterval } from '@/lib/stream/jobQueryBridge'
 import type {
   NeuralModelDetail,
   NeuralModelListResponse,
@@ -108,12 +110,15 @@ export function useStartNeuralTraining() {
 }
 
 export function useNeuralTrainingRun(jobId: string | null, { isRunning }: { isRunning: boolean }) {
+  useJobStream()
   return useQuery({
     queryKey: neuralKeys.trainingRun(jobId ?? ''),
     queryFn: () => fetchNeuralTrainingRun(jobId as string),
     enabled: !!jobId,
     staleTime: 500,
-    refetchInterval: neuralTrainingRunRefetchInterval(isRunning),
+    refetchInterval: streamAwareRefetchInterval('neural_training', () =>
+      neuralTrainingRunRefetchInterval(isRunning),
+    ),
   })
 }
 

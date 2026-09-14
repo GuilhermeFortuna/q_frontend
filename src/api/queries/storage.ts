@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
+import { useJobStream } from '@/lib/stream/jobStreamContext'
+import { streamAwareRefetchInterval } from '@/lib/stream/jobQueryBridge'
 import type {
   IngestJob,
   IngestRequest,
@@ -61,12 +63,13 @@ export function useStartIngest() {
 
 export function useIngestStatus(jobId: string | null) {
   const queryClient = useQueryClient()
+  useJobStream()
 
   return useQuery({
     queryKey: storageKeys.ingestStatus(jobId ?? ''),
     queryFn: () => fetchIngestStatus(jobId as string),
     enabled: !!jobId,
-    refetchInterval: (query) => {
+    refetchInterval: streamAwareRefetchInterval('storage_ingest', (query) => {
       const status = query.state.data?.status
       if (status && isIngestTerminalStatus(status)) {
         if (status === 'completed') {
@@ -75,7 +78,7 @@ export function useIngestStatus(jobId: string | null) {
         return false
       }
       return 1000
-    },
+    }),
   })
 }
 
