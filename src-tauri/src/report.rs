@@ -308,7 +308,7 @@ fn fmt_thousands(int_part: &str) -> String {
     let mut out = String::new();
     let len = digits.len();
     for (i, ch) in digits.chars().enumerate() {
-        if i > 0 && (len - i) % 3 == 0 {
+        if i > 0 && (len - i).is_multiple_of(3) {
             out.push(',');
         }
         out.push(ch);
@@ -439,7 +439,7 @@ fn draw_specs(doc: &mut Doc, p: &ReportPayload) {
         let row = i % per_col;
         let x = MARGIN + col as f64 * col_w;
         let y = top + row as f64 * row_h;
-        if row % 2 == 0 {
+        if row.is_multiple_of(2) {
             doc.rect(x, y - 1.5, col_w - 4.0, row_h, Some(panel()), None);
         }
         doc.cursor = y + 3.5;
@@ -866,7 +866,7 @@ fn draw_trades(doc: &mut Doc, p: &ReportPayload) {
             shade = 0;
         }
         let y = doc.cursor;
-        if shade % 2 == 0 {
+        if shade.is_multiple_of(2) {
             doc.rect(MARGIN, y - 1.5, CONTENT_W, row_h, Some(panel()), None);
         }
         shade += 1;
