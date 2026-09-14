@@ -67,7 +67,14 @@ const subscribed = JSON.stringify({
   },
 })
 
-function createStream() {
+const emptySnapshot = {
+  jobs: [],
+  watermark: { 'jobs.terminal': { epoch: 'e1', seq: 0 } },
+}
+
+function createStream(
+  fetchSnapshot: () => Promise<typeof emptySnapshot> = async () => emptySnapshot,
+) {
   const sockets: FakeSocket[] = []
   const client = new JobStreamClient('ws://127.0.0.1:8000/api/v1/stream', {
     socketFactory: (url) => {
@@ -75,10 +82,7 @@ function createStream() {
       sockets.push(socket)
       return socket as unknown as WebSocket
     },
-    fetchSnapshot: async () => ({
-      jobs: [],
-      watermark: { 'jobs.terminal': { epoch: 'e1', seq: 0 } },
-    }),
+    fetchSnapshot,
     fetchHistory: async () => ({
       topic: 'jobs.terminal',
       epoch: 'e1',
@@ -303,6 +307,101 @@ describe.each(cases)('job status stream: $kind', (jobCase) => {
       await vi.advanceTimersByTimeAsync(jobCase.interval)
     })
     expect(statusRequests).toBeGreaterThan(afterClose)
+
+    releaseLive()
+  })
+})
+
+describe('criterion 7: polling continues until the reconnect snapshot applies', () => {
+  const server = setupServer()
+  const jobCase = cases[0]
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+    server.close()
+  })
+
+  it('keeps polling while the snapshot promise is held and stops after it resolves', async () => {
+    let statusRequests = 0
+    server.use(
+      http.get(`*${jobCase.path}`, () => {
+        statusRequests += 1
+        return HttpResponse.json(jobCase.body)
+      }),
+    )
+    server.listen({ onUnhandledRequest: 'error' })
+
+    let snapshotCalls = 0
+    let resolveHeldSnapshot: ((value: typeof emptySnapshot) => void) | undefined
+    const { client, sockets } = createStream(() => {
+      snapshotCalls += 1
+      if (snapshotCalls === 1) return Promise.resolve(emptySnapshot)
+      return new Promise((resolve) => {
+        resolveHeldSnapshot = resolve
+      })
+    })
+
+    const releaseLive = await goLive(client, sockets)
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(JobStreamProvider, { client, children }),
+      )
+
+    renderHook(() => jobCase.useHook(), { wrapper })
+    await waitFor(() => expect(statusRequests).toBe(1))
+
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'setInterval', 'clearTimeout', 'clearInterval'] })
+
+    await act(async () => {
+      sockets[0].close()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(client.status()).toBe('unavailable')
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(sockets).toHaveLength(2)
+
+    await act(async () => {
+      sockets[1].open()
+      sockets[1].deliver(subscribed)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(client.status()).toBe('connecting')
+    expect(resolveHeldSnapshot).toBeDefined()
+
+    const whileHeld = statusRequests
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000)
+    })
+    expect(statusRequests).toBeGreaterThan(whileHeld)
+
+    await act(async () => {
+      resolveHeldSnapshot!(emptySnapshot)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(client.status()).toBe('live')
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+    const afterSnapshot = statusRequests
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000)
+    })
+    expect(statusRequests).toBe(afterSnapshot)
 
     releaseLive()
   })
