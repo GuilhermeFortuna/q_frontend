@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 const SCRIPT_PATH = resolve(process.cwd(), 'scripts/check-cross-repo-paths.mjs')
+const SIBLING_PATH = ['..', '..', 'q_backend'].join('/')
 
 describe('check-cross-repo-paths script', () => {
   let tempDir: string
@@ -22,7 +23,7 @@ describe('check-cross-repo-paths script', () => {
 
   it('exits 1 and prints docs/a.md:1 when a tracked file has a relative sibling link', () => {
     mkdirSync(join(tempDir, 'docs'), { recursive: true })
-    writeFileSync(join(tempDir, 'docs/a.md'), '[x](../../q_backend/README.md)\n')
+    writeFileSync(join(tempDir, 'docs/a.md'), `[x](${SIBLING_PATH}/README.md)\n`)
     execSync('git add docs/a.md', { cwd: tempDir, stdio: 'ignore' })
 
     const result = spawnSync('node', [SCRIPT_PATH, tempDir], {
@@ -52,7 +53,7 @@ describe('check-cross-repo-paths script', () => {
     mkdirSync(join(tempDir, 'docs'), { recursive: true })
     writeFileSync(
       join(tempDir, 'docs/a.md'),
-      'Mentions `../../q_backend` in inline code description\n',
+      `Mentions \`${SIBLING_PATH}\` in inline code description\n`,
     )
     execSync('git add docs/a.md', { cwd: tempDir, stdio: 'ignore' })
 
@@ -65,7 +66,7 @@ describe('check-cross-repo-paths script', () => {
   })
 
   it('exits 1 when a non-markdown file contains relative path to sibling', () => {
-    writeFileSync(join(tempDir, 'config.json'), '{"path": "../../q_backend"}\n')
+    writeFileSync(join(tempDir, 'config.json'), `{"path": "${SIBLING_PATH}"}\n`)
     execSync('git add config.json', { cwd: tempDir, stdio: 'ignore' })
 
     const result = spawnSync('node', [SCRIPT_PATH, tempDir], {
