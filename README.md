@@ -184,9 +184,9 @@ pnpm tauri icon public/quant.svg
 
 `./scripts/ci.sh` runs every stage CI runs — frozen lockfile check,
 vendored contract drift, typecheck, lint, format, tests, build. The contract
-stage needs a `q_contracts` checkout that contains `CONTRACTS_REV`. By default
-`make contracts-check` uses a sibling `../q_contracts` when that pin is present
-there; otherwise it clones GitHub. Override explicitly when needed:
+stage clones GitHub for `CONTRACTS_REV` (same as remote CI), so the pin must
+already be pushed to `q_contracts`. When working offline, point it at a local
+clone:
 
 ```bash
 CONTRACTS_REPO=/path/to/q_contracts ./scripts/ci.sh

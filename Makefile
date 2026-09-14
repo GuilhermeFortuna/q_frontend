@@ -1,15 +1,11 @@
 .PHONY: contracts contracts-check
 
-# Prefer a sibling q_contracts checkout when it has CONTRACTS_REV (covers
-# unpushed local pins). Override explicitly with CONTRACTS_REPO=...
-CONTRACTS_REPO ?= $(shell \
-	rev="$$(tr -d '[:space:]' < CONTRACTS_REV)"; \
-	if [ -d ../q_contracts/.git ] \
-		&& git -C ../q_contracts cat-file -e "$$rev^{commit}" 2>/dev/null; then \
-		cd ../q_contracts && pwd; \
-	else \
-		echo https://github.com/GuilhermeFortuna/q_contracts.git; \
-	fi)
+# Always clone the same source remote CI uses unless CONTRACTS_REPO is set.
+# A local sibling override hides unpushed CONTRACTS_REV pins from scripts/ci.sh.
+CONTRACTS_REPO ?= https://github.com/GuilhermeFortuna/q_contracts.git
+
+# Ubuntu runners use dash as /bin/sh; pipefail and friends need bash.
+SHELL := /bin/bash
 
 contracts:
 	set -euo pipefail; \

@@ -16,10 +16,9 @@ echo "--> [1/7] Frozen lockfile check (pnpm install --frozen-lockfile)..."
 pnpm install --frozen-lockfile --prefer-offline
 
 # Runs here rather than only in the GitHub workflow, so that the pre-push hook
-# catches vendored contract drift instead of leaving it for CI to find. Needs
-# a checkout that contains CONTRACTS_REV: the Makefile prefers ../q_contracts
-# when that pin is present locally; otherwise it clones the GitHub remote.
-# Override with CONTRACTS_REPO=/path/to/q_contracts when needed.
+# catches vendored contract drift instead of leaving it for CI to find. Clones
+# the same GitHub remote CI uses (CONTRACTS_REV must be pushed). Override with
+# CONTRACTS_REPO=/path/to/q_contracts only when working offline.
 echo "--> [2/7] Vendored contracts (make contracts-check)..."
 make contracts-check
 
