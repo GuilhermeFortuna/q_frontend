@@ -33,6 +33,33 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      # scripts/ci.sh builds, lints and tests the Tauri shell, so the runner needs
+      # the toolchain q_core and q_backend pin plus Tauri v2's Linux system
+      # libraries. Without them stage 6 cannot run and the process-ownership
+      # guard goes unchecked.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.98.0
+          components: clippy
+
+      - name: Install Tauri system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev \
+            libayatana-appindicator3-dev libxdo-dev libssl-dev patchelf
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
