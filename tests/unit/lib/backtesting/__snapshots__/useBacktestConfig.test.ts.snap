@@ -103,22 +103,6 @@ exports[`buildBacktestRequest > matches tick engine snapshot with inverse volati
   "display_timeframe": "M5",
   "end": "2026-06-14T02:59:59.999Z",
   "engine": "tick",
-  "entries": [
-    {
-      "params": {
-        "long_period": 200,
-        "short_period": 50,
-        "sl_points": 50,
-        "threshold": 0,
-        "tp_points": 100,
-      },
-      "strategy": "TickMaBreakout",
-    },
-  ],
-  "entry_manager": {
-    "kind": "or",
-    "params": {},
-  },
   "exit_params": {},
   "initial_capital": 100000,
   "point_value": 1,

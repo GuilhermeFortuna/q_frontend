@@ -174,6 +174,37 @@ describe('buildBacktestRequest', () => {
     expect(payload.day_trade).toBe(true)
   })
 
+  it('omits entries and entry_manager for the tick engine', () => {
+    // The tick engine builds from strategy/strategy_params and has no
+    // multi-entry path; sending entries alongside them is refused by the API.
+    const payload = buildBacktestRequest(
+      candleFields({ engine: 'tick', strategy: 'TickMaBreakout' }),
+    )
+
+    expect(payload.entries).toBeUndefined()
+    expect(payload.entry_manager).toBeUndefined()
+  })
+
+  it('still sends the tick strategy the engine actually builds from', () => {
+    const payload = buildBacktestRequest(
+      candleFields({
+        engine: 'tick',
+        strategy: 'TickMaBreakout',
+        entries: [{ slotId: 'entry-1', strategy: 'TickMaBreakout', params: { short_period: 50 } }],
+      }),
+    )
+
+    expect(payload.strategy).toBe('TickMaBreakout')
+    expect(payload.strategy_params).toMatchObject({ short_period: 50 })
+  })
+
+  it('keeps entries and entry_manager for the candle engine', () => {
+    const payload = buildBacktestRequest(candleFields({ engine: 'candle' }))
+
+    expect(payload.entries).toHaveLength(1)
+    expect(payload.entry_manager).toBeDefined()
+  })
+
   it('serializes dates as start/end of day ISO strings', () => {
     const start = new Date('2024-03-01T15:30:00')
     const end = new Date('2024-06-01T08:00:00')

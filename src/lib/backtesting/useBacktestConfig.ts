@@ -192,10 +192,17 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
   }
 
   const entryPayload = toEntryPayload(entries)
+  // The tick engine builds its strategy from strategy/strategy_params and has no
+  // multi-entry path, so it takes neither entries nor an entry manager. Sending
+  // them anyway is what the API refuses.
   const payload: BacktestRequest = {
     ...common,
-    entries: entryPayload,
-    entry_manager: toEntryManagerPayload(entryManager),
+    ...(engine === 'tick'
+      ? {}
+      : {
+          entries: entryPayload,
+          entry_manager: toEntryManagerPayload(entryManager),
+        }),
     exit_params: exitParams,
   }
 
