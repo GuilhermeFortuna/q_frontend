@@ -8,20 +8,20 @@
 
 The execution surface in `q_frontend/src`:
 
-| Path | Role |
-| --- | --- |
-| `workspaces/execution/ExecutionWorkspace.tsx` (1 306 lines) | the workspace at `/execution` |
-| `workspaces/execution/ExecutionLiveWorkspace.tsx`, `ExecutionLiveChartPanel.tsx`, `liveChartMarkers.ts` | the live monitor window |
-| `workspaces/execution/__tests__/*` | workspace, chart panel and marker tests |
-| `components/execution/PowerOffSlide.tsx` and its test | used only by the workspace |
-| `api/queries/execution.ts`, `api/queries/__tests__/executionChart.test.ts` | the polling client |
-| `types/execution.ts` | execution types |
-| `mocks/execution.ts`, and the execution handlers in `mocks/handlers.ts` (19 references) | MSW fixtures |
-| `app/lazyWorkspaces.tsx` (`LazyExecutionWorkspace`, `LazyExecutionLiveWorkspace`) | lazy imports |
-| `app/router.tsx` (`/execution` in routes and `WORKSPACE_PATH_ORDER`), `app/__tests__/executionRoute.test.ts` | routing |
-| `app/App.tsx` | mounts `LazyExecutionLiveWorkspace` when the window URL carries `deploymentId` |
-| `components/dock/AppDock.tsx` (entry `execution`), `components/dock/DockIcons.tsx` (`ExecutionIcon`) | dock |
-| `README.md` line 56 | the "Execution Workspace" paragraph |
+| Path                                                                                                         | Role                                                                           |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `workspaces/execution/ExecutionWorkspace.tsx` (1 306 lines)                                                  | the workspace at `/execution`                                                  |
+| `workspaces/execution/ExecutionLiveWorkspace.tsx`, `ExecutionLiveChartPanel.tsx`, `liveChartMarkers.ts`      | the live monitor window                                                        |
+| `workspaces/execution/__tests__/*`                                                                           | workspace, chart panel and marker tests                                        |
+| `components/execution/PowerOffSlide.tsx` and its test                                                        | used only by the workspace                                                     |
+| `api/queries/execution.ts`, `api/queries/__tests__/executionChart.test.ts`                                   | the polling client                                                             |
+| `types/execution.ts`                                                                                         | execution types                                                                |
+| `mocks/execution.ts`, and the execution handlers in `mocks/handlers.ts` (19 references)                      | MSW fixtures                                                                   |
+| `app/lazyWorkspaces.tsx` (`LazyExecutionWorkspace`, `LazyExecutionLiveWorkspace`)                            | lazy imports                                                                   |
+| `app/router.tsx` (`/execution` in routes and `WORKSPACE_PATH_ORDER`), `app/__tests__/executionRoute.test.ts` | routing                                                                        |
+| `app/App.tsx`                                                                                                | mounts `LazyExecutionLiveWorkspace` when the window URL carries `deploymentId` |
+| `components/dock/AppDock.tsx` (entry `execution`), `components/dock/DockIcons.tsx` (`ExecutionIcon`)         | dock                                                                           |
+| `README.md` line 56                                                                                          | the "Execution Workspace" paragraph                                            |
 
 Other files that match "execution" use it in unrelated senses
 (`execution_assumptions` in backtests, AI chat transcripts, research
@@ -90,33 +90,33 @@ q_backend (branch Q-050-execution-workspace-leaves-q-frontend):
 ## Ordered implementation
 
 - [ ] 1. Work on the branch `Q-050-execution-workspace-leaves-q-frontend` in
-   `q_frontend`, created from `development` by `./work start`. Confirm Q-042,
-   Q-048 and Q-049 are merged.
+     `q_frontend`, created from `development` by `./work start`. Confirm Q-042,
+     Q-048 and Q-049 are merged.
 - [ ] 2. Parity gate: read `q_terminal/docs/ops-parity.md` at `development`. If any
-   row is neither ticked nor reasoned, set the task blocked with the list and
-   stop. Otherwise record the commit for the acceptance record. Commit nothing.
+     row is neither ticked nor reasoned, set the task blocked with the list and
+     stop. Otherwise record the commit for the acceptance record. Commit nothing.
 - [ ] 3. Run `pnpm bundle:report` and keep the output. Commit nothing.
 - [ ] 4. Write `MovedToTerminalNotice.tsx` with tests for `/execution` and for the
-   `deploymentId` window. Route both to it. Commit.
+     `deploymentId` window. Route both to it. Commit.
 - [ ] 5. Delete the modules in the table above, and remove the router, lazy,
-   dock and mock entries. Fix every import that breaks, without touching
-   unrelated "execution" code. Confirm `pnpm typecheck`, `pnpm lint` and
-   `pnpm test:run` pass. Commit.
+     dock and mock entries. Fix every import that breaks, without touching
+     unrelated "execution" code. Confirm `pnpm typecheck`, `pnpm lint` and
+     `pnpm test:run` pass. Commit.
 - [ ] 6. Add the hygiene test: no `src/` file imports `@/api/queries/execution`,
-   `@/types/execution`, `@/workspaces/execution` or `@/components/execution`.
-   Commit.
+     `@/types/execution`, `@/workspaces/execution` or `@/components/execution`.
+     Commit.
 - [ ] 7. Update `README.md` and add the header note to
-   `docs/design/paper-live-execution.md`. Commit.
+     `docs/design/paper-live-execution.md`. Commit.
 - [ ] 8. Run `pnpm bundle:report` again and put both reports in the handoff.
 - [ ] 9. In `q_backend`, on the branch `Q-050-execution-workspace-leaves-q-frontend`:
-   default enforcement on, add the default-refusal test, and update the env
-   example and `README.md`. Run `scripts/ci.sh`. Commit in `q_backend`.
+     default enforcement on, add the default-refusal test, and update the env
+     example and `README.md`. Run `scripts/ci.sh`. Commit in `q_backend`.
 - [ ] 10. Write `docs/development/baselines/Q-050/phase-4-acceptance.md` per the
-   decision above, naming the commit of each repository. Commit.
+      decision above, naming the commit of each repository. Commit.
 - [ ] 11. Run `TZ=America/Sao_Paulo scripts/ci.sh`. Fix, re-run, commit.
 - [ ] 12. **Human:** human-verifiable criteria 1 and 2.
 - [ ] 13. **Human:** human-verifiable criterion 3. Fill the acceptance record and
-   mark phase 4 accepted.
+      mark phase 4 accepted.
 
 ## Validation
 
