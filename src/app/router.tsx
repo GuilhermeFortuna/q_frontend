@@ -9,7 +9,6 @@ import {
 import {
   LazyBacktestsWorkspace,
   LazyDiscoverWorkspace,
-  LazyExecutionWorkspace,
   LazyLauncherWorkspace,
   LazyMarketDataWorkspace,
   LazyNewsReaderWorkspace,
@@ -18,6 +17,7 @@ import {
   LazySystemWorkspace,
   LazyStrategyBuilderWorkspace,
 } from '@/app/lazyWorkspaces'
+import { MovedToTerminalNotice } from '@/app/MovedToTerminalNotice'
 import { LazyDevUiGallery } from '@/app/lazyDev'
 import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
 import { AppShell } from '@/components/layout/AppShell'
@@ -36,7 +36,6 @@ export const WORKSPACE_PATH_ORDER = [
   '/validate',
   '/discover',
   '/research',
-  '/execution',
   '/system',
 ] as const
 
@@ -86,6 +85,9 @@ const indexRoute = createRoute({
         if ((active as string) === 'strategy' || active === 'strategy-builder') {
           useAppStore.getState().setActiveWorkspace('strategy-builder')
           throw redirect({ to: '/strategy-builder' })
+        }
+        if ((active as string) === 'execution') {
+          throw redirect({ to: '/execution' })
         }
         throw redirect({ to: `/${active}` })
       }
@@ -227,12 +229,7 @@ const researchRoute = createRoute({
 const executionRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/execution',
-  beforeLoad: () => syncWorkspace('execution'),
-  component: () => (
-    <LazyRouteBoundary label="Loading execution">
-      <LazyExecutionWorkspace />
-    </LazyRouteBoundary>
-  ),
+  component: () => <MovedToTerminalNotice context="workspace" />,
 })
 
 const strategyRoute = createRoute({

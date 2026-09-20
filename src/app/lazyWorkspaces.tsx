@@ -42,12 +42,6 @@ export const LazyResearchWorkspace = lazy(() =>
   })),
 )
 
-export const LazyExecutionWorkspace = lazy(() =>
-  import('@/workspaces/execution/ExecutionWorkspace').then((module) => ({
-    default: module.ExecutionWorkspace,
-  })),
-)
-
 export const LazyWalkForwardWorkspace = lazy(() =>
   import('@/workspaces/walkforward/WalkForwardWorkspace').then((module) => ({
     default: module.WalkForwardWorkspace,
@@ -75,12 +69,6 @@ export const LazyValidateWorkflow = lazy(() =>
 export const LazyStandaloneChartWindow = lazy(() =>
   import('@/components/backtests/StandaloneChartWindow').then((module) => ({
     default: module.StandaloneChartWindow,
-  })),
-)
-
-export const LazyExecutionLiveWorkspace = lazy(() =>
-  import('@/workspaces/execution/ExecutionLiveWorkspace').then((module) => ({
-    default: module.ExecutionLiveWorkspace,
   })),
 )
 

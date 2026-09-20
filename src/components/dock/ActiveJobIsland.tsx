@@ -94,7 +94,6 @@ function workspaceLabelForId(id: WorkspaceId): string {
     case 'market-data':
     case 'storage':
     case 'research':
-    case 'execution':
     case 'system':
     case 'strategy-builder':
       return id

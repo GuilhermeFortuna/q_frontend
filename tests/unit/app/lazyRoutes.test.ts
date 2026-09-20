@@ -19,7 +19,7 @@ describe('lazy route workspaces', () => {
     expect(lazyWorkspacesSource).toContain('LazyWalkForwardWorkspace')
     expect(lazyWorkspacesSource).toContain('LazyNewsReaderWorkspace')
     expect(lazyWorkspacesSource).toContain('LazyResearchWorkspace')
-    expect(lazyWorkspacesSource).toContain('LazyExecutionWorkspace')
+    expect(lazyWorkspacesSource).not.toContain('LazyExecutionWorkspace')
   })
 
   it('wraps routed workspaces in suspense boundaries', () => {
@@ -27,7 +27,8 @@ describe('lazy route workspaces', () => {
     expect(routerSource).toContain('LazyBacktestsWorkspace')
     expect(routerSource).toContain('LazyDiscoverWorkspace')
     expect(routerSource).toContain('LazyResearchWorkspace')
-    expect(routerSource).toContain('LazyExecutionWorkspace')
+    expect(routerSource).toContain('MovedToTerminalNotice')
+    expect(routerSource).not.toContain('LazyExecutionWorkspace')
     expect(routerSource).not.toContain("from '@/workspaces/backtests/BacktestsWorkspace'")
   })
 
