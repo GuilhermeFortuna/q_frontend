@@ -1,5 +1,10 @@
 # Paper and Live Execution
 
+> **Historical design record (Q-050).** The frontend execution workspace and live monitor
+> window were removed once `q_terminal` reached parity (`q_terminal/docs/ops-parity.md`).
+> Paper and live operations now live in `q_terminal` only; this document remains as the
+> original design rationale for the backend execution domain.
+
 ## Status and scope
 
 This design adds Q's first forward-execution path. The first supported runtime is internal paper
