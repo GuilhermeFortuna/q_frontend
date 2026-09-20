@@ -19,7 +19,6 @@ import {
   StorageIcon,
   BacktestsIcon,
   DiscoverIcon,
-  ExecutionIcon,
   ResearchIcon,
   SystemIcon,
   StrategyBuilderIcon,
@@ -57,7 +56,6 @@ const dockItems: DockItem[] = [
   },
   { id: 'discover', label: 'Discover', to: '/discover', icon: DiscoverIcon, enabled: true },
   { id: 'research', label: 'Research', to: '/research', icon: ResearchIcon, enabled: true },
-  { id: 'execution', label: 'Execution', to: '/execution', icon: ExecutionIcon, enabled: true },
   { id: 'system', label: 'System', to: '/system', icon: SystemIcon, enabled: true },
 ]
 
