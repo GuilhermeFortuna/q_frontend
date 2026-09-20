@@ -23,9 +23,9 @@ Terminal parity document read at `q_terminal` `development` commit **`1a71d3f019
 | Repository    | Commit (development / task branch tip at handoff) |
 | ------------- | ------------------------------------------------- |
 | `q_contracts` | `03214a0760945120c56c2af97a542fcb26da2f1e`        |
-| `q_backend`   | _pending — Q-050 branch after idempotency flip_   |
+| `q_backend`   | `95ee34debb6f99bf483b751e8f904c6693af2d4f`        |
 | `q_terminal`  | `1a71d3f01913e81b3935cea163adb039d7370506`        |
-| `q_frontend`  | _pending — Q-050 branch after removal_            |
+| `q_frontend`  | `3391ebe157b689e8f8a5132755ca06c5767eaccb`        |
 
 ## Automated validation
 

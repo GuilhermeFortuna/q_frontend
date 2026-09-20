@@ -113,7 +113,7 @@ q_backend (branch Q-050-execution-workspace-leaves-q-frontend):
      example and `README.md`. Run `scripts/ci.sh`. Commit in `q_backend`.
 - [x] 10. Write `docs/development/baselines/Q-050/phase-4-acceptance.md` per the
       decision above, naming the commit of each repository. Commit.
-- [ ] 11. Run `TZ=America/Sao_Paulo scripts/ci.sh`. Fix, re-run, commit.
+- [x] 11. Run `TZ=America/Sao_Paulo scripts/ci.sh`. Fix, re-run, commit.
 - [ ] 12. **Human:** human-verifiable criteria 1 and 2.
 - [ ] 13. **Human:** human-verifiable criterion 3. Fill the acceptance record and
       mark phase 4 accepted.
