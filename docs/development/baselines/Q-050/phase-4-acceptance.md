@@ -36,9 +36,9 @@ Terminal parity document read at `q_terminal` `development` commit **`1a71d3f019
 | Frontend typecheck       | `pnpm typecheck`                                                                                                                                                          | pass                                 |
 | Frontend lint            | `pnpm lint`                                                                                                                                                               | pass (warnings only)                 |
 | Frontend build + bundle  | `pnpm bundle:report`                                                                                                                                                      | pass                                 |
-| Frontend CI              | `TZ=America/Sao_Paulo scripts/ci.sh`                                                                                                                                      | _pending at handoff_                 |
+| Frontend CI              | `CONTRACTS_REPO=/path/to/q_contracts TZ=America/Sao_Paulo scripts/ci.sh`                                                                                                  | pass (913 tests, build, Tauri stage) |
 | Backend idempotency      | `uv run pytest tests/api/test_execution_idempotency.py -q`                                                                                                                | pass (includes default-refusal test) |
-| Backend CI               | `scripts/ci.sh`                                                                                                                                                           | _pending at handoff_                 |
+| Backend CI               | `scripts/ci.sh`                                                                                                                                                           | pass (2032 passed, 15 skipped)       |
 | Hygiene                  | `grep -rn "queries/execution\|types/execution\|workspaces/execution\|components/execution" src`                                                                           | no matches                           |
 
 ## Derived figures (Q-050 bundle removal)
