@@ -648,7 +648,9 @@ fn draw_equity_chart(doc: &mut Doc, p: &ReportPayload) {
     let dd: Vec<f64> = downsample(
         &p.equity_curve
             .iter()
-            .map(|e| e.drawdown_pct * 100.0)
+            // Backtest equity points store drawdown as a positive fraction;
+            // the report's drawdown axis is plotted below zero.
+            .map(|e| -e.drawdown_pct.abs() * 100.0)
             .collect::<Vec<_>>(),
         600,
     );
