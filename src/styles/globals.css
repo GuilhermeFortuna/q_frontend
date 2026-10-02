@@ -457,49 +457,6 @@
     }
   }
 
-  /* Chrome-only view transitions — header/dock cross-fade; main body swaps instantly. */
-  .vt-header {
-    view-transition-name: app-header;
-  }
-  .vt-dock {
-    view-transition-name: app-dock;
-  }
-  ::view-transition-old(app-header),
-  ::view-transition-new(app-header),
-  ::view-transition-old(app-dock),
-  ::view-transition-new(app-dock) {
-    animation-duration: 0.2s;
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  ::view-transition-old(app-header),
-  ::view-transition-old(app-dock) {
-    animation-name: vt-chrome-fade-out;
-  }
-
-  ::view-transition-new(app-header),
-  ::view-transition-new(app-dock) {
-    animation-name: vt-chrome-fade-in;
-  }
-
-  @keyframes vt-chrome-fade-out {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
-  }
-
-  @keyframes vt-chrome-fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
   /* Animated border chase for running tasks (GPU-accelerated conic-gradient) */
   .quant-panel--active-run {
     position: relative;
@@ -567,7 +524,16 @@
     box-sizing: border-box;
     overflow: hidden;
     pointer-events: none;
-    will-change: transform, opacity, width, height;
+    contain: strict;
+    will-change: transform, opacity;
+    /* Opaque stand-in for the frosted panel: no backdrop blur to recompute per frame. */
+    background: linear-gradient(158deg, var(--surface-base-1), var(--surface-base-2));
+  }
+
+  /* Live surfaces stay unpainted while the clones stand in for them. */
+  html[data-workspace-transition='committing'] [data-workspace-transition-surface],
+  html[data-workspace-transition='reconfiguring'] [data-workspace-transition-surface] {
+    visibility: hidden;
   }
 
   .workspace-grid-transition__clone--identity {
@@ -714,21 +680,6 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--color-brass-500) 40%, transparent);
-}
-
-/* Accessibility: respect user preference for reduced motion during page transitions */
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
-}
-
-html[data-reduced-motion='true'] ::view-transition-group(*),
-html[data-reduced-motion='true'] ::view-transition-old(*),
-html[data-reduced-motion='true'] ::view-transition-new(*) {
-  animation: none !important;
 }
 
 /* Global reduced-motion override for CSS transitions and animations */

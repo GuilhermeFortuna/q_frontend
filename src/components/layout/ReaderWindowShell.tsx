@@ -55,7 +55,7 @@ export function ReaderWindowShell({
       <div className="quant-vignette-overlay" />
       <header
         data-tauri-drag-region
-        className="vt-header surface-shell surface-shell--blur relative z-10 flex items-center justify-between border-b px-6 py-2.5 select-none"
+        className="surface-shell surface-shell--blur relative z-10 flex items-center justify-between border-b px-6 py-2.5 select-none"
       >
         <div className="flex items-center gap-2.5" data-tauri-drag-region>
           <img

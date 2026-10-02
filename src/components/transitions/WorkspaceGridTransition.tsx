@@ -20,9 +20,9 @@ const SURFACE_ROLES: WorkspaceTransitionSurfaceRole[] = [
   'utility',
 ]
 
+// Border geometry only: clones take an opaque fill from CSS and never copy the frosted
+// backdrop-filter or shadow, which are too costly to repaint on every animated frame.
 const MATERIAL_STYLE_KEYS = [
-  'backgroundColor',
-  'backgroundImage',
   'borderRadius',
   'borderTopWidth',
   'borderRightWidth',
@@ -36,9 +36,6 @@ const MATERIAL_STYLE_KEYS = [
   'borderRightStyle',
   'borderBottomStyle',
   'borderLeftStyle',
-  'boxShadow',
-  'backdropFilter',
-  'opacity',
 ] as const
 
 type CapturedSurface = {
@@ -64,25 +61,6 @@ function isForbiddenCloneSource(el: Element): boolean {
   if (el.getAttribute('role') === 'grid' || el.getAttribute('role') === 'rowgroup') return true
   if (el.hasAttribute('data-virtualized')) return true
   return false
-}
-
-function sanitizeClone(root: HTMLElement) {
-  root.removeAttribute('id')
-  root.removeAttribute('data-workspace-transition-root')
-  root.removeAttribute('data-workspace-transition-anchor')
-  root.querySelectorAll<HTMLElement>('*').forEach((node) => {
-    node.removeAttribute('id')
-    node.removeAttribute('tabindex')
-    if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
-      node.disabled = true
-    }
-    if (isForbiddenCloneSource(node)) {
-      node.replaceWith(document.createElement('div'))
-    }
-  })
-  root.setAttribute('aria-hidden', 'true')
-  root.tabIndex = -1
-  root.style.pointerEvents = 'none'
 }
 
 function readMaterialStyles(el: HTMLElement) {
@@ -133,23 +111,48 @@ function queryAnchor(root: HTMLElement, workspaceId: string): HTMLElement | null
   )
 }
 
-function waitForDestination(workspaceId: string, isCurrent: () => boolean): Promise<HTMLElement> {
+function surfaceSignature(root: HTMLElement): string {
+  const parts: string[] = []
+  for (const [role, el] of querySurfaces(root)) {
+    const rect = el.getBoundingClientRect()
+    parts.push([role, rect.left, rect.top, rect.width, rect.height].map((v) => String(v)).join(':'))
+  }
+  return parts.join('|')
+}
+
+// Resolve once the destination layout holds still for a frame, so the mount work lands
+// before the animation starts rather than underneath it.
+function waitForSettledSurfaces(root: HTMLElement, isCurrent: () => boolean): Promise<HTMLElement> {
   return new Promise((resolve, reject) => {
-    const existing = queryWorkspaceRoot(workspaceId)
-    if (existing) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (!isCurrent()) {
-            reject(new Error('transition cancelled'))
-            return
-          }
-          resolve(existing)
-        })
-      })
-      return
+    const deadline = performance.now() + WORKSPACE_TRANSITION_TIMINGS.destinationSettleCapMs
+    let previous: string | null = null
+    const tick = () => {
+      if (!isCurrent()) {
+        reject(new Error('transition cancelled'))
+        return
+      }
+      const current = surfaceSignature(root)
+      if (current === previous || performance.now() >= deadline) {
+        resolve(root)
+        return
+      }
+      previous = current
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  })
+}
+
+function waitForDestination(workspaceId: string, isCurrent: () => boolean): Promise<HTMLElement> {
+  const existing = queryWorkspaceRoot(workspaceId)
+  if (existing) return waitForSettledSurfaces(existing, isCurrent)
+
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      window.clearTimeout(timeout)
+      observer.disconnect()
     }
 
-    let settled = false
     const timeout = window.setTimeout(() => {
       cleanup()
       reject(new Error(`missing destination workspace root: ${workspaceId}`))
@@ -157,24 +160,10 @@ function waitForDestination(workspaceId: string, isCurrent: () => boolean): Prom
 
     const observer = new MutationObserver(() => {
       const root = queryWorkspaceRoot(workspaceId)
-      if (!root || settled) return
-      settled = true
+      if (!root) return
       cleanup()
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (!isCurrent()) {
-            reject(new Error('transition cancelled'))
-            return
-          }
-          resolve(root)
-        })
-      })
+      waitForSettledSurfaces(root, isCurrent).then(resolve, reject)
     })
-
-    const cleanup = () => {
-      window.clearTimeout(timeout)
-      observer.disconnect()
-    }
 
     observer.observe(document.getElementById('workspace-main') ?? document.body, {
       childList: true,
@@ -262,15 +251,14 @@ export function WorkspaceGridTransition({ onSettled }: WorkspaceGridTransitionPr
           const rect = el.getBoundingClientRect()
           if (rect.width < 2 || rect.height < 2) continue
 
-          const clone = el.cloneNode(true) as HTMLElement
-          sanitizeClone(clone)
-          clone.classList.add('workspace-grid-transition__clone')
+          // A bare shell rather than a copy of the surface: copying would bring along its
+          // content and the frosted material classes.
+          const clone = document.createElement('div')
+          clone.className = 'workspace-grid-transition__clone'
           clone.dataset.transitionRole = role
           const styles = readMaterialStyles(el)
           applyMaterialStyles(clone, styles)
           placeFixed(clone, rect)
-          // Prefer a material shell look: strip heavy nested content for lightness.
-          clone.replaceChildren()
           layer.appendChild(clone)
           surfaces.push({ role, rect, styles, clone })
         }
@@ -328,9 +316,6 @@ export function WorkspaceGridTransition({ onSettled }: WorkspaceGridTransitionPr
         const dest = destSurfaces.get(captured.role)
         if (dest) {
           flipTargets.push(captured.clone)
-          // Hide live destination surface until Flip settles.
-          dest.style.opacity = '0'
-          dest.dataset.transitionHidden = 'true'
         } else {
           gsap.to(captured.clone, {
             opacity: 0,
@@ -358,8 +343,6 @@ export function WorkspaceGridTransition({ onSettled }: WorkspaceGridTransitionPr
         clone.style.transform = `translateX(${-offset}px)`
         bundle.layer.appendChild(clone)
         incomingOnly.push(clone)
-        dest.style.opacity = '0'
-        dest.dataset.transitionHidden = 'true'
       }
 
       const state = flipTargets.length > 0 ? Flip.getState(flipTargets) : null
@@ -441,14 +424,15 @@ export function WorkspaceGridTransition({ onSettled }: WorkspaceGridTransitionPr
         }
       })
 
-      for (const dest of destSurfaces.values()) {
-        if (dest.dataset.transitionHidden === 'true') {
-          dest.style.opacity = ''
-          delete dest.dataset.transitionHidden
-        }
-      }
-
-      cancelVisuals()
+      // Hand over to the live surfaces, which the store reveals as it leaves `reconfiguring`:
+      // fade the clone layer out over them instead of swapping in a single frame.
+      bundleRef.current = null
+      gsap.to(bundle.layer, {
+        opacity: 0,
+        duration: WORKSPACE_TRANSITION_TIMINGS.settleFadeMs / 1000,
+        ease: 'none',
+        onComplete: () => clearBundle(bundle),
+      })
     }
 
     const onReducedMotion = async (ctx: WorkspaceTransitionContext) => {

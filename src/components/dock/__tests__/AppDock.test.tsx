@@ -7,9 +7,13 @@ import { resolve } from 'node:path'
 import type { ActiveJobsMap } from '@/hooks/useActiveJobs'
 
 const navigate = vi.fn()
-const runWorkspaceTransition = vi.fn(async (options: { commit: () => void }) => {
-  options.commit()
-})
+const preloadWorkspace = vi.hoisted(() => vi.fn(async () => undefined))
+const runWorkspaceTransition = vi.fn(
+  async (options: { prepare?: () => Promise<void>; commit: () => void }) => {
+    await options.prepare?.()
+    options.commit()
+  },
+)
 
 const activeJobsState = vi.hoisted(() => ({
   value: {} as ActiveJobsMap,
@@ -33,6 +37,8 @@ vi.mock('@/components/transitions/workspaceTransitionStore', () => ({
   ) => selector({ runWorkspaceTransition }),
 }))
 
+vi.mock('@/app/workspaceLoaders', () => ({ preloadWorkspace }))
+
 vi.mock('@/app/router', () => ({
   workspaceTransitionDirection: (from: string, to: string) => {
     if (from === to) return null
@@ -51,6 +57,7 @@ describe('AppDock active job island', () => {
     activeJobsState.value = {}
     navigate.mockReset()
     runWorkspaceTransition.mockClear()
+    preloadWorkspace.mockClear()
   })
 
   afterEach(() => {
@@ -202,5 +209,23 @@ describe('AppDock active job island', () => {
       to: '/backtests',
       search: { mode: 'validate' },
     })
+  })
+
+  it('warms a workspace chunk on hover and loads it before navigating', async () => {
+    const user = userEvent.setup()
+    render(<AppDock activeWorkspace="launcher" />)
+    const storage = screen.getByRole('button', { name: 'Storage' })
+
+    await user.hover(storage)
+    expect(preloadWorkspace).toHaveBeenCalledWith('storage')
+    expect(navigate).not.toHaveBeenCalled()
+
+    preloadWorkspace.mockClear()
+    await user.click(storage)
+    expect(preloadWorkspace).toHaveBeenCalledWith('storage')
+    expect(navigate).toHaveBeenCalledWith({ to: '/storage' })
+    expect(preloadWorkspace.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      navigate.mock.invocationCallOrder[0],
+    )
   })
 })

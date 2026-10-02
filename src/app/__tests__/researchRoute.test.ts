@@ -8,6 +8,10 @@ const lazyWorkspacesSource = readFileSync(
   resolve(process.cwd(), 'src/app/lazyWorkspaces.tsx'),
   'utf8',
 )
+const workspaceLoadersSource = readFileSync(
+  resolve(process.cwd(), 'src/app/workspaceLoaders.ts'),
+  'utf8',
+)
 const dockSource = readFileSync(resolve(process.cwd(), 'src/components/dock/AppDock.tsx'), 'utf8')
 
 describe('research route', () => {
@@ -16,7 +20,8 @@ describe('research route', () => {
     expect(routerSource).toContain("syncWorkspace('research')")
     expect(routerSource).toContain('LazyResearchWorkspace')
     expect(routerSource).not.toMatch(/active === 'research'/)
-    expect(lazyWorkspacesSource).toContain("import('@/workspaces/research/ResearchWorkspace')")
+    expect(lazyWorkspacesSource).toContain('lazy(loadResearchWorkspace)')
+    expect(workspaceLoadersSource).toContain("import('@/workspaces/research/ResearchWorkspace')")
   })
 
   it('validates the tab search param for deep links', () => {

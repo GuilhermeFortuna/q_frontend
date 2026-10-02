@@ -68,6 +68,122 @@ describe('workspaceTransitionStore / WorkspaceGridTransition coordinator', () =>
     expect(useWorkspaceTransitionStore.getState().completionId).toBe(1)
   })
 
+  it('mirrors the phase onto <html> and clears it when idle', async () => {
+    const seen: Array<string | undefined> = []
+    const record = () => {
+      seen.push(document.documentElement.dataset.workspaceTransition)
+    }
+    registerWorkspaceTransitionExecutor(
+      makeExecutor({ onReconfigure: vi.fn(async () => record()) }),
+    )
+
+    await useWorkspaceTransitionStore.getState().runWorkspaceTransition({
+      from: 'launcher',
+      to: 'market-data',
+      direction: 'forward',
+      destinationDockElement: dockEl(),
+      commit: vi.fn(async () => record()),
+    })
+
+    expect(seen).toEqual(['committing', 'reconfiguring'])
+    expect(document.documentElement.dataset.workspaceTransition).toBeUndefined()
+  })
+
+  it('clears the <html> phase attribute when commit fails', async () => {
+    registerWorkspaceTransitionExecutor(makeExecutor())
+
+    await expect(
+      useWorkspaceTransitionStore.getState().runWorkspaceTransition({
+        from: 'launcher',
+        to: 'market-data',
+        direction: 'forward',
+        destinationDockElement: dockEl(),
+        commit: vi.fn(async () => {
+          throw new Error('navigation failed')
+        }),
+      }),
+    ).rejects.toThrow('navigation failed')
+
+    expect(document.documentElement.dataset.workspaceTransition).toBeUndefined()
+  })
+
+  it('prepares the destination before capture and commit', async () => {
+    const order: string[] = []
+    registerWorkspaceTransitionExecutor(
+      makeExecutor({ onCapture: vi.fn(async () => void order.push('capture')) }),
+    )
+
+    await useWorkspaceTransitionStore.getState().runWorkspaceTransition({
+      from: 'launcher',
+      to: 'market-data',
+      direction: 'forward',
+      destinationDockElement: dockEl(),
+      prepare: vi.fn(async () => void order.push('prepare')),
+      commit: vi.fn(async () => void order.push('commit')),
+    })
+
+    expect(order).toEqual(['prepare', 'capture', 'commit'])
+  })
+
+  it('prepares the coalesced destination and still commits when prepare fails', async () => {
+    let releasePrepare!: () => void
+    const prepareGate = new Promise<void>((resolve) => {
+      releasePrepare = resolve
+    })
+    const firstCommit = vi.fn(async () => undefined)
+    const finalCommit = vi.fn(async () => undefined)
+    const finalPrepare = vi.fn(async () => {
+      throw new Error('chunk failed')
+    })
+    registerWorkspaceTransitionExecutor(makeExecutor())
+
+    const first = useWorkspaceTransitionStore.getState().runWorkspaceTransition({
+      from: 'launcher',
+      to: 'market-data',
+      direction: 'forward',
+      destinationDockElement: dockEl(),
+      prepare: () => prepareGate,
+      commit: firstCommit,
+    })
+    const final = useWorkspaceTransitionStore.getState().runWorkspaceTransition({
+      from: 'launcher',
+      to: 'system',
+      direction: 'forward',
+      destinationDockElement: dockEl(),
+      prepare: finalPrepare,
+      commit: finalCommit,
+    })
+
+    releasePrepare()
+    await Promise.all([first, final])
+
+    expect(finalPrepare).toHaveBeenCalledTimes(1)
+    expect(firstCommit).not.toHaveBeenCalled()
+    expect(finalCommit).toHaveBeenCalledTimes(1)
+  })
+
+  it('commits without visuals when the document is hidden', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    const commit = vi.fn(async () => undefined)
+    const executor = makeExecutor()
+    registerWorkspaceTransitionExecutor(executor)
+
+    await useWorkspaceTransitionStore.getState().runWorkspaceTransition({
+      from: 'launcher',
+      to: 'market-data',
+      direction: 'forward',
+      destinationDockElement: dockEl(),
+      commit,
+    })
+    visibility.mockRestore()
+
+    expect(commit).toHaveBeenCalledTimes(1)
+    expect(executor.onCapture).not.toHaveBeenCalled()
+    expect(executor.onReconfigure).not.toHaveBeenCalled()
+    expect(document.documentElement.dataset.workspaceTransition).toBeUndefined()
+    expect(useWorkspaceTransitionStore.getState().completionId).toBe(1)
+  })
+
   it('coalesces rapid requests to the latest destination before commit', async () => {
     let releaseCapture!: () => void
     const captureGate = new Promise<void>((resolve) => {

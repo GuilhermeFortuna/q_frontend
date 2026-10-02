@@ -23,6 +23,7 @@ import {
   SystemIcon,
   StrategyBuilderIcon,
 } from '@/components/dock/DockIcons'
+import { preloadWorkspace } from '@/app/workspaceLoaders'
 import { workspaceTransitionDirection } from '@/app/router'
 import { useWorkspaceTransitionStore } from '@/components/transitions/workspaceTransitionStore'
 import {
@@ -141,6 +142,10 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
     }
   }, [islandJobs.length, islandMode])
 
+  const warmWorkspace = (id: WorkspaceId) => {
+    void preloadWorkspace(id).catch(() => undefined)
+  }
+
   const navigateToWorkspace = (item: DockItem, index: number) => {
     const direction = workspaceTransitionDirection(location.pathname, item.to)
     if (!direction) return
@@ -154,6 +159,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
       to: item.id,
       direction,
       destinationDockElement,
+      prepare: () => preloadWorkspace(item.id),
       commit: () => navigate({ to: item.to }),
     })
   }
@@ -192,6 +198,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
       to: destination.transitionTo,
       direction,
       destinationDockElement,
+      prepare: () => preloadWorkspace(destination.transitionTo),
       commit,
     })
     setIslandMode('compact')
@@ -209,7 +216,7 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
     <nav
       aria-label="Workspace dock"
       className={cn(
-        'vt-dock surface-shell--blur fixed left-1/2 z-20 flex -translate-x-1/2 items-center transition-[transform,opacity,border-color,box-shadow,background-color] duration-300 ease-in-out',
+        'surface-shell--blur fixed left-1/2 z-20 flex -translate-x-1/2 items-center transition-[transform,opacity,border-color,box-shadow,background-color] duration-300 ease-in-out',
         'border-brass-500/20 border-t-brass-400/50 from-espresso-900/80 via-espresso-950/92 to-carbon-950/96 border border-b-black/60 bg-gradient-to-b',
         'hover:border-brass-500/30 hover:border-t-brass-400/80 hover:border-b-black/80',
         isLauncher
@@ -275,6 +282,8 @@ export function AppDock({ activeWorkspace }: AppDockProps) {
               ref={setItemRef}
               type="button"
               onClick={() => navigateToWorkspace(item, index)}
+              onPointerEnter={() => warmWorkspace(item.id)}
+              onFocus={() => warmWorkspace(item.id)}
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}
               className="group inline-flex"

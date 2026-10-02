@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, lazy, Suspense, useCallback } from 'react'
 
+import { preloadAllWorkspaces } from '@/app/workspaceLoaders'
 import { CinematicScene } from '@/components/cinematic/CinematicScene'
 import { AppDock } from '@/components/dock/AppDock'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
@@ -50,6 +51,18 @@ export function AppShell({ children }: AppShellProps) {
     setTransitionReducedMotion(reducedMotion)
   }, [reducedMotion, setTransitionReducedMotion])
 
+  // Warm the workspace chunks once the first paint is out of the way, so a dock click never
+  // waits on a module load. WebKitGTK has no requestIdleCallback, hence the timer fallback.
+  useEffect(() => {
+    if (isReader) return
+    if (typeof window.requestIdleCallback === 'function') {
+      const handle = window.requestIdleCallback(() => void preloadAllWorkspaces())
+      return () => window.cancelIdleCallback(handle)
+    }
+    const handle = window.setTimeout(() => void preloadAllWorkspaces(), 1500)
+    return () => window.clearTimeout(handle)
+  }, [isReader])
+
   if (isReader) {
     return (
       <TooltipProvider delayDuration={350} skipDelayDuration={100}>
@@ -68,7 +81,7 @@ export function AppShell({ children }: AppShellProps) {
         <PointerSpotlight />
         <header
           data-tauri-drag-region
-          className="vt-header surface-shell surface-shell--blur border-brass-600/15 relative z-40 flex items-center justify-between border-b px-6 py-2.5 select-none"
+          className="surface-shell surface-shell--blur border-brass-600/15 relative z-40 flex items-center justify-between border-b px-6 py-2.5 select-none"
         >
           <div className="flex items-center gap-2.5" data-tauri-drag-region>
             <img

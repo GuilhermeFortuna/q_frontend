@@ -1,46 +1,29 @@
 import { lazy } from 'react'
 
-export const LazyLauncherWorkspace = lazy(() =>
-  import('@/workspaces/launcher/LauncherWorkspace').then((module) => ({
-    default: module.LauncherWorkspace,
-  })),
-)
+import {
+  loadBacktestsWorkspace,
+  loadDiscoverWorkspace,
+  loadLauncherWorkspace,
+  loadMarketDataWorkspace,
+  loadResearchWorkspace,
+  loadStorageWorkspace,
+  loadStrategyBuilderWorkspace,
+  loadSystemWorkspace,
+} from '@/app/workspaceLoaders'
 
-export const LazyMarketDataWorkspace = lazy(() =>
-  import('@/workspaces/market-data/MarketDataWorkspace').then((module) => ({
-    default: module.MarketDataWorkspace,
-  })),
-)
+export const LazyLauncherWorkspace = lazy(loadLauncherWorkspace)
 
-export const LazyStorageWorkspace = lazy(() =>
-  import('@/workspaces/storage/StorageWorkspace').then((module) => ({
-    default: module.StorageWorkspace,
-  })),
-)
+export const LazyMarketDataWorkspace = lazy(loadMarketDataWorkspace)
 
-export const LazySystemWorkspace = lazy(() =>
-  import('@/workspaces/system/SystemWorkspace').then((module) => ({
-    default: module.SystemWorkspace,
-  })),
-)
+export const LazyStorageWorkspace = lazy(loadStorageWorkspace)
 
-export const LazyBacktestsWorkspace = lazy(() =>
-  import('@/workspaces/backtests/BacktestsWorkspace').then((module) => ({
-    default: module.BacktestsWorkspace,
-  })),
-)
+export const LazySystemWorkspace = lazy(loadSystemWorkspace)
 
-export const LazyDiscoverWorkspace = lazy(() =>
-  import('@/workspaces/discover/DiscoverWorkspace').then((module) => ({
-    default: module.DiscoverWorkspace,
-  })),
-)
+export const LazyBacktestsWorkspace = lazy(loadBacktestsWorkspace)
 
-export const LazyResearchWorkspace = lazy(() =>
-  import('@/workspaces/research/ResearchWorkspace').then((module) => ({
-    default: module.ResearchWorkspace,
-  })),
-)
+export const LazyDiscoverWorkspace = lazy(loadDiscoverWorkspace)
+
+export const LazyResearchWorkspace = lazy(loadResearchWorkspace)
 
 export const LazyWalkForwardWorkspace = lazy(() =>
   import('@/workspaces/walkforward/WalkForwardWorkspace').then((module) => ({
@@ -72,8 +55,4 @@ export const LazyStandaloneChartWindow = lazy(() =>
   })),
 )
 
-export const LazyStrategyBuilderWorkspace = lazy(() =>
-  import('@/workspaces/strategy-builder/StrategyBuilderWorkspace').then((module) => ({
-    default: module.StrategyBuilderWorkspace,
-  })),
-)
+export const LazyStrategyBuilderWorkspace = lazy(loadStrategyBuilderWorkspace)

@@ -16,6 +16,8 @@ export type RunWorkspaceTransitionOptions = {
   to: string
   direction: WorkspaceTransitionDirection
   destinationDockElement: HTMLElement
+  /** Loads whatever the destination needs so `commit` renders it without suspending. */
+  prepare?: () => Promise<void>
   commit: () => void | Promise<void>
 }
 
@@ -137,6 +139,17 @@ export const useWorkspaceTransitionStore = create<WorkspaceTransitionStore>((set
     await request.options.commit()
   }
 
+  // A request can be coalesced onto a new destination while it prepares, so repeat until the
+  // options that were prepared are still the ones about to be committed. A failed prepare is
+  // left for the navigation itself to surface.
+  const prepareLatest = async (request: TransitionRequest) => {
+    let prepared: RunWorkspaceTransitionOptions
+    do {
+      prepared = request.options
+      await prepared.prepare?.().catch(() => undefined)
+    } while (request.options !== prepared && !request.committed)
+  }
+
   const run = async (request: TransitionRequest) => {
     active = request
     const token = ++generation
@@ -152,6 +165,18 @@ export const useWorkspaceTransitionStore = create<WorkspaceTransitionStore>((set
     })
 
     try {
+      await prepareLatest(request)
+      if (!ctx.isCurrent()) return
+
+      // A hidden document produces no animation frames, so a visual transition would never
+      // finish: switch straight to the destination instead.
+      if (document.visibilityState === 'hidden') {
+        await commitOnce(request)
+        if (!ctx.isCurrent()) return
+        finish(request)
+        return
+      }
+
       if (reducedMotion) {
         await commitOnce(request)
         if (!ctx.isCurrent()) return
@@ -250,12 +275,21 @@ export const useWorkspaceTransitionStore = create<WorkspaceTransitionStore>((set
   }
 })
 
+// Mirror the phase onto <html> so CSS can keep live surfaces hidden while clones stand in.
+useWorkspaceTransitionStore.subscribe((state) => {
+  if (typeof document === 'undefined') return
+  if (state.phase === 'idle') delete document.documentElement.dataset.workspaceTransition
+  else document.documentElement.dataset.workspaceTransition = state.phase
+})
+
 export const WORKSPACE_TRANSITION_TIMINGS = {
-  durationMs: 420,
+  durationMs: 260,
   unmatchedEnterProgress: 0.45,
   unmatchedRecedePx: 10,
+  settleFadeMs: 90,
+  destinationSettleCapMs: 250,
   reducedMs: REDUCED_MS,
-  ease: 'power3.inOut',
+  ease: 'power2.out',
 } as const
 
 /** Register the AppShell-mounted visual executor. Pass null on unmount. */
