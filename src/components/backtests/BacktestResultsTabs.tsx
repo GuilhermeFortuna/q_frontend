@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from 'react'
-import { FileDown, Loader2 } from 'lucide-react'
+import { FileDown, FileSpreadsheet, Loader2 } from 'lucide-react'
 
 import { BacktestMetricsBar } from '@/components/backtests/BacktestMetricsBar'
 import { LazyBacktestStrategyChart } from '@/components/backtests/LazyBacktestStrategyChart'
@@ -196,6 +196,8 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
 
+  const [exportingCsv, setExportingCsv] = useState(false)
+
   const [focusedTradeId, setFocusedTradeId] = useState<string | null>(null)
   const [hoveredTradeId, setHoveredTradeId] = useState<string | null>(null)
 
@@ -220,6 +222,24 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
       )
     } finally {
       setExporting(false)
+    }
+  }
+
+  const runId = results.run_id ?? null
+
+  const handleExportCsv = async () => {
+    if (exportingCsv || !runId) return
+    setExportingCsv(true)
+    setExportError(null)
+    try {
+      const { exportBacktestCsv } = await import('@/lib/reports/backtestCsvExport')
+      await exportBacktestCsv({ runId, symbol, timeframe })
+    } catch (err) {
+      setExportError(
+        err instanceof Error ? err.message : typeof err === 'string' ? err : 'Failed to export CSV',
+      )
+    } finally {
+      setExportingCsv(false)
     }
   }
 
@@ -264,6 +284,24 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
               <FileDown className="h-4 w-4" />
             )}
             {exporting ? 'Exporting…' : 'Export PDF'}
+          </button>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={exportingCsv || !runId}
+            title={
+              runId
+                ? 'Export market data with indicators and the trade list as two CSV files'
+                : 'CSV export needs a saved run'
+            }
+            className="border-brass-600/15 bg-carbon-900/50 text-silver-200 hover:border-brass-400/50 hover:bg-carbon-800/85 hover:text-brass-400 inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {exportingCsv ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4" />
+            )}
+            {exportingCsv ? 'Exporting…' : 'Export CSV'}
           </button>
         </div>
       </div>

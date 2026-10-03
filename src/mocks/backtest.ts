@@ -283,3 +283,53 @@ export function getMockBacktestResponse(request: BacktestRequest): BacktestRespo
     run_id: request.engine === 'tick' ? 'mock-tick-run-id' : 'mock-persisted-run-id',
   }
 }
+
+function csvLine(values: (string | number | null | undefined)[]): string {
+  return values.map((value) => value ?? '').join(',')
+}
+
+/** Mirrors `GET /api/v1/backtests/{run_id}/export/market-data`. */
+export function getMockBacktestMarketDataCsv(result: BacktestResponse): string {
+  const header = ['time', 'open', 'high', 'low', 'close', 'volume']
+  const lines = [csvLine([...header, ...result.indicators.map((indicator) => indicator.key)])]
+  result.bars.forEach((bar, index) => {
+    lines.push(
+      csvLine([
+        bar.timestamp,
+        bar.open,
+        bar.high,
+        bar.low,
+        bar.close,
+        bar.volume,
+        ...result.indicators.map((indicator) => indicator.values[index]),
+      ]),
+    )
+  })
+  return `${lines.join('\n')}\n`
+}
+
+/** Mirrors `GET /api/v1/backtests/{run_id}/export/trades`. */
+export function getMockBacktestTradesCsv(result: BacktestResponse): string {
+  const lines = [
+    'trade_id,symbol,side,entry_time,entry_price,exit_time,exit_price,pnl,quantity,commission,point_value,exit_reason',
+  ]
+  for (const trade of result.trades) {
+    lines.push(
+      csvLine([
+        trade.id,
+        trade.symbol,
+        trade.action,
+        trade.entry_time,
+        trade.entry_price,
+        trade.exit_time,
+        trade.exit_price,
+        trade.pnl,
+        trade.quantity,
+        trade.commission,
+        trade.point_value,
+        trade.exit_reason,
+      ]),
+    )
+  }
+  return `${lines.join('\n')}\n`
+}

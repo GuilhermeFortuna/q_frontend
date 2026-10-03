@@ -1,3 +1,4 @@
+mod csv_export;
 mod report;
 
 use std::{borrow::Cow, env};
@@ -40,7 +41,10 @@ pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![report::generate_backtest_report])
+        .invoke_handler(tauri::generate_handler![
+            report::generate_backtest_report,
+            csv_export::export_backtest_csv
+        ])
         .setup(|app| {
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;

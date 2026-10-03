@@ -10,7 +10,11 @@ import {
   resetMockFeatureState,
   setMockFeatureStatus,
 } from '@/mocks/features'
-import { getMockBacktestResponse } from '@/mocks/backtest'
+import {
+  getMockBacktestMarketDataCsv,
+  getMockBacktestResponse,
+  getMockBacktestTradesCsv,
+} from '@/mocks/backtest'
 import { getMockBacktestEquityArtifact } from '@/mocks/backtestEquity'
 import {
   getMockBacktestRunDetail,
@@ -501,6 +505,23 @@ export const handlers = [
     }
     deletedBacktestRunIds.add(runId)
     return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('*/api/v1/backtests/:runId/export/:kind', ({ params }) => {
+    const runId = String(params.runId)
+    const result = mockBacktestJobs.get(runId)
+    const kind = String(params.kind)
+    if (!result || (kind !== 'market-data' && kind !== 'trades')) {
+      return HttpResponse.json(
+        { detail: `Backtest artifact '${kind}' not found for run '${runId}'.` },
+        { status: 404 },
+      )
+    }
+    const csv =
+      kind === 'market-data'
+        ? getMockBacktestMarketDataCsv(result)
+        : getMockBacktestTradesCsv(result)
+    return new HttpResponse(csv, { headers: { 'Content-Type': 'text/csv' } })
   }),
 
   http.get('*/api/v1/backtests/:runId/artifacts/equity', ({ params }) => {

@@ -119,6 +119,20 @@ export async function fetchBacktestEquityArtifact(
   }
 }
 
+export async function fetchBacktestMarketDataCsv(runId: string): Promise<string> {
+  const { data } = await apiClient.get<string>(`/api/v1/backtests/${runId}/export/market-data`, {
+    responseType: 'text',
+  })
+  return data
+}
+
+export async function fetchBacktestTradesCsv(runId: string): Promise<string> {
+  const { data } = await apiClient.get<string>(`/api/v1/backtests/${runId}/export/trades`, {
+    responseType: 'text',
+  })
+  return data
+}
+
 export function useBacktestEquityArtifact(runId: string | null) {
   return useQuery({
     queryKey: backtestKeys.equityArtifact(runId ?? ''),
