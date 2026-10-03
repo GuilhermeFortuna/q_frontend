@@ -31,12 +31,14 @@ describe('bundle splitting guards', () => {
     expect(resolveManualChunk('/node_modules/react/index.js')).toBe('vendor-react')
   })
 
-  it('keeps backtest recharts and PDF export off the eager results tab path', () => {
+  it('keeps backtest recharts and PDF/CSV export off the eager results tab path', () => {
     expect(backtestResultsSource).toContain('LazyBacktestPerformanceCharts')
     expect(backtestResultsSource).toContain('LazyBacktestMonthlyChart')
     expect(backtestResultsSource).toContain("import('@/lib/reports/backtestReport')")
     expect(backtestResultsSource).not.toMatch(/from '@\/components\/backtests\/EquityCurveChart'/)
+    expect(backtestResultsSource).toContain("import('@/lib/reports/backtestCsvExport')")
     expect(backtestResultsSource).not.toMatch(/from '@\/lib\/reports\/backtestReport'/)
+    expect(backtestResultsSource).not.toMatch(/from '@\/lib\/reports\/backtestCsvExport'/)
   })
 
   it('lazy-loads performance instrumentation in the shell', () => {
