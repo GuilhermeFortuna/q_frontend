@@ -7,6 +7,8 @@ import {
   useMlFilterSources,
   type MlFilterSourceDetail,
 } from '@/api/queries/mlFilters'
+import { MLFilterComparison } from '@/components/research/ml-filters/MLFilterComparison'
+import { MLFilterEvaluation } from '@/components/research/ml-filters/MLFilterEvaluation'
 import { MLFilterModels } from '@/components/research/ml-filters/MLFilterModels'
 import { MLFilterTrainForm } from '@/components/research/ml-filters/MLFilterTrainForm'
 import { Callout } from '@/components/ui/Callout'
@@ -153,6 +155,20 @@ export function MLFiltersTab({ sourceRunId, onUseInBacktest }: MLFiltersTabProps
         selectedModelId={session.selectedModelId}
         onSelectModel={(selectedModelId) => patchSession({ selectedModelId })}
         onUseInBacktest={onUseInBacktest}
+      />
+
+      <MLFilterComparison
+        datasetId={session.datasetId}
+        jobId={session.comparisonJobId}
+        onJobStarted={(comparisonJobId) => patchSession({ comparisonJobId })}
+      />
+
+      <MLFilterEvaluation
+        datasetId={session.datasetId}
+        frozen={session.evaluationRequest}
+        jobId={session.evaluationJobId}
+        onFreeze={(evaluationRequest) => patchSession({ evaluationRequest })}
+        onJobStarted={(evaluationJobId) => patchSession({ evaluationJobId })}
       />
     </div>
   )

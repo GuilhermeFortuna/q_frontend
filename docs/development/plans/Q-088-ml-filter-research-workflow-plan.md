@@ -53,11 +53,11 @@
 **Files:** Create MLFilterComparison.tsx and MLFilterEvaluation.tsx with **tests**/MLFilterComparison.test.tsx and MLFilterEvaluation.test.tsx.
 **Interfaces:** Validation comparison uses model ids from one dataset; final evaluation submits one pinned model/threshold and displays frozen lockbox consumption/result.
 
-- [ ] Add focused failing tests: Test incompatible dataset ids, threshold changes during polling, null ROC/profit-factor copy, candidate counts versus trade count, identical evaluation retry, conflicting consumed lockbox, failure and selection frozen before dispatch. Reserved-tail results never enter validation rankings.
-- [ ] Run `TZ=America/Sao_Paulo pnpm test:run src/components/research/ml-filters/__tests__/MLFilterComparison.test.tsx src/components/research/ml-filters/__tests__/MLFilterEvaluation.test.tsx` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
-- [ ] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
-- [ ] Run `TZ=America/Sao_Paulo pnpm test:run src/components/research/ml-filters/__tests__/MLFilterComparison.test.tsx src/components/research/ml-filters/__tests__/MLFilterEvaluation.test.tsx` and confirm the focused suite passes.
-- [ ] Commit this independently reviewable unit on the task branch with a conventional, focused message.
+- [x] Add focused failing tests: Test incompatible dataset ids, threshold changes during polling, null ROC/profit-factor copy, candidate counts versus trade count, identical evaluation retry, conflicting consumed lockbox, failure and selection frozen before dispatch. Reserved-tail results never enter validation rankings.
+- [x] Run `TZ=America/Sao_Paulo pnpm test:run src/components/research/ml-filters/__tests__/MLFilterComparison.test.tsx src/components/research/ml-filters/__tests__/MLFilterEvaluation.test.tsx` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
+- [x] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
+- [x] Run `TZ=America/Sao_Paulo pnpm test:run src/components/research/ml-filters/__tests__/MLFilterComparison.test.tsx src/components/research/ml-filters/__tests__/MLFilterEvaluation.test.tsx` and confirm the focused suite passes.
+- [x] Commit this independently reviewable unit on the task branch with a conventional, focused message.
 
 ### 4. Integrate variant setup, launch and history restore
 
