@@ -14,6 +14,7 @@ import {
   type BacktestHistoryTab,
 } from '@/components/backtests/BacktestHistoryFilters'
 import { BacktestMetricsBar } from '@/components/backtests/BacktestMetricsBar'
+import { MLFilterSummaryCard } from '@/components/backtests/MLFilterSummaryCard'
 import { formatSignedCurrency } from '@/components/backtests/chartUtils'
 import {
   formatBulkDeleteDescription,
@@ -395,6 +396,7 @@ export function BacktestHistoryPanel({
                 </div>
               </div>
 
+              <MLFilterSummaryCard config={detail.config.ml_filter ?? null} />
               {detail.result_summary ? (
                 <BacktestMetricsBar metrics={detail.result_summary} />
               ) : (

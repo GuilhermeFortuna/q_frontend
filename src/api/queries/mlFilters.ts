@@ -195,10 +195,14 @@ export function useMlFilterSource(runId: string | null) {
   })
 }
 
-export function useMlFilterModels(params: MlFilterModelListParams = {}) {
+export function useMlFilterModels(
+  params: MlFilterModelListParams = {},
+  { enabled = true }: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: mlFilterKeys.models(params),
     queryFn: () => fetchMlFilterModels(params),
+    enabled,
   })
 }
 

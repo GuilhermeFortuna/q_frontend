@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
 import { FeatureLab, type FeatureLabRecentRun } from '@/components/research/FeatureLab'
@@ -11,6 +12,9 @@ import { MLFiltersTab } from '@/components/research/ml-filters/MLFiltersTab'
 import { NeuralFeaturesTab } from '@/components/research/neural/NeuralFeaturesTab'
 import { FeatureStorePanel } from '@/components/research/FeatureStoreTable'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
+import { toast } from '@/components/ui/toast'
+import { prepareMlFilterBacktest } from '@/lib/mlFilters/prepareMlFilterBacktest'
+import { useAppStore } from '@/store/useAppStore'
 import { ExperimentsWorkspace } from '@/workspaces/research/ExperimentsWorkspace'
 import type { ResearchTab } from '@/types/features'
 
@@ -97,6 +101,9 @@ function FeatureLabTab({ recentRuns, onEvalStarted, onOpenRun }: FeatureLabTabPr
 
 export function ResearchWorkspace({ tab = 'store', sourceRunId }: ResearchWorkspaceProps) {
   const navigate = useNavigate({ from: '/research' })
+  const queryClient = useQueryClient()
+  const setPendingBacktestConfig = useAppStore((state) => state.setPendingBacktestConfig)
+  const patchBacktestSession = useAppStore((state) => state.patchBacktestSession)
   // Default to the aggregate "Latest scores" leaderboard so the Scoring tab shows
   // persisted results on load; a started eval switches this to 'eval' + a runId.
   const [scoringSource, setScoringSource] = useState<FeatureScoringSource>('latest')
@@ -141,6 +148,21 @@ export function ResearchWorkspace({ tab = 'store', sourceRunId }: ResearchWorksp
     setScoringRunId(runId)
     setScoringSource('eval')
     void navigate({ search: { tab: 'scoring' } })
+  }
+
+  const handleUseMlFilterInBacktest = async (modelVersionId: string) => {
+    try {
+      const request = await prepareMlFilterBacktest(queryClient, modelVersionId)
+      setPendingBacktestConfig(request)
+      patchBacktestSession({ workflowMode: 'backtest', focus: 'setup', rightPanelTab: 'results' })
+      void navigate({ to: '/backtests' })
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? `Cannot use this model in a backtest: ${error.message}`
+          : 'Cannot use this model in a backtest.',
+      )
+    }
   }
 
   const handleNeuralTrainingStarted = (jobId: string) => {
@@ -200,7 +222,9 @@ export function ResearchWorkspace({ tab = 'store', sourceRunId }: ResearchWorksp
             onClearTrainingJob={() => setNeuralTrainingJobId(null)}
           />
         ) : null}
-        {tab === 'ml-filters' ? <MLFiltersTab sourceRunId={sourceRunId} /> : null}
+        {tab === 'ml-filters' ? (
+          <MLFiltersTab sourceRunId={sourceRunId} onUseInBacktest={handleUseMlFilterInBacktest} />
+        ) : null}
         {tab === 'experiments' ? <ExperimentsWorkspace /> : null}
       </div>
     </div>

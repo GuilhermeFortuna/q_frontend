@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { endOfDay, startOfDay } from 'date-fns'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
@@ -20,6 +21,15 @@ import {
 } from '@/lib/backtesting/entryInstances'
 import { defaultBacktestEnd, defaultBacktestStart } from '@/lib/backtesting/dateRange'
 import {
+  DEFAULT_ML_FILTER_THRESHOLD,
+  INACTIVE_ML_FILTER_VALIDATION,
+  defaultMlFilterFormState,
+  diffMlFilterBaseline,
+  validateMlFilterConfig,
+  type MlFilterFormState,
+  type MlFilterValidation,
+} from '@/lib/backtesting/mlFilterConfig'
+import {
   buildPositionSizingPayload,
   defaultPositionSizingFields,
   hydratePositionSizingFields,
@@ -38,7 +48,11 @@ import {
   hydrateStrategyParamsFromPending,
   type StrategyParamValue,
 } from '@/lib/strategies/strategyParams'
+import { ML_FILTER_STRATEGY } from '@/lib/strategies/strategyCapabilities'
 import { strategyEngine } from '@/lib/strategies/strategyPresentation'
+import { getMlFilterErrorMessage } from '@/api/queries/mlFilters'
+import { prepareMlFilterBacktest } from '@/lib/mlFilters/prepareMlFilterBacktest'
+import { useMlFilterModelContext } from '@/lib/mlFilters/useMlFilterModelContext'
 import { toast } from '@/components/ui'
 import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
@@ -75,6 +89,8 @@ export type BacktestConfigFields = {
   engine: BacktestEngine
   displayTimeframe: string
   tickFlags: 'all' | 'trade'
+  /** Only meaningful for MACrossoverMLFilter; omitted from every other request. */
+  mlFilter?: MlFilterFormState
 }
 
 export type BacktestConfigSetters = {
@@ -116,6 +132,7 @@ export type BacktestConfigValidation = {
   formInvalid: boolean
   sizingErrors: Partial<Record<string, string>>
   costErrors: Partial<Record<string, string>>
+  mlFilter: MlFilterValidation
 }
 
 export type BacktestConfigAuthoring = {
@@ -156,6 +173,7 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
     dayTradeCloseTime,
     displayTimeframe,
     tickFlags,
+    mlFilter,
   } = fields
 
   const common = {
@@ -218,6 +236,13 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
     payload.strategy_params = exitParams
   }
 
+  if (payload.strategy === ML_FILTER_STRATEGY && mlFilter?.modelVersionId) {
+    payload.ml_filter = {
+      model_version_id: mlFilter.modelVersionId,
+      threshold: mlFilter.threshold,
+    }
+  }
+
   return payload
 }
 
@@ -246,6 +271,9 @@ export function useBacktestConfig() {
   const [description, setDescription] = useState('')
   const [loadedCustomName, setLoadedCustomName] = useState<string | null>(null)
   const [authoringError, setAuthoringError] = useState<string | null>(null)
+  const [mlFilterForm, setMlFilterForm] = useState<MlFilterFormState>(defaultMlFilterFormState)
+  const [mlFilterBaselineError, setMlFilterBaselineError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
   const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
   const { data: exitCatalog, isLoading: exitCatalogLoading } = useExitRuleCatalog()
@@ -420,6 +448,18 @@ export function useBacktestConfig() {
       paramsInitialized.current = true
     }
 
+    if (cfg.ml_filter) {
+      setMlFilterForm({
+        modelVersionId: cfg.ml_filter.model_version_id,
+        threshold: cfg.ml_filter.threshold ?? DEFAULT_ML_FILTER_THRESHOLD,
+      })
+    } else if (cfg.strategy !== ML_FILTER_STRATEGY) {
+      setMlFilterForm(defaultMlFilterFormState())
+    }
+    if (cfg.strategy === ML_FILTER_STRATEGY && !cfg.entries?.length) {
+      setEntryManager(defaultEntryManager())
+    }
+
     const hydratedSizing = hydratePositionSizingFields(cfg.position_sizing)
     setSizingMode(hydratedSizing.mode)
     setPositionSizingFields(hydratedSizing.fields)
@@ -469,6 +509,8 @@ export function useBacktestConfig() {
     (strategyName: string) => {
       const info = strategies.find((entry) => entry.name === strategyName)
       if (!info) return
+      // The ML variant supports exactly one entry; extra-entry controls are hidden for it.
+      if (strategy === ML_FILTER_STRATEGY || strategyName === ML_FILTER_STRATEGY) return
       setEntries((current) => [
         ...current,
         {
@@ -479,7 +521,7 @@ export function useBacktestConfig() {
       ])
       setStrategy((current) => current || strategyName)
     },
-    [strategies],
+    [strategies, strategy],
   )
 
   const removeEntry = useCallback((slotId: string) => {
@@ -634,7 +676,116 @@ export function useBacktestConfig() {
 
   const costValidation = useMemo(() => validateTransactionCosts(costFields), [costFields])
 
-  const formInvalid = dateRangeInvalid || !positionSizingValidation.valid || !costValidation.valid
+  const isMlFilterStrategy = strategy === ML_FILTER_STRATEGY
+  const mlFilterModel = useMlFilterModelContext(
+    isMlFilterStrategy ? mlFilterForm.modelVersionId : null,
+    isMlFilterStrategy,
+  )
+
+  const baseFields = {
+    symbol,
+    timeframe,
+    startDate,
+    endDate,
+    capital,
+    pointValue,
+    sizingMode,
+    positionSizingFields,
+    costFields,
+    strategy,
+    strategyParams,
+    entries,
+    entryManager,
+    dayTrade,
+    dayTradeStartTime,
+    dayTradeEndTime,
+    dayTradeCloseTime,
+    engine,
+    displayTimeframe,
+    tickFlags,
+  }
+
+  const mlFilterValidation = useMemo<MlFilterValidation>(() => {
+    if (!isMlFilterStrategy) return INACTIVE_ML_FILTER_VALIDATION
+    const { baseline } = mlFilterModel.context
+    const diff = baseline
+      ? diffMlFilterBaseline(
+          baseline,
+          buildBacktestRequest({ ...baseFields, mlFilter: mlFilterForm }),
+          strategies,
+        )
+      : []
+    const summary = mlFilterModel.context.summary
+    if (
+      !baseline &&
+      summary &&
+      mlFilterModel.context.status === 'ready' &&
+      !mlFilterModel.context.baselineLoading
+    ) {
+      if (summary.symbol && summary.symbol !== symbol) diff.push('symbol')
+      if (summary.timeframe && summary.timeframe !== timeframe) diff.push('timeframe')
+    }
+    return validateMlFilterConfig({
+      strategy,
+      entryCount: entries.length,
+      entryManagerKind: entryManager.kind,
+      engine,
+      startDate,
+      form: mlFilterForm,
+      context: mlFilterModel.context,
+      baselineDiff: diff,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isMlFilterStrategy,
+    mlFilterModel.context,
+    mlFilterForm,
+    strategies,
+    symbol,
+    timeframe,
+    startDate,
+    entries,
+    entryManager,
+    engine,
+    strategy,
+    strategyParams,
+    sizingMode,
+    positionSizingFields,
+    costFields,
+    dayTrade,
+    dayTradeStartTime,
+    dayTradeEndTime,
+    dayTradeCloseTime,
+    pointValue,
+  ])
+
+  const formInvalid =
+    dateRangeInvalid ||
+    !positionSizingValidation.valid ||
+    !costValidation.valid ||
+    mlFilterValidation.blocking
+
+  const selectMlFilterModel = useCallback(
+    async (modelVersionId: string) => {
+      setMlFilterBaselineError(null)
+      setMlFilterForm((current) => ({ ...current, modelVersionId }))
+      try {
+        const request = await prepareMlFilterBacktest(
+          queryClient,
+          modelVersionId,
+          mlFilterForm.threshold,
+        )
+        // Inherit the model's baseline through the shared pending-config path so the
+        // form shows explicit, editable values.
+        setPendingBacktestConfig(request)
+      } catch (error) {
+        setMlFilterBaselineError(
+          getMlFilterErrorMessage(error, 'Could not load the model baseline.'),
+        )
+      }
+    },
+    [queryClient, mlFilterForm.threshold, setPendingBacktestConfig],
+  )
 
   const fields: BacktestConfigFields = {
     symbol,
@@ -657,6 +808,7 @@ export function useBacktestConfig() {
     engine,
     displayTimeframe,
     tickFlags,
+    mlFilter: mlFilterForm,
   }
 
   const setters: BacktestConfigSetters = {
@@ -695,6 +847,7 @@ export function useBacktestConfig() {
     formInvalid,
     sizingErrors: positionSizingValidation.errors,
     costErrors: costValidation.errors,
+    mlFilter: mlFilterValidation,
   }
 
   const buildRequest = useCallback(() => buildBacktestRequest(fields), [fields])
@@ -734,5 +887,16 @@ export function useBacktestConfig() {
     validation,
     buildRequest,
     authoring,
+    mlFilter: {
+      form: mlFilterForm,
+      validation: mlFilterValidation,
+      context: mlFilterModel.context,
+      models: mlFilterModel.models,
+      modelsLoading: mlFilterModel.modelsLoading,
+      baselineError: mlFilterBaselineError,
+      selectModel: selectMlFilterModel,
+      setThreshold: (threshold: number) =>
+        setMlFilterForm((current) => ({ ...current, threshold })),
+    },
   }
 }

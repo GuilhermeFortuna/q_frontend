@@ -22,6 +22,8 @@ export type StrategyParamSpec = {
   searchable?: boolean
 }
 
+export type StrategyCapability = 'ml_entry_filter' | 'research_only'
+
 export type StrategyInfo = {
   name: string
   label: string
@@ -32,6 +34,12 @@ export type StrategyInfo = {
   thesis?: string
   strong_in?: string
   weak_in?: string
+  /** Registry feature flags; omitted for ordinary strategies. */
+  capabilities?: StrategyCapability[]
+  research_only?: boolean | null
+  supports_optimization?: boolean | null
+  supports_walkforward?: boolean | null
+  supports_discovery?: boolean | null
 }
 
 export type StrategiesResponse = {

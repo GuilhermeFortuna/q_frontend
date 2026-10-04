@@ -1,4 +1,5 @@
 import { Button, Callout } from '@/components/ui'
+import { MLFilterConfig } from '@/components/backtests/setup/MLFilterConfig'
 import { MarketConfigBand } from '@/components/backtests/setup/MarketConfigBand'
 import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
@@ -35,6 +36,8 @@ export function BacktestSetupPanel({
         setters={config.setters}
         validation={config.validation}
       />
+
+      <MLFilterConfig config={config} />
 
       <StrategyStudio config={config} />
 

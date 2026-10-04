@@ -10,6 +10,7 @@ import { useActiveJobs } from '@/hooks/useActiveJobs'
 import { useSignalManagers } from '@/api/queries/strategies'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { instanceCountByStrategy } from '@/lib/backtesting/entryInstances'
+import { ML_FILTER_STRATEGY } from '@/lib/strategies/strategyCapabilities'
 import { filterApplicableExitRules } from '@/lib/optimize/exitSearchSpace'
 import type { ExitRuleInfo } from '@/types/strategies'
 import {
@@ -68,6 +69,8 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
   const signalManagers = signalManagersData?.managers ?? []
   const instanceCounts = useMemo(() => instanceCountByStrategy(entries), [entries])
   const isComposite = fields.strategy === 'CompositeStrategy'
+  // The ML variant supports exactly one candle entry; extra-entry controls are hidden.
+  const isMlFilter = fields.strategy === ML_FILTER_STRATEGY
 
   const applicableExitRules = useMemo(
     () => filterApplicableExitRules(exitCatalog?.exit_rules ?? [], exitParamSpecs),
@@ -136,7 +139,7 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
             onDeleteCustom={authoring.deleteCustom}
             loading={strategiesLoading}
             loadingSaved={customLoading}
-            multiSelect={!isComposite}
+            multiSelect={!isComposite && !isMlFilter}
             instanceCounts={instanceCounts}
             onAddEntry={handleAddEntry}
           />
@@ -173,7 +176,9 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
             </div>
           ) : null}
 
-          {!isComposite && entries.length > 0 ? (
+          {!isComposite &&
+          (!isMlFilter || Boolean(config.validation.mlFilter.errors.composition)) &&
+          entries.length > 0 ? (
             <EntryManagerSelector
               managers={signalManagers}
               value={entryManager}

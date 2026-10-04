@@ -85,7 +85,9 @@ export function DiscoverConfigForm({
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [gatesOpen, setGatesOpen] = useState(false)
 
-  const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
+  const { data: strategiesData, isLoading: strategiesLoading } = useStrategies({
+    researchOnly: 'exclude',
+  })
   const strategies = useMemo(
     () => allStrategies(strategiesData?.strategies ?? []),
     [strategiesData?.strategies],

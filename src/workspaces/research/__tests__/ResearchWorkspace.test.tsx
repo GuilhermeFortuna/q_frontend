@@ -15,6 +15,8 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 
 import { handlers } from '@/mocks/handlers'
 import { resetMockFeatureState } from '@/mocks/features'
+import { MOCK_ML_READY_MODEL_ID, resetMockMlFilterState } from '@/mocks/mlFilters'
+import { useAppStore } from '@/store/useAppStore'
 import { ResearchWorkspace } from '@/workspaces/research/ResearchWorkspace'
 import { renderWithQueryClient } from '../../../../tests/unit/testUtils'
 
@@ -23,6 +25,8 @@ const server = setupServer(...handlers)
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 beforeEach(() => {
   resetMockFeatureState()
+  resetMockMlFilterState()
+  useAppStore.setState({ pendingBacktestConfig: null })
 })
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
@@ -35,6 +39,7 @@ describe('ResearchWorkspace', () => {
     expect(screen.getByRole('radio', { name: 'Feature Scoring' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Feature Lab' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Neural Features' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'ML Filters' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Experiments' })).toBeInTheDocument()
     await waitFor(() => {
       expect(screen.getByTestId('research-tab-store')).toBeInTheDocument()
@@ -77,6 +82,9 @@ describe('ResearchWorkspace', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Neural Features' }))
     expect(navigateMock).toHaveBeenCalledWith({ search: { tab: 'neural' } })
+
+    fireEvent.click(screen.getByRole('radio', { name: 'ML Filters' }))
+    expect(navigateMock).toHaveBeenCalledWith({ search: { tab: 'ml-filters' } })
 
     fireEvent.click(screen.getByRole('radio', { name: 'Experiments' }))
     expect(navigateMock).toHaveBeenCalledWith({ search: { tab: 'experiments' } })
@@ -132,5 +140,34 @@ describe('ResearchWorkspace', () => {
     })
 
     vi.useRealTimers()
+  })
+
+  it('opens the ML Filters tab with the navigated source selected', async () => {
+    renderWithQueryClient(<ResearchWorkspace tab="ml-filters" sourceRunId="run-win-ma" />)
+
+    expect(screen.getByTestId('research-tab-ml-filters')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'ML Filters' })).toHaveClass('accent-state')
+    expect(await screen.findByTestId('ml-filter-source-summary')).toHaveTextContent('WIN$ M5')
+  })
+
+  it('launches a pinned model into the Backtests workspace', async () => {
+    const user = userEvent.setup()
+    navigateMock.mockClear()
+    renderWithQueryClient(<ResearchWorkspace tab="ml-filters" />)
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: new RegExp(`details for .*${MOCK_ML_READY_MODEL_ID}`, 'i'),
+      }),
+    )
+    await user.click(await screen.findByTestId('ml-filter-use-in-backtest'))
+
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith({ to: '/backtests' }))
+    const pending = useAppStore.getState().pendingBacktestConfig
+    expect(pending?.strategy).toBe('MACrossoverMLFilter')
+    expect(pending?.ml_filter).toEqual({ model_version_id: MOCK_ML_READY_MODEL_ID, threshold: 0.5 })
+    expect(new Date(pending?.start as string).getTime()).toBeGreaterThanOrEqual(
+      Date.parse('2026-03-18T03:00:00Z'),
+    )
   })
 })

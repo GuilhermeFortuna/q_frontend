@@ -92,7 +92,9 @@ export function WalkForwardConfigForm({
   const [studyOpen, setStudyOpen] = useState(true)
   const [advancedOpen, setAdvancedOpen] = useState(false)
 
-  const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
+  const { data: strategiesData, isLoading: strategiesLoading } = useStrategies({
+    researchOnly: 'exclude',
+  })
   const strategies = useMemo(
     () => candleStrategies(strategiesData?.strategies ?? []),
     [strategiesData?.strategies],

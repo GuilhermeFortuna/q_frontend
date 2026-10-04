@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 import { BacktestHistoryPanel } from '@/components/backtests/BacktestHistoryPanel'
 import { handlers, resetMockBacktestDeletes } from '@/mocks/handlers'
+import { useAppStore } from '@/store/useAppStore'
 import { renderWithQueryClient } from '../testUtils'
 
 const server = setupServer(...handlers)
@@ -85,5 +86,21 @@ describe('BacktestHistoryPanel', () => {
     await user.click(checkboxes[1]!)
     expect(screen.getByRole('button', { name: /Compare \(2\)/i })).toBeEnabled()
     expect(screen.getByText(/Select 2–5 runs to compare/i)).toBeInTheDocument()
+  })
+
+  it('restores an ML filter run with its exact version and threshold', async () => {
+    renderWithQueryClient(
+      <BacktestHistoryPanel selectedRunId="run-win-ml" onSelectRun={vi.fn()} onReRun={vi.fn()} />,
+    )
+
+    const summary = await screen.findByTestId('ml-filter-summary')
+    expect(summary).toHaveTextContent('mlf-model-lightgbm-seed')
+    expect(summary).toHaveTextContent('threshold 0.60')
+    await waitFor(() => {
+      expect(useAppStore.getState().pendingBacktestConfig?.ml_filter).toEqual({
+        model_version_id: 'mlf-model-lightgbm-seed',
+        threshold: 0.6,
+      })
+    })
   })
 })

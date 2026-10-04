@@ -1,7 +1,10 @@
 import { memo, useMemo, useState } from 'react'
 import { FileDown, FileSpreadsheet, Loader2 } from 'lucide-react'
 
+import { useNavigate } from '@tanstack/react-router'
+
 import { BacktestMetricsBar } from '@/components/backtests/BacktestMetricsBar'
+import { MLFilterSummaryCard } from '@/components/backtests/MLFilterSummaryCard'
 import { LazyBacktestStrategyChart } from '@/components/backtests/LazyBacktestStrategyChart'
 import {
   LazyBacktestMonthlyChart,
@@ -226,6 +229,13 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   }
 
   const runId = results.run_id ?? null
+  const navigate = useNavigate()
+  // Only a completed single-entry MA Crossover run can be a training source.
+  const canTrainMlFilter =
+    Boolean(runId) &&
+    (request?.strategy ?? request?.entries?.[0]?.strategy) === 'MACrossover' &&
+    (request?.entries?.length ?? 1) <= 1 &&
+    request?.engine !== 'tick'
 
   const handleExportCsv = async () => {
     if (exportingCsv || !runId) return
@@ -247,6 +257,25 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
     <div className="grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(320px,1fr)] overflow-hidden pr-2">
       <div>
         <BacktestMetricsBar metrics={results.metrics} />
+        <MLFilterSummaryCard
+          summary={results.ml_filter_summary}
+          config={request?.ml_filter ?? null}
+        />
+        {canTrainMlFilter ? (
+          <button
+            type="button"
+            onClick={() =>
+              void navigate({
+                to: '/research',
+                search: { tab: 'ml-filters', source_run_id: runId as string },
+              })
+            }
+            className="text-brass-400 hover:text-brass-300 mb-3 text-xs underline-offset-2 hover:underline"
+            data-testid="train-ml-filter"
+          >
+            Train ML filter
+          </button>
+        ) : null}
       </div>
 
       <div className="border-brass-600/15 mb-4 flex items-center gap-1 border-b">

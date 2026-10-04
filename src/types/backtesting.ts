@@ -1,4 +1,5 @@
 import type { OhlcvBar } from '@/types/api'
+import type { MlFilterBacktestSummary, MlFilterConfig } from '../../contracts/api'
 
 export type FixedQuantityPositionSizing = {
   type: 'fixed_quantity'
@@ -62,6 +63,8 @@ export interface BacktestRequest {
   display_timeframe?: string
   /** Tick-only: tick source filter. */
   tick_flags?: 'all' | 'trade'
+  /** Required for MACrossoverMLFilter and rejected for every other strategy. */
+  ml_filter?: MlFilterConfig | null
 }
 
 export interface Trade {
@@ -115,6 +118,7 @@ export interface BacktestResponse {
   bars: OhlcvBar[]
   indicators: ChartIndicatorSeries[]
   run_id?: string | null
+  ml_filter_summary?: MlFilterBacktestSummary | null
 }
 
 export type BacktestRunStatus = 'pending' | 'running' | 'completed' | 'failed'

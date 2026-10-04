@@ -64,11 +64,11 @@
 **Files:** Create components/backtests/setup/MLFilterConfig.tsx; modify BacktestSetupPanel.tsx, lib/backtesting/useBacktestConfig.ts, entryInstances.ts, request/history types and BacktestHistoryPanel.tsx; add tests/unit/lib/backtesting/useMLFilterConfig.test.ts and setup/**tests**/MLFilterConfig.test.tsx.
 **Interfaces:** Use in Backtest transfers pinned model, baseline semantic config and valid date range; history restores ml_filter; Train ML filter opens Research with completed source id. Registry capabilities govern other workspace selectors.
 
-- [ ] Add focused failing tests: Assert exact request version/threshold, original strategy request unchanged, model switching and restored unavailable refs, incompatible edits/dates, multiple-entry controls, no silent replacement, result summary and research-only exclusions.
-- [ ] Run `TZ=America/Sao_Paulo pnpm test:run tests/unit/lib/backtesting/useMLFilterConfig.test.ts src/components/backtests/setup/__tests__/MLFilterConfig.test.tsx` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
-- [ ] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
-- [ ] Run `TZ=America/Sao_Paulo pnpm test:run tests/unit/lib/backtesting/useMLFilterConfig.test.ts src/components/backtests/setup/__tests__/MLFilterConfig.test.tsx` and confirm the focused suite passes.
-- [ ] Commit this independently reviewable unit on the task branch with a conventional, focused message.
+- [x] Add focused failing tests: Assert exact request version/threshold, original strategy request unchanged, model switching and restored unavailable refs, incompatible edits/dates, multiple-entry controls, no silent replacement, result summary and research-only exclusions.
+- [x] Run `TZ=America/Sao_Paulo pnpm test:run tests/unit/lib/backtesting/useMLFilterConfig.test.ts src/components/backtests/setup/__tests__/MLFilterConfig.test.tsx` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
+- [x] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
+- [x] Run `TZ=America/Sao_Paulo pnpm test:run tests/unit/lib/backtesting/useMLFilterConfig.test.ts src/components/backtests/setup/__tests__/MLFilterConfig.test.tsx` and confirm the focused suite passes.
+- [x] Commit this independently reviewable unit on the task branch with a conventional, focused message.
 
 ### 5. Verify the complete browser workflow and document it
 

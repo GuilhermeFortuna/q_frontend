@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
+import { isResearchOnlyStrategy } from '@/lib/strategies/strategyCapabilities'
 import type {
   ExitRuleCatalogResponse,
   SignalManagerCatalogResponse,
@@ -24,11 +25,25 @@ export async function fetchExitRuleCatalog(): Promise<ExitRuleCatalogResponse> {
   return data
 }
 
-export function useStrategies() {
+function withoutResearchOnly(data: StrategiesResponse): StrategiesResponse {
+  return {
+    ...data,
+    strategies: data.strategies.filter((strategy) => !isResearchOnlyStrategy(strategy)),
+  }
+}
+
+/**
+ * Registry strategies. Optimize, validate and discover pass `researchOnly: 'exclude'` so
+ * research-only variants (e.g. the ML entry filter) never reach those workflows.
+ */
+export function useStrategies({
+  researchOnly = 'include',
+}: { researchOnly?: 'include' | 'exclude' } = {}) {
   return useQuery({
     queryKey: strategyKeys.list(),
     queryFn: fetchStrategies,
     staleTime: Infinity,
+    select: researchOnly === 'exclude' ? withoutResearchOnly : undefined,
   })
 }
 

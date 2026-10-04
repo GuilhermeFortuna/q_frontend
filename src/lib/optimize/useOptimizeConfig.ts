@@ -332,7 +332,9 @@ export function useOptimizeConfig() {
   const [inverseMaxContractsInput, setInverseMaxContractsInput] = useState('')
   const [costFields, setCostFields] = useState(defaultTransactionCostFields)
 
-  const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
+  const { data: strategiesData, isLoading: strategiesLoading } = useStrategies({
+    researchOnly: 'exclude',
+  })
   const { data: exitCatalog } = useExitRuleCatalog()
   const { data: signalManagersData } = useSignalManagers()
   const { data: customStrategiesData, isLoading: customStrategiesLoading } = useCustomStrategies()

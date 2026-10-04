@@ -27,6 +27,7 @@ import type {
   ExitRuleCatalogResponse,
   SignalManagerCatalogResponse,
   StrategiesResponse,
+  StrategyParamSpec,
 } from '@/types/strategies'
 
 export const mockSystemHealth: SystemHealth = {
@@ -334,6 +335,25 @@ const mockBacktestConfigs: Record<string, BacktestRequest> = {
     strategy_params: { short_period: 20, long_period: 80, threshold: 0.5 },
     position_sizing: { type: 'fixed_quantity', quantity: 2 },
   },
+  'run-win-ml': {
+    symbol: 'WIN$',
+    timeframe: 'M5',
+    start: '2026-03-18T03:00:00.000Z',
+    end: '2026-05-04T03:00:00.000Z',
+    initial_capital: 100000,
+    point_value: 0.2,
+    strategy: 'MACrossoverMLFilter',
+    strategy_params: { short_period: 20, long_period: 80, threshold: 0.5 },
+    entries: [
+      {
+        strategy: 'MACrossoverMLFilter',
+        params: { short_period: 20, long_period: 80, threshold: 0.5 },
+      },
+    ],
+    entry_manager: { kind: 'or', params: {} },
+    position_sizing: { type: 'fixed_quantity', quantity: 2 },
+    ml_filter: { model_version_id: 'mlf-model-lightgbm-seed', threshold: 0.6 },
+  },
   'run-vale-ma': {
     symbol: 'VALE3',
     timeframe: 'H1',
@@ -401,6 +421,16 @@ export const mockBacktestRunSummaries: BacktestRunSummary[] = [
     created_at: hoursAgo(26),
     is_saved: false,
     summary: mockBacktestMetricsAlt,
+  },
+  {
+    run_id: 'run-win-ml',
+    symbol: 'WIN$',
+    strategy: 'MACrossoverMLFilter',
+    timeframe: 'M5',
+    status: 'completed',
+    created_at: hoursAgo(1),
+    is_saved: false,
+    summary: mockBacktestMetrics,
   },
   {
     run_id: 'run-petr-failed',
@@ -773,6 +803,64 @@ export function getMockBacktestRunDetail(runId: string): BacktestRunDetail | nul
 
 const MA_TYPE_CHOICES = ['ema', 'hma', 'sma', 'smma', 'wma']
 
+const MA_CROSSOVER_MOCK_PARAMS: StrategyParamSpec[] = [
+  {
+    name: 'short_period',
+    label: 'Short Period',
+    type: 'int',
+    default: 50,
+    min: 2,
+    max: 400,
+    step: 1,
+    search_min: 10,
+    search_max: 60,
+    search_step: 10,
+    hint: 'Shorter = more trades, more noise.',
+  },
+  {
+    name: 'long_period',
+    label: 'Long Period',
+    type: 'int',
+    default: 200,
+    min: 2,
+    max: 400,
+    step: 1,
+    search_min: 100,
+    search_max: 250,
+    search_step: 50,
+    hint: 'Longer = smoother trend filter, fewer signals.',
+  },
+  {
+    name: 'short_ma_type',
+    label: 'Short MA Type',
+    type: 'categorical',
+    default: 'sma',
+    choices: MA_TYPE_CHOICES,
+    hint: 'EMA reacts faster; SMA is smoother.',
+  },
+  {
+    name: 'long_ma_type',
+    label: 'Long MA Type',
+    type: 'categorical',
+    default: 'sma',
+    choices: MA_TYPE_CHOICES,
+    hint: 'Match or contrast with short MA for sensitivity.',
+  },
+  {
+    name: 'threshold',
+    label: 'Threshold',
+    type: 'float',
+    default: 0.0,
+    min: 0.0,
+    max: 100.0,
+    step: 0.01,
+    search_min: 0.0,
+    search_max: 1.0,
+    search_step: 0.25,
+    hint: 'Higher = require wider MA separation before entry.',
+  },
+]
+
 export const mockStrategies: StrategiesResponse = {
   strategies: [
     {
@@ -890,63 +978,20 @@ export const mockStrategies: StrategiesResponse = {
         'Trends persist because information diffuses slowly — price keeps moving in one direction while slower participants catch up. This strategy stays long while the fast average is above the slow one and flips on crossovers, accepting whipsaw losses in ranges as the price of catching large trends.',
       strong_in: 'Sustained directional trends.',
       weak_in: 'Choppy ranges — repeated whipsaw entries.',
-      params: [
-        {
-          name: 'short_period',
-          label: 'Short Period',
-          type: 'int',
-          default: 50,
-          min: 2,
-          max: 400,
-          step: 1,
-          search_min: 10,
-          search_max: 60,
-          search_step: 10,
-          hint: 'Shorter = more trades, more noise.',
-        },
-        {
-          name: 'long_period',
-          label: 'Long Period',
-          type: 'int',
-          default: 200,
-          min: 2,
-          max: 400,
-          step: 1,
-          search_min: 100,
-          search_max: 250,
-          search_step: 50,
-          hint: 'Longer = smoother trend filter, fewer signals.',
-        },
-        {
-          name: 'short_ma_type',
-          label: 'Short MA Type',
-          type: 'categorical',
-          default: 'sma',
-          choices: MA_TYPE_CHOICES,
-          hint: 'EMA reacts faster; SMA is smoother.',
-        },
-        {
-          name: 'long_ma_type',
-          label: 'Long MA Type',
-          type: 'categorical',
-          default: 'sma',
-          choices: MA_TYPE_CHOICES,
-          hint: 'Match or contrast with short MA for sensitivity.',
-        },
-        {
-          name: 'threshold',
-          label: 'Threshold',
-          type: 'float',
-          default: 0.0,
-          min: 0.0,
-          max: 100.0,
-          step: 0.01,
-          search_min: 0.0,
-          search_max: 1.0,
-          search_step: 0.25,
-          hint: 'Higher = require wider MA separation before entry.',
-        },
-      ],
+      params: MA_CROSSOVER_MOCK_PARAMS,
+    },
+    {
+      name: 'MACrossoverMLFilter',
+      label: 'MA Crossover · ML Filter',
+      description:
+        'Moving-average crossover whose entries are gated by a saved ML classifier. Exits and sizing follow the original crossover; research backtests only.',
+      category: 'trend',
+      capabilities: ['ml_entry_filter', 'research_only'],
+      thesis:
+        'A crossover is only a candidate: a classifier trained on earlier crossover outcomes keeps the entries it scores as likely to be profitable and leaves the rest flat, while every original exit still fires.',
+      strong_in: 'Ranges where a trained model recognizes which crossovers whipsaw.',
+      weak_in: 'Regime shifts away from the training window, where scores go stale.',
+      params: MA_CROSSOVER_MOCK_PARAMS,
     },
     {
       name: 'RSIMeanReversion',

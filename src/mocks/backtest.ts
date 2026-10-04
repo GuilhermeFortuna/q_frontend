@@ -1,4 +1,5 @@
 import type { OhlcvBar } from '@/types/api'
+import { getMockMlFilterBacktestSummary } from '@/mocks/mlFilters'
 import { timeframeToMs } from '@/lib/market/timeframes'
 import type {
   BacktestRequest,
@@ -281,6 +282,7 @@ export function getMockBacktestResponse(request: BacktestRequest): BacktestRespo
     bars: chartData.bars,
     indicators: chartData.indicators,
     run_id: request.engine === 'tick' ? 'mock-tick-run-id' : 'mock-persisted-run-id',
+    ...(request.ml_filter ? { ml_filter_summary: getMockMlFilterBacktestSummary(request) } : {}),
   }
 }
 

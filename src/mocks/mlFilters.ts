@@ -19,6 +19,49 @@ import type {
 } from '../../contracts/api'
 import type { MlFilterSourceDetail } from '@/api/queries/mlFilters'
 
+/** Mirrors the Q-085 service rules for `BacktestRequest.ml_filter`; returns a 422 detail or null. */
+export function validateMockMlFilterBacktest(request: {
+  strategy?: string
+  ml_filter?: { model_version_id: string; threshold?: number } | null
+  entries?: unknown[] | null
+  entry_manager?: { kind?: string } | null
+  engine?: string
+}): string | null {
+  const isVariant = request.strategy === 'MACrossoverMLFilter'
+  if (isVariant && !request.ml_filter) return 'ml_filter is required for MACrossoverMLFilter'
+  if (!isVariant && request.ml_filter) {
+    return 'ml_filter is only valid for MACrossoverMLFilter'
+  }
+  if (!isVariant) return null
+  if (request.engine === 'tick') return 'MACrossoverMLFilter supports the candle engine only'
+  if ((request.entries?.length ?? 1) !== 1 || (request.entry_manager?.kind ?? 'or') !== 'or') {
+    return 'MACrossoverMLFilter supports exactly one entry with the or manager'
+  }
+  const modelId = request.ml_filter?.model_version_id
+  if (!models.some((item) => item.summary.model_version_id === modelId && item.summary.ready)) {
+    return `ML filter model version ${modelId} is not available`
+  }
+  return null
+}
+
+export function getMockMlFilterBacktestSummary(request: {
+  ml_filter?: { model_version_id: string; threshold?: number } | null
+}) {
+  if (!request.ml_filter) return null
+  const record = models.find(
+    (item) => item.summary.model_version_id === request.ml_filter?.model_version_id,
+  )
+  return {
+    model_version_id: request.ml_filter.model_version_id,
+    dataset_id: record?.summary.dataset_id ?? null,
+    threshold: request.ml_filter.threshold ?? 0.5,
+    candidates_scored: 120,
+    candidates_accepted: 54,
+    candidates_rejected: 60,
+    candidates_not_ready: 6,
+  }
+}
+
 export type MlFilterMockError = { status: number; body: { detail: MlFilterError | string } }
 
 export const MOCK_ML_SOURCE_OK_ID = 'run-win-ma'
@@ -349,9 +392,18 @@ export function listMockMlModels(
   return { items: items.slice(offset, offset + limit), total: items.length, limit, offset }
 }
 
-export function getMockMlModel(modelVersionId: string): MlFilterModelDetailResponse | null {
+export function getMockMlModel(
+  modelVersionId: string,
+): MlFilterModelDetailResponse | MlFilterMockError | null {
   const record = models.find((item) => item.summary.model_version_id === modelVersionId)
   if (!record) return null
+  if (!record.summary.ready) {
+    return mockError(
+      409,
+      'artifact_unavailable',
+      (record.summary.compatibility_reasons ?? []).join(' ') || 'Model artifact is unavailable.',
+    )
+  }
   return {
     model_version_id: record.summary.model_version_id,
     dataset_id: record.summary.dataset_id,

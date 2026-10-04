@@ -104,6 +104,7 @@ import {
   startMockMlComparison,
   startMockMlEvaluation,
   startMockMlTraining,
+  validateMockMlFilterBacktest,
   type MlFilterMockError,
 } from '@/mocks/mlFilters'
 import type { BacktestRequest } from '@/types/backtesting'
@@ -397,6 +398,8 @@ export const handlers = [
   // polling tests settle on the first status fetch.
   http.post('*/api/v1/backtest', async ({ request }) => {
     const body = (await request.json()) as BacktestRequest
+    const mlFilterError = validateMockMlFilterBacktest(body)
+    if (mlFilterError) return HttpResponse.json({ detail: mlFilterError }, { status: 422 })
     const runId = `mock-backtest-${mockBacktestJobSeq++}`
     mockBacktestJobs.set(runId, getMockBacktestResponse(body))
     return HttpResponse.json({ run_id: runId, status: 'running' })
@@ -1272,9 +1275,12 @@ export const handlers = [
 
   http.get('*/api/v1/ml-filters/models/:modelVersionId', ({ params }) => {
     const detail = getMockMlModel(String(params.modelVersionId))
-    return detail
-      ? HttpResponse.json(detail)
-      : HttpResponse.json({ detail: 'ML filter model version was not found' }, { status: 404 })
+    if (!detail) {
+      return HttpResponse.json({ detail: 'ML filter model version was not found' }, { status: 404 })
+    }
+    return 'status' in detail
+      ? HttpResponse.json(detail.body, { status: detail.status })
+      : HttpResponse.json(detail)
   }),
 
   http.post('*/api/v1/ml-filters/comparisons', async ({ request }) => {
