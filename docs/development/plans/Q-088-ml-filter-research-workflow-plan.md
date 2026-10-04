@@ -75,11 +75,11 @@
 **Files:** Update README.md and existing browser/MSW verification fixtures where available; no new desktop or service-launch ownership.
 **Interfaces:** Source → train three algorithms → compare validation → freeze final selection → use saved model in backtest → restore history; keyboard-labelled controls, honest errors and artifact/version metadata.
 
-- [ ] Add focused failing tests: Browser/MSW review covers successful flow, empty/incompatible source, failed training, missing model, volume readiness, undefined metrics and consumed lockbox. Inspect screenshots at the existing desktop layout plus a narrower browser width; do not claim tests with real training from mock-only evidence.
-- [ ] Run `pnpm typecheck && pnpm lint` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
-- [ ] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
-- [ ] Run `pnpm typecheck && pnpm lint` and confirm the focused suite passes.
-- [ ] Commit this independently reviewable unit on the task branch with a conventional, focused message.
+- [x] Add focused failing tests: Browser/MSW review covers successful flow, empty/incompatible source, failed training, missing model, volume readiness, undefined metrics and consumed lockbox. Inspect screenshots at the existing desktop layout plus a narrower browser width; do not claim tests with real training from mock-only evidence.
+- [x] Run `pnpm typecheck && pnpm lint` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
+- [x] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
+- [x] Run `pnpm typecheck && pnpm lint` and confirm the focused suite passes.
+- [x] Commit this independently reviewable unit on the task branch with a conventional, focused message.
 
 ## Verification and handoff
 
