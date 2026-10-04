@@ -31,11 +31,11 @@
 **Files:** Create src/api/queries/mlFilters.ts, src/mocks/mlFilters.ts and src/api/queries/**tests**/mlFilters.test.ts; update mock handler registration and CONTRACTS_REV via standard vendoring.
 **Interfaces:** Typed hooks for Q-085 sources/training/models/comparisons/evaluations; durable polling stops at terminal states. MSW uses generated payload types, no independent fake schema.
 
-- [ ] Add focused failing tests: Assert request source/features/UTC boundaries/algorithms/version/threshold, terminal polling/error states, results after refresh and undefined metrics with reasons. Compare hooks preserve actual submitted threshold; lockbox retries return the existing tuple.
-- [ ] Run `TZ=America/Sao_Paulo pnpm test:run src/api/queries/__tests__/mlFilters.test.ts` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
-- [ ] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
-- [ ] Run `TZ=America/Sao_Paulo pnpm test:run src/api/queries/__tests__/mlFilters.test.ts` and confirm the focused suite passes.
-- [ ] Commit this independently reviewable unit on the task branch with a conventional, focused message.
+- [x] Add focused failing tests: Assert request source/features/UTC boundaries/algorithms/version/threshold, terminal polling/error states, results after refresh and undefined metrics with reasons. Compare hooks preserve actual submitted threshold; lockbox retries return the existing tuple.
+- [x] Run `TZ=America/Sao_Paulo pnpm test:run src/api/queries/__tests__/mlFilters.test.ts` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
+- [x] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
+- [x] Run `TZ=America/Sao_Paulo pnpm test:run src/api/queries/__tests__/mlFilters.test.ts` and confirm the focused suite passes.
+- [x] Commit this independently reviewable unit on the task branch with a conventional, focused message.
 
 ### 2. Build training and saved-model research flow
 

@@ -93,7 +93,25 @@ import {
   MOCK_STRATEGY_BUILDER_CAPABILITIES,
   MOCK_STRATEGY_BUILDER_MODELS,
 } from '@/mocks/strategyBuilder'
+import {
+  getMockMlComparisonStatus,
+  getMockMlEvaluationStatus,
+  getMockMlModel,
+  getMockMlSource,
+  getMockMlTrainingStatus,
+  listMockMlModels,
+  listMockMlSources,
+  startMockMlComparison,
+  startMockMlEvaluation,
+  startMockMlTraining,
+  type MlFilterMockError,
+} from '@/mocks/mlFilters'
 import type { BacktestRequest } from '@/types/backtesting'
+import type {
+  MlFilterComparisonRequest,
+  MlFilterEvaluationRequest,
+  MlFilterTrainingRequest,
+} from '../../contracts/api'
 import type { NeuralModelStatus, NeuralTrainRequest } from '@/types/neural'
 import type { OptimizationTrial } from '@/types/optimization'
 import type {
@@ -126,6 +144,13 @@ export function resetMockWalkForwardDeletes() {
 
 export function resetMockStrategySearchDeletes() {
   resetMockStrategySearchState()
+}
+
+function mlFilterStartResponse(result: { jobId: string } | MlFilterMockError) {
+  if ('jobId' in result) {
+    return HttpResponse.json({ job_id: result.jobId, status: 'queued' }, { status: 202 })
+  }
+  return HttpResponse.json(result.body, { status: result.status })
 }
 
 export function resetMockFeatureDeletes() {
@@ -1198,6 +1223,82 @@ export const handlers = [
       return HttpResponse.json({ detail: result.error }, { status: result.status })
     }
     return HttpResponse.json(result)
+  }),
+
+  // ML entry filters
+  http.get('*/api/v1/ml-filters/sources', ({ request }) => {
+    const url = new URL(request.url)
+    return HttpResponse.json(
+      listMockMlSources(
+        Number(url.searchParams.get('limit') ?? 50),
+        Number(url.searchParams.get('offset') ?? 0),
+      ),
+    )
+  }),
+
+  http.get('*/api/v1/ml-filters/sources/:runId', ({ params }) => {
+    const source = getMockMlSource(String(params.runId))
+    return source
+      ? HttpResponse.json(source)
+      : HttpResponse.json({ detail: 'Backtest source was not found' }, { status: 404 })
+  }),
+
+  http.post('*/api/v1/ml-filters/training', async ({ request }) => {
+    const result = startMockMlTraining((await request.json()) as MlFilterTrainingRequest)
+    return mlFilterStartResponse(result)
+  }),
+
+  http.get('*/api/v1/ml-filters/training/:jobId', ({ params }) => {
+    const status = getMockMlTrainingStatus(String(params.jobId))
+    return status
+      ? HttpResponse.json(status)
+      : HttpResponse.json({ detail: 'ML filter training job was not found' }, { status: 404 })
+  }),
+
+  http.get('*/api/v1/ml-filters/models', ({ request }) => {
+    const url = new URL(request.url)
+    return HttpResponse.json(
+      listMockMlModels(
+        {
+          dataset_id: url.searchParams.get('dataset_id'),
+          symbol: url.searchParams.get('symbol'),
+          timeframe: url.searchParams.get('timeframe'),
+        },
+        Number(url.searchParams.get('limit') ?? 50),
+        Number(url.searchParams.get('offset') ?? 0),
+      ),
+    )
+  }),
+
+  http.get('*/api/v1/ml-filters/models/:modelVersionId', ({ params }) => {
+    const detail = getMockMlModel(String(params.modelVersionId))
+    return detail
+      ? HttpResponse.json(detail)
+      : HttpResponse.json({ detail: 'ML filter model version was not found' }, { status: 404 })
+  }),
+
+  http.post('*/api/v1/ml-filters/comparisons', async ({ request }) => {
+    const result = startMockMlComparison((await request.json()) as MlFilterComparisonRequest)
+    return mlFilterStartResponse(result)
+  }),
+
+  http.get('*/api/v1/ml-filters/comparisons/:jobId', ({ params }) => {
+    const status = getMockMlComparisonStatus(String(params.jobId))
+    return status
+      ? HttpResponse.json(status)
+      : HttpResponse.json({ detail: 'ML filter comparison job was not found' }, { status: 404 })
+  }),
+
+  http.post('*/api/v1/ml-filters/evaluations', async ({ request }) => {
+    const result = startMockMlEvaluation((await request.json()) as MlFilterEvaluationRequest)
+    return mlFilterStartResponse(result)
+  }),
+
+  http.get('*/api/v1/ml-filters/evaluations/:jobId', ({ params }) => {
+    const status = getMockMlEvaluationStatus(String(params.jobId))
+    return status
+      ? HttpResponse.json(status)
+      : HttpResponse.json({ detail: 'ML filter evaluation job was not found' }, { status: 404 })
   }),
 
   // Discovery A/B
