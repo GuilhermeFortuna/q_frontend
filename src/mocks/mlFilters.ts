@@ -39,6 +39,8 @@ const ALL_FEATURES: MlFilterFeatureName[] = [
   'real_volume',
   'ma_short',
   'ma_long',
+  'delta',
+  'prev_delta',
   'side',
 ]
 const NO_VOLUME_FEATURES = ALL_FEATURES.filter((feature) => feature !== 'real_volume')

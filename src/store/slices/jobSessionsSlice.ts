@@ -8,6 +8,7 @@ import {
   type DrawingTool,
   type IndicatorConfig,
 } from '@/components/charts/types/chart'
+import type { MlFilterEvaluationRequest, MlFilterTrainingRequest } from '../../../contracts/api'
 import type { BacktestRequest, BacktestRunSummary } from '@/types/backtesting'
 import type { OptimizationBacktestConfig, OptimizationConfig } from '@/types/optimization'
 
@@ -67,6 +68,22 @@ export type BacktestSession = {
   aiModelSelection: { provider: string; model: string } | null
 }
 
+/**
+ * ML Filters research session. Job ids and the pinned requests outlive navigation and
+ * reload; terminal state is re-read from the server (not a Redis TTL) when restored.
+ */
+export type MlFilterSession = {
+  sourceRunId: string | null
+  trainingJobId: string | null
+  trainingRequest: MlFilterTrainingRequest | null
+  datasetId: string | null
+  selectedModelId: string | null
+  comparisonJobId: string | null
+  evaluationJobId: string | null
+  /** Frozen final-evaluation selection, kept so it can be retried identically. */
+  evaluationRequest: Required<MlFilterEvaluationRequest> | null
+}
+
 export type MarketDataSession = {
   selectedTimeframe: string
   chartType: ChartType
@@ -102,12 +119,14 @@ export type JobSessionsSlice = {
   backtestSession: BacktestSession
   marketDataSession: MarketDataSession
   launcherSession: LauncherSession
+  mlFilterSession: MlFilterSession
   patchOptimizeSession: (patch: Partial<OptimizeSession>) => void
   patchWalkForwardSession: (patch: Partial<WalkForwardSession>) => void
   patchDiscoverSession: (patch: Partial<DiscoverSession>) => void
   patchBacktestSession: (patch: Partial<BacktestSession>) => void
   patchMarketDataSession: (patch: Partial<MarketDataSession>) => void
   patchLauncherSession: (patch: Partial<LauncherSession>) => void
+  patchMlFilterSession: (patch: Partial<MlFilterSession>) => void
 }
 
 const initialOptimizeSession: OptimizeSession = {
@@ -147,6 +166,17 @@ const initialBacktestSession: BacktestSession = {
   aiModelSelection: null,
 }
 
+export const initialMlFilterSession: MlFilterSession = {
+  sourceRunId: null,
+  trainingJobId: null,
+  trainingRequest: null,
+  datasetId: null,
+  selectedModelId: null,
+  comparisonJobId: null,
+  evaluationJobId: null,
+  evaluationRequest: null,
+}
+
 const initialMarketDataSession: MarketDataSession = {
   selectedTimeframe: '1D',
   chartType: 'candles',
@@ -169,6 +199,7 @@ export const createJobSessionsSlice: StateCreator<JobSessionsSlice> = (set) => (
   backtestSession: initialBacktestSession,
   marketDataSession: initialMarketDataSession,
   launcherSession: initialLauncherSession,
+  mlFilterSession: initialMlFilterSession,
   patchOptimizeSession: (patch) =>
     set((state) => ({ optimizeSession: { ...state.optimizeSession, ...patch } })),
   patchWalkForwardSession: (patch) =>
@@ -181,4 +212,6 @@ export const createJobSessionsSlice: StateCreator<JobSessionsSlice> = (set) => (
     set((state) => ({ marketDataSession: { ...state.marketDataSession, ...patch } })),
   patchLauncherSession: (patch) =>
     set((state) => ({ launcherSession: { ...state.launcherSession, ...patch } })),
+  patchMlFilterSession: (patch) =>
+    set((state) => ({ mlFilterSession: { ...state.mlFilterSession, ...patch } })),
 })

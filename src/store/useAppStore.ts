@@ -34,6 +34,7 @@ export const useAppStore = create<AppStore>()(
         backtestSession: state.backtestSession,
         marketDataSession: state.marketDataSession,
         launcherSession: state.launcherSession,
+        mlFilterSession: state.mlFilterSession,
         activeWorkspace: state.activeWorkspace,
         selectedSymbol: state.selectedSymbol,
         pendingBacktestConfig: state.pendingBacktestConfig,

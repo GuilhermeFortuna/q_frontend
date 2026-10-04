@@ -42,11 +42,11 @@
 **Files:** Create components/research/ml-filters/MLFiltersTab.tsx, MLFilterTrainForm.tsx, MLFilterModels.tsx and colocated **tests**/MLFiltersTab.test.tsx; modify workspaces/research/ResearchWorkspace.tsx, types/features.ts and src/app/router.tsx search schema.
 **Interfaces:** ML Filters tab with source query selection, feature/default validation, algorithms, explicit cutoffs, durable training job and model detail; navigate with tab=ml-filters and source_run_id.
 
-- [ ] Add focused failing tests: Test source eligibility reasons, real_volume unavailable/all-zero versus legitimate tick zeros, mandatory side, invalid split/too few classes, ordered feature payload, pending/double submit, failure and navigation/reload preserving selected/active jobs. Exchange display round-trips UTC cutoffs in Brazil timezone.
-- [ ] Run `TZ=America/Sao_Paulo pnpm test:run src/components/research/ml-filters/__tests__/MLFiltersTab.test.tsx` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
-- [ ] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
-- [ ] Run `TZ=America/Sao_Paulo pnpm test:run src/components/research/ml-filters/__tests__/MLFiltersTab.test.tsx` and confirm the focused suite passes.
-- [ ] Commit this independently reviewable unit on the task branch with a conventional, focused message.
+- [x] Add focused failing tests: Test source eligibility reasons, real_volume unavailable/all-zero versus legitimate tick zeros, mandatory side, invalid split/too few classes, ordered feature payload, pending/double submit, failure and navigation/reload preserving selected/active jobs. Exchange display round-trips UTC cutoffs in Brazil timezone.
+- [x] Run `TZ=America/Sao_Paulo pnpm test:run src/components/research/ml-filters/__tests__/MLFiltersTab.test.tsx` and confirm the new behavior is missing before implementation; do not count import/setup failures as behavioral evidence.
+- [x] Implement the specified interfaces and behavior, keeping public types aligned with Q-085 and preserving the existing patterns named above.
+- [x] Run `TZ=America/Sao_Paulo pnpm test:run src/components/research/ml-filters/__tests__/MLFiltersTab.test.tsx` and confirm the focused suite passes.
+- [x] Commit this independently reviewable unit on the task branch with a conventional, focused message.
 
 ### 3. Compare validation and select one final evaluation
 

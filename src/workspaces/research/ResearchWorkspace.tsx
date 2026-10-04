@@ -7,6 +7,7 @@ import {
   FeatureScoringDashboard,
   type FeatureScoringSource,
 } from '@/components/research/FeatureScoringDashboard'
+import { MLFiltersTab } from '@/components/research/ml-filters/MLFiltersTab'
 import { NeuralFeaturesTab } from '@/components/research/neural/NeuralFeaturesTab'
 import { FeatureStorePanel } from '@/components/research/FeatureStoreTable'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
@@ -18,11 +19,13 @@ const TAB_OPTIONS: { value: ResearchTab; label: string }[] = [
   { value: 'scoring', label: 'Feature Scoring' },
   { value: 'lab', label: 'Feature Lab' },
   { value: 'neural', label: 'Neural Features' },
+  { value: 'ml-filters', label: 'ML Filters' },
   { value: 'experiments', label: 'Experiments' },
 ]
 
 type ResearchWorkspaceProps = {
   tab?: ResearchTab
+  sourceRunId?: string
 }
 
 function FeatureStoreTab() {
@@ -92,7 +95,7 @@ function FeatureLabTab({ recentRuns, onEvalStarted, onOpenRun }: FeatureLabTabPr
   return <FeatureLab recentRuns={recentRuns} onEvalStarted={onEvalStarted} onOpenRun={onOpenRun} />
 }
 
-export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
+export function ResearchWorkspace({ tab = 'store', sourceRunId }: ResearchWorkspaceProps) {
   const navigate = useNavigate({ from: '/research' })
   // Default to the aggregate "Latest scores" leaderboard so the Scoring tab shows
   // persisted results on load; a started eval switches this to 'eval' + a runId.
@@ -159,7 +162,8 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
             Research
           </h1>
           <p className="text-silver-400 text-sm">
-            Feature intelligence workspace — store, scoring, lab, neural models, and experiments.
+            Feature intelligence workspace — store, scoring, lab, neural models, ML entry filters,
+            and experiments.
           </p>
         </div>
         <SegmentedToggle
@@ -196,6 +200,7 @@ export function ResearchWorkspace({ tab = 'store' }: ResearchWorkspaceProps) {
             onClearTrainingJob={() => setNeuralTrainingJobId(null)}
           />
         ) : null}
+        {tab === 'ml-filters' ? <MLFiltersTab sourceRunId={sourceRunId} /> : null}
         {tab === 'experiments' ? <ExperimentsWorkspace /> : null}
       </div>
     </div>
