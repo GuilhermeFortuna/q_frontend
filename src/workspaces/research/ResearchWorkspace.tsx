@@ -175,7 +175,7 @@ export function ResearchWorkspace({ tab = 'store', sourceRunId }: ResearchWorksp
       data-testid="research-workspace"
       data-workspace-transition-root="research"
     >
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-4">
         <div>
           <h1
             className="text-cream-100 font-mono text-lg font-semibold tracking-wide"
@@ -196,7 +196,7 @@ export function ResearchWorkspace({ tab = 'store', sourceRunId }: ResearchWorksp
         />
       </div>
 
-      <div className="min-h-0 flex-1" data-workspace-transition-surface="primary">
+      <div className="min-h-0 flex-1 overflow-hidden" data-workspace-transition-surface="primary">
         {tab === 'store' ? <FeatureStoreTab /> : null}
         {tab === 'scoring' ? (
           <FeatureScoringTab

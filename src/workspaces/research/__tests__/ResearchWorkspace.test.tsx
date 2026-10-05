@@ -1,3 +1,4 @@
+import { shortMlFilterId } from '@/lib/mlFilters/mlFilterFormat'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { setupServer } from 'msw/node'
@@ -157,7 +158,7 @@ describe('ResearchWorkspace', () => {
 
     await user.click(
       await screen.findByRole('button', {
-        name: new RegExp(`details for .*${MOCK_ML_READY_MODEL_ID}`, 'i'),
+        name: new RegExp(shortMlFilterId(MOCK_ML_READY_MODEL_ID), 'i'),
       }),
     )
     await user.click(await screen.findByTestId('ml-filter-use-in-backtest'))

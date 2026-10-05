@@ -41,3 +41,8 @@ export function humanizeKey(key: string): string {
   const text = key.replace(/_/g, ' ')
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
+
+/** Keep both ends so versions with a common prefix stay distinguishable. */
+export function shortMlFilterId(value: string): string {
+  return value.length > 18 ? `${value.slice(0, 8)}…${value.slice(-6)}` : value
+}

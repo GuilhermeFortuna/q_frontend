@@ -50,7 +50,7 @@ function captureTrainingRequests() {
 }
 
 async function selectSource(user: ReturnType<typeof userEvent.setup>, runId: string) {
-  const radio = await screen.findByRole('radio', { name: new RegExp(runId) })
+  const radio = await screen.findByRole('button', { name: new RegExp(runId.slice(0, 8)) })
   await user.click(radio)
   await screen.findByTestId('ml-filter-train-form')
 }
@@ -58,10 +58,10 @@ async function selectSource(user: ReturnType<typeof userEvent.setup>, runId: str
 describe('MLFiltersTab sources', () => {
   it('shows eligibility reasons for ineligible sources instead of an empty selector', async () => {
     renderWithQueryClient(<MLFiltersTab />)
-    const ineligible = await screen.findByRole('radio', {
-      name: new RegExp(MOCK_ML_SOURCE_INELIGIBLE_ID),
-    })
-    expect(ineligible).toBeDisabled()
+    await screen.findByText(/Unavailable sources/)
+    expect(
+      screen.queryByRole('button', { name: new RegExp(MOCK_ML_SOURCE_INELIGIBLE_ID) }),
+    ).not.toBeInTheDocument()
     expect(screen.getByText(/only single-entry runs can be used/i)).toBeInTheDocument()
   })
 
@@ -80,7 +80,25 @@ describe('MLFiltersTab sources', () => {
     const summary = await screen.findByTestId('ml-filter-source-summary')
     expect(within(summary).getByText('WIN$ M5')).toBeInTheDocument()
     expect(within(summary).getByText('412')).toBeInTheDocument()
-    expect(await within(summary).findByText(/short_period: 20/)).toBeInTheDocument()
+    expect(await within(summary).findByText(/short period: 20/)).toBeInTheDocument()
+  })
+
+  it('keeps draft dates when switching stages and lets a navigated source change', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderWithQueryClient(<MLFiltersTab sourceRunId={MOCK_ML_SOURCE_OK_ID} />)
+    const input = await screen.findByLabelText('Training end (exchange time)')
+    await user.clear(input)
+    await user.type(input, '2026-03-19T00:00')
+    const workflow = screen.getByRole('radiogroup', { name: 'ML filter workflow' })
+    await user.click(within(workflow).getByRole('radio', { name: 'Compare' }))
+    expect(screen.getByRole('heading', { name: 'Compare on validation' })).toBeVisible()
+    await user.click(within(workflow).getByRole('radio', { name: 'Train' }))
+    expect(input).toHaveValue('2026-03-19T00:00')
+    await selectSource(user, MOCK_ML_SOURCE_NO_VOLUME_ID)
+    expect(useAppStore.getState().mlFilterSession.sourceRunId).toBe(MOCK_ML_SOURCE_NO_VOLUME_ID)
+    expect(screen.getByTestId('ml-filter-source-summary')).toHaveTextContent(
+      'Real volume unavailable',
+    )
   })
 
   it('reports a missing source instead of silently clearing the selection', async () => {
@@ -90,6 +108,66 @@ describe('MLFiltersTab sources', () => {
 })
 
 describe('MLFilterTrainForm', () => {
+  it('keeps queued progress visible across stages and warns when no worker starts', async () => {
+    captureTrainingRequests()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderWithQueryClient(<MLFiltersTab sourceRunId={MOCK_ML_SOURCE_OK_ID} />)
+    await screen.findByTestId('ml-filter-train-form')
+    await user.click(screen.getByTestId('ml-filter-train-submit'))
+    expect(await screen.findByText('Waiting for a training worker')).toBeVisible()
+    const workflow = screen.getByRole('radiogroup', { name: 'ML filter workflow' })
+    await user.click(within(workflow).getByRole('radio', { name: 'Compare' }))
+    expect(screen.getByTestId('ml-filter-training-progress')).toBeVisible()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(31_000)
+    })
+    expect(screen.getByText('Still waiting for the worker')).toBeVisible()
+    expect(screen.getByRole('progressbar', { name: 'Training progress' })).not.toHaveAttribute(
+      'aria-valuenow',
+    )
+  })
+
+  it('places submission errors above the setup fields', async () => {
+    server.use(
+      http.post('*/api/v1/ml-filters/training', () =>
+        HttpResponse.json({ detail: 'Queue unavailable' }, { status: 503 }),
+      ),
+    )
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderWithQueryClient(<MLFiltersTab sourceRunId={MOCK_ML_SOURCE_OK_ID} />)
+    await screen.findByTestId('ml-filter-train-form')
+    await user.click(screen.getByTestId('ml-filter-train-submit'))
+    const error = await screen.findByTestId('ml-filter-submit-error')
+    expect(error).toBeVisible()
+    expect(error).toHaveTextContent('Queue unavailable')
+    expect(
+      error.compareDocumentPosition(screen.getByLabelText('Training end (exchange time)')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(screen.getByTestId('ml-filter-train-submit')).toBeEnabled()
+  })
+
+  it('shows saved model scores and opens the completed dataset for comparison', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderWithQueryClient(<MLFiltersTab sourceRunId={MOCK_ML_SOURCE_OK_ID} />)
+    await screen.findByTestId('ml-filter-train-form')
+    await user.click(screen.getByTestId('ml-filter-train-submit'))
+    await screen.findByTestId('ml-filter-training-progress')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(8_000)
+    })
+    expect(await screen.findByTestId('ml-filter-training-complete')).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getAllByTestId('ml-filter-training-model-result')).toHaveLength(3),
+    )
+    expect(screen.getAllByTestId('ml-filter-training-model-result')[0]).toHaveTextContent(
+      'Validation ROC AUC',
+    )
+    await user.click(screen.getByRole('button', { name: 'Review validation results' }))
+    expect(screen.getByRole('heading', { name: 'Compare on validation' })).toBeVisible()
+    expect(useAppStore.getState().mlFilterSession.datasetId).toBeTruthy()
+  })
+
   it('defaults to all available features with mandatory side, three algorithms and seed 42', async () => {
     renderWithQueryClient(<MLFiltersTab sourceRunId={MOCK_ML_SOURCE_OK_ID} />)
     await screen.findByTestId('ml-filter-train-form')
@@ -106,7 +184,7 @@ describe('MLFilterTrainForm', () => {
     renderWithQueryClient(<MLFiltersTab sourceRunId={MOCK_ML_SOURCE_OK_ID} />)
     await screen.findByTestId('ml-filter-train-form')
     expect(screen.getByLabelText('Training end (exchange time)')).toHaveValue('2026-03-18T00:00')
-    expect(screen.getByText('Request: 2026-03-18T03:00:00Z')).toBeInTheDocument()
+    expect(screen.getByText(/UTC boundaries: 2026-03-18T03:00:00Z/)).toBeInTheDocument()
     expect(screen.getByLabelText('Validation end (exchange time)')).toHaveValue('2026-04-09T00:00')
     const ranges = screen.getByTestId('ml-filter-split-ranges')
     expect(ranges).toHaveTextContent('Reserved tail')
@@ -144,6 +222,7 @@ describe('MLFilterTrainForm', () => {
     renderWithQueryClient(<MLFiltersTab sourceRunId={MOCK_ML_SOURCE_OK_ID} />)
     await screen.findByTestId('ml-filter-train-form')
     await user.click(screen.getByLabelText('Random Forest'))
+    await user.click(screen.getByText('Advanced settings'))
     await user.click(screen.getByLabelText('Open'))
     const submit = screen.getByTestId('ml-filter-train-submit')
     await user.dblClick(submit)
