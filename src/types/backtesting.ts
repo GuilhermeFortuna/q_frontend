@@ -4,6 +4,7 @@ import type { MlFilterBacktestSummary, MlFilterConfig } from '../../contracts/ap
 export type FixedQuantityPositionSizing = {
   type: 'fixed_quantity'
   quantity: number
+  scale_by_signal_strength?: boolean
 }
 
 export type FixedSafetyMarginPositionSizing = {
@@ -11,6 +12,7 @@ export type FixedSafetyMarginPositionSizing = {
   safety_margin_per_contract: number
   min_contracts: number
   max_contracts: number | null
+  scale_by_signal_strength?: boolean
 }
 
 export type InverseVolatilityPositionSizing = {
@@ -18,6 +20,7 @@ export type InverseVolatilityPositionSizing = {
   target_volatility_pct: number
   min_contracts: number
   max_contracts: number | null
+  scale_by_signal_strength?: boolean
 }
 
 export type PositionSizingConfig =

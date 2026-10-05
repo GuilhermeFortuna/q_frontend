@@ -5,6 +5,7 @@ import type { PositionSizingConfig } from '@/types/backtesting'
 export type PositionSizingMode = 'fixed_quantity' | 'fixed_safety_margin' | 'inverse_volatility'
 
 export type PositionSizingFields = {
+  scaleBySignalStrength: boolean
   quantity: number
   safetyMargin: number
   minContracts: number
@@ -60,6 +61,7 @@ export type PositionSizingValidationResult = {
 
 export function defaultPositionSizingFields(): PositionSizingFields {
   return {
+    scaleBySignalStrength: false,
     quantity: 1,
     safetyMargin: 5000,
     minContracts: 1,
@@ -85,6 +87,7 @@ export function hydratePositionSizingFields(config?: PositionSizingConfig | null
   if (!config) {
     return { mode: 'fixed_quantity', fields }
   }
+  fields.scaleBySignalStrength = config.scale_by_signal_strength ?? false
 
   if (config.type === 'fixed_quantity') {
     return {
@@ -120,8 +123,12 @@ export function buildPositionSizingPayload(
   mode: PositionSizingMode,
   fields: PositionSizingFields,
 ): PositionSizingConfig {
+  // Omitted scaling retains the API's false default; preserve enabled scaling
+  // when restoring a saved run or an ML model's baseline.
+  const scaling = fields.scaleBySignalStrength ? { scale_by_signal_strength: true } : {}
   if (mode === 'fixed_quantity') {
     return {
+      ...scaling,
       type: 'fixed_quantity',
       quantity: fields.quantity,
     }
@@ -130,6 +137,7 @@ export function buildPositionSizingPayload(
   if (mode === 'fixed_safety_margin') {
     const maxContracts = parseMaxContractsInput(fields.maxContractsInput)
     return {
+      ...scaling,
       type: 'fixed_safety_margin',
       safety_margin_per_contract: fields.safetyMargin,
       min_contracts: fields.minContracts,
@@ -139,6 +147,7 @@ export function buildPositionSizingPayload(
 
   const maxContracts = parseMaxContractsInput(fields.inverseMaxContractsInput)
   return {
+    ...scaling,
     type: 'inverse_volatility',
     target_volatility_pct: fields.targetVolatilityPct,
     min_contracts: fields.inverseMinContracts,

@@ -57,7 +57,14 @@ export function mlFilterSemanticSnapshot(
     ma_parameters: entryParams,
     exits: exitParams,
     costs: request.costs ?? { cost_per_contract: 0, cost_bps: 0 },
-    position_sizing: request.position_sizing ?? null,
+    // Stored API requests include defaults that form payloads may omit.
+    // Compare their effective scaling behavior rather than field presence.
+    position_sizing: request.position_sizing
+      ? {
+          ...request.position_sizing,
+          scale_by_signal_strength: request.position_sizing.scale_by_signal_strength ?? false,
+        }
+      : null,
     point_value: request.point_value ?? null,
     day_trade: dayTrade,
     ...(dayTrade
