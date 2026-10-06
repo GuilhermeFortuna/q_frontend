@@ -10,6 +10,7 @@ import {
   type BacktestConfigSetters,
   type BacktestConfigValidation,
 } from '@/lib/backtesting/useBacktestConfig'
+import { RESEARCH_CANDLE_TIMEFRAME_OPTIONS } from '@/lib/market/timeframes'
 import { cn } from '@/lib/utils'
 
 type MarketConfigBandProps = {
@@ -75,11 +76,11 @@ export function MarketConfigBand({ fields, setters, validation }: MarketConfigBa
                   onChange={(e) => setters.setTimeframe(e.target.value)}
                   className={inputClass}
                 >
-                  <option value="M1">1 Minute</option>
-                  <option value="M5">5 Minutes</option>
-                  <option value="M15">15 Minutes</option>
-                  <option value="H1">1 Hour</option>
-                  <option value="D1">1 Day</option>
+                  {RESEARCH_CANDLE_TIMEFRAME_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </LabeledField>
             ) : (

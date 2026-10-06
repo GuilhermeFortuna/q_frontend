@@ -54,7 +54,7 @@ const EMPTY_CUSTOM_STRATEGIES: CustomStrategy[] = []
 
 export type OptimizeEngine = 'candle' | 'tick'
 
-export const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M15', 'H1'] as const
+export const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M10', 'M15', 'H1'] as const
 
 export type { EntryInstanceState, EntryManagerState } from '@/lib/backtesting/entryInstances'
 

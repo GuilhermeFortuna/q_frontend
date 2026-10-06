@@ -101,4 +101,14 @@ export const ACCEPTED_OHLCV_TIMEFRAMES = [
 ] as const
 
 /** Common subset shown in the Storage download multi-select (all values ⊆ ACCEPTED_OHLCV_TIMEFRAMES). */
-export const STORAGE_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1'] as const
+export const STORAGE_TIMEFRAME_OPTIONS = [
+  'M1',
+  'M5',
+  'M10',
+  'M15',
+  'M30',
+  'H1',
+  'H4',
+  'D1',
+  'W1',
+] as const

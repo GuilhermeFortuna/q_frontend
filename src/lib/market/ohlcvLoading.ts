@@ -9,6 +9,7 @@ export const PAN_TRIGGER_THRESHOLD = 30
 const BACKGROUND_PREFETCH_BY_TF: Record<string, number> = {
   M1: 1,
   M5: 2,
+  M10: 2,
   M15: 2,
   M30: 2,
   H1: 2,
@@ -18,6 +19,7 @@ const BACKGROUND_PREFETCH_BY_TF: Record<string, number> = {
 const BACKFILL_WINDOW_DAYS: Record<string, number> = {
   M1: 7,
   M5: 30,
+  M10: 30,
   M15: 30,
   M30: 30,
   H1: 180,

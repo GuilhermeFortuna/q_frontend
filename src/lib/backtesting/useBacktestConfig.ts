@@ -61,7 +61,7 @@ import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbench
 
 export type BacktestEngine = 'candle' | 'tick'
 
-export const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M15', 'H1'] as const
+export const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M10', 'M15', 'H1'] as const
 
 export { strategyEngine } from '@/lib/strategies/strategyPresentation'
 

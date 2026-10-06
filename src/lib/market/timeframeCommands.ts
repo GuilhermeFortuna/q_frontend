@@ -11,6 +11,7 @@ export function parseTimeframeInput(input: string): TimeframeCommand | null {
     const mins = parseInt(minMatch[1], 10)
     if (mins === 1) return { label: 'Switch to 1 Minute', value: '1m' }
     if (mins === 5) return { label: 'Switch to 5 Minutes', value: '5m' }
+    if (mins === 10) return { label: 'Switch to 10 Minutes', value: '10m' }
     if (mins === 15) return { label: 'Switch to 15 Minutes', value: '15m' }
     if (mins === 30) return { label: 'Switch to 30 Minutes', value: '30m' }
     if (mins === 60) return { label: 'Switch to 1 Hour', value: '1H' }
@@ -32,6 +33,7 @@ export function parseTimeframeInput(input: string): TimeframeCommand | null {
 
   if (clean === '1m') return { label: 'Switch to 1 Minute', value: '1m' }
   if (clean === '5m') return { label: 'Switch to 5 Minutes', value: '5m' }
+  if (clean === '10m') return { label: 'Switch to 10 Minutes', value: '10m' }
   if (clean === '15m') return { label: 'Switch to 15 Minutes', value: '15m' }
   if (clean === '30m') return { label: 'Switch to 30 Minutes', value: '30m' }
   if (clean === '1h' || clean === '60m') return { label: 'Switch to 1 Hour', value: '1H' }
@@ -43,6 +45,7 @@ export function parseTimeframeInput(input: string): TimeframeCommand | null {
     const num = parseInt(numMatch[1], 10)
     if (num === 1) return { label: 'Switch to 1 Minute', value: '1m' }
     if (num === 5) return { label: 'Switch to 5 Minutes', value: '5m' }
+    if (num === 10) return { label: 'Switch to 10 Minutes', value: '10m' }
     if (num === 15) return { label: 'Switch to 15 Minutes', value: '15m' }
     if (num === 30) return { label: 'Switch to 30 Minutes', value: '30m' }
     if (num === 60) return { label: 'Switch to 1 Hour', value: '1H' }
