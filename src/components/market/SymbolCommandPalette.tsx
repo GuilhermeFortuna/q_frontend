@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, Search } from 'lucide-react'
 
 import { useSearchSymbols } from '@/api/queries/market-data'
@@ -34,6 +34,8 @@ function highlightMatch(text: string, query: string) {
 }
 
 export type SymbolCommandPaletteProps = {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   onSelectSymbol: (instrument: Instrument) => void
   onAddToWatchlist: (instrument: Instrument) => void
   onRemoveFromWatchlist: (symbol: string) => void
@@ -48,13 +50,17 @@ type DropdownItem =
   | { type: 'symbol'; symbol: Instrument }
 
 export function SymbolCommandPalette({
+  open: controlledOpen,
+  onOpenChange,
   onSelectSymbol,
   onAddToWatchlist,
   onRemoveFromWatchlist,
   onSelectTimeframe,
   recentInstruments,
 }: SymbolCommandPaletteProps) {
-  const [open, setOpen] = useState(false)
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = controlledOpen ?? uncontrolledOpen
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
 
@@ -76,6 +82,14 @@ export function SymbolCommandPalette({
 
   const searchResultsQuery = useSearchSymbols(debouncedSearchQuery)
   const searchResults = useMemo(() => searchResultsQuery.data ?? [], [searchResultsQuery.data])
+
+  const setOpen = useCallback(
+    (nextOpen: boolean) => {
+      if (!isControlled) setUncontrolledOpen(nextOpen)
+      onOpenChange?.(nextOpen)
+    },
+    [isControlled, onOpenChange],
+  )
 
   const dropdownItems = useMemo(() => {
     const items: DropdownItem[] = []
@@ -132,7 +146,7 @@ export function SymbolCommandPalette({
 
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [])
+  }, [setOpen])
 
   useEffect(() => {
     if (open && searchInputRef.current) {
@@ -152,7 +166,7 @@ export function SymbolCommandPalette({
     }
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
-  }, [open])
+  }, [open, setOpen])
 
   const closePalette = () => {
     setOpen(false)

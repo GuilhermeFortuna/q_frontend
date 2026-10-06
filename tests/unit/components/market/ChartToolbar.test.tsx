@@ -31,4 +31,36 @@ describe('ChartToolbar', () => {
     await user.click(screen.getByRole('radio', { name: 'Line' }))
     expect(onChartTypeChange).toHaveBeenCalledWith('line')
   })
+
+  it('offers fullscreen and symbol controls when enabled', async () => {
+    const user = userEvent.setup()
+    const onToggleFullscreen = vi.fn()
+    const onOpenSymbolPicker = vi.fn()
+
+    render(
+      <ChartToolbar
+        selectedTimeframe="1D"
+        onTimeframeChange={vi.fn()}
+        chartType="candles"
+        onChartTypeChange={vi.fn()}
+        indicators={DEFAULT_INDICATORS}
+        onIndicatorsChange={vi.fn()}
+        bars={[]}
+        showGrid
+        onShowGridChange={vi.fn()}
+        chartSettings={DEFAULT_SETTINGS}
+        onChartSettingsChange={vi.fn()}
+        symbol="PETR4"
+        isFullscreen
+        onToggleFullscreen={onToggleFullscreen}
+        onOpenSymbolPicker={onOpenSymbolPicker}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Change symbol, current PETR4' }))
+    await user.click(screen.getByRole('button', { name: 'Exit fullscreen' }))
+
+    expect(onOpenSymbolPicker).toHaveBeenCalledOnce()
+    expect(onToggleFullscreen).toHaveBeenCalledOnce()
+  })
 })

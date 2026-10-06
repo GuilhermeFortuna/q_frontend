@@ -16,6 +16,7 @@ import { SymbolCommandPalette } from '@/components/market/SymbolCommandPalette'
 import { Panel as DesignPanel } from '@/components/ui/Panel'
 import { useWatchlist } from '@/hooks/useWatchlist'
 import { useRecentSymbols } from '@/hooks/useRecentSymbols'
+import { useFullscreen } from '@/hooks/useFullscreen'
 import { resolveMt5ConnectionStatus } from '@/lib/market/connectionStatus'
 import { useAppStore } from '@/store/useAppStore'
 import type { OhlcvBar, Instrument } from '@/types/api'
@@ -77,6 +78,13 @@ const DEFAULT_PROFILES: ChartProfile[] = [
 ]
 
 export function MarketDataWorkspace() {
+  const {
+    elementRef: chartFullscreenRef,
+    isFullscreen,
+    enter,
+    exit,
+  } = useFullscreen<HTMLDivElement>()
+  const [symbolPaletteOpen, setSymbolPaletteOpen] = useState(false)
   const selectedSymbol = useAppStore((s) => s.selectedSymbol)
   const setSelectedSymbol = useAppStore((s) => s.setSelectedSymbol)
 
@@ -376,7 +384,12 @@ export function MarketDataWorkspace() {
         <Separator className="market-panel-resize-handle" />
 
         <Panel id="chart-zone" defaultSize={60} minSize={40} className="min-w-0">
-          <div className="flex h-full min-h-0 gap-4">
+          <div
+            ref={chartFullscreenRef}
+            className={`relative flex h-full min-h-0 gap-4 ${
+              isFullscreen ? 'bg-carbon-950 fixed inset-0 z-[100] h-screen w-screen gap-3 p-3' : ''
+            }`}
+          >
             <DesignPanel
               living
               className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0"
@@ -406,6 +419,16 @@ export function MarketDataWorkspace() {
                   patchMarketDataSession({ chartSettings: val })
                   updateActiveProfile({ chartSettings: val })
                 }}
+                symbol={selectedSymbol}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={() => {
+                  if (isFullscreen) {
+                    void exit()
+                  } else {
+                    void enter()
+                  }
+                }}
+                onOpenSymbolPicker={() => setSymbolPaletteOpen(true)}
               />
               <ChartPanel
                 symbol={selectedSymbol}
@@ -441,6 +464,15 @@ export function MarketDataWorkspace() {
               }
               onClearDrawings={clearDrawings}
             />
+            <SymbolCommandPalette
+              open={symbolPaletteOpen}
+              onOpenChange={setSymbolPaletteOpen}
+              onSelectSymbol={handleSelectSymbol}
+              onAddToWatchlist={addToWatchlist}
+              onRemoveFromWatchlist={removeFromWatchlist}
+              onSelectTimeframe={(val) => patchMarketDataSession({ selectedTimeframe: val })}
+              recentInstruments={recentInstruments}
+            />
           </div>
         </Panel>
 
@@ -472,14 +504,6 @@ export function MarketDataWorkspace() {
           )}
         </Panel>
       </Group>
-
-      <SymbolCommandPalette
-        onSelectSymbol={handleSelectSymbol}
-        onAddToWatchlist={addToWatchlist}
-        onRemoveFromWatchlist={removeFromWatchlist}
-        onSelectTimeframe={(val) => patchMarketDataSession({ selectedTimeframe: val })}
-        recentInstruments={recentInstruments}
-      />
     </div>
   )
 }

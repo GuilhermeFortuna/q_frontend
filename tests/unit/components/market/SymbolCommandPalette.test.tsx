@@ -28,6 +28,27 @@ afterEach(() => {
 afterAll(() => server.close())
 
 describe('SymbolCommandPalette', () => {
+  it('opens from a visible symbol-picker request', async () => {
+    const user = userEvent.setup()
+    const onOpenChange = vi.fn()
+
+    renderWithQueryClient(
+      <SymbolCommandPalette
+        open
+        onOpenChange={onOpenChange}
+        onSelectSymbol={vi.fn()}
+        onAddToWatchlist={vi.fn()}
+        onRemoveFromWatchlist={vi.fn()}
+        onSelectTimeframe={vi.fn()}
+        recentInstruments={[petr4]}
+      />,
+    )
+
+    expect(await screen.findByPlaceholderText('Search symbol...')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
   it('adds to watchlist without changing selected symbol for +SYM commands', async () => {
     const user = userEvent.setup()
     const onSelectSymbol = vi.fn()
