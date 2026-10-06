@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 import { BacktestStrategyChart } from '@/components/backtests/BacktestStrategyChart'
 import { getMockBacktestResponse } from '@/mocks/backtest'
@@ -43,6 +44,48 @@ describe('BacktestStrategyChart', () => {
 
     expect(screen.getByText('COMS · H1')).toBeInTheDocument()
     expect(document.querySelector('svg')).not.toBeNull()
+  })
+
+  it('filters trade overlays by closed-trade P&L outcome', async () => {
+    const response = getMockBacktestResponse(mockRequest)
+    const tradePnls = [100, -50, 0, null, 25]
+    const trades = response.trades.slice(0, 5).map((trade, index) => ({
+      ...trade,
+      pnl: tradePnls[index],
+      status: index === 4 ? ('OPEN' as const) : ('CLOSED' as const),
+      ...(index === 4 ? { exit_time: null, exit_price: null } : {}),
+    }))
+
+    render(
+      <BacktestStrategyChart
+        bars={response.bars}
+        indicators={response.indicators}
+        trades={trades}
+        symbol={mockRequest.symbol}
+        timeframe={mockRequest.timeframe}
+      />,
+    )
+
+    const countCompleteTradePaths = () =>
+      document.querySelectorAll('line[stroke="transparent"]').length
+    const countEntryMarkers = () => document.querySelectorAll('svg polygon').length
+
+    expect(countCompleteTradePaths()).toBe(4)
+    expect(countEntryMarkers()).toBe(5)
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Winners' }))
+    expect(countCompleteTradePaths()).toBe(1)
+    expect(countEntryMarkers()).toBe(1)
+    expect(screen.getByRole('button', { name: 'Winners' })).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Losers' }))
+    expect(countCompleteTradePaths()).toBe(1)
+    expect(countEntryMarkers()).toBe(1)
+
+    await userEvent.click(screen.getByRole('button', { name: 'All' }))
+    expect(countCompleteTradePaths()).toBe(4)
+    expect(countEntryMarkers()).toBe(5)
   })
 
   it('renders backend exit rule ids as compact marker labels', () => {

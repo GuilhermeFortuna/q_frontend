@@ -45,6 +45,8 @@ export type BacktestStrategyChartProps = {
   onHoverTradeChange?: (id: string | null) => void
 }
 
+type TradeOutcomeFilter = 'all' | 'winners' | 'losers'
+
 type BacktestPaneLayout = {
   priceTop: number
   priceHeight: number
@@ -192,6 +194,7 @@ function ChartInner({
   const panStart = useRef<{ x: number; y: number } | null>(null)
   const chartRef = useRef<HTMLDivElement>(null)
   const [chartType, setChartType] = useState<'candles' | 'line' | 'area'>('candles')
+  const [tradeOutcomeFilter, setTradeOutcomeFilter] = useState<TradeOutcomeFilter>('all')
   const [showGrid, setShowGrid] = useState<boolean>(true)
   const [hoveredBar, setHoveredBar] = useState<(typeof visibleBars)[0] | null>(null)
   const [mouseY, setMouseY] = useState<number | null>(null)
@@ -324,6 +327,25 @@ function ChartInner({
     [onHoverTradeChange],
   )
 
+  const filteredTrades = useMemo(() => {
+    if (tradeOutcomeFilter === 'all') return trades
+
+    return trades.filter((trade) => {
+      if (trade.status !== 'CLOSED' || trade.pnl == null) return false
+      return tradeOutcomeFilter === 'winners' ? trade.pnl > 0 : trade.pnl < 0
+    })
+  }, [trades, tradeOutcomeFilter])
+
+  const handleTradeOutcomeFilterChange = useCallback(
+    (filter: TradeOutcomeFilter) => {
+      setTradeOutcomeFilter(filter)
+      setHoveredTrade(null)
+      setHoverPos(null)
+      onHoverTradeChange?.(null)
+    },
+    [onHoverTradeChange],
+  )
+
   const activeBar = hoveredBar || visibleBars[visibleBars.length - 1] || null
   const activeIndex = activeBar
     ? processed.findIndex((b) => b.timestamp === activeBar.timestamp)
@@ -425,6 +447,39 @@ function ChartInner({
 
       {/* Floating Toolbar Controls */}
       <div className="surface-float surface-float--blur absolute top-2.5 right-3.5 z-10 flex items-center gap-1 rounded-lg p-1 transition-opacity duration-150 select-none">
+        <div
+          role="group"
+          aria-label="Filter trades by outcome"
+          className="border-carbon-800/80 mr-1 flex gap-0.5 border-r pr-1.5"
+        >
+          {(['all', 'winners', 'losers'] as const).map((filter) => {
+            const label = filter === 'all' ? 'All' : filter === 'winners' ? 'Winners' : 'Losers'
+            const isActive = tradeOutcomeFilter === filter
+            const activeColor =
+              filter === 'winners'
+                ? 'border-emerald-500/25 bg-emerald-600/15 text-emerald-400'
+                : filter === 'losers'
+                  ? 'border-rose-500/25 bg-rose-600/15 text-rose-400'
+                  : 'border-brass-500/25 bg-brass-600/20 text-brass-400'
+
+            return (
+              <button
+                key={filter}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => handleTradeOutcomeFilterChange(filter)}
+                className={`rounded-md border px-1.5 py-1.5 text-[9px] font-semibold transition-all duration-150 active:scale-90 ${
+                  isActive
+                    ? `${activeColor} shadow-[0_0_10px_rgba(196,165,116,0.12)]`
+                    : 'text-silver-400 hover:bg-carbon-850/50 hover:text-silver-100 border-transparent'
+                }`}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+
         {/* Chart Style Selector */}
         <div className="border-carbon-800/80 mr-1 flex gap-0.5 border-r pr-1.5">
           <button
@@ -674,7 +729,7 @@ function ChartInner({
         />
 
         <TradeMarkersLayer
-          trades={trades}
+          trades={filteredTrades}
           allBars={bars}
           visibleTimestamps={visibleTimestamps}
           xScale={scales.xScale}
