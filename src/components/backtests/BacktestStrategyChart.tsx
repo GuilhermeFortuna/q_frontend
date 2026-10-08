@@ -8,6 +8,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
 import {
+  indicatorStroke,
   StrategyIndicatorLayer,
   StrategyOscillatorLayer,
 } from '@/components/backtests/StrategyIndicatorLayer'
@@ -776,10 +777,9 @@ function ChartLegend({ indicators }: { indicators: ChartIndicatorSeries[] }) {
     <div className="text-silver-400 flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 text-xs">
       {priceIndicators.map((ind) => (
         <span key={ind.key} className="inline-flex items-center gap-1.5">
-          <span
-            className="inline-block h-0.5 w-4"
-            style={{ backgroundColor: ind.color ?? '#c9a227' }}
-          />
+          <svg width={16} height={8} aria-hidden="true">
+            <line x1={1} x2={15} y1={4} y2={4} {...indicatorStroke(ind)} />
+          </svg>
           {ind.label}
         </span>
       ))}

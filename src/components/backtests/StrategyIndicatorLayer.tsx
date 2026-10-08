@@ -13,6 +13,21 @@ type StrategyIndicatorLayerProps = {
   left: number
 }
 
+const DEFAULT_INDICATOR_COLOR = '#c9a227'
+const DEFAULT_INDICATOR_WIDTH = 1.2
+const DASH_PATTERNS = { solid: undefined, dashed: '4 2', dotted: '1 3' } as const
+
+/** Stroke attributes for an indicator, falling back to the chart defaults for unset fields. */
+export function indicatorStroke(ind: ChartIndicatorSeries) {
+  const style = ind.line_style ?? 'solid'
+  return {
+    stroke: ind.color ?? DEFAULT_INDICATOR_COLOR,
+    strokeWidth: ind.line_width ?? DEFAULT_INDICATOR_WIDTH,
+    strokeDasharray: DASH_PATTERNS[style],
+    strokeLinecap: style === 'dotted' ? ('round' as const) : undefined,
+  }
+}
+
 function linePath(
   values: (number | null)[],
   allBars: OhlcvBar[],
@@ -59,9 +74,7 @@ export function StrategyIndicatorLayer({
           key={ind.key}
           d={linePath(ind.values, allBars, visibleSet, xScale, yScale)}
           fill="none"
-          stroke={ind.color ?? '#c9a227'}
-          strokeWidth={1.2}
-          strokeDasharray={ind.key.includes('long') ? undefined : '4 2'}
+          {...indicatorStroke(ind)}
         />
       ))}
     </g>
@@ -106,8 +119,7 @@ export function StrategyOscillatorLayer({
           <path
             d={linePath(ind.values, allBars, visibleSet, xScale, yScale)}
             fill="none"
-            stroke={ind.color ?? '#c9a227'}
-            strokeWidth={1.2}
+            {...indicatorStroke(ind)}
           />
           <text x={4} y={top + 12} fill="#9ca3af" fontSize={9} fontFamily="monospace">
             {ind.label}

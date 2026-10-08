@@ -159,6 +159,7 @@ function generateMockChartData(
       label: `MA Short (${shortPeriod})`,
       pane: 'price',
       color: '#c9a227',
+      line_style: 'dashed',
       values: maShort,
     },
     {
@@ -235,6 +236,7 @@ function generateMockTickChartData(
       label: `SMA Short (${shortPeriod} ticks)`,
       pane: 'price',
       color: '#c9a227',
+      line_style: 'dashed',
       values: maShort,
     },
     {

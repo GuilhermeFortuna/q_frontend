@@ -118,6 +118,8 @@ export interface ChartIndicatorSeries {
   label: string
   pane: 'price' | 'oscillator'
   color?: string
+  line_style?: 'solid' | 'dashed' | 'dotted' | null
+  line_width?: number | null
   values: (number | null)[]
 }
 
