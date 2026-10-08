@@ -1,5 +1,7 @@
 mod csv_export;
 mod report;
+#[cfg(target_os = "linux")]
+mod webkit_compat;
 
 use std::{borrow::Cow, env};
 
@@ -38,7 +40,22 @@ fn init_native_sentry() -> Option<sentry::ClientInitGuard> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _sentry_guard = init_native_sentry();
-    let builder = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(target_os = "linux")]
+    let builder = match tauri::webview_version() {
+        Ok(version) => match webkit_compat::initialization_script(&version) {
+            Some(script) => {
+                eprintln!("WebKitGTK {version}: enabling filter compatibility");
+                builder.append_invoke_initialization_script(script)
+            }
+            None => builder,
+        },
+        Err(error) => {
+            eprintln!("Could not determine WebKitGTK runtime version: {error}");
+            builder
+        }
+    };
+    let builder = builder
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -53,19 +70,17 @@ pub fn run() {
             let mut tray_builder = TrayIconBuilder::new()
                 .menu(&menu)
                 .show_menu_on_left_click(false)
-                .on_menu_event(|app, event| {
-                    match event.id().as_ref() {
-                        "show" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                            }
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         }
-                        "quit" => {
-                            app.exit(0);
-                        }
-                        _ => {}
                     }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {

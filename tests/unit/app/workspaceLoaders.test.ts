@@ -27,8 +27,7 @@ describe('workspace chunk preloading', () => {
     }
   })
 
-  it('exposes single and bulk preloading', () => {
+  it('exposes targeted preloading for dock interactions', () => {
     expect(loadersSource).toContain('export async function preloadWorkspace(')
-    expect(loadersSource).toContain('export async function preloadAllWorkspaces(')
   })
 })

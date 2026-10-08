@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, lazy, Suspense, useCallback } from 'react'
 
-import { preloadAllWorkspaces } from '@/app/workspaceLoaders'
 import { CinematicScene } from '@/components/cinematic/CinematicScene'
 import { AppDock } from '@/components/dock/AppDock'
 import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
@@ -50,18 +49,6 @@ export function AppShell({ children }: AppShellProps) {
     document.documentElement.dataset.reducedMotion = reducedMotion ? 'true' : 'false'
     setTransitionReducedMotion(reducedMotion)
   }, [reducedMotion, setTransitionReducedMotion])
-
-  // Warm the workspace chunks once the first paint is out of the way, so a dock click never
-  // waits on a module load. WebKitGTK has no requestIdleCallback, hence the timer fallback.
-  useEffect(() => {
-    if (isReader) return
-    if (typeof window.requestIdleCallback === 'function') {
-      const handle = window.requestIdleCallback(() => void preloadAllWorkspaces())
-      return () => window.cancelIdleCallback(handle)
-    }
-    const handle = window.setTimeout(() => void preloadAllWorkspaces(), 1500)
-    return () => window.clearTimeout(handle)
-  }, [isReader])
 
   if (isReader) {
     return (

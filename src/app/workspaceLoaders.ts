@@ -56,10 +56,3 @@ const WORKSPACE_LOADERS: Record<WorkspaceId, () => Promise<unknown>> = {
 export async function preloadWorkspace(id: WorkspaceId): Promise<void> {
   await WORKSPACE_LOADERS[id]()
 }
-
-/** Warm every workspace chunk one at a time; a failed chunk is retried on navigation. */
-export async function preloadAllWorkspaces(): Promise<void> {
-  for (const id of Object.keys(WORKSPACE_LOADERS) as WorkspaceId[]) {
-    await preloadWorkspace(id).catch(() => undefined)
-  }
-}

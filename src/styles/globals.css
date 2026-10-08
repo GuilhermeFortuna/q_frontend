@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './materials.css';
+@import './webkit-compat.css';
 
 @font-face {
   font-family: 'Inter Variable';

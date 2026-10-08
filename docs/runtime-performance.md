@@ -136,6 +136,40 @@ pnpm exec playwright install chromium
 
 ## Linux-specific notes
 
+### WebKitGTK 2.54.1 filter compatibility
+
+Native Linux startup reads the installed engine version through
+`tauri::webview_version()`. For the reproduced `2.54.1` regression only, it
+injects `src-tauri/src/webkit_filter_compat.js` before application rendering.
+`src/styles/webkit-compat.css` then disables backdrop filters and blend modes.
+Ordinary filters, glow, layout, controls and workspace animations remain active;
+glass surfaces use their existing translucent fills without background blur.
+Browser mode and other engine versions use the normal materials.
+
+On Arch Linux / Wayland / NVIDIA, the unmodified compositor stopped delivering
+animation frames and consumed a CPU core. Pending workspace transitions stayed
+in `reconfiguring`, leaving their surfaces hidden. Native reproduction with the
+compatibility script kept delivering frames and completed navigation. Disabling
+hardware compositing or selecting TextureMapper did not provide a satisfactory
+performance replacement. No system package downgrade is required.
+
+WebKitGTK 2.54 introduced the
+[Skia compositor](https://webkitgtk.org/2026/09/16/webkitgtk-2.54-highlights.html).
+The compatibility gate records the version reproduced here; it does not assume
+that later releases contain the same regression or that older versions are safe
+to pin indefinitely.
+
+After changing this workaround, run the native Rust tests (`cargo test --lib`
+in `src-tauri`) and the frontend startup tests
+(`TZ=America/Sao_Paulo pnpm test:run tests/unit/app/webkitFilterCompatibility.test.ts`).
+Then launch `./dev research` from the workspace root on the affected runtime:
+leave Launcher open for at least five seconds, switch repeatedly through
+Backtests, Market, Research and System, and edit a Backtests control. The clock
+must advance, the content must remain visible, and navigation must complete.
+Keep the window visible when measuring animation frames: Wayland can suspend
+frame callbacks for an obscured window independently of this regression.
+Retest on subsequent WebKit releases before changing the exact version gate.
+
 ### Wayland vs X11
 
 - **Wayland** is default on modern Fedora/GNOME. WebKitGTK + NVIDIA is a common stutter source.

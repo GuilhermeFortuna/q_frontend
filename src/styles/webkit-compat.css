@@ -1,0 +1,10 @@
+/* WebKitGTK 2.54.1 can loop in composition when backdrop filters interact with
+   filtered/blended layers. Native startup enables this only for that runtime.
+   Keep ordinary filters, glow, layout and animation; avoid the failing layer graph. */
+:root[data-webkit-filter-compat='true'] *,
+:root[data-webkit-filter-compat='true'] *::before,
+:root[data-webkit-filter-compat='true'] *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  mix-blend-mode: normal !important;
+}
