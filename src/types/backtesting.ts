@@ -1,5 +1,12 @@
 import type { OhlcvBar } from '@/types/api'
-import type { MlFilterBacktestSummary, MlFilterConfig } from '../../contracts/api'
+import type {
+  BacktestOrigin,
+  BacktestProvenance,
+  MlFilterBacktestSummary,
+  MlFilterConfig,
+} from '../../contracts/api'
+
+export type { BacktestOrigin, BacktestProvenance }
 
 export type FixedQuantityPositionSizing = {
   type: 'fixed_quantity'
@@ -136,6 +143,8 @@ export interface BacktestRunSummary {
   status: BacktestRunStatus
   created_at: string
   is_saved: boolean
+  /** Absent on runs stored before origins were recorded; treated as `stack`. */
+  origin?: BacktestOrigin
   /** Null when the run failed or metrics were not stored. */
   summary: BacktestMetrics | null
 }
@@ -155,6 +164,8 @@ export interface BacktestRunDetail {
   finished_at: string | null
   created_at: string
   is_saved: boolean
+  origin?: BacktestOrigin
+  provenance?: BacktestProvenance | null
 }
 
 export interface BulkDeleteResponse {

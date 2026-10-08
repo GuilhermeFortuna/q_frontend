@@ -1,3 +1,4 @@
+import axios, { type AxiosError } from 'axios'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { setupServer } from 'msw/node'
@@ -13,6 +14,7 @@ import {
   patchBacktestRunSaved,
   useBacktestHistory,
   useBacktestRun,
+  useStoredBacktestResult,
 } from '@/api/queries/backtests'
 import { handlers, resetMockBacktestDeletes } from '@/mocks/handlers'
 
@@ -161,5 +163,36 @@ describe('backtest history API', () => {
 
     expect(result.current.data?.run_id).toBe(runId)
     expect(result.current.data?.config.symbol).toBe(result.current.data?.symbol)
+  })
+
+  it('fetchBacktestHistory filters by origin', async () => {
+    const scriptRuns = await fetchBacktestHistory({ origin: 'script' })
+
+    expect(scriptRuns.items.length).toBeGreaterThan(0)
+    expect(scriptRuns.items.every((run) => run.origin === 'script')).toBe(true)
+  })
+
+  it('useStoredBacktestResult loads the stored result of a completed stack run', async () => {
+    const { result } = renderHook(() => useStoredBacktestResult('run-win-ma'), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    expect(result.current.data?.run_id).toBe('run-win-ma')
+    expect(result.current.data?.bars.length).toBeGreaterThan(0)
+    expect(result.current.data?.trades.length).toBeGreaterThan(0)
+  })
+
+  it('useStoredBacktestResult reports a 404 without retrying', async () => {
+    const { result } = renderHook(() => useStoredBacktestResult('run-script-missing'), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+
+    expect(axios.isAxiosError(result.current.error)).toBe(true)
+    expect((result.current.error as AxiosError).response?.status).toBe(404)
+    expect(result.current.failureCount).toBe(1)
   })
 })

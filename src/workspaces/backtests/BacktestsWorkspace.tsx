@@ -1,10 +1,15 @@
 import axios from 'axios'
 import { useEffect } from 'react'
 
-import { useBacktestJob } from '@/api/queries/backtests'
+import { useBacktestJob, useBacktestRun, useStoredBacktestResult } from '@/api/queries/backtests'
 import { BacktestFocusWorkbench } from '@/components/backtests/focus/BacktestFocusWorkbench'
 import { BacktestHistoryPanel } from '@/components/backtests/BacktestHistoryPanel'
 import { RunComparisonView } from '@/components/backtests/RunComparisonView'
+import {
+  StoredResultLoading,
+  StoredResultNotice,
+  StoredRunHeader,
+} from '@/components/backtests/StoredRunPanels'
 import { LazyRouteBoundary } from '@/components/islands/LazyRouteBoundary'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
@@ -45,8 +50,18 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
     focus,
     rightPanelTab: backtestRightPanelTab,
     selectedHistoryRunId,
+    storedRunId: openedRunId,
     comparisonRuns,
   } = useAppStore((s) => s.backtestSession)
+  const storedRunId = openedRunId ?? null
+  const showingStored = storedRunId !== null
+  const storedRunDetail = useBacktestRun(storedRunId)
+  const storedResult = useStoredBacktestResult(storedRunId)
+  const storedRun = showingStored ? storedRunDetail.data : undefined
+  const storedRequest = storedRun?.config ?? null
+  const storedFailure = showingStored ? (storedResult.error ?? storedRunDetail.error) : null
+  const storedLoading =
+    showingStored && (storedResult.isPending || storedRunDetail.isPending) && !storedFailure
   const optimizeRightPanelTab = useAppStore((s) => s.optimizeSession.rightPanelTab)
   const validateRightPanelTab = useAppStore((s) => s.walkForwardSession.rightPanelTab)
   const patchBacktestSession = useAppStore((s) => s.patchBacktestSession)
@@ -79,20 +94,34 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
     patchBacktestSession({ rightPanelTab: tab })
   }
 
+  const resultsData = showingStored ? storedResult.data : runBacktest.data
+  const resultsRequest = showingStored ? storedRequest : lastRequest
+  const resultsCapital = showingStored ? (storedRequest?.initial_capital ?? 100000) : lastCapital
+
   const {
     equityCurve,
     monthlyStats,
     computing: performanceComputing,
-  } = useBacktestPerformanceData(runBacktest.data?.trades, lastCapital)
+  } = useBacktestPerformanceData(resultsData?.trades, resultsCapital)
 
   const handleSubmit = (request: BacktestRequest) => {
     patchBacktestSession({
       lastCapital: request.initial_capital ?? 100000,
       lastRequest: request,
+      storedRunId: null,
       focus: 'results',
       rightPanelTab: 'results',
     })
     runBacktest.mutate(request)
+  }
+
+  const handleOpenStoredRun = (runId: string) => {
+    if (runBacktest.isPending) return
+    patchBacktestSession({
+      storedRunId: runId,
+      focus: 'results',
+      rightPanelTab: 'results',
+    })
   }
 
   const errorMessage = runBacktest.error
@@ -194,26 +223,47 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
                   selectedRunId={selectedHistoryRunId}
                   onSelectRun={(id) => patchBacktestSession({ selectedHistoryRunId: id })}
                   onReRun={handleSubmit}
+                  onOpenResults={handleOpenStoredRun}
+                  simulationPending={runBacktest.isPending}
                   onCompare={(runs) => patchBacktestSession({ comparisonRuns: runs })}
                 />
               )
             ) : (
-              <BacktestFocusWorkbench
-                focus={focus}
-                onFocusChange={(f) => patchBacktestSession({ focus: f })}
-                onOpenHistory={() => patchBacktestSession({ rightPanelTab: 'history' })}
-                reducedMotion={reducedMotion}
-                config={backtestConfig}
-                loading={runBacktest.isPending}
-                error={errorMessage}
-                onSubmit={handleSubmit}
-                results={runBacktest.data}
-                lastRequest={lastRequest}
-                initialCapital={lastCapital}
-                equityCurve={equityCurve}
-                monthlyStats={monthlyStats}
-                performanceComputing={performanceComputing}
-              />
+              <>
+                {storedRun ? (
+                  <StoredRunHeader
+                    run={storedRun}
+                    onBackToHistory={() => patchBacktestSession({ rightPanelTab: 'history' })}
+                  />
+                ) : null}
+                {showingStored && storedFailure ? (
+                  <StoredResultNotice
+                    run={storedRun}
+                    error={storedFailure}
+                    onReRun={storedRequest ? () => handleSubmit(storedRequest) : undefined}
+                  />
+                ) : storedLoading ? (
+                  <StoredResultLoading />
+                ) : (
+                  <BacktestFocusWorkbench
+                    focus={focus}
+                    onFocusChange={(f) => patchBacktestSession({ focus: f })}
+                    onOpenHistory={() => patchBacktestSession({ rightPanelTab: 'history' })}
+                    reducedMotion={reducedMotion}
+                    config={backtestConfig}
+                    loading={runBacktest.isPending}
+                    error={errorMessage}
+                    onSubmit={handleSubmit}
+                    results={resultsData}
+                    lastRequest={resultsRequest}
+                    initialCapital={resultsCapital}
+                    equityCurve={equityCurve}
+                    monthlyStats={monthlyStats}
+                    performanceComputing={performanceComputing}
+                    allowMlFilterTraining={storedRun?.origin !== 'script'}
+                  />
+                )}
+              </>
             )}
           </div>
         ) : null}

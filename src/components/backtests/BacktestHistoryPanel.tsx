@@ -11,6 +11,7 @@ import {
 import { VirtualListScroller } from '@/components/shared/VirtualListScroller'
 import {
   BacktestHistoryFilters,
+  type BacktestHistoryOrigin,
   type BacktestHistoryTab,
 } from '@/components/backtests/BacktestHistoryFilters'
 import { BacktestMetricsBar } from '@/components/backtests/BacktestMetricsBar'
@@ -35,6 +36,7 @@ import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 import type {
   BacktestHistorySort,
+  BacktestProvenance,
   BacktestRequest,
   BacktestRunStatus,
   BacktestRunSummary,
@@ -44,7 +46,55 @@ type BacktestHistoryPanelProps = {
   selectedRunId: string | null
   onSelectRun: (runId: string | null) => void
   onReRun: (request: BacktestRequest) => void
+  onOpenResults?: (runId: string) => void
+  simulationPending?: boolean
   onCompare?: (runs: BacktestRunSummary[]) => void
+}
+
+const originBadgeClassName =
+  'rounded border border-brass-500/30 bg-brass-500/10 px-1.5 py-px text-[10px] font-semibold tracking-wide text-brass-300 uppercase'
+
+function ScriptBadge() {
+  return (
+    <span data-testid="script-badge" className={originBadgeClassName}>
+      Script
+    </span>
+  )
+}
+
+function ScriptProvenance({
+  provenance,
+  strategyParams,
+}: {
+  provenance: BacktestProvenance | null
+  strategyParams: Record<string, unknown> | undefined
+}) {
+  const hasParams = Object.keys(strategyParams ?? {}).length > 0
+  const revision = provenance?.git_revision
+    ? `${provenance.git_revision}${provenance.git_dirty ? ' · dirty working tree' : ''}`
+    : '—'
+
+  return (
+    <>
+      <KeyValueGrid title="Provenance" cols={2} className="mb-4">
+        <KeyValueItem label="Script" value={provenance?.script ?? '—'} />
+        <KeyValueItem label="Strategy class" value={provenance?.strategy_class ?? '—'} />
+        <KeyValueItem label="Git revision" value={revision} />
+        <KeyValueItem
+          label="Strategy parameters"
+          value={hasParams ? JSON.stringify(strategyParams) : '—'}
+        />
+      </KeyValueGrid>
+      {provenance?.strategy_source ? (
+        <details className="text-silver-300 mb-4 text-sm">
+          <summary className="cursor-pointer">Strategy source</summary>
+          <pre className="bg-carbon-950/60 mt-2 overflow-x-auto rounded p-3 font-mono text-xs">
+            {provenance.strategy_source}
+          </pre>
+        </details>
+      ) : null}
+    </>
+  )
 }
 
 const statusStyles: Record<BacktestRunStatus, string> = {
@@ -116,6 +166,7 @@ function RunListItem({
     <HistoryCard
       title={`${run.symbol} · ${run.strategy}`}
       subtitle={`${run.timeframe} · ${formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}`}
+      badge={run.origin === 'script' ? <ScriptBadge /> : null}
       status={run.status}
       statusClassName={statusStyles[run.status]}
       selectionMode={selectionMode}
@@ -136,12 +187,15 @@ export function BacktestHistoryPanel({
   selectedRunId,
   onSelectRun,
   onReRun,
+  onOpenResults,
+  simulationPending = false,
   onCompare,
 }: BacktestHistoryPanelProps) {
   const [tab, setTab] = useState<BacktestHistoryTab>('all')
   const [symbolInput, setSymbolInput] = useState('')
   const [symbolFilter, setSymbolFilter] = useState('')
   const [strategyFilter, setStrategyFilter] = useState('')
+  const [origin, setOrigin] = useState<BacktestHistoryOrigin>('all')
   const [sort, setSort] = useState<BacktestHistorySort>('created_at_desc')
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
@@ -157,16 +211,17 @@ export function BacktestHistoryPanel({
 
   useEffect(() => {
     selection.exitSelectionMode()
-  }, [tab, symbolFilter, strategyFilter, sort])
+  }, [tab, symbolFilter, strategyFilter, origin, sort])
 
   const historyParams = useMemo(
     () => ({
       symbol: symbolFilter || undefined,
       strategy: strategyFilter || undefined,
       saved_only: tab === 'saved' ? true : undefined,
+      origin: origin === 'all' ? undefined : origin,
       sort,
     }),
-    [tab, symbolFilter, strategyFilter, sort],
+    [tab, symbolFilter, strategyFilter, origin, sort],
   )
 
   const historyQuery = useBacktestHistoryInfinite(historyParams)
@@ -179,12 +234,22 @@ export function BacktestHistoryPanel({
   const total = historyQuery.data?.pages[0]?.total ?? runs.length
 
   useEffect(() => {
-    if (detailQuery.data?.config) {
+    if (detailQuery.data?.config && detailQuery.data.origin !== 'script') {
       setPendingBacktestConfig(detailQuery.data.config)
     }
   }, [detailQuery.data, setPendingBacktestConfig])
 
   const detail = detailQuery.data
+  const isScript = detail?.origin === 'script'
+  const showOpenResults = detail?.status === 'completed' && onOpenResults !== undefined
+  const canReRun = !isScript
+  const calloutText = isScript
+    ? showOpenResults
+      ? 'Published from a research script, so its strategy is not in the stack. Open results loads its stored trades and charts; it cannot be re-run.'
+      : 'Published from a research script, so its strategy is not in the stack. It cannot be re-run.'
+    : showOpenResults
+      ? 'Open results loads the stored trades, charts and indicator series without starting a job. Re-run starts a new simulation from the saved configuration.'
+      : 'Re-run starts a new simulation from the saved configuration.'
   const pageRunIds = runs.map((run) => run.run_id)
 
   const selectedLabels = runs
@@ -265,6 +330,8 @@ export function BacktestHistoryPanel({
             onSymbolChange={setSymbolInput}
             strategy={strategyFilter}
             onStrategyChange={setStrategyFilter}
+            origin={origin}
+            onOriginChange={setOrigin}
             sort={sort}
             onSortChange={setSort}
           />
@@ -344,8 +411,8 @@ export function BacktestHistoryPanel({
               <RotateCcw className="text-silver-500 mb-3 h-8 w-8" />
               <p className="text-silver-200 font-medium">Select a run</p>
               <p className="mt-1 max-w-sm text-sm">
-                Choose a past simulation to load its config into the form and review stored metrics.
-                Charts are not saved — use Re-run to regenerate them.
+                Choose a past run to review its metrics and configuration. Open results shows its
+                stored trades and charts without starting a new simulation.
               </p>
             </div>
           ) : detailQuery.isLoading ? (
@@ -385,6 +452,7 @@ export function BacktestHistoryPanel({
                   >
                     <Star className={cn('h-4 w-4', detail.is_saved ? 'fill-current' : null)} />
                   </button>
+                  {detail.origin === 'script' ? <ScriptBadge /> : null}
                   <span
                     className={cn(
                       'rounded-full px-2.5 py-1 text-xs font-medium capitalize',
@@ -412,6 +480,13 @@ export function BacktestHistoryPanel({
                 </Callout>
               )}
 
+              {detail.origin === 'script' ? (
+                <ScriptProvenance
+                  provenance={detail.provenance ?? null}
+                  strategyParams={detail.config.strategy_params}
+                />
+              ) : null}
+
               <KeyValueGrid title="Saved configuration" cols={3} className="mb-4">
                 <KeyValueItem
                   label="Capital"
@@ -429,17 +504,41 @@ export function BacktestHistoryPanel({
               </KeyValueGrid>
 
               <Callout
-                type="warning"
-                title="Simulation Results Not Persisted"
+                type="info"
+                title={isScript ? 'Script Run' : 'Stored Results'}
                 action={
-                  <Button type="button" variant="brass" onClick={() => onReRun(detail.config)}>
-                    <Play className="h-4 w-4" />
-                    Re-run simulation
-                  </Button>
+                  showOpenResults || canReRun ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {showOpenResults ? (
+                        <Button
+                          type="button"
+                          variant="brass"
+                          disabled={simulationPending}
+                          onClick={() => onOpenResults?.(detail.run_id)}
+                        >
+                          Open results
+                        </Button>
+                      ) : null}
+                      {canReRun ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => onReRun(detail.config)}
+                        >
+                          <Play className="h-4 w-4" />
+                          Re-run simulation
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null
                 }
               >
-                Trade charts and indicator series are not persisted. The config has been loaded into
-                the form — re-run the simulation to regenerate the full results.
+                {calloutText}
+                {showOpenResults && simulationPending ? (
+                  <span className="text-silver-400 mt-2 block text-xs">
+                    A simulation is running. Open results when it finishes.
+                  </span>
+                ) : null}
               </Callout>
             </div>
           )}

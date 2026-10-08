@@ -129,6 +129,19 @@ const deletedOptimizationStudyIds = new Set<string>()
 const savedBacktestRunOverrides = new Map<string, boolean>()
 const mockBacktestJobs = new Map<string, ReturnType<typeof getMockBacktestResponse>>()
 let mockBacktestJobSeq = 1
+const mockBacktestRunsWithoutStoredResult = new Set(['run-stack-missing', 'run-script-missing'])
+
+/** Session-started jobs first, then seeded completed history runs with a stored result. */
+function resolveMockBacktestResult(runId: string) {
+  const job = mockBacktestJobs.get(runId)
+  if (job) return job
+  if (deletedBacktestRunIds.has(runId) || mockBacktestRunsWithoutStoredResult.has(runId)) {
+    return null
+  }
+  const detail = getMockBacktestRunDetail(runId)
+  if (!detail || detail.status !== 'completed') return null
+  return getMockBacktestResponse(detail.config)
+}
 
 export function resetMockBacktestDeletes() {
   deletedBacktestRunIds.clear()
@@ -406,11 +419,12 @@ export const handlers = [
   }),
 
   http.get('*/api/v1/backtest/:runId/result', ({ params }) => {
-    const result = mockBacktestJobs.get(params.runId as string)
+    const runId = String(params.runId)
+    const result = resolveMockBacktestResult(runId)
     if (!result) {
       return HttpResponse.json({ detail: 'Backtest result not found.' }, { status: 404 })
     }
-    return HttpResponse.json({ ...result, run_id: params.runId })
+    return HttpResponse.json({ ...result, run_id: runId })
   }),
 
   http.get('*/api/v1/backtest/:runId', ({ params }) => {
@@ -428,6 +442,7 @@ export const handlers = [
     const symbol = url.searchParams.get('symbol')?.toUpperCase()
     const strategy = url.searchParams.get('strategy') ?? undefined
     const savedOnly = url.searchParams.get('saved_only') === 'true'
+    const origin = url.searchParams.get('origin')
     const sort = url.searchParams.get('sort') ?? 'created_at_desc'
 
     let items = mockBacktestRunSummaries
@@ -445,6 +460,9 @@ export const handlers = [
     }
     if (savedOnly) {
       items = items.filter((run) => run.is_saved)
+    }
+    if (origin) {
+      items = items.filter((run) => (run.origin ?? 'stack') === origin)
     }
 
     if (sort === 'pnl_desc') {
@@ -537,7 +555,7 @@ export const handlers = [
 
   http.get('*/api/v1/backtests/:runId/export/:kind', ({ params }) => {
     const runId = String(params.runId)
-    const result = mockBacktestJobs.get(runId)
+    const result = resolveMockBacktestResult(runId)
     const kind = String(params.kind)
     if (!result || (kind !== 'market-data' && kind !== 'trades')) {
       return HttpResponse.json(

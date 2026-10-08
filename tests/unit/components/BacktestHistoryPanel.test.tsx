@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BacktestHistoryPanel } from '@/components/backtests/BacktestHistoryPanel'
 import { handlers, resetMockBacktestDeletes } from '@/mocks/handlers'
@@ -16,6 +16,10 @@ afterEach(() => {
   resetMockBacktestDeletes()
 })
 afterAll(() => server.close())
+
+beforeEach(() => {
+  useAppStore.getState().setPendingBacktestConfig(null)
+})
 
 describe('BacktestHistoryPanel', () => {
   it('shows saved tab and bulk delete flow', async () => {
@@ -102,5 +106,76 @@ describe('BacktestHistoryPanel', () => {
         threshold: 0.6,
       })
     })
+  })
+
+  it('marks script runs and filters the list by origin', async () => {
+    const user = userEvent.setup()
+
+    renderWithQueryClient(
+      <BacktestHistoryPanel selectedRunId={null} onSelectRun={vi.fn()} onReRun={vi.fn()} />,
+    )
+
+    await screen.findByText('WDO$ · MACrossover')
+    expect(screen.getAllByTestId('script-badge').length).toBeGreaterThan(0)
+
+    await user.selectOptions(screen.getByLabelText('Filter by origin'), 'script')
+
+    await waitFor(() => {
+      expect(screen.queryByText('WIN$ · MACrossover')).not.toBeInTheDocument()
+    })
+    expect(screen.getByText('WDO$ · MACrossover')).toBeInTheDocument()
+  })
+
+  it('shows script provenance without a re-run action or loading its config', async () => {
+    const onReRun = vi.fn()
+
+    renderWithQueryClient(
+      <BacktestHistoryPanel
+        selectedRunId="run-script-ma"
+        onSelectRun={vi.fn()}
+        onReRun={onReRun}
+        onOpenResults={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('research/scripts/wdo_ma_crossover.py')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open results' })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: /Re-run simulation/i })).not.toBeInTheDocument()
+    expect(useAppStore.getState().pendingBacktestConfig).toBeNull()
+    expect(onReRun).not.toHaveBeenCalled()
+  })
+
+  it('opens a stack run and keeps its re-run action', async () => {
+    const user = userEvent.setup()
+    const onOpenResults = vi.fn()
+
+    renderWithQueryClient(
+      <BacktestHistoryPanel
+        selectedRunId="run-win-ma"
+        onSelectRun={vi.fn()}
+        onReRun={vi.fn()}
+        onOpenResults={onOpenResults}
+      />,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Open results' }))
+
+    expect(onOpenResults).toHaveBeenCalledWith('run-win-ma')
+    expect(screen.getByRole('button', { name: /Re-run simulation/i })).toBeInTheDocument()
+  })
+
+  it('refuses Open results while a simulation is pending', async () => {
+    renderWithQueryClient(
+      <BacktestHistoryPanel
+        selectedRunId="run-win-ma"
+        onSelectRun={vi.fn()}
+        onReRun={vi.fn()}
+        onOpenResults={vi.fn()}
+        simulationPending
+      />,
+    )
+
+    expect(await screen.findByRole('button', { name: 'Open results' })).toBeDisabled()
+    expect(screen.getByText(/A simulation is running/i)).toBeInTheDocument()
   })
 })
