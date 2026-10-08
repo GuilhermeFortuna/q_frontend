@@ -17,6 +17,7 @@ import type {
   BacktestEquityArtifactResponse,
   BacktestEquityArtifactResult,
   BacktestHistorySort,
+  BacktestOrigin,
   BacktestRequest,
   BacktestResponse,
   BacktestRunDetail,
@@ -32,6 +33,7 @@ export type BacktestHistoryParams = {
   symbol?: string
   strategy?: string
   saved_only?: boolean
+  origin?: BacktestOrigin
   sort?: BacktestHistorySort
 }
 
@@ -45,6 +47,7 @@ export const backtestKeys = {
   equityArtifact: (runId: string) => [...backtestKeys.all, 'equity-artifact', runId] as const,
   jobStatus: (runId: string) => [...backtestKeys.all, 'job-status', runId] as const,
   jobResult: (runId: string) => [...backtestKeys.all, 'job-result', runId] as const,
+  storedResult: (runId: string) => [...backtestKeys.all, 'stored-result', runId] as const,
 }
 
 export async function startBacktest(request: BacktestRequest): Promise<BacktestStartResponse> {
@@ -223,6 +226,20 @@ export function useBacktestJob() {
     error,
     status: jobStatus,
   }
+}
+
+function isNotFound(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404
+}
+
+export function useStoredBacktestResult(runId: string | null) {
+  return useQuery({
+    queryKey: backtestKeys.storedResult(runId ?? ''),
+    queryFn: () => fetchBacktestResult(runId as string),
+    enabled: !!runId,
+    staleTime: Infinity,
+    retry: (failureCount, error) => !isNotFound(error) && failureCount < 1,
+  })
 }
 
 export function useBacktestHistory(params: BacktestHistoryParams = {}) {

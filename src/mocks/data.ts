@@ -10,6 +10,7 @@ import type {
 } from '@/types/api'
 import type {
   BacktestMetrics,
+  BacktestProvenance,
   BacktestRequest,
   BacktestRunDetail,
   BacktestRunSummary,
@@ -376,6 +377,39 @@ const mockBacktestConfigs: Record<string, BacktestRequest> = {
     strategy_params: { short_period: 50, long_period: 200, threshold: 0 },
     position_sizing: { type: 'fixed_quantity', quantity: 1 },
   },
+  'run-script-ma': {
+    symbol: 'WDO$',
+    timeframe: 'M10',
+    start: '2025-03-01T00:00:00.000Z',
+    end: '2025-09-01T00:00:00.000Z',
+    initial_capital: 50000,
+    point_value: 10,
+    strategy: 'ResearchMaCrossover',
+    strategy_params: { short_period: 9, long_period: 34 },
+    position_sizing: { type: 'fixed_quantity', quantity: 1 },
+  },
+  'run-script-missing': {
+    symbol: 'WDO$',
+    timeframe: 'M10',
+    start: '2025-03-01T00:00:00.000Z',
+    end: '2025-09-01T00:00:00.000Z',
+    initial_capital: 50000,
+    point_value: 10,
+    strategy: 'ResearchBreakout',
+    strategy_params: { lookback: 20 },
+    position_sizing: { type: 'fixed_quantity', quantity: 1 },
+  },
+  'run-stack-missing': {
+    symbol: 'VALE3',
+    timeframe: 'M15',
+    start: '2025-01-01T00:00:00.000Z',
+    end: '2025-06-01T00:00:00.000Z',
+    initial_capital: 100000,
+    point_value: 1,
+    strategy: 'MACrossover',
+    strategy_params: { short_period: 10, long_period: 40, threshold: 0 },
+    position_sizing: { type: 'fixed_quantity', quantity: 100 },
+  },
   'run-tick-ma': {
     symbol: 'WIN$',
     start: '2025-03-01T00:00:00.000Z',
@@ -451,6 +485,39 @@ export const mockBacktestRunSummaries: BacktestRunSummary[] = [
     created_at: hoursAgo(5),
     is_saved: false,
     summary: mockBacktestMetricsAlt,
+  },
+  {
+    run_id: 'run-script-ma',
+    symbol: 'WDO$',
+    strategy: 'ResearchMaCrossover',
+    timeframe: 'M10',
+    status: 'completed',
+    created_at: hoursAgo(3),
+    is_saved: false,
+    origin: 'script',
+    summary: mockBacktestMetricsAlt,
+  },
+  {
+    run_id: 'run-script-missing',
+    symbol: 'WDO$',
+    strategy: 'ResearchBreakout',
+    timeframe: 'M10',
+    status: 'completed',
+    created_at: hoursAgo(4),
+    is_saved: false,
+    origin: 'script',
+    summary: mockBacktestMetricsAlt,
+  },
+  {
+    run_id: 'run-stack-missing',
+    symbol: 'VALE3',
+    strategy: 'MACrossover',
+    timeframe: 'M15',
+    status: 'completed',
+    created_at: hoursAgo(6),
+    is_saved: false,
+    origin: 'stack',
+    summary: mockBacktestMetrics,
   },
 ]
 
@@ -772,6 +839,24 @@ export function getMockOptimizationAnalytics(studyId: string): OptimizationAnaly
   }
 }
 
+const mockBacktestProvenance: Record<string, BacktestProvenance> = {
+  'run-script-ma': {
+    script: 'research/scripts/wdo_ma_crossover.py',
+    strategy_class: 'ResearchMaCrossover',
+    git_revision: '3f2a9c1',
+    git_dirty: true,
+    strategy_source:
+      'class ResearchMaCrossover(Strategy):\n    def on_bar(self, bar):\n        ...',
+  },
+  'run-script-missing': {
+    script: 'research/scripts/wdo_breakout.py',
+    strategy_class: 'ResearchBreakout',
+    git_revision: '3f2a9c1',
+    git_dirty: false,
+    strategy_source: null,
+  },
+}
+
 export function getMockBacktestRunDetail(runId: string): BacktestRunDetail | null {
   const summary = mockBacktestRunSummaries.find((r) => r.run_id === runId)
   const config = mockBacktestConfigs[runId]
@@ -798,6 +883,8 @@ export function getMockBacktestRunDetail(runId: string): BacktestRunDetail | nul
     finished_at: finishedAt,
     created_at: createdAt,
     is_saved: summary.is_saved,
+    origin: summary.origin ?? 'stack',
+    provenance: mockBacktestProvenance[runId] ?? null,
   }
 }
 
