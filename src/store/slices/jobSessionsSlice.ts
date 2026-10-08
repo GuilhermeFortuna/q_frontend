@@ -59,6 +59,8 @@ export type BacktestWorkflowMode = 'backtest' | 'optimize' | 'validate'
 export type BacktestSession = {
   workflowMode: BacktestWorkflowMode
   runId: string | null
+  /** Completed run whose stored result is open; never the id of a running job. */
+  storedRunId: string | null
   lastCapital: number
   lastRequest: BacktestRequest | null
   focus: BacktestWorkbenchFocus
@@ -157,6 +159,7 @@ const initialDiscoverSession: DiscoverSession = {
 const initialBacktestSession: BacktestSession = {
   workflowMode: 'backtest',
   runId: null,
+  storedRunId: null,
   lastCapital: 100000,
   lastRequest: null,
   focus: 'setup',

@@ -43,6 +43,7 @@ type BacktestResultsTabsProps = {
   equityCurve: EquityPoint[]
   monthlyStats: MonthlyStats[]
   performanceComputing?: boolean
+  allowMlFilterTraining?: boolean
   symbol: string
   timeframe: string
 }
@@ -192,6 +193,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   equityCurve,
   monthlyStats,
   performanceComputing = false,
+  allowMlFilterTraining = true,
   symbol,
   timeframe,
 }: BacktestResultsTabsProps) {
@@ -232,6 +234,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   const navigate = useNavigate()
   // Only a completed single-entry MA Crossover run can be a training source.
   const canTrainMlFilter =
+    allowMlFilterTraining &&
     Boolean(runId) &&
     (request?.strategy ?? request?.entries?.[0]?.strategy) === 'MACrossover' &&
     (request?.entries?.length ?? 1) <= 1 &&

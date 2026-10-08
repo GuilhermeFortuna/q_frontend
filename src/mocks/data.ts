@@ -384,7 +384,7 @@ const mockBacktestConfigs: Record<string, BacktestRequest> = {
     end: '2025-09-01T00:00:00.000Z',
     initial_capital: 50000,
     point_value: 10,
-    strategy: 'ResearchMaCrossover',
+    strategy: 'MACrossover',
     strategy_params: { short_period: 9, long_period: 34 },
     position_sizing: { type: 'fixed_quantity', quantity: 1 },
   },
@@ -489,7 +489,7 @@ export const mockBacktestRunSummaries: BacktestRunSummary[] = [
   {
     run_id: 'run-script-ma',
     symbol: 'WDO$',
-    strategy: 'ResearchMaCrossover',
+    strategy: 'MACrossover',
     timeframe: 'M10',
     status: 'completed',
     created_at: hoursAgo(3),
@@ -842,11 +842,10 @@ export function getMockOptimizationAnalytics(studyId: string): OptimizationAnaly
 const mockBacktestProvenance: Record<string, BacktestProvenance> = {
   'run-script-ma': {
     script: 'research/scripts/wdo_ma_crossover.py',
-    strategy_class: 'ResearchMaCrossover',
+    strategy_class: 'MACrossover',
     git_revision: '3f2a9c1',
     git_dirty: true,
-    strategy_source:
-      'class ResearchMaCrossover(Strategy):\n    def on_bar(self, bar):\n        ...',
+    strategy_source: 'class MACrossover(Strategy):\n    def on_bar(self, bar):\n        ...',
   },
   'run-script-missing': {
     script: 'research/scripts/wdo_breakout.py',

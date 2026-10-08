@@ -1,9 +1,10 @@
 import { inputClass } from '@/components/shared/InstrumentConfigFields'
 import { useStrategies } from '@/api/queries/strategies'
-import type { BacktestHistorySort } from '@/types/backtesting'
+import type { BacktestHistorySort, BacktestOrigin } from '@/types/backtesting'
 import { cn } from '@/lib/utils'
 
 export type BacktestHistoryTab = 'all' | 'saved'
+export type BacktestHistoryOrigin = 'all' | BacktestOrigin
 
 type BacktestHistoryFiltersProps = {
   tab: BacktestHistoryTab
@@ -12,6 +13,8 @@ type BacktestHistoryFiltersProps = {
   onSymbolChange: (symbol: string) => void
   strategy: string
   onStrategyChange: (strategy: string) => void
+  origin: BacktestHistoryOrigin
+  onOriginChange: (origin: BacktestHistoryOrigin) => void
   sort: BacktestHistorySort
   onSortChange: (sort: BacktestHistorySort) => void
 }
@@ -31,6 +34,8 @@ export function BacktestHistoryFilters({
   onSymbolChange,
   strategy,
   onStrategyChange,
+  origin,
+  onOriginChange,
   sort,
   onSortChange,
 }: BacktestHistoryFiltersProps) {
@@ -77,6 +82,17 @@ export function BacktestHistoryFilters({
             {item.label}
           </option>
         ))}
+      </select>
+
+      <select
+        value={origin}
+        onChange={(e) => onOriginChange(e.target.value as BacktestHistoryOrigin)}
+        className={cn(inputClass, 'h-8 text-xs')}
+        aria-label="Filter by origin"
+      >
+        <option value="all">All origins</option>
+        <option value="stack">Stack</option>
+        <option value="script">Script</option>
       </select>
 
       <select

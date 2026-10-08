@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 export type HistoryCardProps = {
   title: string
   subtitle: string
+  badge?: ReactNode
   status?: string
   statusClassName?: string
 
@@ -33,6 +34,7 @@ export type HistoryCardProps = {
 export function HistoryCard({
   title,
   subtitle,
+  badge,
   status,
   statusClassName,
   selectionMode = false,
@@ -120,7 +122,10 @@ export function HistoryCard({
               </span>
             )}
           </div>
-          <p className="text-silver-400 mt-0.5 text-xs font-medium">{subtitle}</p>
+          <p className="text-silver-400 mt-0.5 flex items-center gap-2 text-xs font-medium">
+            {subtitle}
+            {badge}
+          </p>
         </div>
 
         {showSaved && onToggleSaved && !selectionMode ? (

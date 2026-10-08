@@ -228,7 +228,7 @@ export function useBacktestJob() {
   }
 }
 
-function isNotFound(error: unknown): boolean {
+export function isNotFoundError(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 404
 }
 
@@ -238,7 +238,7 @@ export function useStoredBacktestResult(runId: string | null) {
     queryFn: () => fetchBacktestResult(runId as string),
     enabled: !!runId,
     staleTime: Infinity,
-    retry: (failureCount, error) => !isNotFound(error) && failureCount < 1,
+    retry: (failureCount, error) => !isNotFoundError(error) && failureCount < 1,
   })
 }
 

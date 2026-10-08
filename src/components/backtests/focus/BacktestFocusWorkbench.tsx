@@ -33,6 +33,7 @@ type BacktestFocusWorkbenchProps = {
   equityCurve: EquityPoint[]
   monthlyStats: MonthlyStats[]
   performanceComputing?: boolean
+  allowMlFilterTraining?: boolean
   aiWorkflowBlocker?: string | null
 }
 
@@ -56,6 +57,7 @@ export function BacktestFocusWorkbench({
   equityCurve,
   monthlyStats,
   performanceComputing = false,
+  allowMlFilterTraining = true,
   aiWorkflowBlocker = null,
 }: BacktestFocusWorkbenchProps) {
   const workbenchRef = useRef<HTMLDivElement>(null)
@@ -150,6 +152,7 @@ export function BacktestFocusWorkbench({
                   equityCurve={equityCurve}
                   monthlyStats={monthlyStats}
                   performanceComputing={performanceComputing}
+                  allowMlFilterTraining={allowMlFilterTraining}
                   symbol={resultsSymbol}
                   timeframe={resultsTimeframe}
                 />
