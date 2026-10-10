@@ -108,6 +108,7 @@ export const STORAGE_TIMEFRAME_OPTIONS = [
   'M15',
   'M30',
   'H1',
+  'H2',
   'H4',
   'D1',
   'W1',

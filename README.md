@@ -247,6 +247,12 @@ The frontend communicates with the following FastAPI endpoints (see [q_backend/R
 
 #### Backtesting
 
+Research candle runs support 1, 5, 10, and 15 minute, 1 hour, 2 hour (`H2`),
+4 hour (`H4`), and daily bars. The 2 and 4 hour intervals are also available
+for market charts, Storage downloads, and tick-run display candles. With the
+local data provider, download the corresponding series in Storage before running
+a candle backtest.
+
 - `GET /api/v1/strategies` — Strategy registry and parameter schemas for dynamic forms.
 - `POST /api/v1/backtest` — Start an async backtest (poll status, then fetch result).
 - `GET /api/v1/backtest/{runId}` — Backtest job status.

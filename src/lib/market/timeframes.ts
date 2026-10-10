@@ -1,6 +1,6 @@
 import { formatDisplayDate, formatDisplayDateTime, formatDisplayTime } from '@/lib/formatDate'
 
-export const CHART_TIMEFRAMES = ['1m', '5m', '10m', '15m', '30m', '1H', '4H', '1D'] as const
+export const CHART_TIMEFRAMES = ['1m', '5m', '10m', '15m', '30m', '1H', '2H', '4H', '1D'] as const
 
 export const RESEARCH_CANDLE_TIMEFRAME_OPTIONS = [
   { value: 'M1', label: '1 Minute' },
@@ -8,6 +8,8 @@ export const RESEARCH_CANDLE_TIMEFRAME_OPTIONS = [
   { value: 'M10', label: '10 Minutes' },
   { value: 'M15', label: '15 Minutes' },
   { value: 'H1', label: '1 Hour' },
+  { value: 'H2', label: '2 Hours' },
+  { value: 'H4', label: '4 Hours' },
   { value: 'D1', label: '1 Day' },
 ] as const
 
@@ -20,6 +22,7 @@ const UI_TO_MT5: Record<string, string> = {
   '15m': 'M15',
   '30m': 'M30',
   '1h': 'H1',
+  '2h': 'H2',
   '4h': 'H4',
   '1d': 'D1',
   M1: 'M1',
@@ -28,6 +31,7 @@ const UI_TO_MT5: Record<string, string> = {
   M15: 'M15',
   M30: 'M30',
   H1: 'H1',
+  H2: 'H2',
   H4: 'H4',
   D1: 'D1',
 }
@@ -47,6 +51,7 @@ export function timeframeToMs(timeframe: string): number {
     M15: 15 * 60_000,
     M30: 30 * 60_000,
     H1: 60 * 60_000,
+    H2: 2 * 60 * 60_000,
     H4: 4 * 60 * 60_000,
     D1: 24 * 60 * 60_000,
   }

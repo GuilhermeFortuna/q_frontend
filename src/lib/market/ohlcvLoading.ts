@@ -13,6 +13,7 @@ const BACKGROUND_PREFETCH_BY_TF: Record<string, number> = {
   M15: 2,
   M30: 2,
   H1: 2,
+  H2: 2,
   H4: 2,
 }
 
@@ -23,6 +24,7 @@ const BACKFILL_WINDOW_DAYS: Record<string, number> = {
   M15: 30,
   M30: 30,
   H1: 180,
+  H2: 180,
   H4: 180,
 }
 

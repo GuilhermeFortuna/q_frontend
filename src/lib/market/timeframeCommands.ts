@@ -15,6 +15,7 @@ export function parseTimeframeInput(input: string): TimeframeCommand | null {
     if (mins === 15) return { label: 'Switch to 15 Minutes', value: '15m' }
     if (mins === 30) return { label: 'Switch to 30 Minutes', value: '30m' }
     if (mins === 60) return { label: 'Switch to 1 Hour', value: '1H' }
+    if (mins === 120) return { label: 'Switch to 2 Hours', value: '2H' }
     if (mins === 240) return { label: 'Switch to 4 Hours', value: '4H' }
   }
 
@@ -22,6 +23,7 @@ export function parseTimeframeInput(input: string): TimeframeCommand | null {
   if (hourMatch) {
     const hours = parseInt(hourMatch[1], 10)
     if (hours === 1) return { label: 'Switch to 1 Hour', value: '1H' }
+    if (hours === 2) return { label: 'Switch to 2 Hours', value: '2H' }
     if (hours === 4) return { label: 'Switch to 4 Hours', value: '4H' }
   }
 
@@ -37,6 +39,7 @@ export function parseTimeframeInput(input: string): TimeframeCommand | null {
   if (clean === '15m') return { label: 'Switch to 15 Minutes', value: '15m' }
   if (clean === '30m') return { label: 'Switch to 30 Minutes', value: '30m' }
   if (clean === '1h' || clean === '60m') return { label: 'Switch to 1 Hour', value: '1H' }
+  if (clean === '2h' || clean === '120m') return { label: 'Switch to 2 Hours', value: '2H' }
   if (clean === '4h' || clean === '240m') return { label: 'Switch to 4 Hours', value: '4H' }
   if (clean === '1d' || clean === 'daily') return { label: 'Switch to 1 Day (Daily)', value: '1D' }
 
@@ -49,6 +52,7 @@ export function parseTimeframeInput(input: string): TimeframeCommand | null {
     if (num === 15) return { label: 'Switch to 15 Minutes', value: '15m' }
     if (num === 30) return { label: 'Switch to 30 Minutes', value: '30m' }
     if (num === 60) return { label: 'Switch to 1 Hour', value: '1H' }
+    if (num === 120) return { label: 'Switch to 2 Hours', value: '2H' }
     if (num === 240) return { label: 'Switch to 4 Hours', value: '4H' }
   }
 
