@@ -99,6 +99,48 @@ export type StrategySearchStatus = {
   search_config?: StrategySearchConfig
   backtest_config?: OptimizationBacktestConfig
   logs?: string[]
+  started_at?: string | null
+  finished_at?: string | null
+  progress?: number | null
+  completed_candidates?: number | null
+  finished_windows?: number | null
+  planned_windows?: number | null
+  settled_trials?: number | null
+  stage?: string | null
+  active_candidates?: DiscoveryCandidateActivity[]
+}
+
+export type DiscoveryCandidateActivity = {
+  candidate_id: string
+  strategy: string
+  generation: number | null
+  total_windows: number
+  finished_windows: number
+  window_index: number | null
+  phase: string
+  trials: number
+  trial_budget: number
+}
+
+export type DiscoveryTrial = {
+  candidate_id: string
+  generation: number
+  window_index: number
+  trial_number: number
+  state: 'completed' | 'pruned' | 'error'
+  objective_value: number | null
+  parameters: Record<string, unknown>
+  metrics: Record<string, number>
+  started_at: string | null
+  finished_at: string | null
+  error: string | null
+}
+
+export type DiscoveryTrialPage = {
+  items: DiscoveryTrial[]
+  total: number
+  limit: number
+  offset: number
 }
 
 export type CandidateStatus = 'completed' | 'no_result' | 'unsupported' | 'error'
@@ -189,6 +231,8 @@ export type StrategySearchResults = {
   best: CandidateResult | null
   search_config?: StrategySearchConfig
   lake_paths?: Record<string, unknown>
+  provisional?: boolean
+  artifacts_available?: boolean
 }
 
 export type StrategySearchRunSummary = {
@@ -259,7 +303,7 @@ export function isStrategySearchTerminalStatus(
 export function shouldFetchStrategySearchResults(
   status: StrategySearchJobStatus | undefined,
 ): boolean {
-  return status === 'completed' || status === 'cancelled'
+  return status != null
 }
 
 export function isGeneticSearchConfig(config: StrategySearchConfig | undefined): boolean {

@@ -41,6 +41,10 @@ function isJobStatusQuery(queryKey: QueryKey): boolean {
 function invalidateJobStatus(queryClient: QueryClient, key: JobKey) {
   const { kind, jobId } = splitJobKey(key)
   void queryClient.invalidateQueries({ queryKey: JOB_STATUS_QUERY_KEYS[kind](jobId) })
+  if (kind === 'strategy_search') {
+    void queryClient.invalidateQueries({ queryKey: ['strategySearch', 'results', jobId] })
+    void queryClient.invalidateQueries({ queryKey: ['strategySearch', 'trials', jobId] })
+  }
 }
 
 function invalidateActiveJobStatusQueries(queryClient: QueryClient) {
@@ -57,7 +61,7 @@ export function streamAwareRefetchInterval<T>(
 ): (query: Query<T>) => number | false {
   void kind
   return (query) => {
-    if (currentStreamStatus === 'live') return false
+    if (currentStreamStatus === 'live' && kind !== 'strategy_search') return false
     return pollingInterval(query)
   }
 }

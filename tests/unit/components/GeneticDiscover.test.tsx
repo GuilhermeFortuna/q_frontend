@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 
 import { CandidateDetailPanel } from '@/components/discover/CandidateDetailPanel'
 import { DiscoverProgress } from '@/components/discover/DiscoverProgress'
+import { DiscoverResultsPanel } from '@/components/discover/DiscoverResultsPanel'
 import { GeneticVerdictPanel } from '@/components/discover/GeneticVerdictPanel'
 import { LeaderboardTable } from '@/components/discover/LeaderboardTable'
 import { handlers, resetMockStrategySearchDeletes } from '@/mocks/handlers'
@@ -72,6 +73,33 @@ describe('DiscoverProgress genetic', () => {
 })
 
 describe('GeneticVerdictPanel', () => {
+  it('keeps validation verdicts hidden for failed provisional results', () => {
+    renderWithQueryClient(
+      <DiscoverResultsPanel
+        runId="ss-run-genetic"
+        isRunning={false}
+        status={{
+          ...mockStrategySearchStatuses['ss-run-genetic'],
+          status: 'failed',
+          error: 'Validation failed',
+        }}
+        results={{
+          ...mockStrategySearchResults['ss-run-genetic'],
+          status: 'failed',
+          provisional: true,
+          artifacts_available: false,
+        }}
+        backtest={null}
+        onCancel={vi.fn()}
+        cancelling={false}
+        onOpenWorkbench={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('Partial results · ranks are provisional')).toBeInTheDocument()
+    expect(screen.queryByText(/Lock-box passed/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/DSR 62%/i)).not.toBeInTheDocument()
+  })
+
   it('shows DSR and lock-box pass state', () => {
     const results = mockStrategySearchResults['ss-run-genetic']
     render(<GeneticVerdictPanel summary={results.summary} best={results.best} />)
@@ -113,7 +141,7 @@ describe('LeaderboardTable genetic', () => {
       />,
     )
 
-    expect(screen.getByText('Evolved')).toBeInTheDocument()
+    expect(screen.getAllByText('Evolved').length).toBeGreaterThan(0)
     expect(screen.getByText('Generation 5')).toBeInTheDocument()
   })
 
@@ -132,7 +160,7 @@ describe('LeaderboardTable genetic', () => {
     await user.selectOptions(screen.getByLabelText(/Generation/i), '4')
 
     expect(screen.queryByText('genome-champion-001')).not.toBeInTheDocument()
-    expect(screen.getByText(/CompositeStrategy/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /CompositeStrategy/ })).toBeInTheDocument()
   })
 
   it('registry run has no generation filter', () => {
@@ -148,7 +176,7 @@ describe('LeaderboardTable genetic', () => {
     )
 
     expect(screen.queryByText('Evolved')).not.toBeInTheDocument()
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Generation/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/Generation/i)).not.toBeInTheDocument()
   })
 })

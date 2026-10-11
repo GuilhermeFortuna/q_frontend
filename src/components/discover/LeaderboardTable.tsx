@@ -12,6 +12,11 @@ import { LabeledField } from '@/components/ui/LabeledField'
 import { MorphingDialogTrigger } from '@/components/ui/MorphingDialog'
 import { Panel } from '@/components/ui/Panel'
 import { inputClass } from '@/components/optimize/optimizeFormShared'
+import {
+  emptyCandidateFilters,
+  filterCandidates,
+  type CandidateFilters,
+} from '@/lib/discover/filterCandidates'
 import { gateFlagsLabel } from '@/lib/discover/candidateMetrics'
 import { candidateExitDisplayLabel } from '@/lib/discover/exitInsights'
 import {
@@ -31,11 +36,7 @@ import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 import type { ObjectiveMode, OptimizationBacktestConfig } from '@/types/optimization'
 import type { CandidateResult, StrategySearchConfig } from '@/types/strategySearch'
-import {
-  isGeneticCandidate,
-  isGeneticSearchConfig,
-  maxCandidateGeneration,
-} from '@/types/strategySearch'
+import { isGeneticCandidate, isGeneticSearchConfig } from '@/types/strategySearch'
 
 type SortKey = LeaderboardSortKey
 
@@ -45,6 +46,7 @@ type LeaderboardTableProps = {
   objectiveMode: ObjectiveMode
   backtest: OptimizationBacktestConfig
   searchConfig: StrategySearchConfig | undefined
+  artifactsAvailable?: boolean
 }
 
 const ALL_GENERATIONS = 'all'
@@ -91,6 +93,7 @@ export function LeaderboardTable({
   objectiveMode,
   backtest,
   searchConfig,
+  artifactsAvailable = true,
 }: LeaderboardTableProps) {
   const navigate = useNavigate()
   const setPendingBacktestConfig = useAppStore((s) => s.setPendingBacktestConfig)
@@ -109,7 +112,7 @@ export function LeaderboardTable({
   openCandidateIdRef.current = openCandidateId
 
   const isGenetic = isGeneticSearchConfig(searchConfig)
-  const championGeneration = maxCandidateGeneration(candidates)
+  const [filters, setFilters] = useState<CandidateFilters>(emptyCandidateFilters)
 
   const generationOptions = useMemo(() => {
     const gens = new Set<number>()
@@ -119,21 +122,12 @@ export function LeaderboardTable({
     return Array.from(gens).sort((a, b) => a - b)
   }, [candidates])
 
-  const [generationFilter, setGenerationFilter] = useState<string>(() =>
-    championGeneration != null ? String(championGeneration) : ALL_GENERATIONS,
-  )
-
-  useEffect(() => {
-    if (championGeneration != null) {
-      setGenerationFilter(String(championGeneration))
-    }
-  }, [championGeneration, runId])
-
+  const [generationFilter, setGenerationFilter] = useState<string>(ALL_GENERATIONS)
   const filteredCandidates = useMemo(() => {
-    if (!isGenetic || generationFilter === ALL_GENERATIONS) return candidates
-    const gen = Number(generationFilter)
-    return candidates.filter((c) => c.generation === gen)
-  }, [candidates, generationFilter, isGenetic])
+    const matching = filterCandidates(candidates, filters)
+    if (!isGenetic || generationFilter === ALL_GENERATIONS) return matching
+    return matching.filter((c) => c.generation === Number(generationFilter))
+  }, [candidates, filters, generationFilter, isGenetic])
 
   const sortedCandidates = useMemo(
     () => sortLeaderboardCandidates(filteredCandidates, sortKey, sortAsc),
@@ -420,6 +414,82 @@ export function LeaderboardTable({
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="text-silver-400 flex w-36 flex-col gap-1 text-xs">
+          Strategy
+          <select
+            className={inputClass}
+            value={filters.strategy}
+            onChange={(e) => setFilters((f) => ({ ...f, strategy: e.target.value }))}
+          >
+            <option value="">All strategies</option>
+            {Array.from(new Set(candidates.map((c) => c.strategy)))
+              .sort()
+              .map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+          </select>
+        </label>
+        <label className="text-silver-400 flex w-32 flex-col gap-1 text-xs">
+          Status
+          <select
+            className={inputClass}
+            value={filters.state}
+            onChange={(e) => setFilters((f) => ({ ...f, state: e.target.value }))}
+          >
+            <option value="">All statuses</option>
+            {['completed', 'no_result', 'unsupported', 'error'].map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+        <label className="text-silver-400 flex w-32 flex-col gap-1 text-xs">
+          Gate outcome
+          <select
+            className={inputClass}
+            value={filters.gate}
+            onChange={(e) => setFilters((f) => ({ ...f, gate: e.target.value }))}
+          >
+            <option value="">All outcomes</option>
+            <option value="passed">Passed</option>
+            <option value="flagged">Flagged</option>
+          </select>
+        </label>
+        {(
+          [
+            ['objectiveMin', 'OOS objective min'],
+            ['objectiveMax', 'OOS objective max'],
+            ['efficiencyMin', 'Efficiency min'],
+            ['efficiencyMax', 'Efficiency max'],
+            ['tradesMin', 'OOS trades min'],
+            ['tradesMax', 'OOS trades max'],
+          ] as [keyof CandidateFilters, string][]
+        ).map(([key, label]) => (
+          <label key={key} className="text-silver-400 flex w-28 flex-col gap-1 text-xs">
+            {label}
+            <input
+              type="number"
+              step="any"
+              className={inputClass}
+              value={filters[key]}
+              onChange={(e) => setFilters((f) => ({ ...f, [key]: e.target.value }))}
+            />
+          </label>
+        ))}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            setFilters(emptyCandidateFilters)
+            setGenerationFilter(ALL_GENERATIONS)
+          }}
+        >
+          Reset filters
+        </Button>
+        <span className="text-silver-400 text-xs">
+          {filteredCandidates.length} / {candidates.length} candidates
+        </span>
+      </div>
       {showGenerationFilter ? (
         <div className="flex justify-end">
           <LabeledField label="Generation" htmlFor="generation-filter" className="w-auto">
@@ -477,6 +547,7 @@ export function LeaderboardTable({
           backtest={backtest}
           objectiveMode={objectiveMode}
           searchConfig={searchConfig}
+          artifactsAvailable={artifactsAvailable}
           onCloseAutoFocus={restoreFocusToOrigin}
           onExitComplete={() => {
             if (openCandidateIdRef.current == null) setMountedCandidate(null)

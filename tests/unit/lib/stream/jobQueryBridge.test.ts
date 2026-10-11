@@ -72,6 +72,35 @@ afterEach(() => {
 })
 
 describe('jobQueryBridge', () => {
+  it('refreshes Discovery status, live candidates and trial pages on trial-only events', () => {
+    const queryClient = new QueryClient()
+    const stream = new FakeJobStream()
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    const stop = connectJobStreamToQueryClient(stream as never, queryClient)
+    stream.emitJob({
+      type: 'jobProgress',
+      key: 'strategy_search:r1',
+      payload: {
+        kind: 'strategy_search',
+        job_id: 'r1',
+        status: 'running',
+        progress: 0.01,
+      },
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: strategySearchKeys.results('r1') })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['strategySearch', 'trials', 'r1'] })
+    stop()
+  })
+
+  it('keeps a Discovery safety refresh while the stream is connected', () => {
+    const queryClient = new QueryClient()
+    const stream = new FakeJobStream()
+    stream.statusValue = 'live'
+    const stop = connectJobStreamToQueryClient(stream as never, queryClient)
+    expect(streamAwareRefetchInterval('strategy_search', () => 2000)({} as never)).toBe(2000)
+    expect(streamAwareRefetchInterval('backtest', () => 2000)({} as never)).toBe(false)
+    stop()
+  })
   it('invalidates the matching status query once on a terminal event', () => {
     const queryClient = new QueryClient()
     const stream = new FakeJobStream()

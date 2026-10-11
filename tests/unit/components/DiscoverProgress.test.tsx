@@ -102,6 +102,6 @@ describe('strategy search polling helpers', () => {
     expect(isStrategySearchTerminalStatus('cancelled')).toBe(true)
     expect(isStrategySearchTerminalStatus('running')).toBe(false)
     expect(shouldFetchStrategySearchResults('completed')).toBe(true)
-    expect(shouldFetchStrategySearchResults('running')).toBe(false)
+    expect(shouldFetchStrategySearchResults('running')).toBe(true)
   })
 })

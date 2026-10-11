@@ -90,9 +90,12 @@ export function useActiveJobs(): ActiveJobsMap {
     map.discover = {
       workspaceId: 'discover',
       workspaceLabel: WORKSPACE_LABELS.discover!,
-      pct: pctOf(discover.current_candidate, discover.total_candidates),
+      pct:
+        discover.progress != null
+          ? Math.min(99, Math.round(discover.progress * 100))
+          : pctOf(discover.current_candidate, discover.total_candidates),
       detail: hasCandidates
-        ? `Candidate ${Math.floor(discover.current_candidate)} / ${discover.total_candidates}${phase}`
+        ? `Candidate ${discover.completed_candidates ?? Math.floor(discover.current_candidate)} / ${discover.total_candidates}${phase}`
         : 'Preparing…',
       progressKind: hasCandidates ? 'determinate' : 'indeterminate',
     }

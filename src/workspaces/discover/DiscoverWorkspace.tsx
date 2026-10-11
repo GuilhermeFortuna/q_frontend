@@ -40,7 +40,11 @@ export function DiscoverWorkspace() {
   const status = statusQuery.data
 
   const hasTerminalResults = shouldFetchStrategySearchResults(status?.status)
-  const resultsQuery = useStrategySearchResults(runId, hasTerminalResults)
+  const resultsQuery = useStrategySearchResults(
+    runId,
+    hasTerminalResults,
+    status?.status === 'pending' || status?.status === 'running',
+  )
 
   const isRunning =
     startSearch.isPending || status?.status === 'pending' || status?.status === 'running'
@@ -118,6 +122,7 @@ export function DiscoverWorkspace() {
           />
         ) : (
           <DiscoverResultsPanel
+            key={runId}
             runId={runId}
             isRunning={isRunning}
             status={status}

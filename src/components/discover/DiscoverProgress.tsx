@@ -1,187 +1,137 @@
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Panel } from '@/components/ui/Panel'
+import { useEffect, useState } from 'react'
+import { Button, Panel } from '@/components/ui'
 import type { StrategySearchStatus } from '@/types/strategySearch'
-import { cn } from '@/lib/utils'
 
-type DiscoverProgressProps = {
+function duration(ms: number): string {
+  const seconds = Math.max(0, Math.round(ms / 1000))
+  return `${seconds >= 3600 ? `${Math.floor(seconds / 3600)}h ` : ''}${seconds >= 60 ? `${Math.floor((seconds % 3600) / 60)}m ` : ''}${seconds % 60}s`
+}
+
+export function DiscoverProgress({
+  status,
+  onCancel,
+  cancelling,
+}: {
   status: StrategySearchStatus
   onCancel: () => void
   cancelling: boolean
-}
+}) {
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    const timestamp = status.started_at ? Date.parse(status.started_at) : Date.now()
+    const start = Number.isFinite(timestamp) ? timestamp : Date.now()
+    const update = () => setElapsed(Math.max(0, Date.now() - start))
+    update()
+    const timer = setInterval(update, 1000)
+    return () => clearInterval(timer)
+  }, [status.run_id, status.started_at])
 
-function phaseLabel(phase: StrategySearchStatus['phase']): string {
-  if (phase === 'optimizing') return 'optimizing'
-  if (phase === 'testing') return 'testing'
-  if (phase === 'done') return 'done'
-  return 'working'
-}
-
-function formatDuration(ms: number): string {
-  if (ms < 0) return '0s'
-  const totalSeconds = Math.round(ms / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-
-  const parts = []
-  if (hours > 0) parts.push(`${hours}h`)
-  if (minutes > 0 || hours > 0) parts.push(`${minutes}m`)
-  parts.push(`${seconds}s`)
-  return parts.join(' ')
-}
-
-export function DiscoverProgress({ status, onCancel, cancelling }: DiscoverProgressProps) {
-  const total = Math.max(status.total_candidates, 1)
-  const currentRaw = status.current_candidate
-  const current = Math.floor(currentRaw)
-  const pct = Math.min(100, Math.round((currentRaw / total) * 100))
-  const hasGenerationProgress =
-    status.total_generations != null && status.total_generations > 0 && status.generation != null
-  const generationPct = hasGenerationProgress
-    ? Math.min(100, Math.round(((status.generation ?? 0) / (status.total_generations ?? 1)) * 100))
-    : 0
-
-  const hasLiveDetail =
-    status.phase != null &&
-    status.strategy != null &&
+  const completed = status.completed_candidates ?? Math.floor(status.current_candidate)
+  const progress =
+    status.progress ??
+    (status.total_candidates ? status.current_candidate / status.total_candidates : 0)
+  const pct = Math.min(99, Math.max(0, Math.round(progress * 100)))
+  const finished = status.finished_windows ?? 0
+  const planned = status.planned_windows ?? 0
+  const evaluating = !status.stage || status.stage === 'evaluation'
+  const eta =
+    evaluating && finished > 0 && planned > finished
+      ? duration((elapsed / finished) * (planned - finished))
+      : 'Estimating…'
+  const legacyDetail =
+    status.progress == null &&
+    status.strategy &&
     status.window_index != null &&
     status.total_windows != null
-
-  const headerLabel =
-    status.total_candidates > 0
-      ? hasLiveDetail
-        ? `Candidate ${Math.min(current, status.total_candidates)} / ${status.total_candidates} — ${status.strategy} — window ${status.window_index! + 1}/${status.total_windows} ${phaseLabel(status.phase)}`
-        : `Candidate ${Math.min(current, status.total_candidates)} / ${status.total_candidates}${
-            status.strategy ? ` — ${status.strategy}` : ''
-          }`
-      : 'Preparing search…'
-
-  const [elapsed, setElapsed] = useState(0)
-  const [remaining, setRemaining] = useState(0)
-
-  useEffect(() => {
-    if (!status.run_id) return
-
-    const key = `discover:start-time:${status.run_id}`
-    let startTimeStr = localStorage.getItem(key)
-    if (!startTimeStr) {
-      startTimeStr = String(Date.now())
-      localStorage.setItem(key, startTimeStr)
-    }
-    const startTime = Number(startTimeStr)
-
-    const updateTimes = () => {
-      const now = Date.now()
-      const elapsedMs = now - startTime
-      setElapsed(elapsedMs)
-
-      if (currentRaw > 0) {
-        const progress = currentRaw / total
-        const remainingMs = elapsedMs / progress - elapsedMs
-        setRemaining(remainingMs)
-      } else {
-        setRemaining(0)
-      }
-    }
-
-    updateTimes()
-    const timer = setInterval(updateTimes, 1000)
-    return () => clearInterval(timer)
-  }, [status.run_id, currentRaw, total])
-
   return (
-    <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-4">
-      <Panel
-        className={cn(
-          'quant-panel--active-run relative w-full max-w-md overflow-hidden rounded-2xl px-6 py-8',
-        )}
-      >
-        <div className="relative z-20">
-          <div className="mb-4 flex items-center justify-center gap-2">
-            <span className="live-status-dot h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
-            <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
-              Search running
-            </span>
-          </div>
-          {hasGenerationProgress ? (
-            <>
-              <p className="text-silver-200 mb-1 text-center text-sm font-medium">
-                Generation {status.generation} / {status.total_generations}
-              </p>
-              <div className="text-silver-300 mb-2 flex justify-between font-mono text-xs font-[560] tracking-[0.08em] uppercase">
-                <span>Generations</span>
-                <span className="text-silver-100 quant-tabular-nums">{generationPct}%</span>
-              </div>
-              <div className="surface-well mb-4 h-2 w-full overflow-hidden rounded-full">
-                <div
-                  className="from-brass-700 to-brass-500 h-full rounded-full bg-gradient-to-r transition-all duration-500"
-                  style={{ width: `${generationPct}%` }}
-                />
-              </div>
-            </>
-          ) : null}
-          <p className="text-silver-200 mb-1 text-center text-sm font-medium">{headerLabel}</p>
-          {status.phase == null && status.status === 'running' ? (
-            <p className="text-silver-500 mb-3 text-center text-xs">
-              Live window phase unavailable — showing persisted candidate progress after restart.
-            </p>
-          ) : null}
-          <div className="text-silver-300 mb-2.5 flex justify-between font-mono text-xs font-[560] tracking-[0.08em] uppercase">
+    <Panel className="quant-panel--active-run shrink-0 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-4 text-xs">
+          <span className="accent-wayfinding font-semibold uppercase">
+            <span className="live-status-dot mr-2 inline-block h-2 w-2 rounded-full bg-emerald-400" />
+            {status.status === 'pending' ? 'Search queued' : 'Search running'}
+          </span>
+          <span className="text-silver-200">
+            {status.stage
+              ? status.stage.charAt(0).toUpperCase() + status.stage.slice(1)
+              : 'Evaluation'}
+          </span>
+          <span>
+            Candidates: {completed} / {status.total_candidates}
+          </span>
+          {status.planned_windows != null ? (
             <span>
-              Candidates: {current} / {status.total_candidates}
+              Finished windows: {finished} / {planned}
             </span>
-            <span className="text-silver-100 quant-tabular-nums">{pct}%</span>
-          </div>
-          <div className="surface-well h-2.5 w-full overflow-hidden rounded-full">
-            <div
-              className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          {hasLiveDetail ? (
-            <div className="text-silver-400 mt-4 text-center text-xs">
-              Window {status.window_index! + 1} / {status.total_windows} —{' '}
-              {phaseLabel(status.phase)}
-            </div>
           ) : null}
-
-          {status.run_id && (
-            <Panel className="text-silver-400 mt-4 p-3 text-xs">
-              <div className="grid grid-cols-2 gap-2 font-mono">
-                <div className="flex flex-col">
-                  <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
-                    Elapsed Time
-                  </span>
-                  <span className="text-silver-200 quant-tabular-nums mt-0.5 font-semibold">
-                    {formatDuration(elapsed)}
-                  </span>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
-                    Remaining (Est)
-                  </span>
-                  <span className="text-silver-100 quant-tabular-nums mt-0.5 font-semibold">
-                    {currentRaw / total > 0.02 ? formatDuration(remaining) : 'Estimating...'}
-                  </span>
-                </div>
-              </div>
-            </Panel>
-          )}
-
-          <div className="mt-6 flex justify-center">
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-silver-400 text-xs font-bold tracking-wider uppercase hover:text-red-400"
-              onClick={onCancel}
-              disabled={cancelling}
-            >
-              {cancelling ? 'Cancelling...' : 'Cancel Search'}
-            </Button>
-          </div>
+          {status.settled_trials != null ? <span>Trials: {status.settled_trials}</span> : null}
+          {status.total_generations ? (
+            <span>
+              Generation {status.generation ?? 0} / {status.total_generations}
+            </span>
+          ) : null}
         </div>
-      </Panel>
-    </div>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={cancelling}>
+          {cancelling ? 'Cancelling…' : 'Cancel Search'}
+        </Button>
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <div
+          className="surface-well h-2 flex-1 overflow-hidden rounded-full"
+          role="progressbar"
+          aria-label="Discovery evaluation progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={pct}
+        >
+          <div
+            className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="text-silver-300 font-mono text-xs">
+          {pct}% · Elapsed {duration(elapsed)} · Remaining (est) {eta}
+        </span>
+      </div>
+      {status.progress == null ? (
+        <p className="text-silver-400 mt-2 text-xs">
+          {legacyDetail
+            ? `Candidate ${completed} / ${status.total_candidates} — ${status.strategy} — window ${status.window_index! + 1}/${status.total_windows} ${status.phase}`
+            : `Candidate ${completed} / ${status.total_candidates}${status.strategy ? ` — ${status.strategy}` : ''}`}
+        </p>
+      ) : null}
+      {status.phase == null && status.status === 'running' && status.progress == null ? (
+        <p className="text-silver-500 mt-2 text-xs">
+          Live window phase unavailable — showing persisted candidate progress after restart.
+        </p>
+      ) : null}
+      <details className="mt-3 text-xs">
+        <summary className="text-silver-300 cursor-pointer">
+          Active candidates ({status.active_candidates?.length ?? 0})
+        </summary>
+        <div className="mt-2 max-h-36 overflow-auto">
+          {!status.active_candidates?.length ? (
+            <p className="text-silver-500">Waiting for candidate activity…</p>
+          ) : (
+            status.active_candidates.map((candidate) => (
+              <div
+                key={candidate.candidate_id}
+                className="border-carbon-700 flex flex-wrap justify-between gap-2 border-b py-2"
+              >
+                <span title={candidate.candidate_id}>
+                  {candidate.strategy} · {candidate.candidate_id}
+                </span>
+                <span>
+                  {candidate.phase} · Window{' '}
+                  {candidate.window_index == null ? '—' : candidate.window_index + 1}/
+                  {candidate.total_windows} · Trials {candidate.trials}/{candidate.trial_budget} ·{' '}
+                  {candidate.finished_windows} windows finished
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </details>
+    </Panel>
   )
 }

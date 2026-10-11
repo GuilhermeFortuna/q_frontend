@@ -163,6 +163,33 @@ describe('useActiveJobs', () => {
     })
   })
 
+  it('uses trial-level Discovery progress and keeps the active footer below 100%', () => {
+    storeState.discoverSession.runId = 'disc-1'
+    useStrategySearchStatus.mockReturnValue({
+      data: {
+        status: 'running',
+        current_candidate: 0,
+        total_candidates: 12,
+        completed_candidates: 0,
+        progress: 0.125,
+      },
+    })
+    const { result, rerender } = renderHook(() => useActiveJobs())
+    expect(result.current.discover?.pct).toBe(13)
+    expect(result.current.discover?.detail).toBe('Candidate 0 / 12')
+    useStrategySearchStatus.mockReturnValue({
+      data: {
+        status: 'running',
+        current_candidate: 12,
+        total_candidates: 12,
+        completed_candidates: 12,
+        progress: 1,
+      },
+    })
+    rerender()
+    expect(result.current.discover?.pct).toBe(99)
+  })
+
   it('invokes only the four existing status query hooks (no query growth)', () => {
     storeState.optimizeSession.studyId = 'opt-1'
     storeState.walkForwardSession.runId = 'wf-1'

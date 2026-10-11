@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw'
+import { discoveryTrialPage } from '@/mocks/discoveryTrials'
 
 import {
   createMockEvalJob,
@@ -1033,6 +1034,13 @@ export const handlers = [
     )
   }),
 
+  http.get('*/api/v1/strategy-search/:runId/trials', ({ params, request }) => {
+    const page = discoveryTrialPage(String(params.runId), new URL(request.url).searchParams)
+    return page
+      ? HttpResponse.json(page)
+      : HttpResponse.json({ detail: 'Strategy search run not found.' }, { status: 404 })
+  }),
+
   http.get('*/api/v1/strategy-search/:runId/results', ({ params }) => {
     const runId = String(params.runId)
     if (deletedStrategySearchRunIds.has(runId)) {
@@ -1043,7 +1051,7 @@ export const handlers = [
     }
 
     const job = getUpdatedStrategySearchJob(runId)
-    if (job && (job.status === 'completed' || job.status === 'cancelled')) {
+    if (job) {
       return HttpResponse.json(strategySearchResultsFromJob(job))
     }
 

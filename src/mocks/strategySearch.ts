@@ -554,10 +554,7 @@ export function strategySearchStatusFromJob(job: MockStrategySearchJob): Strateg
     phase = 'optimizing'
   } else if (job.status === 'running') {
     const progress = Math.min(1, (elapsed - 800) / 7200)
-    current_candidate = Math.min(
-      job.total_candidates,
-      Math.max(1, Math.ceil(progress * job.total_candidates)),
-    )
+    current_candidate = Math.min(job.total_candidates, Math.floor(progress * job.total_candidates))
     if (job.is_genetic && total_generations) {
       generation = Math.min(total_generations, Math.max(1, Math.ceil(progress * total_generations)))
       strategy = 'CompositeStrategy'
@@ -616,33 +613,51 @@ export function strategySearchStatusFromJob(job: MockStrategySearchJob): Strateg
     error: null,
     search_config: job.request_body as StrategySearchStatus['search_config'],
     backtest_config: body?.backtest,
+    started_at: new Date(job.start_time).toISOString(),
+    progress: job.status === 'completed' ? 1 : Math.max(0, Math.min(0.99, (elapsed - 800) / 7200)),
+    completed_candidates: Math.floor(current_candidate),
+    finished_windows: Math.floor(Math.max(0, (elapsed - 800) / 7200) * job.total_candidates * 3),
+    planned_windows: job.total_candidates * 3,
+    settled_trials: Math.floor(Math.max(0, elapsed - 800) / 100),
+    stage: job.status === 'pending' ? 'preparing' : 'evaluation',
+    active_candidates:
+      job.status === 'running'
+        ? [
+            {
+              candidate_id: candidate_id ?? 'MACrossover',
+              strategy: strategy ?? 'MACrossover',
+              generation: generation ? generation - 1 : null,
+              total_windows: 3,
+              finished_windows: window_index ?? 0,
+              window_index,
+              phase: phase ?? 'optimizing',
+              trials: Math.floor(elapsed / 200) % 50,
+              trial_budget: 50,
+            },
+          ]
+        : [],
     logs,
   }
 }
 
 export function strategySearchResultsFromJob(job: MockStrategySearchJob): StrategySearchResults {
   const body = job.request_body as StrategySearchResults['search_config']
-
-  if (job.is_genetic) {
-    return {
-      run_id: job.run_id,
-      status: job.status === 'cancelled' ? 'cancelled' : 'completed',
-      objective_mode: body?.objective.mode ?? 'maximize_return_drawdown',
-      summary: mockStrategySearchResults['ss-run-genetic'].summary,
-      candidates: mockGeneticCandidates,
-      best: mockGeneticCandidates[0],
-      search_config: body,
-    }
-  }
-
+  const base = mockStrategySearchResults[job.is_genetic ? 'ss-run-genetic' : 'ss-run-petr4']
+  const provisional = job.status === 'pending' || job.status === 'running'
+  const count = provisional
+    ? Math.floor(Math.max(0, Date.now() - job.start_time - 800) / 1800)
+    : base.candidates.length
+  const candidates = base.candidates.slice(0, count)
   return {
+    ...base,
     run_id: job.run_id,
-    status: job.status === 'cancelled' ? 'cancelled' : 'completed',
-    objective_mode: body?.objective.mode ?? 'maximize_return_drawdown',
-    summary: mockStrategySearchResults['ss-run-petr4'].summary,
-    candidates: mockCandidates.slice(0, Math.max(2, job.total_candidates)),
-    best: mockCandidates[0],
+    status: job.status,
+    objective_mode: body?.objective.mode ?? base.objective_mode,
+    summary: { ...base.summary, candidate_count: candidates.length },
+    candidates,
+    best: candidates[0] ?? null,
     search_config: body,
+    provisional,
   }
 }
 

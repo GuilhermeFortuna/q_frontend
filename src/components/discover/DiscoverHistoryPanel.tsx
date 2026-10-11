@@ -85,7 +85,11 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
 
   const status = statusQuery.data
   const hasTerminalResults = shouldFetchStrategySearchResults(status?.status)
-  const resultsQuery = useStrategySearchResults(selectedRunId, hasTerminalResults)
+  const resultsQuery = useStrategySearchResults(
+    selectedRunId,
+    hasTerminalResults,
+    status?.status === 'pending' || status?.status === 'running',
+  )
 
   const runs = historyQuery.data?.items ?? []
   const selectedRun = runs.find((run) => run.run_id === selectedRunId)
@@ -155,7 +159,7 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading search status…
             </div>
-          ) : status?.status === 'failed' ? (
+          ) : status?.status === 'failed' && !resultsQuery.data ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
@@ -222,6 +226,7 @@ export function DiscoverHistoryPanel({ selectedRunId, onSelectRun }: DiscoverHis
                 </Button>
               </div>
               <DiscoverResultsPanel
+                key={selectedRunId}
                 runId={selectedRunId}
                 isRunning={status?.status === 'pending' || status?.status === 'running'}
                 status={status}

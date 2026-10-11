@@ -21,6 +21,7 @@ type CandidateDetailPanelProps = {
   candidate: CandidateResult
   backtest: OptimizationBacktestConfig
   objectiveMode: ObjectiveMode
+  artifactsAvailable?: boolean
   searchConfig?: StrategySearchConfig
 }
 
@@ -30,16 +31,18 @@ export function CandidateDetailPanel({
   backtest,
   objectiveMode,
   searchConfig,
+  artifactsAvailable = true,
 }: CandidateDetailPanelProps) {
   const [detailTab, setDetailTab] = useState<'performance' | 'genome'>('performance')
   const showGenomeTab = isGeneticSearchConfig(searchConfig) && isGeneticCandidate(candidate)
-  const canShowChart = candidate.status === 'completed' && candidate.oos_metrics != null
+  const canShowChart =
+    artifactsAvailable && candidate.status === 'completed' && candidate.oos_metrics != null
   const equityQuery = useStrategySearchCandidateEquity(runId, candidate.candidate_id, canShowChart)
 
   const genomeQuery = useStrategySearchCandidateGenome(
     runId,
     candidate.candidate_id,
-    showGenomeTab && detailTab === 'genome' && candidate.genome == null,
+    artifactsAvailable && showGenomeTab && detailTab === 'genome' && candidate.genome == null,
   )
 
   const genome = candidate.genome ?? genomeQuery.data?.genome ?? null
@@ -91,6 +94,11 @@ export function CandidateDetailPanel({
 
     return (
       <>
+        {!artifactsAvailable ? (
+          <p className="text-silver-400 mb-3 text-xs">
+            Equity artifacts will be available after the search finishes.
+          </p>
+        ) : null}
         <WalkForwardResultsView
           results={syntheticResults}
           backtest={{ ...backtest, strategy: strategyName }}

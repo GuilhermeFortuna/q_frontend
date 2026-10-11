@@ -1,23 +1,16 @@
 import { useState } from 'react'
-import { bestStrategyGloss } from '@/lib/discover/candidateMetrics'
-import {
-  formatEfficiencyRatio,
-  formatObjectiveMetricValue,
-  objectiveMetricLabel,
-} from '@/lib/walkforward/objectiveMetric'
-import type { OptimizationBacktestConfig } from '@/types/optimization'
-import type { StrategySearchResults, StrategySearchStatus } from '@/types/strategySearch'
-
-import { GeneticVerdictPanel } from '@/components/discover/GeneticVerdictPanel'
 import { DiscoverProgress } from '@/components/discover/DiscoverProgress'
 import { DiscoverLogs } from '@/components/discover/DiscoverLogs'
+import { DiscoverTrialsTable } from '@/components/discover/DiscoverTrialsTable'
 import { LeaderboardTable } from '@/components/discover/LeaderboardTable'
 import { LazyLiveSwarmVisualizer3D } from '@/components/discover/LazyLiveSwarmVisualizer3D'
+import { GeneticVerdictPanel } from '@/components/discover/GeneticVerdictPanel'
 import { Button, Panel, Callout } from '@/components/ui'
-import { SectionHeader } from '@/components/ui/SectionHeader'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
-import { StatTile } from '@/components/ui/StatTile'
-import { hasGeneticSummary, isGeneticSearchConfig } from '@/types/strategySearch'
+import { formatObjectiveMetricValue } from '@/lib/walkforward/objectiveMetric'
+import { isGeneticSearchConfig, hasGeneticSummary } from '@/types/strategySearch'
+import type { StrategySearchResults, StrategySearchStatus } from '@/types/strategySearch'
+import type { OptimizationBacktestConfig } from '@/types/optimization'
 
 type DiscoverResultsPanelProps = {
   runId: string | null
@@ -40,173 +33,111 @@ export function DiscoverResultsPanel({
   cancelling,
   onOpenWorkbench,
 }: DiscoverResultsPanelProps) {
-  const [runningTab, setRunningTab] = useState<'progress' | 'swarm'>('progress')
-  const [completedTab, setCompletedTab] = useState<'leaderboard' | 'swarm'>('leaderboard')
+  const [tab, setTab] = useState<'candidates' | 'trials' | 'logs' | 'swarm'>('candidates')
   const [selectedTrialId, setSelectedTrialId] = useState<string | null>(null)
-
-  const isGenetic = status
-    ? isGeneticSearchConfig(status.search_config)
-    : results
-      ? isGeneticSearchConfig(results.search_config)
-      : false
-
-  if (isRunning && status) {
+  const config = results?.search_config ?? status?.search_config
+  const genetic = isGeneticSearchConfig(config)
+  if (!runId)
     return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden pr-1">
-        {isGenetic ? (
-          <SegmentedToggle
-            aria-label="Running view"
-            className="mb-2 shrink-0 self-start"
-            value={runningTab}
-            onChange={setRunningTab}
-            options={[
-              { value: 'progress', label: 'Progress & Logs' },
-              { value: 'swarm', label: '3D Live Swarm' },
-            ]}
-          />
-        ) : null}
-
-        {runningTab === 'progress' || !isGenetic ? (
-          <>
-            <div className="flex shrink-0 justify-center">
-              <DiscoverProgress status={status} onCancel={onCancel} cancelling={cancelling} />
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <SectionHeader title="Live Trial Progress & Logs" className="mb-2 shrink-0" />
-              <DiscoverLogs logs={status.logs} />
-            </div>
-          </>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-            <LazyLiveSwarmVisualizer3D status={status} results={undefined} isRunning={true} />
-            <Panel className="flex items-center justify-between p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
-                <StatTile
-                  className="p-3"
-                  label="Generation"
-                  value={`${status.generation ?? 0} / ${status.total_generations ?? 0}`}
-                />
-                <StatTile
-                  className="p-3"
-                  label="Evaluated"
-                  value={`${Math.floor(status.current_candidate)} / ${status.total_candidates}`}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-silver-400 text-xs font-bold tracking-wider uppercase hover:text-red-400"
-                onClick={onCancel}
-                disabled={cancelling}
-              >
-                {cancelling ? 'Cancelling...' : 'Cancel Search'}
-              </Button>
-            </Panel>
-          </div>
-        )}
-      </div>
+      <Panel className="flex min-h-0 flex-1 items-center justify-center border-2 border-dashed bg-transparent">
+        <div className="text-center">
+          <h3 className="text-silver-200 text-xl">No Strategy Search Yet</h3>
+          <p className="text-silver-400 mt-2 text-sm">
+            Configure instrument, walk-forward windows, and strategies to launch a search.
+          </p>
+          <Button variant="brass" className="mt-4" onClick={onOpenWorkbench}>
+            Open Workbench
+          </Button>
+        </div>
+      </Panel>
     )
-  }
-
-  if (status?.status === 'failed') {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center p-4">
-        <Callout type="error" title="Search Failed" className="max-w-md">
-          Strategy search failed: {status.error ?? 'unknown error'}
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      {isRunning && status ? (
+        <DiscoverProgress status={status} onCancel={onCancel} cancelling={cancelling} />
+      ) : null}
+      {status?.status === 'failed' ? (
+        <Callout type="error" title="Search Failed">
+          {status.error ?? 'Unknown error'} · Available partial results are shown below.
         </Callout>
+      ) : null}
+      {status?.status === 'cancelled' ? (
+        <p className="text-silver-400 text-xs">Search cancelled — showing partial results.</p>
+      ) : null}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+        <SegmentedToggle
+          aria-label="Discovery results view"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'candidates', label: 'Candidates' },
+            { value: 'trials', label: 'Trials' },
+            { value: 'logs', label: 'Logs' },
+            ...(genetic ? [{ value: 'swarm' as const, label: 'Swarm (3D)' }] : []),
+          ]}
+        />
+        <span className="text-silver-400 text-xs">
+          {isRunning
+            ? 'Live · ranks are provisional'
+            : results?.provisional
+              ? 'Partial results · ranks are provisional'
+              : 'Search results'}
+        </span>
       </div>
-    )
-  }
-
-  if (results && backtest && runId) {
-    const best = results.best
-    const objectiveMode = results.objective_mode
-    const statusLabel =
-      status?.status === 'cancelled' ? 'Search cancelled — showing partial leaderboard' : undefined
-    const showGeneticVerdict =
-      hasGeneticSummary(results.summary) || isGeneticSearchConfig(results.search_config)
-
-    return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-        {statusLabel ? (
-          <p className="text-silver-400 shrink-0 text-sm italic">{statusLabel}</p>
-        ) : null}
-
-        {showGeneticVerdict ? <GeneticVerdictPanel summary={results.summary} best={best} /> : null}
-
-        {best && best.status === 'completed' ? (
-          <Panel className="border-brass-500/30 bg-brass-500/5 shrink-0 p-4">
-            <SectionHeader title="Best strategy (ranked on out-of-sample)" />
-            <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <p className="text-brass-400 text-2xl font-bold">{best.strategy}</p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <StatTile
-                    className="p-3"
-                    label={`OOS ${objectiveMetricLabel(objectiveMode)}`}
-                    value={formatObjectiveMetricValue(best.objective_value, objectiveMode)}
-                    highlight
-                  />
-                  <StatTile
-                    className="p-3"
-                    label="Efficiency"
-                    value={formatEfficiencyRatio(best.efficiency)}
-                  />
-                </div>
-              </div>
-              <p className="text-silver-300 max-w-lg text-sm">
-                {bestStrategyGloss(best.efficiency)}
-              </p>
-            </div>
-          </Panel>
-        ) : null}
-
-        {isGenetic ? (
-          <SegmentedToggle
-            aria-label="Results view"
-            className="mb-2 shrink-0 self-start"
-            value={completedTab}
-            onChange={setCompletedTab}
-            options={[
-              { value: 'leaderboard', label: 'Leaderboard Table' },
-              { value: 'swarm', label: 'Swarm Analysis (3D)' },
-            ]}
-          />
-        ) : null}
-
-        {completedTab === 'leaderboard' || !isGenetic ? (
-          <LeaderboardTable
-            runId={runId}
-            candidates={results.candidates}
-            objectiveMode={objectiveMode}
-            backtest={backtest}
-            searchConfig={results.search_config}
-          />
-        ) : (
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className={tab === 'candidates' ? 'min-h-0 flex-1 space-y-3 overflow-auto' : 'hidden'}>
+          {!isRunning &&
+          results &&
+          !results.provisional &&
+          (hasGeneticSummary(results.summary) || genetic) ? (
+            <GeneticVerdictPanel summary={results.summary} best={results.best} />
+          ) : null}
+          {results?.best ? (
+            <Panel className="border-brass-500/30 bg-brass-500/5 p-3 text-sm">
+              <span className="text-silver-400">
+                {isRunning || results.provisional
+                  ? 'Best so far (OOS)'
+                  : 'Best strategy (ranked on out-of-sample)'}{' '}
+                ·{' '}
+              </span>
+              <strong className="text-brass-400">{results.best.strategy}</strong> ·{' '}
+              {formatObjectiveMetricValue(results.best.objective_value, results.objective_mode)}
+            </Panel>
+          ) : null}
+          {results && backtest ? (
+            <LeaderboardTable
+              artifactsAvailable={
+                results.artifacts_available ?? (!isRunning && !results.provisional)
+              }
+              runId={runId}
+              candidates={results.candidates}
+              objectiveMode={results.objective_mode}
+              backtest={backtest}
+              searchConfig={config}
+            />
+          ) : null}
+          {!results?.candidates.length ? (
+            <Panel className="text-silver-400 p-6 text-sm">
+              {isRunning
+                ? 'Waiting for the first candidate to finish its walk-forward evaluation. Individual trials appear in Trials as they finish.'
+                : 'No candidate results are available.'}
+            </Panel>
+          ) : null}
+        </div>
+        <div className={tab === 'trials' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}>
+          <DiscoverTrialsTable runId={runId} running={isRunning} />
+        </div>
+        {tab === 'logs' ? <DiscoverLogs logs={status?.logs} /> : null}
+        {tab === 'swarm' ? (
           <LazyLiveSwarmVisualizer3D
             status={status}
             results={results}
-            isRunning={false}
+            isRunning={isRunning}
             selectedTrialId={selectedTrialId}
             onSelectTrialId={setSelectedTrialId}
           />
-        )}
+        ) : null}
       </div>
-    )
-  }
-
-  return (
-    <Panel className="flex min-h-0 flex-1 items-center justify-center border-2 border-dashed bg-transparent">
-      <div className="text-center">
-        <SectionHeader title="No Strategy Search Yet" className="justify-center" />
-        <p className="text-silver-400 mt-2 max-w-sm text-sm">
-          Configure instrument, walk-forward windows, and strategies, then launch a search to see
-          the OOS-ranked leaderboard.
-        </p>
-        <Button type="button" variant="brass" className="mt-4" onClick={onOpenWorkbench}>
-          Open Workbench
-        </Button>
-      </div>
-    </Panel>
+    </div>
   )
 }

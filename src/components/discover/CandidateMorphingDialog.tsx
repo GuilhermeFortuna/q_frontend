@@ -39,6 +39,7 @@ export type CandidateMorphingDialogProps = {
   backtest: OptimizationBacktestConfig
   objectiveMode: ObjectiveMode
   searchConfig: StrategySearchConfig | undefined
+  artifactsAvailable?: boolean
   onCloseAutoFocus?: (event: Event) => void
   onExitComplete?: () => void
 }
@@ -55,6 +56,7 @@ export function CandidateMorphingDialog({
   backtest,
   objectiveMode,
   searchConfig,
+  artifactsAvailable = true,
   onCloseAutoFocus,
   onExitComplete,
 }: CandidateMorphingDialogProps) {
@@ -91,6 +93,7 @@ export function CandidateMorphingDialog({
 
       {open ? (
         <CandidateDetailPanel
+          artifactsAvailable={artifactsAvailable}
           key={candidate.candidate_id}
           runId={runId}
           candidate={candidate}

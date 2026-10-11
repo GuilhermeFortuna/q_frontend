@@ -74,9 +74,9 @@ describe('LeaderboardTable', () => {
     const rows = screen.getAllByRole('row')
     expect(rows.length).toBeGreaterThan(1)
     expect(screen.getAllByText('MACrossover').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('RSIMeanReversion')).toBeInTheDocument()
-    expect(screen.getByText('Flagged')).toBeInTheDocument()
-    expect(screen.getByText('unsupported')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'RSIMeanReversion' })).toBeInTheDocument()
+    expect(screen.getAllByText('Flagged').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('unsupported').length).toBeGreaterThan(0)
   })
 
   it('renders Entry and Exit column headers instead of Strategy', () => {
@@ -190,7 +190,7 @@ describe('LeaderboardTable', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: /CompositeStrategy/i }))
+    await user.click(screen.getAllByRole('button', { name: /CompositeStrategy/i })[0]!)
     expect(await screen.findByTestId('morphing-dialog-content')).toBeInTheDocument()
 
     await user.selectOptions(screen.getByLabelText(/Generation/i), '4')

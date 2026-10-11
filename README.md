@@ -285,9 +285,26 @@ a candle backtest.
 - `POST /api/v1/strategy-search` — Start a discovery run.
 - `GET /api/v1/strategy-search/{runId}` — Candidate and window progress.
 - `GET /api/v1/strategy-search/{runId}/results` — OOS-ranked leaderboard.
+- `GET /api/v1/strategy-search/{runId}/trials` — Paginated individual in-sample trials.
 - `POST /api/v1/strategy-search/{runId}/cancel` — Cooperative cancellation.
 - `GET /api/v1/strategy-searches` — Paginated history.
 - `GET /api/v1/strategy-search/{runId}/candidates/{candidateId}/artifacts/equity` — Candidate OOS equity.
+
+Discovery exposes Candidates, Trials and Logs while a run is active. Candidate filters
+support strategy, status, generation and numeric metric bounds; trial filters run on
+the server and support candidate, generation, window, state, objective bounds and
+parameter search. Filters and selected rows persist as results arrive. Candidate
+rankings are provisional until finalization; genetic validation verdicts and lake
+artifacts become available after finalization. Older runs have no structured trial
+history and show an empty Trials view.
+
+Trial, window and candidate events invalidate live queries through the shared stream
+bridge (coalesced to one refresh per second). Active Discovery queries also poll every
+two seconds even with a connected stream and reconcile once on terminal transitions.
+The compact progress strip uses server timestamps and unique settled trial/window
+identities, with expandable active-candidate details. The percentage reserves the last
+percent for terminal completion; ETA uses completed-window throughput and is hidden
+during breeding, validation and finalization.
 
 #### Feature intelligence (Research workspace)
 

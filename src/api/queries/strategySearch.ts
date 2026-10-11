@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 
 import { apiClient } from '@/api/client'
 import { useJobStream } from '@/lib/stream/jobStreamContext'
 import { streamAwareRefetchInterval } from '@/lib/stream/jobQueryBridge'
 import type {
+  DiscoveryTrialPage,
   StrategySearchCandidateEquityArtifact,
   StrategySearchCandidateGenomeArtifact,
   StrategySearchConfig,
@@ -28,6 +30,8 @@ export const strategySearchKeys = {
     [...strategySearchKeys.all, 'history', params] as const,
   status: (runId: string) => [...strategySearchKeys.all, 'status', runId] as const,
   results: (runId: string) => [...strategySearchKeys.all, 'results', runId] as const,
+  trials: (runId: string, params: DiscoveryTrialParams = {}) =>
+    [...strategySearchKeys.all, 'trials', runId, params] as const,
   candidateEquity: (runId: string, candidateId: string) =>
     [...strategySearchKeys.all, 'artifacts', 'equity', runId, candidateId] as const,
   candidateGenome: (runId: string, candidateId: string) =>
@@ -122,7 +126,7 @@ export function useCancelStrategySearch() {
     mutationFn: cancelStrategySearch,
     onSuccess: (status, runId) => {
       // Reflect the cancelled status immediately so polling stops and the
-      // progress modal closes without waiting for the next status poll.
+      // progress strip closes without waiting for the next status poll.
       queryClient.setQueryData(strategySearchKeys.status(runId), status)
       queryClient.invalidateQueries({ queryKey: [...strategySearchKeys.all, 'history'] })
     },
@@ -137,6 +141,7 @@ export function useDeleteStrategySearch() {
     onSuccess: (_data, runId) => {
       queryClient.removeQueries({ queryKey: strategySearchKeys.status(runId) })
       queryClient.removeQueries({ queryKey: strategySearchKeys.results(runId) })
+      queryClient.removeQueries({ queryKey: [...strategySearchKeys.all, 'trials', runId] })
       queryClient.invalidateQueries({ queryKey: [...strategySearchKeys.all, 'history'] })
     },
   })
@@ -150,18 +155,68 @@ export function useStrategySearchStatus(runId: string | null) {
     enabled: !!runId,
     refetchInterval: streamAwareRefetchInterval('strategy_search', (query) => {
       const status = query.state.data?.status
-      return status && !isStrategySearchTerminalStatus(status) ? 1000 : false
+      return status && !isStrategySearchTerminalStatus(status) ? 2000 : false
     }),
   })
 }
 
-export function useStrategySearchResults(runId: string | null, ready: boolean) {
+export function useStrategySearchResults(runId: string | null, ready: boolean, running = false) {
+  useDiscoveryTerminalRefresh(runId, running, 'results')
   return useQuery({
     queryKey: strategySearchKeys.results(runId ?? ''),
     queryFn: () => fetchStrategySearchResults(runId as string),
     enabled: !!runId && ready,
     staleTime: Infinity,
+    refetchInterval: running ? 2000 : false,
   })
+}
+
+export type DiscoveryTrialParams = {
+  limit?: number
+  offset?: number
+  candidate_id?: string
+  generation?: number
+  window_index?: number
+  state?: string
+  objective_min?: number
+  objective_max?: number
+  q?: string
+  sort?: string
+  descending?: boolean
+}
+
+export function useDiscoveryTrials(
+  runId: string | null,
+  params: DiscoveryTrialParams,
+  running: boolean,
+) {
+  useDiscoveryTerminalRefresh(runId, running, 'trials')
+  return useQuery({
+    queryKey: strategySearchKeys.trials(runId ?? '', params),
+    queryFn: async () =>
+      (
+        await apiClient.get<DiscoveryTrialPage>(`/api/v1/strategy-search/${runId}/trials`, {
+          params,
+        })
+      ).data,
+    enabled: !!runId,
+    refetchInterval: running ? 2000 : false,
+  })
+}
+
+function useDiscoveryTerminalRefresh(
+  runId: string | null,
+  running: boolean,
+  view: 'results' | 'trials',
+) {
+  const client = useQueryClient()
+  const previous = useRef(running)
+  useEffect(() => {
+    if (previous.current && !running && runId) {
+      void client.invalidateQueries({ queryKey: [...strategySearchKeys.all, view, runId] })
+    }
+    previous.current = running
+  }, [client, runId, running, view])
 }
 
 export function useStrategySearchCandidateEquity(
