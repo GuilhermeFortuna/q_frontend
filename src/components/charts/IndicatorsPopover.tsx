@@ -1,23 +1,33 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import type { IndicatorConfig } from '@/components/charts/types/chart'
 import { IndicatorsModal } from './IndicatorsModal'
+import type { IndicatorPreviewContext } from './IndicatorPreview'
 
 type IndicatorsPopoverProps = {
   indicators: IndicatorConfig[]
   onChange: (indicators: IndicatorConfig[]) => void
+  previewContext?: IndicatorPreviewContext
 }
 
-export function IndicatorsPopover({ indicators, onChange }: IndicatorsPopoverProps) {
+export function IndicatorsPopover({
+  indicators,
+  onChange,
+  previewContext,
+}: IndicatorsPopoverProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   const activeCount = indicators.filter((i) => i.enabled).length
 
   return (
     <div className="border-carbon-700 relative border-r pr-4">
       <button
+        ref={triggerRef}
         type="button"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
         onClick={() => setIsOpen(true)}
         className="border-brass-600/15 bg-carbon-900/50 hover:bg-carbon-800/85 text-silver-300 hover:text-brass-400 hover:border-brass-500/40 flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-150 active:scale-95"
       >
@@ -27,7 +37,7 @@ export function IndicatorsPopover({ indicators, onChange }: IndicatorsPopoverPro
             {activeCount}
           </span>
         )}
-        <ChevronDown className="h-3 w-3" />
+        <ChevronDown aria-hidden className="h-3 w-3" />
       </button>
 
       <IndicatorsModal
@@ -35,6 +45,8 @@ export function IndicatorsPopover({ indicators, onChange }: IndicatorsPopoverPro
         onClose={() => setIsOpen(false)}
         indicators={indicators}
         onChange={onChange}
+        previewContext={previewContext}
+        triggerRef={triggerRef}
       />
     </div>
   )

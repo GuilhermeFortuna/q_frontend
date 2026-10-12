@@ -294,3 +294,45 @@ A measured bar means **Historical range processed**, never remaining-time covera
 backtest progress uses a small activity indicator without a filled bar, including in the dock.
 Stale updates and unavailable details use explicit text rather than inferred provider-health
 claims. Motion uses `motion-safe` so reduced-motion users keep the same information.
+
+## Indicator workbench
+
+The Market Data indicator dialog pairs a grouped catalog with a detail workbench.
+It keeps the existing carbon surfaces, Inter Display headings, Inter body text,
+and monospaced chart values. Brass marks the inspected indicator, enabled state,
+selected tab, and primary **Apply changes** action; chart series retain their
+chosen colors. Documentation uses readable silver text rather than muted metadata.
+
+- **Ownership:** shared `Dialog` owns the modal and focus trap, `Button` owns
+  actions, and `LabeledField` / `NumberInput` own parameter controls. Choice
+  parameters use the existing native-select convention with readable labels;
+  the OS owns the opened popup. Search has a clear action and takes initial focus.
+- **Layout:** maximum width 1,080px and height 760px, capped by the window with
+  16px margins. A 270px catalog and the detail pane scroll independently. Below
+  the `md` breakpoint the catalog stacks above the detail pane and is capped at
+  200px. Header and footer remain visible. The data preview reserves 180px in
+  all loading, unavailable, error, and success states.
+- **Interaction:** browsing and enabling are separate actions. Settings and Guide
+  use accessible tabs with arrow/Home/End navigation. Draft parameters, colors,
+  and enabled states survive browsing, search, and catalog refreshes. Cancel,
+  Escape, and dismiss discard the draft; Apply commits it, including configured
+  disabled indicators. Untouched disabled defaults are omitted. The toolbar regains
+  focus after dismissal. Unknown saved configurations and additional instances
+  of a catalog ID are preserved; the picker edits the first instance per ID.
+- **Reference content:** `indicatorDocumentation.ts` owns explanatory content,
+  search keywords, and preview guide lines. The backend catalog owns availability,
+  defaults, parameter bounds, units, and outputs. Explanations were checked against
+  `q_backend`'s indicator catalog, technical indicators, transforms, and quote
+  spread service, and `q_core/crates/q-indicators` kernels. Changes to those
+  calculations must update the corresponding guide; catalog coverage is tested.
+- **Preview:** uses the existing series endpoint for the inspected draft only,
+  whether enabled or not, over the loaded chart range. The latest 160 bars render
+  with the shared timestamp alignment and indicator render model. Parameters
+  debounce for 300ms; style changes do not fetch. Old selections are never shown
+  as the current result. Price outputs overlay candles; oscillator outputs have
+  their own pane. Null values remain gaps. Keyboard arrows inspect bars, and the
+  chart provides a textual latest-value description. Missing chart data, insufficient
+  history, quote availability, and retryable errors retain the same frame.
+
+Focused verification lives in `IndicatorsModal.test.tsx`,
+`IndicatorPreview.test.tsx`, and `indicatorDocumentation.test.ts`.
