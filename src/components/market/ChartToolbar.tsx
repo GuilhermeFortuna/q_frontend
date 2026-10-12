@@ -5,8 +5,6 @@ import type { IndicatorConfig, ChartSettings } from '@/components/charts/types/c
 import { LabeledField } from '@/components/ui/LabeledField'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { CHART_TIMEFRAMES } from '@/lib/market/timeframes'
-import type { OhlcvBar } from '@/types/api'
-
 export type ChartToolbarProps = {
   selectedTimeframe: string
   onTimeframeChange: (timeframe: string) => void
@@ -14,7 +12,6 @@ export type ChartToolbarProps = {
   onChartTypeChange: (chartType: 'candles' | 'line' | 'area') => void
   indicators: IndicatorConfig[]
   onIndicatorsChange: (indicators: IndicatorConfig[]) => void
-  bars: OhlcvBar[]
   showGrid: boolean
   onShowGridChange: (showGrid: boolean) => void
   chartSettings?: ChartSettings
@@ -38,7 +35,6 @@ export function ChartToolbar({
   onChartTypeChange,
   indicators,
   onIndicatorsChange,
-  bars,
   showGrid,
   onShowGridChange,
   chartSettings,
@@ -80,7 +76,7 @@ export function ChartToolbar({
           />
         </LabeledField>
 
-        <IndicatorsPopover indicators={indicators} onChange={onIndicatorsChange} bars={bars} />
+        <IndicatorsPopover indicators={indicators} onChange={onIndicatorsChange} />
 
         {chartSettings && onChartSettingsChange ? (
           <ChartSettingsPopover settings={chartSettings} onChange={onChartSettingsChange} />

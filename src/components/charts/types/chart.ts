@@ -16,95 +16,16 @@ export type DrawingObject =
   | { id: string; type: 'fibo'; p1: DataPoint; p2: DataPoint }
   | { id: string; type: 'text'; point: DataPoint; label: string }
 
-export type IndicatorConfig =
-  | {
-      type: 'sma'
-      enabled: boolean
-      period: number
-      color?: string
-      strokeWidth?: number
-      lineStyle?: 'solid' | 'dashed' | 'dotted'
-    }
-  | {
-      type: 'ema'
-      enabled: boolean
-      period: number
-      color?: string
-      strokeWidth?: number
-      lineStyle?: 'solid' | 'dashed' | 'dotted'
-    }
-  | {
-      type: 'bollinger'
-      enabled: boolean
-      period: number
-      stdDev: number
-      color?: string
-      strokeWidth?: number
-      showCloud?: boolean
-    }
-  | {
-      type: 'rsi'
-      enabled: boolean
-      period: number
-      color?: string
-      strokeWidth?: number
-      showCloud?: boolean
-    }
-  | {
-      type: 'macd'
-      enabled: boolean
-      fast: number
-      slow: number
-      signal: number
-      macdColor?: string
-      signalColor?: string
-    }
-  | {
-      type: 'volumeMa'
-      enabled: boolean
-      period: number
-      color?: string
-      strokeWidth?: number
-      lineStyle?: 'solid' | 'dashed' | 'dotted'
-    }
-  | {
-      type: 'wma'
-      enabled: boolean
-      period: number
-      color?: string
-      strokeWidth?: number
-      lineStyle?: 'solid' | 'dashed' | 'dotted'
-    }
-  | {
-      type: 'hma'
-      enabled: boolean
-      period: number
-      color?: string
-      strokeWidth?: number
-      lineStyle?: 'solid' | 'dashed' | 'dotted'
-    }
-  | {
-      type: 'smma'
-      enabled: boolean
-      period: number
-      color?: string
-      strokeWidth?: number
-      lineStyle?: 'solid' | 'dashed' | 'dotted'
-    }
-  | {
-      type: 'donchian'
-      enabled: boolean
-      period: number
-      color?: string
-      strokeWidth?: number
-      showCloud?: boolean
-    }
+export type {
+  IndicatorConfig,
+  IndicatorStyle,
+  IndicatorLineStyle,
+} from '@/lib/market/indicatorConfig'
+import type { IndicatorConfig } from '@/lib/market/indicatorConfig'
 
 /**
  * A backend-computed indicator series aligned bar-for-bar to the chart's `bars`.
- * Unlike {@link IndicatorConfig} (client-computed for the Market workspace) these
- * values are rendered verbatim — the live execution chart never recomputes strategy
- * indicators. `null` entries are warm-up gaps and break the drawn line.
+ * Values are rendered verbatim; `null` entries are warm-up gaps and break the drawn line.
  */
 export type PrecomputedIndicatorSeries = {
   key: string
@@ -196,79 +117,64 @@ export const TIME_AXIS_STRETCH_SENSITIVITY = 1
 
 export const DEFAULT_INDICATORS: IndicatorConfig[] = [
   {
-    type: 'sma',
+    id: 'sma',
     enabled: true,
-    period: 20,
-    color: '#c9a227',
-    strokeWidth: 1.2,
-    lineStyle: 'dashed',
+    parameters: { period: 20 },
+    style: { color: '#c9a227', strokeWidth: 1.2, lineStyle: 'dashed' },
   },
   {
-    type: 'ema',
+    id: 'ema',
     enabled: false,
-    period: 20,
-    color: '#6eb5ff',
-    strokeWidth: 1.2,
-    lineStyle: 'solid',
+    parameters: { period: 20 },
+    style: { color: '#6eb5ff', strokeWidth: 1.2, lineStyle: 'solid' },
   },
   {
-    type: 'bollinger',
+    id: 'bollinger',
     enabled: false,
-    period: 20,
-    stdDev: 2,
-    color: '#c9a227',
-    strokeWidth: 1.0,
-    showCloud: true,
-  },
-  { type: 'rsi', enabled: false, period: 14, color: '#a78bfa', strokeWidth: 1.2, showCloud: true },
-  {
-    type: 'macd',
-    enabled: false,
-    fast: 12,
-    slow: 26,
-    signal: 9,
-    macdColor: '#6eb5ff',
-    signalColor: '#c9a227',
+    parameters: { period: 20, num_std: 2 },
+    style: { color: '#c9a227', strokeWidth: 1.0, showCloud: true },
   },
   {
-    type: 'volumeMa',
+    id: 'rsi',
     enabled: false,
-    period: 20,
-    color: '#a78bfa',
-    strokeWidth: 1.2,
-    lineStyle: 'solid',
+    parameters: { period: 14 },
+    style: { color: '#a78bfa', strokeWidth: 1.2, showCloud: true },
   },
   {
-    type: 'wma',
+    id: 'macd',
     enabled: false,
-    period: 20,
-    color: '#f97316',
-    strokeWidth: 1.2,
-    lineStyle: 'solid',
+    parameters: { fast_period: 12, slow_period: 26, signal_period: 9 },
+    style: { outputColors: { line: '#6eb5ff', signal: '#c9a227' } },
   },
   {
-    type: 'hma',
+    id: 'volume_ma',
     enabled: false,
-    period: 20,
-    color: '#26a69a',
-    strokeWidth: 1.2,
-    lineStyle: 'solid',
+    parameters: { period: 20 },
+    style: { color: '#a78bfa', strokeWidth: 1.2, lineStyle: 'solid' },
   },
   {
-    type: 'smma',
+    id: 'wma',
     enabled: false,
-    period: 20,
-    color: '#ef5350',
-    strokeWidth: 1.2,
-    lineStyle: 'solid',
+    parameters: { period: 20 },
+    style: { color: '#f97316', strokeWidth: 1.2, lineStyle: 'solid' },
   },
   {
-    type: 'donchian',
+    id: 'hma',
     enabled: false,
-    period: 20,
-    color: '#6eb5ff',
-    strokeWidth: 1.0,
-    showCloud: true,
+    parameters: { period: 20 },
+    style: { color: '#26a69a', strokeWidth: 1.2, lineStyle: 'solid' },
+  },
+  {
+    id: 'smma',
+    enabled: false,
+    parameters: { period: 20 },
+    style: { color: '#ef5350', strokeWidth: 1.2, lineStyle: 'solid' },
+  },
+  {
+    id: 'donchian',
+    enabled: false,
+    parameters: { period: 20 },
+    style: { color: '#6eb5ff', strokeWidth: 1.0, showCloud: true },
   },
 ]
 
@@ -293,8 +199,13 @@ export type ChartScales = {
   xScale: BandScale
   priceScale: LinearScale
   volumeScale: LinearScale
-  rsiScale?: LinearScale
-  macdScale?: LinearScale
+  oscillatorScales: Array<{ key: string; scale: LinearScale }>
+}
+
+export type OscillatorPaneSlot = {
+  key: string
+  top: number
+  height: number
 }
 
 export type PaneLayout = {
@@ -302,10 +213,7 @@ export type PaneLayout = {
   priceHeight: number
   volumeTop: number
   volumeHeight: number
-  rsiTop?: number
-  rsiHeight?: number
-  macdTop?: number
-  macdHeight?: number
+  oscillators: OscillatorPaneSlot[]
   innerWidth: number
   innerHeight: number
 }

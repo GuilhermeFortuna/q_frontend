@@ -1,7 +1,7 @@
 import { AxisBottom, AxisRight } from '@visx/axis'
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
-import { isPaddingSlotKey } from '@/components/charts/types/chart'
+import { isPaddingSlotKey, type PaneLayout } from '@/components/charts/types/chart'
 import { chartTheme } from '@/lib/charts/chartTheme'
 import { formatTimeAxisLabel } from '@/lib/market/timeframes'
 
@@ -9,19 +9,8 @@ type ChartAxesProps = {
   xScale: BandScale
   priceScale: LinearScale
   volumeScale: LinearScale
-  rsiScale?: LinearScale
-  macdScale?: LinearScale
-  layout: {
-    priceTop: number
-    priceHeight: number
-    volumeTop: number
-    volumeHeight: number
-    rsiTop?: number
-    rsiHeight?: number
-    macdTop?: number
-    macdHeight?: number
-    innerWidth: number
-  }
+  oscillatorScales: Array<{ key: string; scale: LinearScale }>
+  layout: PaneLayout
   timeframe: string
   left: number
   bottom: number
@@ -43,8 +32,7 @@ export function ChartAxes({
   xScale,
   priceScale,
   volumeScale,
-  rsiScale,
-  macdScale,
+  oscillatorScales,
   layout,
   timeframe,
   left,
@@ -63,24 +51,16 @@ export function ChartAxes({
         tickFormat={() => ''}
         {...axisStyle}
       />
-      {rsiScale && layout.rsiTop !== undefined && (
+      {oscillatorScales.map((entry) => (
         <AxisRight
+          key={entry.key}
           left={left + layout.innerWidth}
-          scale={rsiScale}
+          scale={entry.scale}
           numTicks={3}
           tickFormat={(v) => `${v}`}
           {...axisStyle}
         />
-      )}
-      {macdScale && layout.macdTop !== undefined && (
-        <AxisRight
-          left={left + layout.innerWidth}
-          scale={macdScale}
-          numTicks={3}
-          tickFormat={() => ''}
-          {...axisStyle}
-        />
-      )}
+      ))}
       <AxisBottom
         top={xTop}
         left={left}

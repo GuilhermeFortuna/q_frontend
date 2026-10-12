@@ -2,16 +2,14 @@ import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import type { IndicatorConfig } from '@/components/charts/types/chart'
-import type { OhlcvBar } from '@/types/api'
 import { IndicatorsModal } from './IndicatorsModal'
 
 type IndicatorsPopoverProps = {
   indicators: IndicatorConfig[]
   onChange: (indicators: IndicatorConfig[]) => void
-  bars: OhlcvBar[]
 }
 
-export function IndicatorsPopover({ indicators, onChange, bars }: IndicatorsPopoverProps) {
+export function IndicatorsPopover({ indicators, onChange }: IndicatorsPopoverProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const activeCount = indicators.filter((i) => i.enabled).length
@@ -36,7 +34,6 @@ export function IndicatorsPopover({ indicators, onChange, bars }: IndicatorsPopo
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         indicators={indicators}
-        bars={bars}
         onChange={onChange}
       />
     </div>

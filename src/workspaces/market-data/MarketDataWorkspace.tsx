@@ -5,6 +5,7 @@ import { useInstruments, useMarketSnapshot, useMarketSnapshots } from '@/api/que
 import { useProgressiveOhlcv } from '@/api/queries/useProgressiveOhlcv'
 import { useDrawings } from '@/components/charts/hooks/useDrawings'
 import { DEFAULT_SETTINGS, type ChartProfile } from '@/components/charts/types/chart'
+import { normalizeIndicatorConfigs } from '@/lib/market/indicatorConfig'
 
 import { ChartPanel } from '@/components/market/ChartPanel'
 import { ChartToolbar } from '@/components/market/ChartToolbar'
@@ -39,20 +40,16 @@ const DEFAULT_PROFILES: ChartProfile[] = [
     showGrid: true,
     indicators: [
       {
-        type: 'sma',
+        id: 'sma',
         enabled: true,
-        period: 20,
-        color: '#c9a227',
-        strokeWidth: 1.5,
-        lineStyle: 'solid',
+        parameters: { period: 20 },
+        style: { color: '#c9a227', strokeWidth: 1.5, lineStyle: 'solid' },
       },
       {
-        type: 'ema',
+        id: 'ema',
         enabled: true,
-        period: 9,
-        color: '#26a69a',
-        strokeWidth: 1.5,
-        lineStyle: 'solid',
+        parameters: { period: 9 },
+        style: { color: '#26a69a', strokeWidth: 1.5, lineStyle: 'solid' },
       },
     ],
     chartSettings: DEFAULT_SETTINGS,
@@ -64,13 +61,10 @@ const DEFAULT_PROFILES: ChartProfile[] = [
     showGrid: true,
     indicators: [
       {
-        type: 'bollinger',
+        id: 'bollinger',
         enabled: true,
-        period: 20,
-        stdDev: 2,
-        color: '#6eb5ff',
-        strokeWidth: 1.2,
-        showCloud: true,
+        parameters: { period: 20, num_std: 2 },
+        style: { color: '#6eb5ff', strokeWidth: 1.2, showCloud: true },
       },
     ],
     chartSettings: DEFAULT_SETTINGS,
@@ -104,12 +98,19 @@ export function MarketDataWorkspace() {
     const raw = localStorage.getItem('quant:chart-profiles')
     if (raw) {
       try {
-        return JSON.parse(raw)
+        const parsed = JSON.parse(raw) as ChartProfile[]
+        return parsed.map((profile) => ({
+          ...profile,
+          indicators: normalizeIndicatorConfigs(profile.indicators),
+        }))
       } catch {
         // Fall back to default
       }
     }
-    return DEFAULT_PROFILES
+    return DEFAULT_PROFILES.map((profile) => ({
+      ...profile,
+      indicators: normalizeIndicatorConfigs(profile.indicators),
+    }))
   })
 
   const [activeProfileId, setActiveProfileId] = useState<string>(() => {
@@ -124,7 +125,7 @@ export function MarketDataWorkspace() {
       patchMarketDataSession({
         chartType: active.chartType,
         showGrid: active.showGrid,
-        indicators: active.indicators,
+        indicators: normalizeIndicatorConfigs(active.indicators),
         chartSettings: active.chartSettings,
       })
     }
@@ -408,7 +409,6 @@ export function MarketDataWorkspace() {
                   patchMarketDataSession({ indicators: val })
                   updateActiveProfile({ indicators: val })
                 }}
-                bars={ohlcv.bars}
                 showGrid={showGrid}
                 onShowGridChange={(val) => {
                   patchMarketDataSession({ showGrid: val })
