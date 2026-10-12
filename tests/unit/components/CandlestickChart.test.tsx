@@ -3,6 +3,7 @@ import { createRef, type ComponentProps } from 'react'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { createElement, type ReactNode } from 'react'
 
@@ -140,6 +141,36 @@ describe('CandlestickChart', () => {
     await waitFor(() => {
       expect(screen.getByText(/No tick history for this range/i)).toBeInTheDocument()
     })
+  })
+
+  it('shows why indicators are missing when the series request is rejected', async () => {
+    server.use(
+      http.post('*/api/v1/market/indicators/:symbol/series', () =>
+        HttpResponse.json(
+          { detail: "Indicator 'sma': Parameter 'period' must be <= 5000 (got 9000)." },
+          { status: 422 },
+        ),
+      ),
+    )
+    renderChart({ indicators: [{ id: 'sma', enabled: true, parameters: { period: 9000 } }] })
+    await waitForChartSvg()
+    await waitFor(() => {
+      expect(screen.getByTestId('market-indicator-notice')).toHaveTextContent(
+        "Parameter 'period' must be <= 5000",
+      )
+    })
+    expect(document.querySelector('[data-testid="market-indicator-line-sma"]')).toBeNull()
+  })
+
+  it('draws the known indicators and names one the catalog does not list', async () => {
+    renderChart({
+      indicators: [...smaIndicators, { id: 'retired_indicator', enabled: true, parameters: {} }],
+    })
+    await waitForChartSvg()
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="market-indicator-line-sma"]')).toBeTruthy()
+    })
+    expect(screen.getByTestId('market-indicator-notice')).toHaveTextContent('retired_indicator')
   })
 
   it('still renders migrated legacy SMA, Bollinger and RSI selections', async () => {

@@ -1,5 +1,6 @@
-import type { IndicatorCatalogEntry, MarketIndicatorSeriesResponse } from '../../../contracts/api'
-import type { IndicatorConfig } from '@/lib/market/indicatorConfig'
+import type { IndicatorCatalogEntry } from '../../../contracts/api'
+import type { IndicatorSeriesByInstance } from '@/api/queries/marketIndicators'
+import { indicatorInstanceKey, type IndicatorConfig } from '@/lib/market/indicatorConfig'
 import { alignSeriesValuesToBars } from '@/lib/market/indicatorSeriesAlign'
 import type { OhlcvBar } from '@/types/api'
 
@@ -8,7 +9,8 @@ export type PriceBandRenderGroup = {
   instanceKey: string
   catalogId: string
   upper: (number | null)[]
-  middle: (number | null)[]
+  /** Present only when the backend returns a middle output (Bollinger). */
+  middle?: (number | null)[]
   lower: (number | null)[]
   config: IndicatorConfig
 }
@@ -54,7 +56,7 @@ export function buildIndicatorRenderModel(
   bars: OhlcvBar[],
   indicators: IndicatorConfig[],
   catalog: IndicatorCatalogEntry[],
-  seriesResponse: MarketIndicatorSeriesResponse | undefined,
+  series: IndicatorSeriesByInstance | undefined,
 ): IndicatorRenderModel {
   const entries = catalogById(catalog)
   const barTimestamps = bars.map((bar) => bar.timestamp)
@@ -64,25 +66,28 @@ export function buildIndicatorRenderModel(
   const priceBands: PriceBandRenderGroup[] = []
   const oscillators: OscillatorRenderGroup[] = []
 
-  if (!seriesResponse || enabled.length === 0) {
+  if (!series || enabled.length === 0) {
     return { priceLines, priceBands, oscillators }
   }
 
-  let seriesCursor = 0
+  const drawn = new Set<string>()
 
   for (const config of enabled) {
     const entry = entries.get(config.id)
-    if (!entry) continue
-    const instanceKey = `${config.id}:${JSON.stringify(config.parameters)}`
+    const instanceKey = indicatorInstanceKey(config)
+    // Series are looked up by the instance that requested them. While a changed selection
+    // is still loading, the previous response simply has no entry for the new instance.
+    const instanceSeries = series.byInstance[instanceKey]
+    if (!entry || !instanceSeries || drawn.has(instanceKey)) continue
+    drawn.add(instanceKey)
     const priceOutputs: OscillatorOutputRender[] = []
     const oscillatorOutputs: OscillatorOutputRender[] = []
 
     for (const outputSpec of entry.outputs) {
-      const raw = seriesResponse.series[seriesCursor]
-      seriesCursor += 1
+      const raw = instanceSeries.find((output) => output.key === outputSpec.key)
       if (!raw) continue
 
-      const values = alignSeriesValuesToBars(barTimestamps, seriesResponse.timestamps, raw.values)
+      const values = alignSeriesValuesToBars(barTimestamps, series.timestamps, raw.values)
       const renderOutput: OscillatorOutputRender = {
         outputKey: outputSpec.key,
         label: outputSpec.label,
@@ -120,17 +125,11 @@ export function buildIndicatorRenderModel(
       const upper = priceOutputs.find((o) => o.outputKey === 'upper')
       const lower = priceOutputs.find((o) => o.outputKey === 'lower')
       if (upper && lower) {
-        const middle = upper.values.map((value, index) => {
-          const low = lower.values[index]
-          if (value == null || low == null) return null
-          return (value + low) / 2
-        })
         priceBands.push({
           kind: 'bands',
           instanceKey,
           catalogId: config.id,
           upper: upper.values,
-          middle,
           lower: lower.values,
           config,
         })
