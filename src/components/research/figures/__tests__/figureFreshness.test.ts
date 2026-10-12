@@ -24,14 +24,39 @@ function figure(id: string, revision: number): ResearchFigure {
 }
 
 describe('diffFigureRevisions', () => {
-  it('marks absent figures as new and higher revisions as updated', () => {
+  it('marks unseen figures on the first page as new and higher revisions as updated', () => {
     const previous = new Map([
       ['a', 1],
       ['b', 2],
     ])
-    const marks = diffFigureRevisions(previous, [figure('a', 1), figure('b', 3), figure('c', 1)])
+    const marks = diffFigureRevisions(previous, [figure('c', 1), figure('a', 1), figure('b', 3)], 3)
 
     expect(marks).toEqual({ b: 'updated', c: 'new' })
+  })
+
+  it('treats unseen figures beyond the first page as backfill, not new', () => {
+    const previous = new Map([
+      ['a', 1],
+      ['b', 1],
+    ])
+    const marks = diffFigureRevisions(
+      previous,
+      [figure('a', 1), figure('b', 1), figure('old', 1)],
+      2,
+    )
+
+    expect(marks).toEqual({})
+  })
+
+  it('marks a new figure above a replaced one from the same poll window', () => {
+    const previous = new Map([
+      ['b', 1],
+      ['c', 1],
+    ])
+    // `b` was replaced, so it now sorts first; the new figure `a` is second.
+    const marks = diffFigureRevisions(previous, [figure('b', 2), figure('a', 1), figure('c', 1)], 3)
+
+    expect(marks).toEqual({ b: 'updated', a: 'new' })
   })
 
   it('marks nothing when the list is unchanged', () => {
@@ -73,6 +98,44 @@ describe('useFigureFreshness', () => {
 
     rerender({ figures: [figure('a', 2)], scope: 'x' })
     expect(result.current.marks).toEqual({ a: 'updated' })
+  })
+
+  it('does not mark older figures loaded by "Load more"', () => {
+    const { result, rerender } = renderHook(
+      ({ figures, leadingCount }) => useFigureFreshness(figures, 'x', leadingCount),
+      {
+        initialProps: {
+          figures: [figure('a', 1), figure('b', 1)] as ResearchFigure[] | undefined,
+          leadingCount: 2,
+        },
+      },
+    )
+
+    rerender({
+      figures: [figure('a', 1), figure('b', 1), figure('old1', 1), figure('old2', 1)],
+      leadingCount: 2,
+    })
+    expect(result.current.marks).toEqual({})
+  })
+
+  it('still marks a new arrival after older figures were loaded', () => {
+    const { result, rerender } = renderHook(
+      ({ figures, leadingCount }) => useFigureFreshness(figures, 'x', leadingCount),
+      {
+        initialProps: {
+          figures: [figure('a', 1), figure('b', 1)] as ResearchFigure[] | undefined,
+          leadingCount: 2,
+        },
+      },
+    )
+
+    rerender({ figures: [figure('a', 1), figure('b', 1), figure('old1', 1)], leadingCount: 2 })
+    rerender({
+      figures: [figure('new', 1), figure('a', 1), figure('b', 1), figure('old1', 1)],
+      leadingCount: 2,
+    })
+
+    expect(result.current.marks).toEqual({ new: 'new' })
   })
 
   it('does not mark a whole collection when the user switches to it', () => {

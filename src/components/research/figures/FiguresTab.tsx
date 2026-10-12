@@ -35,7 +35,11 @@ export function FiguresTab({ figureId }: FiguresTabProps) {
   const figures = useMemo(() => pages?.flatMap((page) => page.items), [pages])
   const totalCount = totalFigureCount(collections)
 
-  const { marks, clearMark } = useFigureFreshness(figures, collection ?? '')
+  const { marks, clearMark } = useFigureFreshness(
+    figures,
+    collection ?? '',
+    pages?.[0]?.items.length,
+  )
 
   const visibleFigures = useMemo(() => {
     const sorted = sortFiguresNewestFirst(figures ?? [])
