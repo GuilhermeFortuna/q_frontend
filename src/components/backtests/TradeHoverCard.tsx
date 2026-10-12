@@ -3,6 +3,7 @@ import {
   formatCurrency,
   formatSignedCurrency,
   formatExitReason,
+  formatExitResolution,
 } from '@/components/backtests/chartUtils'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import type { Trade } from '@/types/backtesting'
@@ -100,6 +101,14 @@ export function TradeHoverCard({
             <dt className="text-silver-500">Exit Reason</dt>
             <dd className="text-silver-100 text-right font-medium">
               {formatExitReason(trade.exit_reason)}
+            </dd>
+          </div>
+        )}
+        {formatExitResolution(trade.exit_resolution) && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-silver-500">Exit Basis</dt>
+            <dd className="text-brass-400 text-right">
+              {formatExitResolution(trade.exit_resolution)}
             </dd>
           </div>
         )}

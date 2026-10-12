@@ -1,5 +1,6 @@
 import { formatDisplayDate } from '@/lib/formatDate'
 import { chartLegacyColors } from '@/lib/charts/chartTheme'
+import type { Trade } from '@/types/backtesting'
 
 /** @deprecated Prefer chartTheme / rechartsTheme — legacy alias for data-prep helpers */
 export const CHART_COLORS = chartLegacyColors
@@ -43,4 +44,11 @@ export function formatExitReason(reason: string): string {
     .toLowerCase()
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/** Label for exits that were decided on substituted prices; null for real ticks and closed bars. */
+export function formatExitResolution(resolution: Trade['exit_resolution']): string | null {
+  if (resolution === 'minute') return 'Approximate: one-minute bar'
+  if (resolution === 'candle') return 'Approximate: candle prices'
+  return null
 }
