@@ -53,8 +53,8 @@
 
 **Files:** `package.json`, `pnpm-lock.yaml`, a `PlotlyFigure` component and its test under `src/components/research/figures/`.
 
-- [ ] Add failing tests for spec acceptance item 4 with the Plotly module mocked.
-- [ ] Add the dependency, the lazy loader, in-view mounting, purge, resize and PNG download; commit.
+- [x] Add failing tests for spec acceptance item 4 with the Plotly module mocked.
+- [x] Add the dependency, the lazy loader, in-view mounting, purge, resize and PNG download; commit.
 
 ### 5. Viewer
 

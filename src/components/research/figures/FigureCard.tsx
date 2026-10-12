@@ -1,6 +1,7 @@
 import type { ResearchFigure } from '@/types/researchFigures'
 
 import { FigureImage } from './FigureImage'
+import { PlotlyCardPreview } from './PlotlyFigure'
 import type { FigureMark } from './figureFreshness'
 import { figureAspectRatio, formatFigureUpdated } from './figureUtils'
 
@@ -30,9 +31,7 @@ export function FigureCard({ figure, mark, showCollection, onOpen }: FigureCardP
         style={{ aspectRatio: figureAspectRatio(figure) }}
       >
         {isInteractive ? (
-          <span className="text-silver-400 flex h-full w-full items-center justify-center text-xs">
-            Interactive figure
-          </span>
+          <PlotlyCardPreview figure={figure} />
         ) : (
           <FigureImage key={`${figure.figure_id}:${figure.revision}`} figure={figure} />
         )}

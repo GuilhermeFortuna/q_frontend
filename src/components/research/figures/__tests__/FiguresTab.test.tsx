@@ -6,6 +6,11 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 const navigateMock = vi.hoisted(() => vi.fn())
 
+// jsdom has no canvas, and the Plotly card mounts as soon as it is in view. Plotly drawing is covered in PlotlyFigure.test.tsx.
+vi.mock('plotly.js-dist-min', () => ({
+  default: { react: vi.fn(async (element: HTMLElement) => element), purge: vi.fn() },
+}))
+
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
   return {
