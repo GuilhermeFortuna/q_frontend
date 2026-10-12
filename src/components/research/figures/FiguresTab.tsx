@@ -74,7 +74,10 @@ export function FiguresTab({ figureId }: FiguresTabProps) {
   let body: ReactNode
   if (list.isPending) {
     body = (
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3" aria-busy="true">
+      <div
+        className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-[repeat(2,minmax(0,1fr))] 2xl:grid-cols-[repeat(3,minmax(0,1fr))]"
+        aria-busy="true"
+      >
         <span className="sr-only" role="status">
           Loading figures
         </span>
@@ -119,7 +122,7 @@ export function FiguresTab({ figureId }: FiguresTabProps) {
     body = (
       <div className="flex flex-col gap-4">
         <ul
-          className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3"
+          className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-[repeat(2,minmax(0,1fr))] 2xl:grid-cols-[repeat(3,minmax(0,1fr))]"
           data-testid="figures-grid"
         >
           {visibleFigures.map((figure) => (

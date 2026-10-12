@@ -127,7 +127,7 @@ export function PlotlyCardPreview({ figure }: PlotlyCardPreviewProps) {
   return (
     <span
       ref={hostRef}
-      className="block h-full w-full"
+      className="absolute inset-0 block"
       data-testid={`figure-plotly-${figure.figure_id}`}
     >
       {body}

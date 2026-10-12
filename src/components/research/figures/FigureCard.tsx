@@ -33,7 +33,11 @@ export function FigureCard({ figure, mark, showCollection, onOpen }: FigureCardP
         {isInteractive ? (
           <PlotlyCardPreview figure={figure} />
         ) : (
-          <FigureImage key={`${figure.figure_id}:${figure.revision}`} figure={figure} />
+          <FigureImage
+            key={`${figure.figure_id}:${figure.revision}`}
+            figure={figure}
+            className="absolute inset-0 h-full w-full object-contain"
+          />
         )}
       </span>
       <span className="flex min-w-0 flex-col gap-1">
