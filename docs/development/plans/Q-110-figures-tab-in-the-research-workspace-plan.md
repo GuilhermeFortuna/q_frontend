@@ -60,8 +60,8 @@
 
 **Files:** a `FigureViewer` component and its test.
 
-- [ ] Add failing tests for spec acceptance item 6.
-- [ ] Implement the viewer, keyboard navigation, focus return, fullscreen, fit and actual size, and live reload on revision change; commit.
+- [x] Add failing tests for spec acceptance item 6.
+- [x] Implement the viewer, keyboard navigation, focus return, fullscreen, fit and actual size, and live reload on revision change; commit.
 
 ## Verification
 

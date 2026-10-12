@@ -18,3 +18,15 @@ export function loadPlotly(): Promise<PlotlyApi> {
   )
   return loading
 }
+
+/** Exports the plot as PNG. Plotly appends the `.png` extension itself. */
+export async function downloadPlotlyPng(element: HTMLElement, baseName: string): Promise<void> {
+  const plotly = await loadPlotly()
+  const { width, height } = element.getBoundingClientRect()
+  await plotly.downloadImage(element, {
+    format: 'png',
+    filename: baseName,
+    width: Math.max(1, Math.round(width)),
+    height: Math.max(1, Math.round(height)),
+  })
+}

@@ -44,3 +44,16 @@ export function shortGitRevision(provenance: ResearchFigureProvenanceInfo | null
   const revision = provenance?.git_revision
   return revision ? revision.slice(0, 8) : '—'
 }
+
+export function figureBaseName(figure: Pick<ResearchFigure, 'title'>): string {
+  const slug = figure.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return slug || 'figure'
+}
+
+export function figureExtension(figure: Pick<ResearchFigure, 'kind' | 'media_type'>): string {
+  if (figure.kind === 'image' && figure.media_type === 'image/svg+xml') return 'svg'
+  return 'png'
+}

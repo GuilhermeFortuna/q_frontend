@@ -9,12 +9,18 @@ import { toast } from '@/components/ui/toast'
 
 import { FigureCard } from './FigureCard'
 import { FigureCollectionsRail } from './FigureCollectionsRail'
+import { FigureViewer } from './FigureViewer'
 import { useFigureFreshness } from './figureFreshness'
 import { RESEARCH_FIGURE_SNIPPET, sortFiguresNewestFirst, totalFigureCount } from './figureUtils'
 
 const SKELETON_COUNT = 6
 
-export function FiguresTab() {
+export type FiguresTabProps = {
+  /** The figure open in the viewer, from `?figure=`. */
+  figureId?: string
+}
+
+export function FiguresTab({ figureId }: FiguresTabProps) {
   const navigate = useNavigate({ from: '/research' })
   const [collection, setCollection] = useState<string | null>(null)
   const [titleFilter, setTitleFilter] = useState('')
@@ -37,9 +43,13 @@ export function FiguresTab() {
     return query ? sorted.filter((figure) => figure.title.toLowerCase().includes(query)) : sorted
   }, [figures, titleFilter])
 
-  const openFigure = (figureId: string) => {
-    clearMark(figureId)
-    void navigate({ search: { tab: 'figures', figure: figureId } })
+  const openFigure = (openId: string) => {
+    clearMark(openId)
+    void navigate({ search: { tab: 'figures', figure: openId } })
+  }
+
+  const closeViewer = () => {
+    void navigate({ search: { tab: 'figures' } })
   }
 
   const confirmDeleteCollection = () => {
@@ -162,6 +172,12 @@ export function FiguresTab() {
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">{body}</div>
       </Panel>
+      <FigureViewer
+        figureId={figureId ?? null}
+        figures={visibleFigures}
+        onOpen={openFigure}
+        onClose={closeViewer}
+      />
       <ConfirmDialog
         open={pendingDeleteCollection !== null}
         title="Delete collection?"

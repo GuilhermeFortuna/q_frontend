@@ -75,6 +75,14 @@ export async function fetchResearchFigurePlotly(
   return data
 }
 
+export async function fetchResearchFigureBlob(figureId: string, revision: number): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(
+    `/api/v1/research/figures/${encodeURIComponent(figureId)}/content`,
+    { params: { rev: revision }, responseType: 'blob' },
+  )
+  return data
+}
+
 export async function deleteResearchFigure(figureId: string): Promise<void> {
   await apiClient.delete(`/api/v1/research/figures/${encodeURIComponent(figureId)}`)
 }
@@ -106,12 +114,15 @@ export function useResearchFigureList({ collection }: { collection: string | nul
   })
 }
 
-export function useResearchFigure(figureId: string | null) {
+/** Metadata for the viewer. Polled while open so a figure outside the list stays current. */
+export function useResearchFigureMetadata(figureId: string | null) {
   return useQuery({
     queryKey: researchFigureKeys.metadata(figureId ?? ''),
     queryFn: () => fetchResearchFigure(figureId as string),
     enabled: !!figureId,
     retry: false,
+    refetchInterval: researchFigurePollInterval,
+    refetchIntervalInBackground: false,
   })
 }
 

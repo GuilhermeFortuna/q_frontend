@@ -102,7 +102,11 @@ function FeatureLabTab({ recentRuns, onEvalStarted, onOpenRun }: FeatureLabTabPr
   return <FeatureLab recentRuns={recentRuns} onEvalStarted={onEvalStarted} onOpenRun={onOpenRun} />
 }
 
-export function ResearchWorkspace({ tab = 'figures', sourceRunId }: ResearchWorkspaceProps) {
+export function ResearchWorkspace({
+  tab = 'figures',
+  sourceRunId,
+  figureId,
+}: ResearchWorkspaceProps) {
   const navigate = useNavigate({ from: '/research' })
   const queryClient = useQueryClient()
   const setPendingBacktestConfig = useAppStore((state) => state.setPendingBacktestConfig)
@@ -200,7 +204,7 @@ export function ResearchWorkspace({ tab = 'figures', sourceRunId }: ResearchWork
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden" data-workspace-transition-surface="primary">
-        {tab === 'figures' ? <FiguresTab /> : null}
+        {tab === 'figures' ? <FiguresTab figureId={figureId} /> : null}
         {tab === 'store' ? <FeatureStoreTab /> : null}
         {tab === 'scoring' ? (
           <FeatureScoringTab
