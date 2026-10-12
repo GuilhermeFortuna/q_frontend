@@ -1,0 +1,953 @@
+{
+  "indicators": [
+    {
+      "id": "sma",
+      "label": "SMA",
+      "category": "Moving averages",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "SMA",
+          "pane": "price"
+        }
+      ]
+    },
+    {
+      "id": "ema",
+      "label": "EMA",
+      "category": "Moving averages",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "EMA",
+          "pane": "price"
+        }
+      ]
+    },
+    {
+      "id": "wma",
+      "label": "WMA",
+      "category": "Moving averages",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "WMA",
+          "pane": "price"
+        }
+      ]
+    },
+    {
+      "id": "hma",
+      "label": "HMA",
+      "category": "Moving averages",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "HMA",
+          "pane": "price"
+        }
+      ]
+    },
+    {
+      "id": "smma",
+      "label": "SMMA",
+      "category": "Moving averages",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "SMMA",
+          "pane": "price"
+        }
+      ]
+    },
+    {
+      "id": "volume_ma",
+      "label": "Volume MA",
+      "category": "Moving averages",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Volume MA",
+          "pane": "price"
+        }
+      ]
+    },
+    {
+      "id": "bollinger",
+      "label": "Bollinger bands",
+      "category": "Bands and channels",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "num_std",
+          "type": "float",
+          "default": 2.0,
+          "minimum": 0.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "upper",
+          "label": "Upper",
+          "pane": "price"
+        },
+        {
+          "key": "middle",
+          "label": "Middle",
+          "pane": "price"
+        },
+        {
+          "key": "lower",
+          "label": "Lower",
+          "pane": "price"
+        }
+      ]
+    },
+    {
+      "id": "donchian",
+      "label": "Donchian channels",
+      "category": "Bands and channels",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "upper",
+          "label": "Upper",
+          "pane": "price"
+        },
+        {
+          "key": "lower",
+          "label": "Lower",
+          "pane": "price"
+        }
+      ]
+    },
+    {
+      "id": "rsi",
+      "label": "RSI",
+      "category": "Oscillators",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "RSI",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "macd",
+      "label": "MACD",
+      "category": "Oscillators",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "fast_period",
+          "type": "int",
+          "default": 12,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "slow_period",
+          "type": "int",
+          "default": 26,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "signal_period",
+          "type": "int",
+          "default": 9,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "MACD",
+          "pane": "oscillator"
+        },
+        {
+          "key": "signal",
+          "label": "Signal",
+          "pane": "oscillator"
+        },
+        {
+          "key": "histogram",
+          "label": "Histogram",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "rolling_zscore",
+      "label": "Rolling z-score",
+      "category": "Oscillators",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Z-score",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "rolling_rank",
+      "label": "Rolling rank",
+      "category": "Oscillators",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Rank",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "pct_change",
+      "label": "Percent change",
+      "category": "Oscillators",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "change_bars",
+          "type": "int",
+          "default": 1,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "% change",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "log_return",
+      "label": "Log return",
+      "category": "Returns and trend",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "horizon",
+          "type": "int",
+          "default": 1,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Log return",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "normalized_momentum",
+      "label": "Volatility-normalized momentum",
+      "category": "Returns and trend",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "horizon",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "vol_estimator",
+          "type": "string",
+          "default": "realized",
+          "minimum": null,
+          "maximum": null,
+          "choices": ["realized", "ewma", "rogers_satchell", "yang_zhang"]
+        },
+        {
+          "name": "vol_window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "vol_half_life",
+          "type": "float",
+          "default": 32.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "vol_lag",
+          "type": "int",
+          "default": 1,
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Norm. momentum",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "normalized_ewma_trend_spread",
+      "label": "Normalized EWMA trend spread",
+      "category": "Returns and trend",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "fast_half_life",
+          "type": "float",
+          "default": 8.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "slow_half_life",
+          "type": "float",
+          "default": 32.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "vol_estimator",
+          "type": "string",
+          "default": "realized",
+          "minimum": null,
+          "maximum": null,
+          "choices": ["realized", "ewma", "rogers_satchell", "yang_zhang"]
+        },
+        {
+          "name": "vol_window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "vol_half_life",
+          "type": "float",
+          "default": 32.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "vol_lag",
+          "type": "int",
+          "default": 1,
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Norm. trend spread",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "price_zscore_log",
+      "label": "Log-price z-score",
+      "category": "Returns and trend",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Log-price z",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "ewma_trend_spread",
+      "label": "EWMA trend spread",
+      "category": "Returns and trend",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "fast_half_life",
+          "type": "float",
+          "default": 8.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "slow_half_life",
+          "type": "float",
+          "default": 32.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Trend spread",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "atr",
+      "label": "ATR",
+      "category": "Volatility and range",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "ATR",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "atr_fraction",
+      "label": "ATR fraction",
+      "category": "Volatility and range",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "period",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "ATR / close",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "true_range",
+      "label": "True range",
+      "category": "Volatility and range",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "True range",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "realized_vol",
+      "label": "Realized volatility (annualized)",
+      "category": "Volatility and range",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "periods_per_year",
+          "type": "int",
+          "default": 252,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Realized vol",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "per_bar_realized_vol",
+      "label": "Per-bar realized volatility",
+      "category": "Volatility and range",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Per-bar vol",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "per_bar_ewma_vol",
+      "label": "Per-bar EWMA volatility",
+      "category": "Volatility and range",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "half_life",
+          "type": "float",
+          "default": 32.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "EWMA vol",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "rogers_satchell",
+      "label": "Rogers\u2013Satchell",
+      "category": "Volatility and range",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Rogers\u2013Satchell",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "per_bar_yang_zhang",
+      "label": "Per-bar Yang\u2013Zhang",
+      "category": "Volatility and range",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "YZ vol",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "volatility_log_ratio",
+      "label": "Volatility log ratio",
+      "category": "Volatility and range",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [
+        {
+          "name": "vol_estimator",
+          "type": "string",
+          "default": "realized",
+          "minimum": null,
+          "maximum": null,
+          "choices": ["realized", "ewma", "rogers_satchell", "yang_zhang"]
+        },
+        {
+          "name": "short_window",
+          "type": "int",
+          "default": 10,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "long_window",
+          "type": "int",
+          "default": 40,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "short_half_life",
+          "type": "float",
+          "default": 8.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "long_half_life",
+          "type": "float",
+          "default": 32.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Vol log ratio",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "quote_spread",
+      "label": "Quoted spread",
+      "category": "Liquidity",
+      "pane": "oscillator",
+      "unit": "bps",
+      "requiredData": "quotes",
+      "parameters": [
+        {
+          "name": "output",
+          "type": "string",
+          "default": "time_weighted_mean",
+          "minimum": null,
+          "maximum": null,
+          "choices": ["last", "time_weighted_mean", "max"]
+        },
+        {
+          "name": "max_quote_age_ms",
+          "type": "int",
+          "default": 60000,
+          "minimum": 0.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "min_coverage",
+          "type": "float",
+          "default": 0.0,
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Spread",
+          "pane": "oscillator"
+        }
+      ]
+    },
+    {
+      "id": "spread_vs_volatility",
+      "label": "Spread vs volatility",
+      "category": "Liquidity",
+      "pane": "oscillator",
+      "unit": null,
+      "requiredData": "quotes",
+      "parameters": [
+        {
+          "name": "spread_output",
+          "type": "string",
+          "default": "time_weighted_mean",
+          "minimum": null,
+          "maximum": null,
+          "choices": ["last", "time_weighted_mean", "max"]
+        },
+        {
+          "name": "max_quote_age_ms",
+          "type": "int",
+          "default": 60000,
+          "minimum": 0.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "min_coverage",
+          "type": "float",
+          "default": 0.0,
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "choices": null
+        },
+        {
+          "name": "vol_estimator",
+          "type": "string",
+          "default": "realized",
+          "minimum": null,
+          "maximum": null,
+          "choices": ["realized", "ewma", "rogers_satchell", "yang_zhang"]
+        },
+        {
+          "name": "vol_window",
+          "type": "int",
+          "default": 20,
+          "minimum": 1.0,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "vol_half_life",
+          "type": "float",
+          "default": 32.0,
+          "minimum": 1e-12,
+          "maximum": null,
+          "choices": null
+        },
+        {
+          "name": "vol_lag",
+          "type": "int",
+          "default": 1,
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "Spread / vol",
+          "pane": "oscillator"
+        }
+      ]
+    }
+  ]
+}

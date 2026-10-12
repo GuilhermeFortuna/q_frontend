@@ -16,6 +16,8 @@ import {
   getMockBacktestResponse,
   getMockBacktestTradesCsv,
 } from '@/mocks/backtest'
+import { mockIndicatorCatalog, mockMarketIndicatorSeries } from '@/mocks/marketIndicators'
+import type { MarketIndicatorSeriesRequest } from '../../contracts/api'
 import { getMockBacktestEquityArtifact } from '@/mocks/backtestEquity'
 import {
   bulkDeleteMockResearchFigures,
@@ -449,6 +451,18 @@ export const handlers = [
         end,
       }),
     )
+  }),
+
+  http.get('*/api/v1/market/indicators', () => HttpResponse.json(mockIndicatorCatalog)),
+
+  http.post('*/api/v1/market/indicators/:symbol/series', async ({ params, request }) => {
+    const symbol = String(params.symbol).toUpperCase()
+    const body = (await request.json()) as MarketIndicatorSeriesRequest
+    const bars = getMockOhlcv(symbol, body.timeframe, 5000, {
+      start: body.start,
+      end: body.end,
+    })
+    return HttpResponse.json(mockMarketIndicatorSeries(bars, body))
   }),
 
   http.post('*/api/v1/backtest/run', async ({ request }) => {
