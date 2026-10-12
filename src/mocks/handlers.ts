@@ -130,6 +130,38 @@ const deletedOptimizationStudyIds = new Set<string>()
 const savedBacktestRunOverrides = new Map<string, boolean>()
 const mockBacktestJobs = new Map<string, ReturnType<typeof getMockBacktestResponse>>()
 let mockBacktestJobSeq = 1
+
+/**
+ * Live progress a mock run reports on successive status polls before it completes, so the
+ * progress display can be exercised without a worker. The polls per step are the frontend's
+ * 1 s refetch interval, so the whole sequence takes about six seconds.
+ */
+const MOCK_BACKTEST_PROGRESS_STEPS = [
+  { phase: 'queued', progress: null, message: 'Waiting for a worker' },
+  { phase: 'loading_data', progress: null, message: 'Loading H1 candles' },
+  { phase: 'preparing', progress: null, message: 'Preparing strategy and indicators' },
+  {
+    phase: 'simulating',
+    progress: 0.2,
+    message: 'Replaying ticks · 2024-03-04',
+    simulated_until: '2024-03-04T10:00:00',
+    bars_total: 1000,
+    candles_replayed: 200,
+    candles_substituted: 0,
+  },
+  {
+    phase: 'simulating',
+    progress: 0.6,
+    message: 'Replaying ticks · 2024-06-11',
+    simulated_until: '2024-06-11T15:00:00',
+    bars_total: 1000,
+    candles_replayed: 600,
+    candles_substituted: 12,
+  },
+  { phase: 'saving', progress: null, message: 'Saving results' },
+] as const
+const MOCK_BACKTEST_PROGRESS_ENABLED = import.meta.env.MODE !== 'test'
+const mockBacktestJobStatusPolls = new Map<string, { polls: number; startedAt: string }>()
 const mockBacktestRunsWithoutStoredResult = new Set(['run-stack-missing', 'run-script-missing'])
 
 /** Session-started jobs first, then seeded completed history runs with a stored result. */
@@ -441,7 +473,24 @@ export const handlers = [
     if (!mockBacktestJobs.has(runId)) {
       return HttpResponse.json({ detail: 'Backtest run not found.' }, { status: 404 })
     }
-    return HttpResponse.json({ run_id: runId, status: 'completed', error: null })
+    const job = mockBacktestJobStatusPolls.get(runId) ?? {
+      polls: 0,
+      startedAt: new Date().toISOString(),
+    }
+    mockBacktestJobStatusPolls.set(runId, { ...job, polls: job.polls + 1 })
+    // Unit tests complete a run on its first poll; the step sequence is for the running app.
+    const step = MOCK_BACKTEST_PROGRESS_ENABLED
+      ? MOCK_BACKTEST_PROGRESS_STEPS[job.polls]
+      : undefined
+    if (!step) return HttpResponse.json({ run_id: runId, status: 'completed', error: null })
+    return HttpResponse.json({
+      run_id: runId,
+      status: 'running',
+      error: null,
+      started_at: job.startedAt,
+      updated_at: new Date().toISOString(),
+      ...step,
+    })
   }),
 
   http.get('*/api/v1/backtests', ({ request }) => {

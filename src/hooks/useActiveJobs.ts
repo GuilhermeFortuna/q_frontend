@@ -61,13 +61,14 @@ export function useActiveJobs(): ActiveJobsMap {
       progressKind: 'determinate',
     }
   } else if (backtest?.status === 'running') {
-    // A single backtest has no granular progress; show an indeterminate caption.
+    // Determinate when the worker reports a replay fraction; otherwise indeterminate.
+    const determinate = typeof backtest.progress === 'number'
     map.backtests = {
       workspaceId: 'backtests',
       workspaceLabel: WORKSPACE_LABELS.backtests!,
-      pct: 0,
-      detail: 'Running…',
-      progressKind: 'indeterminate',
+      pct: determinate ? Math.min(100, Math.max(0, Math.round(backtest.progress! * 100))) : 0,
+      detail: backtest.message || 'Running…',
+      progressKind: determinate ? 'determinate' : 'indeterminate',
     }
   }
 

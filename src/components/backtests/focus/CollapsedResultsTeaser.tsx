@@ -5,6 +5,8 @@ import type { BacktestMetrics, EquityPoint } from '@/types/backtesting'
 
 type CollapsedResultsTeaserProps = {
   isPending: boolean
+  /** Label shown while a run is pending, e.g. the phase and percentage. */
+  pendingLabel?: string
   hasResults: boolean
   metrics: BacktestMetrics | undefined
   equityCurve: EquityPoint[]
@@ -17,6 +19,7 @@ const teaserButtonClass =
 
 export function CollapsedResultsTeaser({
   isPending,
+  pendingLabel = 'Simulating…',
   hasResults,
   metrics,
   equityCurve,
@@ -33,7 +36,7 @@ export function CollapsedResultsTeaser({
         onClick={onExpand}
       >
         <span className="border-brass-500 h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-t-transparent" />
-        <span className="text-silver-300 text-xs font-medium">Simulating…</span>
+        <span className="text-silver-300 text-xs font-medium">{pendingLabel}</span>
       </button>
     )
   }

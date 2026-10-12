@@ -90,6 +90,45 @@ describe('useActiveJobs', () => {
     })
   })
 
+  it('shows a running backtest as determinate with its percentage and message', () => {
+    storeState.backtestSession.runId = 'bt-1'
+    useBacktestJobStatus.mockReturnValue({
+      data: {
+        status: 'running',
+        phase: 'simulating',
+        progress: 0.42,
+        message: 'Replaying ticks · 2023-03-22',
+      },
+    })
+
+    const { result } = renderHook(() => useActiveJobs())
+
+    expect(result.current.backtests).toEqual({
+      workspaceId: 'backtests',
+      workspaceLabel: 'Backtests',
+      pct: 42,
+      detail: 'Replaying ticks · 2023-03-22',
+      progressKind: 'determinate',
+    })
+  })
+
+  it('keeps an indeterminate caption from the message when progress is null', () => {
+    storeState.backtestSession.runId = 'bt-1'
+    useBacktestJobStatus.mockReturnValue({
+      data: {
+        status: 'running',
+        phase: 'loading_data',
+        progress: null,
+        message: 'Loading H1 candles for WSP$',
+      },
+    })
+
+    const { result } = renderHook(() => useActiveJobs())
+
+    expect(result.current.backtests?.progressKind).toBe('indeterminate')
+    expect(result.current.backtests?.detail).toBe('Loading H1 candles for WSP$')
+  })
+
   it('prefers optimize over backtest when both are active', () => {
     storeState.optimizeSession.studyId = 'opt-1'
     storeState.backtestSession.runId = 'bt-1'

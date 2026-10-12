@@ -225,6 +225,7 @@ export function useBacktestJob() {
     isPending,
     error,
     status: jobStatus,
+    runStatus: status.data,
   }
 }
 
