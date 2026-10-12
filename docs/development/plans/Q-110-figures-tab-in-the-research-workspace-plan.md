@@ -31,9 +31,9 @@
 
 **Files:** `CONTRACTS_REV` and `make contracts`; new `src/types/researchFigures.ts`, `src/api/queries/researchFigures.ts`, `src/mocks/researchFigures.ts`; modify `src/mocks/handlers.ts`; extend `src/api/queries/__tests__/`.
 
-- [ ] Add failing query tests: list with `collection`, paging, delete, bulk delete, the content URL with revision, and polling gated on visibility.
-- [ ] Implement types, queries and MSW fixtures (PNG, SVG, Plotly; two collections; one missing content).
-- [ ] Run `make contracts-check` and the query tests; commit.
+- [x] Add failing query tests: list with `collection`, paging, delete, bulk delete, the content URL with revision, and polling gated on visibility.
+- [x] Implement types, queries and MSW fixtures (PNG, SVG, Plotly; two collections; one missing content).
+- [x] Run `make contracts-check` and the query tests; commit.
 
 ### 2. Tab and routing
 

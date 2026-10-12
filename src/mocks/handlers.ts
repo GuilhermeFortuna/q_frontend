@@ -18,6 +18,13 @@ import {
 } from '@/mocks/backtest'
 import { getMockBacktestEquityArtifact } from '@/mocks/backtestEquity'
 import {
+  bulkDeleteMockResearchFigures,
+  deleteMockResearchFigure,
+  getMockResearchFigureRecord,
+  listMockResearchFigures,
+} from '@/mocks/researchFigures'
+import type { ResearchFigureBulkDelete } from '@/types/researchFigures'
+import {
   getMockBacktestRunDetail,
   getMockOptimizationResults,
   getMockOptimizationAnalytics,
@@ -1237,6 +1244,65 @@ export const handlers = [
     deletedStrategySearchRunIds.add(runId)
     mockStrategySearchJobs.delete(runId)
     return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('*/api/v1/research/figures', ({ request }) => {
+    const url = new URL(request.url)
+    return HttpResponse.json(
+      listMockResearchFigures({
+        collection: url.searchParams.get('collection'),
+        offset: Number(url.searchParams.get('offset') ?? 0),
+        limit: Number(url.searchParams.get('limit') ?? 100),
+      }),
+    )
+  }),
+
+  http.post('*/api/v1/research/figures/bulk-delete', async ({ request }) => {
+    const body = (await request.json()) as ResearchFigureBulkDelete
+    return HttpResponse.json(bulkDeleteMockResearchFigures(body))
+  }),
+
+  http.get('*/api/v1/research/figures/:figureId', ({ params }) => {
+    const record = getMockResearchFigureRecord(String(params.figureId))
+    if (!record) {
+      return HttpResponse.json({ code: 'not_found', message: 'Figure not found' }, { status: 404 })
+    }
+    return HttpResponse.json(record.metadata)
+  }),
+
+  http.delete('*/api/v1/research/figures/:figureId', ({ params }) => {
+    if (!deleteMockResearchFigure(String(params.figureId))) {
+      return HttpResponse.json({ code: 'not_found', message: 'Figure not found' }, { status: 404 })
+    }
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('*/api/v1/research/figures/:figureId/content', ({ params }) => {
+    const record = getMockResearchFigureRecord(String(params.figureId))
+    if (!record) {
+      return HttpResponse.json({ code: 'not_found', message: 'Figure not found' }, { status: 404 })
+    }
+    if (!record.content) {
+      return HttpResponse.json(
+        { code: 'content_missing', message: 'Figure content is missing' },
+        { status: 404 },
+      )
+    }
+    const etag = `"${record.metadata.revision}"`
+    const content = record.content
+    if (content.kind === 'plotly') {
+      return HttpResponse.json(
+        { kind: 'plotly', figure: content.figure },
+        { headers: { ETag: etag } },
+      )
+    }
+    if (content.mediaType === 'image/svg+xml') {
+      return new HttpResponse(content.markup, {
+        headers: { 'Content-Type': 'image/svg+xml', ETag: etag },
+      })
+    }
+    const bytes = Uint8Array.from(atob(content.base64), (char) => char.charCodeAt(0))
+    return new HttpResponse(bytes, { headers: { 'Content-Type': 'image/png', ETag: etag } })
   }),
 
   http.get('*/api/v1/features/leaderboard', () =>
