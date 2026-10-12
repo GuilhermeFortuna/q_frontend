@@ -1,7 +1,13 @@
+import { useState } from 'react'
+
+import { useStorageInventory } from '@/api/queries/storage'
 import { Button, Callout } from '@/components/ui'
 import { MLFilterConfig } from '@/components/backtests/setup/MLFilterConfig'
 import { MarketConfigBand } from '@/components/backtests/setup/MarketConfigBand'
 import { StrategyStudio } from '@/components/backtests/setup/StrategyStudio'
+import { TickCoverageNotice } from '@/components/backtests/setup/TickCoverageNotice'
+import { requiresTickData, resolveTickCoverage } from '@/lib/backtesting/tickCoverage'
+import type { TickCoverage } from '@/lib/backtesting/tickCoverage'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import type { BacktestRequest } from '@/types/backtesting'
 
@@ -22,11 +28,35 @@ export function BacktestSetupPanel({
   onSubmit,
   aiWorkflowBlocker = null,
 }: BacktestSetupPanelProps) {
+  const [pending, setPending] = useState<{
+    request: BacktestRequest
+    coverage: Extract<TickCoverage, { status: 'clamped' }>
+  } | null>(null)
+  const request = config.buildRequest()
+  const { data: inventory } = useStorageInventory({ enabled: requiresTickData(request) })
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (config.validation.formInvalid) return
     if (aiWorkflowBlocker) return
-    onSubmit(config.buildRequest())
+    const ticks = inventory?.items.find(
+      (item) => item.kind === 'ticks' && item.symbol === request.symbol,
+    )
+    const coverage = resolveTickCoverage(request, ticks)
+    if (coverage.status === 'clamped') {
+      setPending({ request, coverage })
+      return
+    }
+    onSubmit(request)
+  }
+
+  const confirmClamped = () => {
+    if (!pending) return
+    const { request: original, coverage } = pending
+    setPending(null)
+    config.setters.setStartDate(new Date(coverage.used.start))
+    config.setters.setEndDate(new Date(coverage.used.end))
+    onSubmit({ ...original, start: coverage.used.start, end: coverage.used.end })
   }
 
   return (
@@ -74,6 +104,16 @@ export function BacktestSetupPanel({
           </Callout>
         ) : null}
       </div>
+      {pending ? (
+        <TickCoverageNotice
+          open
+          symbol={pending.coverage.symbol}
+          requested={pending.coverage.requested}
+          used={pending.coverage.used}
+          onConfirm={confirmClamped}
+          onCancel={() => setPending(null)}
+        />
+      ) : null}
     </form>
   )
 }

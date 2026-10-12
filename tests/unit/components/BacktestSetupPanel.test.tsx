@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
+import { storageKeys } from '@/api/queries/storage'
 import { fetchOhlcvAvailableRange } from '@/api/queries/market-data'
 import { BacktestSetupPanel } from '@/components/backtests/setup/BacktestSetupPanel'
 import { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
@@ -190,5 +191,78 @@ describe('BacktestSetupPanel', () => {
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
     expect(onSubmit.mock.calls[0][0].initial_capital).toBe(250000)
+  })
+  describe('tick coverage notice', () => {
+    const tickInventory = (start: string, end: string) =>
+      http.get('*/api/v1/storage/inventory', () =>
+        HttpResponse.json({
+          root: '/data',
+          items: [
+            {
+              symbol: 'PETR4',
+              kind: 'ticks',
+              start,
+              end,
+              rows: 1,
+              bytes: 1,
+              updated_at: '2026-01-01T00:00:00Z',
+            },
+          ],
+        }),
+      )
+
+    async function selectTickEngine(
+      user: ReturnType<typeof userEvent.setup>,
+      queryClient: ReturnType<typeof renderSetup>['queryClient'],
+    ) {
+      await waitForMaCrossoverSelected()
+      await user.selectOptions(screen.getByLabelText('Engine'), 'tick')
+      await screen.findByRole('button', { name: /Tick MA Breakout/i, pressed: true })
+      await waitFor(() => {
+        expect(queryClient.getQueryData(storageKeys.inventory())).toBeDefined()
+      })
+    }
+
+    it('informs about shorter tick history and runs the clamped period after confirming', async () => {
+      server.use(tickInventory('2999-01-01T00:00:00-03:00', '2999-02-01T00:00:00-03:00'))
+      const user = userEvent.setup()
+      const { onSubmit, queryClient } = renderSetup()
+      await selectTickEngine(user, queryClient)
+      await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+
+      expect(await screen.findByTestId('tick-coverage-notice')).toBeInTheDocument()
+      expect(onSubmit).not.toHaveBeenCalled()
+
+      await user.click(screen.getByTestId('tick-coverage-confirm'))
+
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      const payload = onSubmit.mock.calls[0][0]
+      expect(payload.start).toBe('2999-01-01T03:00:00.000Z')
+      expect(payload.end).toBe('2999-02-01T03:00:00.000Z')
+    })
+
+    it('does not run when the notice is cancelled', async () => {
+      server.use(tickInventory('2999-01-01T00:00:00-03:00', '2999-02-01T00:00:00-03:00'))
+      const user = userEvent.setup()
+      const { onSubmit, queryClient } = renderSetup()
+      await selectTickEngine(user, queryClient)
+
+      await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+      await user.click(await screen.findByTestId('tick-coverage-cancel'))
+
+      expect(onSubmit).not.toHaveBeenCalled()
+    })
+
+    it('submits straight away when ticks cover the period', async () => {
+      server.use(tickInventory('2000-01-01T00:00:00-03:00', '2999-01-01T00:00:00-03:00'))
+      const user = userEvent.setup()
+      const { onSubmit, queryClient } = renderSetup()
+      await selectTickEngine(user, queryClient)
+
+      await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(screen.queryByTestId('tick-coverage-notice')).not.toBeInTheDocument()
+    })
   })
 })

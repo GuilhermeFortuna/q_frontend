@@ -42,11 +42,12 @@ async function deleteStorageSeries(
   await apiClient.delete(`/api/v1/storage/${encodeURIComponent(symbol)}/${segment}`)
 }
 
-export function useStorageInventory() {
+export function useStorageInventory({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: storageKeys.inventory(),
     queryFn: fetchStorageInventory,
     staleTime: 10_000,
+    enabled,
   })
 }
 

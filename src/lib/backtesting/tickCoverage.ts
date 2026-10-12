@@ -1,0 +1,49 @@
+import type { BacktestRequest } from '@/types/backtesting'
+import type { StorageInventoryItem } from '@/types/storage'
+
+export type TickPeriod = { start: string; end: string }
+
+export type TickCoverage =
+  | { status: 'unneeded' | 'unknown' | 'covered' }
+  | { status: 'clamped'; symbol: string; requested: TickPeriod; used: TickPeriod }
+
+/** Whether the request replays historical ticks (tick engine or intrabar Breakeven Stop). */
+export function requiresTickData(request: BacktestRequest): boolean {
+  if (request.engine === 'tick') return true
+  const trigger = Number(request.exit_params?.breakeven_trigger_pct ?? 0)
+  return Number.isFinite(trigger) && trigger > 0
+}
+
+/**
+ * Compare the requested period with the locally ingested tick envelope.
+ *
+ * Never blocks a run: with no inventory entry the request is left untouched,
+ * and a selection outside the envelope falls back to the whole tick period.
+ */
+export function resolveTickCoverage(
+  request: BacktestRequest,
+  ticks: Pick<StorageInventoryItem, 'start' | 'end'> | undefined,
+): TickCoverage {
+  if (!requiresTickData(request)) return { status: 'unneeded' }
+  if (!ticks) return { status: 'unknown' }
+
+  if (!request.start || !request.end) return { status: 'unknown' }
+
+  const reqStart = Date.parse(request.start)
+  const reqEnd = Date.parse(request.end)
+  const tickStart = Date.parse(ticks.start)
+  const tickEnd = Date.parse(ticks.end)
+  if ([reqStart, reqEnd, tickStart, tickEnd].some(Number.isNaN)) return { status: 'unknown' }
+
+  if (reqStart >= tickStart && reqEnd <= tickEnd) return { status: 'covered' }
+
+  const disjoint = reqEnd < tickStart || reqStart > tickEnd
+  const start = disjoint ? tickStart : Math.max(reqStart, tickStart)
+  const end = disjoint ? tickEnd : Math.min(reqEnd, tickEnd)
+  return {
+    status: 'clamped',
+    symbol: request.symbol,
+    requested: { start: request.start, end: request.end },
+    used: { start: new Date(start).toISOString(), end: new Date(end).toISOString() },
+  }
+}
