@@ -28,8 +28,15 @@ describe('research route', () => {
     expect(routerSource).toContain('parseResearchTab')
     expect(routerSource).toContain('source_run_id')
     expect(routerSource).toMatch(
-      /value === 'scoring' \|\|\s*value === 'lab' \|\|\s*value === 'store' \|\|\s*value === 'neural' \|\|\s*value === 'ml-filters' \|\|\s*value === 'experiments'/,
+      /value === 'figures' \|\|\s*value === 'scoring' \|\|\s*value === 'lab' \|\|\s*value === 'store' \|\|\s*value === 'neural' \|\|\s*value === 'ml-filters' \|\|\s*value === 'experiments'/,
     )
+  })
+
+  it('opens on Figures by default and passes the figure id to the workspace', () => {
+    expect(routerSource).toMatch(/return 'figures'\s*\}/)
+    expect(routerSource).toContain("tab={search.tab ?? 'figures'}")
+    expect(routerSource).toContain('figureId={search.figure}')
+    expect(routerSource).toContain('search.figure.length > 0')
   })
 
   it('exposes Research in the dock navigation', () => {

@@ -31,37 +31,37 @@
 
 **Files:** `CONTRACTS_REV` and `make contracts`; new `src/types/researchFigures.ts`, `src/api/queries/researchFigures.ts`, `src/mocks/researchFigures.ts`; modify `src/mocks/handlers.ts`; extend `src/api/queries/__tests__/`.
 
-- [ ] Add failing query tests: list with `collection`, paging, delete, bulk delete, the content URL with revision, and polling gated on visibility.
-- [ ] Implement types, queries and MSW fixtures (PNG, SVG, Plotly; two collections; one missing content).
-- [ ] Run `make contracts-check` and the query tests; commit.
+- [x] Add failing query tests: list with `collection`, paging, delete, bulk delete, the content URL with revision, and polling gated on visibility.
+- [x] Implement types, queries and MSW fixtures (PNG, SVG, Plotly; two collections; one missing content).
+- [x] Run `make contracts-check` and the query tests; commit.
 
 ### 2. Tab and routing
 
 **Files:** `src/types/features.ts`, `src/app/router.tsx`, `src/app/__tests__/researchRoute.test.ts`, `src/workspaces/research/ResearchWorkspace.tsx` and its test.
 
-- [ ] Add failing tests for spec acceptance item 1 and the `figure` search parameter.
-- [ ] Add the tab first, change the default, parse `figure`, update the description; commit.
+- [x] Add failing tests for spec acceptance item 1 and the `figure` search parameter.
+- [x] Add the tab first, change the default, parse `figure`, update the description; commit.
 
 ### 3. Grid, rail and image figures
 
 **Files:** new components under `src/components/research/figures/` with tests.
 
-- [ ] Add failing tests for spec acceptance items 2, 3, 5, 7 and 8.
-- [ ] Implement the rail, the grid with filter and paging, image cards, the New/Updated marks, deletion and the states; commit.
+- [x] Add failing tests for spec acceptance items 2, 3, 5, 7 and 8.
+- [x] Implement the rail, the grid with filter and paging, image cards, the New/Updated marks, deletion and the states; commit.
 
 ### 4. Plotly figures
 
 **Files:** `package.json`, `pnpm-lock.yaml`, a `PlotlyFigure` component and its test under `src/components/research/figures/`.
 
-- [ ] Add failing tests for spec acceptance item 4 with the Plotly module mocked.
-- [ ] Add the dependency, the lazy loader, in-view mounting, purge, resize and PNG download; commit.
+- [x] Add failing tests for spec acceptance item 4 with the Plotly module mocked.
+- [x] Add the dependency, the lazy loader, in-view mounting, purge, resize and PNG download; commit.
 
 ### 5. Viewer
 
 **Files:** a `FigureViewer` component and its test.
 
-- [ ] Add failing tests for spec acceptance item 6.
-- [ ] Implement the viewer, keyboard navigation, focus return, fullscreen, fit and actual size, and live reload on revision change; commit.
+- [x] Add failing tests for spec acceptance item 6.
+- [x] Implement the viewer, keyboard navigation, focus return, fullscreen, fit and actual size, and live reload on revision change; commit.
 
 ## Verification
 
