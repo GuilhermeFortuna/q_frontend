@@ -157,7 +157,7 @@ const cases: Case[] = [
   {
     kind: 'strategy_search',
     jobId: 'ss-1',
-    interval: 1000,
+    interval: 2000,
     path: '/api/v1/strategy-search/ss-1',
     body: {
       run_id: 'ss-1',

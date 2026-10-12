@@ -13,10 +13,11 @@ describe('strategySearch polling helpers', () => {
     expect(isStrategySearchTerminalStatus('running')).toBe(false)
   })
 
-  it('fetches results only for completed or cancelled runs', () => {
+  it('fetches results whenever status is known (including in-progress runs)', () => {
     expect(shouldFetchStrategySearchResults('completed')).toBe(true)
     expect(shouldFetchStrategySearchResults('cancelled')).toBe(true)
-    expect(shouldFetchStrategySearchResults('running')).toBe(false)
+    expect(shouldFetchStrategySearchResults('running')).toBe(true)
+    expect(shouldFetchStrategySearchResults(undefined)).toBe(false)
   })
 })
 
