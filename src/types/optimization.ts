@@ -105,6 +105,7 @@ export type OptimizationTrial = {
     metrics?: Record<string, number>
     strategy_params?: Record<string, unknown>
     risk_params?: Record<string, unknown>
+    manager_params?: Record<string, unknown>
     [key: string]: unknown
   }
 }

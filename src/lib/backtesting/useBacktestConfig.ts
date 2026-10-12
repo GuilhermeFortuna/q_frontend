@@ -13,6 +13,7 @@ import {
   createEntrySlotId,
   defaultEntryManager,
   entryDefaultsFromSpecs,
+  exitDefaultsFromSpecs,
   splitParamsByPartition,
   toEntryManagerPayload,
   toEntryPayload,
@@ -423,7 +424,17 @@ export function useBacktestConfig() {
         setEntryManager(defaultEntryManager())
       }
       if (cfg.exit_params) {
-        setStrategyParams(cfg.exit_params as Record<string, StrategyParamValue>)
+        // Staged exits may list only the params their source resolved (an optimization
+        // trial records just the sampled ones); the rest take the strategy defaults.
+        const exitDefaults: Record<string, StrategyParamValue> = {}
+        for (const entry of cfg.entries) {
+          const info = strategies.find((item) => item.name === entry.strategy)
+          if (info) Object.assign(exitDefaults, exitDefaultsFromSpecs(info.params))
+        }
+        setStrategyParams({
+          ...exitDefaults,
+          ...(cfg.exit_params as Record<string, StrategyParamValue>),
+        })
       } else if (cfg.strategy_params) {
         const strategyInfo =
           strategies.find((entry) => entry.name === (cfg.entries?.[0]?.strategy ?? cfg.strategy)) ??

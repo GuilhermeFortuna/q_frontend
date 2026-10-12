@@ -1,4 +1,5 @@
 import { endOfDay, startOfDay } from 'date-fns'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
@@ -18,8 +19,12 @@ import {
 } from '@/lib/backtesting/positionSizing'
 import { defaultTransactionCostFields } from '@/lib/backtesting/transactionCosts'
 import { useAppStore } from '@/store/useAppStore'
+import { buildBacktestRequestFromTrial } from '@/lib/optimization/bridge'
+import { mockStrategies } from '@/mocks/data'
 import { handlers } from '@/mocks/handlers'
 import { mockSampleGenome } from '@/mocks/strategySearch'
+import type { OptimizationBacktestConfig, OptimizationTrial } from '@/types/optimization'
+import type { StrategyParamSpec } from '@/types/strategies'
 import { createTestQueryClient } from '../../testUtils'
 
 const server = setupServer(...handlers)
@@ -349,5 +354,128 @@ describe('useBacktestConfig', () => {
       sma_period: 12,
     })
     expect(useAppStore.getState().pendingBacktestConfig).toBeNull()
+  })
+})
+
+describe('useBacktestConfig staged from an optimization trial', () => {
+  const exitSpecs: StrategyParamSpec[] = [
+    {
+      name: 'stop_loss_pct',
+      label: 'Stop loss',
+      type: 'float',
+      default: 0,
+      exit_group: 'stop_loss',
+    },
+    {
+      name: 'trailing_stop_pct',
+      label: 'Trailing stop',
+      type: 'float',
+      default: 0.015,
+      exit_group: 'trailing',
+    },
+  ]
+  const studyBacktest: OptimizationBacktestConfig = {
+    symbol: 'WIN$',
+    timeframe: 'M15',
+    start: '2025-01-01T03:00:00.000Z',
+    end: '2025-06-01T03:00:00.000Z',
+    initial_capital: 5000,
+    point_value: 0.2,
+    strategy: 'MACrossover',
+  }
+
+  function stageTrial(
+    userAttrs: OptimizationTrial['user_attrs'],
+    backtest: OptimizationBacktestConfig,
+  ) {
+    server.use(
+      http.get('*/api/v1/strategies', () =>
+        HttpResponse.json({
+          strategies: mockStrategies.strategies.map((info) =>
+            info.name === 'MACrossover' || info.name === 'RSIMeanReversion'
+              ? { ...info, params: [...info.params, ...exitSpecs] }
+              : info,
+          ),
+        }),
+      ),
+    )
+    const trial: OptimizationTrial = {
+      number: 3,
+      params: {},
+      values: [1.2],
+      state: 'COMPLETE',
+      user_attrs: userAttrs,
+    }
+    useAppStore.getState().setPendingBacktestConfig(buildBacktestRequestFromTrial(trial, backtest))
+  }
+
+  it('replicates a single-entry trial with entry and exit params', async () => {
+    stageTrial(
+      {
+        strategy_params: { short_period: 7, long_period: 30, stop_loss_pct: 0.02 },
+        risk_params: { type: 'fixed_quantity', quantity: 3 },
+      },
+      studyBacktest,
+    )
+
+    const { result } = renderHook(() => useBacktestConfig(), { wrapper })
+    await waitFor(() => {
+      expect(useAppStore.getState().pendingBacktestConfig).toBeNull()
+    })
+
+    const request = result.current.buildRequest()
+    expect(request.entries).toEqual([
+      {
+        strategy: 'MACrossover',
+        params: {
+          short_period: 7,
+          long_period: 30,
+          short_ma_type: 'sma',
+          long_ma_type: 'sma',
+          threshold: 0,
+        },
+      },
+    ])
+    expect(request.entry_manager).toEqual({ kind: 'or', params: {} })
+    expect(request.exit_params).toEqual({ stop_loss_pct: 0.02, trailing_stop_pct: 0.015 })
+    expect(request.position_sizing).toEqual({ type: 'fixed_quantity', quantity: 3 })
+  })
+
+  it('replicates a multi-entry trial with entry, manager and exit params', async () => {
+    stageTrial(
+      {
+        strategy_params: {
+          e0__short_period: 7,
+          e0__long_period: 30,
+          e1__period: 9,
+          stop_loss_pct: 0.02,
+        },
+        manager_params: { vote_threshold: 2 },
+        risk_params: { type: 'fixed_quantity', quantity: 3 },
+      },
+      {
+        ...studyBacktest,
+        entries: [
+          { strategy: 'MACrossover', params: { short_period: 50, long_period: 200 } },
+          { strategy: 'RSIMeanReversion', params: { period: 14, oversold: 25 } },
+        ],
+        entry_manager: { kind: 'majority', params: { vote_threshold: 1 } },
+        exit_params: {},
+      },
+    )
+
+    const { result } = renderHook(() => useBacktestConfig(), { wrapper })
+    await waitFor(() => {
+      expect(useAppStore.getState().pendingBacktestConfig).toBeNull()
+    })
+
+    const request = result.current.buildRequest()
+    expect(request.entries).toEqual([
+      { strategy: 'MACrossover', params: { short_period: 7, long_period: 30 } },
+      { strategy: 'RSIMeanReversion', params: { period: 9, oversold: 25 } },
+    ])
+    expect(request.entry_manager).toEqual({ kind: 'majority', params: { vote_threshold: 2 } })
+    expect(request.exit_params).toEqual({ stop_loss_pct: 0.02, trailing_stop_pct: 0.015 })
+    expect(request.strategy_params).toEqual(request.exit_params)
   })
 })
