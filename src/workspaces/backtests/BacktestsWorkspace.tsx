@@ -252,6 +252,7 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
                     reducedMotion={reducedMotion}
                     config={backtestConfig}
                     loading={runBacktest.isPending}
+                    runStatus={runBacktest.runStatus}
                     error={errorMessage}
                     onSubmit={handleSubmit}
                     results={resultsData}

@@ -10,6 +10,7 @@ import { useEffect } from 'react'
 
 import { apiClient } from '@/api/client'
 import type { BacktestStatusResponse } from '../../../contracts/api'
+import { retainBacktestProgress, type BacktestLiveStatus } from '@/lib/backtesting/backtestProgress'
 import { useJobStream } from '@/lib/stream/jobStreamContext'
 import { streamAwareRefetchInterval } from '@/lib/stream/jobQueryBridge'
 import { useAppStore } from '@/store/useAppStore'
@@ -55,7 +56,7 @@ export async function startBacktest(request: BacktestRequest): Promise<BacktestS
   return data
 }
 
-export async function fetchBacktestJobStatus(runId: string): Promise<BacktestStatusResponse> {
+export async function fetchBacktestJobStatus(runId: string): Promise<BacktestLiveStatus> {
   const { data } = await apiClient.get<BacktestStatusResponse>(`/api/v1/backtest/${runId}`)
   return data
 }
@@ -160,6 +161,11 @@ export function useBacktestJobStatus(runId: string | null, enabled = true) {
   return useQuery({
     queryKey: backtestKeys.jobStatus(runId ?? ''),
     queryFn: () => fetchBacktestJobStatus(runId as string),
+    structuralSharing: (previous, next) =>
+      retainBacktestProgress(
+        previous as BacktestLiveStatus | undefined,
+        next as BacktestLiveStatus,
+      ),
     enabled: enabled && !!runId,
     refetchInterval: streamAwareRefetchInterval('backtest', (query) =>
       query.state.data?.status === 'running' ? 1000 : false,
@@ -184,6 +190,10 @@ export function useBacktestJob() {
     mutationKey: backtestKeys.all,
     mutationFn: startBacktest,
     onSuccess: (data) => {
+      // Identical requests can reuse a run id: neither its terminal snapshot nor its
+      // indefinitely cached result belongs to this new execution.
+      queryClient.removeQueries({ queryKey: backtestKeys.jobResult(data.run_id), exact: true })
+      void queryClient.resetQueries({ queryKey: backtestKeys.jobStatus(data.run_id), exact: true })
       patchBacktestSession({ runId: data.run_id })
     },
   })
@@ -225,6 +235,7 @@ export function useBacktestJob() {
     isPending,
     error,
     status: jobStatus,
+    runStatus: start.isPending ? undefined : status.data,
   }
 }
 

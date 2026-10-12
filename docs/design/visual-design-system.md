@@ -282,3 +282,15 @@ This section governs the single-use hero state layout added in WO207 for the AI 
 - No new runtime dependencies; no component framework (Radix is already present for primitives only).
 - No behavior/logic changes during migration — visual + structural swap only.
 - Chart _data_ logic and interaction hooks unchanged; chart _frame_ styling is centralized in WO198 (`chartTheme` / `rechartsTheme`).
+
+### Backtest run monitoring (Q-108)
+
+The running backtest summary uses the shared `Panel` and existing silver/brass typography,
+centered horizontally at a maximum width of 960px with natural content height. The results
+region owns scrolling. Current activity leads; phase steps and elapsed/update timing remain
+visible; read ranges, replay counts and phase timings sit behind **Run details**.
+
+A measured bar means **Historical range processed**, never remaining-time coverage. Unknown
+backtest progress uses a small activity indicator without a filled bar, including in the dock.
+Stale updates and unavailable details use explicit text rather than inferred provider-health
+claims. Motion uses `motion-safe` so reduced-motion users keep the same information.

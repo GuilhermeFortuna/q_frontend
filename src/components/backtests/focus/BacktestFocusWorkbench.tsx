@@ -4,6 +4,8 @@ import { CollapsedResultsTeaser } from '@/components/backtests/focus/CollapsedRe
 import { CollapsedSetupTeaser } from '@/components/backtests/focus/CollapsedSetupTeaser'
 import { BacktestSetupPanel } from '@/components/backtests/setup/BacktestSetupPanel'
 import { BacktestResultsTabs } from '@/components/backtests/BacktestResultsTabs'
+import { BacktestRunProgress, backtestPhaseLabel } from '@/components/backtests/BacktestRunProgress'
+import type { BacktestStatusResponse } from '../../../../contracts/api'
 import type { useBacktestConfig } from '@/lib/backtesting/useBacktestConfig'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
@@ -25,6 +27,8 @@ type BacktestFocusWorkbenchProps = {
   reducedMotion: boolean
   config: BacktestConfig
   loading: boolean
+  /** Live status of the running job: phase, progress and message. */
+  runStatus?: BacktestStatusResponse
   error: string | null
   onSubmit: (request: BacktestRequest) => void
   results: BacktestResponse | undefined
@@ -49,6 +53,7 @@ export function BacktestFocusWorkbench({
   reducedMotion,
   config,
   loading,
+  runStatus,
   error,
   onSubmit,
   results,
@@ -137,11 +142,8 @@ export function BacktestFocusWorkbench({
         {resultsExpanded ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {loading ? (
-              <div className="flex flex-1 items-center justify-center">
-                <div className="flex animate-pulse flex-col items-center">
-                  <div className="border-brass-500 mb-4 h-12 w-12 animate-spin rounded-full border-4 border-t-transparent" />
-                  <p className="text-silver-400">Simulating strategy over historical data...</p>
-                </div>
+              <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-4">
+                <BacktestRunProgress status={runStatus} request={lastRequest} />
               </div>
             ) : showResultsContent ? (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -166,6 +168,7 @@ export function BacktestFocusWorkbench({
         ) : (
           <CollapsedResultsTeaser
             isPending={loading}
+            pendingLabel={backtestPhaseLabel(runStatus)}
             hasResults={hasResults}
             metrics={results?.metrics}
             equityCurve={equityCurve}

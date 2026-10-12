@@ -4,6 +4,7 @@ import { useStrategySearchStatus } from '@/api/queries/strategySearch'
 import { useWalkForwardStatus } from '@/api/queries/walkforward'
 import { useAppStore } from '@/store/useAppStore'
 import type { WorkspaceId } from '@/types/api'
+import { backtestPhaseLabel, backtestProgressPercent } from '@/lib/backtesting/backtestProgress'
 
 export type ActiveJobProgressKind = 'determinate' | 'indeterminate'
 
@@ -61,13 +62,14 @@ export function useActiveJobs(): ActiveJobsMap {
       progressKind: 'determinate',
     }
   } else if (backtest?.status === 'running') {
-    // A single backtest has no granular progress; show an indeterminate caption.
+    // Determinate when the worker reports a replay fraction; otherwise indeterminate.
+    const pct = backtest.telemetryUnavailable ? null : backtestProgressPercent(backtest)
     map.backtests = {
       workspaceId: 'backtests',
       workspaceLabel: WORKSPACE_LABELS.backtests!,
-      pct: 0,
-      detail: 'Running…',
-      progressKind: 'indeterminate',
+      pct: pct ?? 0,
+      detail: backtestPhaseLabel(backtest),
+      progressKind: pct == null ? 'indeterminate' : 'determinate',
     }
   }
 
