@@ -17,6 +17,7 @@ import type {
 // error surfaces instead of a generic axios abort.
 const INTERPRET_TIMEOUT_MS = 200_000
 const MODELS_STALE_TIME_MS = 30_000
+const CAPABILITIES_STALE_TIME_MS = 60_000
 
 export const strategyBuilderKeys = {
   all: ['strategy-builder'] as const,
@@ -33,7 +34,7 @@ export function useStrategyBuilderCapabilities(enabled = true) {
   return useQuery({
     queryKey: strategyBuilderKeys.capabilities(),
     queryFn: fetchStrategyBuilderCapabilities,
-    staleTime: Infinity,
+    staleTime: CAPABILITIES_STALE_TIME_MS,
     enabled,
   })
 }

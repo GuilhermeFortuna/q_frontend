@@ -8,6 +8,10 @@ import type {
   StrategiesResponse,
 } from '@/types/strategies'
 
+// Catalogs are backend metadata (parameter specs, exit rules). A finite stale time lets
+// them refetch after the API is redeployed instead of holding the old definitions.
+export const CATALOG_STALE_TIME_MS = 60_000
+
 export const strategyKeys = {
   all: ['strategies'] as const,
   list: () => [...strategyKeys.all, 'list'] as const,
@@ -42,7 +46,7 @@ export function useStrategies({
   return useQuery({
     queryKey: strategyKeys.list(),
     queryFn: fetchStrategies,
-    staleTime: Infinity,
+    staleTime: CATALOG_STALE_TIME_MS,
     select: researchOnly === 'exclude' ? withoutResearchOnly : undefined,
   })
 }
@@ -56,7 +60,7 @@ export function useSignalManagers() {
   return useQuery({
     queryKey: strategyKeys.signalManagers(),
     queryFn: fetchSignalManagers,
-    staleTime: Infinity,
+    staleTime: CATALOG_STALE_TIME_MS,
   })
 }
 
@@ -64,6 +68,6 @@ export function useExitRuleCatalog() {
   return useQuery({
     queryKey: strategyKeys.exitRules(),
     queryFn: fetchExitRuleCatalog,
-    staleTime: Infinity,
+    staleTime: CATALOG_STALE_TIME_MS,
   })
 }
