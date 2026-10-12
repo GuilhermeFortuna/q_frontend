@@ -46,8 +46,8 @@
 
 **Files:** new components under `src/components/research/figures/` with tests.
 
-- [ ] Add failing tests for spec acceptance items 2, 3, 5, 7 and 8.
-- [ ] Implement the rail, the grid with filter and paging, image cards, the New/Updated marks, deletion and the states; commit.
+- [x] Add failing tests for spec acceptance items 2, 3, 5, 7 and 8.
+- [x] Implement the rail, the grid with filter and paging, image cards, the New/Updated marks, deletion and the states; commit.
 
 ### 4. Plotly figures
 
