@@ -44,6 +44,12 @@ export type OhlcvAvailableRange = {
   bar_count: number
 }
 
+export type TickAvailableRange = {
+  symbol: string
+  start: string
+  end: string
+}
+
 export type MarketSnapshot = {
   symbol: string
   last: number

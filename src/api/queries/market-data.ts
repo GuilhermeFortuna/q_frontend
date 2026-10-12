@@ -9,6 +9,7 @@ import type {
   MarketSnapshot,
   MarketSnapshotsResponse,
   OhlcvAvailableRange,
+  TickAvailableRange,
   OhlcvBar,
   TicksResponse,
 } from '@/types/api'
@@ -27,6 +28,8 @@ export const marketDataKeys = {
     [...marketDataKeys.all, 'snapshots', [...symbols].sort().join(',')] as const,
   ohlcv: (symbol: string, timeframe: string, params?: OhlcvQueryParams) =>
     [...marketDataKeys.all, 'ohlcv', symbol, timeframe, params ?? {}] as const,
+  tickAvailableRange: (symbol: string) =>
+    [...marketDataKeys.all, 'tick-available-range', symbol] as const,
   availableRange: (symbol: string, timeframe: string) =>
     [...marketDataKeys.all, 'available-range', symbol, timeframe] as const,
   ticks: (symbol: string, limit: number) =>
@@ -126,6 +129,29 @@ export function useOhlcvAvailableRange(symbol: string, timeframe: string, enable
     queryFn: () => fetchOhlcvAvailableRange(symbol, timeframe),
     enabled: enabled && symbol.length > 0,
     staleTime: 60_000,
+  })
+}
+
+/** Tick history the active provider can serve; `null` when it has none for the symbol. */
+export async function fetchTickAvailableRange(symbol: string): Promise<TickAvailableRange | null> {
+  try {
+    const { data } = await apiClient.get<TickAvailableRange>(
+      `/api/v1/market/ticks/${encodeURIComponent(symbol)}/available-range`,
+    )
+    return data
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
+export function useTickAvailableRange(symbol: string, enabled = false) {
+  return useQuery({
+    queryKey: marketDataKeys.tickAvailableRange(symbol),
+    queryFn: () => fetchTickAvailableRange(symbol),
+    enabled: enabled && symbol.length > 0,
+    staleTime: 60_000,
+    retry: false,
   })
 }
 

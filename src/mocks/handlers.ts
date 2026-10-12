@@ -372,6 +372,14 @@ export const handlers = [
     return HttpResponse.json(info)
   }),
 
+  http.get('*/api/v1/market/ticks/:symbol/available-range', ({ params }) => {
+    const symbol = String(params.symbol).toUpperCase()
+    const end = new Date()
+    const start = new Date(end)
+    start.setFullYear(start.getFullYear() - 5)
+    return HttpResponse.json({ symbol, start: start.toISOString(), end: end.toISOString() })
+  }),
+
   http.get('*/api/v1/market/ohlcv/:symbol/available-range', ({ params, request }) => {
     const symbol = String(params.symbol).toUpperCase()
     const url = new URL(request.url)

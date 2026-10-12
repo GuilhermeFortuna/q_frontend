@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useStorageInventory } from '@/api/queries/storage'
+import { useTickAvailableRange } from '@/api/queries/market-data'
 import { Button, Callout } from '@/components/ui'
 import { MLFilterConfig } from '@/components/backtests/setup/MLFilterConfig'
 import { MarketConfigBand } from '@/components/backtests/setup/MarketConfigBand'
@@ -33,16 +33,13 @@ export function BacktestSetupPanel({
     coverage: Extract<TickCoverage, { status: 'clamped' }>
   } | null>(null)
   const request = config.buildRequest()
-  const { data: inventory } = useStorageInventory({ enabled: requiresTickData(request) })
+  const { data: tickRange } = useTickAvailableRange(request.symbol, requiresTickData(request))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (config.validation.formInvalid) return
     if (aiWorkflowBlocker) return
-    const ticks = inventory?.items.find(
-      (item) => item.kind === 'ticks' && item.symbol === request.symbol,
-    )
-    const coverage = resolveTickCoverage(request, ticks)
+    const coverage = resolveTickCoverage(request, tickRange ?? undefined)
     if (coverage.status === 'clamped') {
       setPending({ request, coverage })
       return

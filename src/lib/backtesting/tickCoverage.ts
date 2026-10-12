@@ -1,5 +1,4 @@
 import type { BacktestRequest } from '@/types/backtesting'
-import type { StorageInventoryItem } from '@/types/storage'
 
 export type TickPeriod = { start: string; end: string }
 
@@ -15,14 +14,14 @@ export function requiresTickData(request: BacktestRequest): boolean {
 }
 
 /**
- * Compare the requested period with the locally ingested tick envelope.
+ * Compare the requested period with the tick history the data provider can serve.
  *
  * Never blocks a run: with no inventory entry the request is left untouched,
  * and a selection outside the envelope falls back to the whole tick period.
  */
 export function resolveTickCoverage(
   request: BacktestRequest,
-  ticks: Pick<StorageInventoryItem, 'start' | 'end'> | undefined,
+  ticks: Pick<TickPeriod, 'start' | 'end'> | undefined,
 ): TickCoverage {
   if (!requiresTickData(request)) return { status: 'unneeded' }
   if (!ticks) return { status: 'unknown' }
