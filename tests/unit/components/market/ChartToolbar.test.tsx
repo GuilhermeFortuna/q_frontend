@@ -1,16 +1,28 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { createElement, type ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_INDICATORS, DEFAULT_SETTINGS } from '@/components/charts/types/chart'
 import { ChartToolbar } from '@/components/market/ChartToolbar'
+
+function renderWithQuery(ui: ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  function Wrapper({ children }: { children: ReactNode }) {
+    return createElement(QueryClientProvider, { client: queryClient }, children)
+  }
+  return render(ui, { wrapper: Wrapper })
+}
 
 describe('ChartToolbar', () => {
   it('renders timeframe controls and updates chart type', async () => {
     const user = userEvent.setup()
     const onChartTypeChange = vi.fn()
 
-    render(
+    renderWithQuery(
       <ChartToolbar
         selectedTimeframe="1D"
         onTimeframeChange={vi.fn()}
@@ -18,7 +30,6 @@ describe('ChartToolbar', () => {
         onChartTypeChange={onChartTypeChange}
         indicators={DEFAULT_INDICATORS}
         onIndicatorsChange={vi.fn()}
-        bars={[]}
         showGrid
         onShowGridChange={vi.fn()}
         chartSettings={DEFAULT_SETTINGS}
@@ -37,7 +48,7 @@ describe('ChartToolbar', () => {
     const onToggleFullscreen = vi.fn()
     const onOpenSymbolPicker = vi.fn()
 
-    render(
+    renderWithQuery(
       <ChartToolbar
         selectedTimeframe="1D"
         onTimeframeChange={vi.fn()}
@@ -45,7 +56,6 @@ describe('ChartToolbar', () => {
         onChartTypeChange={vi.fn()}
         indicators={DEFAULT_INDICATORS}
         onIndicatorsChange={vi.fn()}
-        bars={[]}
         showGrid
         onShowGridChange={vi.fn()}
         chartSettings={DEFAULT_SETTINGS}

@@ -3,11 +3,12 @@ import { scaleBand, scaleLinear } from '@visx/scale'
 
 import type {
   ChartSlot,
-  IndicatorConfig,
+  OscillatorPaneSlot,
   PaneLayout,
   ProcessedBar,
 } from '@/components/charts/types/chart'
 import type { OhlcvBar } from '@/types/api'
+import type { OscillatorRenderGroup } from '@/lib/market/buildIndicatorRenderModel'
 import {
   BULL_COLOR,
   BEAR_COLOR,
@@ -107,16 +108,13 @@ export function processBars(data: OhlcvBar[]): ProcessedBar[] {
 export function computePaneLayout(
   width: number,
   height: number,
-  indicators: IndicatorConfig[],
+  oscillatorPaneKeys: string[],
   margins: { top: number; right: number; bottom: number; left: number },
 ): PaneLayout {
   const innerWidth = Math.max(width - margins.left - margins.right, 0)
   const innerHeight = Math.max(height - margins.top - margins.bottom, 0)
 
-  const showRsi = indicators.some((i) => i.type === 'rsi' && i.enabled)
-  const showMacd = indicators.some((i) => i.type === 'macd' && i.enabled)
-  const oscillatorCount = (showRsi ? 1 : 0) + (showMacd ? 1 : 0)
-
+  const oscillatorCount = oscillatorPaneKeys.length
   const volumeHeight = innerHeight * VOLUME_RATIO
   const oscillatorHeight = oscillatorCount > 0 ? innerHeight * OSCILLATOR_RATIO : 0
   const priceHeight = innerHeight - volumeHeight - oscillatorHeight * oscillatorCount
@@ -128,39 +126,37 @@ export function computePaneLayout(
   const volumeTop = cursor
   cursor += volumeHeight
 
-  let rsiTop: number | undefined
-  let rsiHeight: number | undefined
-  let macdTop: number | undefined
-  let macdHeight: number | undefined
-
-  if (showRsi) {
-    rsiTop = cursor
-    rsiHeight = oscillatorHeight
+  const oscillators: OscillatorPaneSlot[] = oscillatorPaneKeys.map((key) => {
+    const slot = { key, top: cursor, height: oscillatorHeight }
     cursor += oscillatorHeight
-  }
-  if (showMacd) {
-    macdTop = cursor
-    macdHeight = oscillatorHeight
-  }
+    return slot
+  })
 
   return {
     priceTop,
     priceHeight,
     volumeTop,
     volumeHeight,
-    rsiTop,
-    rsiHeight,
-    macdTop,
-    macdHeight,
+    oscillators,
     innerWidth,
     innerHeight,
   }
+}
+
+function seriesDomain(values: (number | null)[]): [number, number] {
+  const nums = values.filter((v): v is number => v != null)
+  if (nums.length === 0) return [0, 1]
+  const min = Math.min(...nums)
+  const max = Math.max(...nums)
+  const pad = (max - min) * 0.1 || Math.abs(max) * 0.1 || 1
+  return [min - pad, max + pad]
 }
 
 export function useChartScales(
   slots: ChartSlot[],
   layout: PaneLayout,
   margins: { left: number },
+  oscillators: OscillatorRenderGroup[],
   pricePanOffset = 0,
   priceScaleFactor = 1,
 ) {
@@ -188,26 +184,27 @@ export function useChartScales(
       nice: true,
     })
 
-    const rsiScale = scaleLinear<number>({
-      domain: [0, 100],
-      range: [(layout.rsiTop ?? 0) + (layout.rsiHeight ?? 0), layout.rsiTop ?? 0],
-    })
-
-    const macdScale = scaleLinear<number>({
-      domain: [-1, 1],
-      range: [(layout.macdTop ?? 0) + (layout.macdHeight ?? 0), layout.macdTop ?? 0],
-      nice: true,
+    const oscillatorScales = oscillators.map((group, index) => {
+      const slot = layout.oscillators[index]
+      const flatValues = group.outputs.flatMap((output) => output.values)
+      const [min, max] =
+        group.catalogId === 'rsi' ? ([0, 100] as [number, number]) : seriesDomain(flatValues)
+      const scale = scaleLinear<number>({
+        domain: [min, max],
+        range: [(slot?.top ?? 0) + (slot?.height ?? 0), slot?.top ?? 0],
+        nice: group.catalogId !== 'rsi',
+      })
+      return { key: group.instanceKey, scale }
     })
 
     return {
       xScale,
       priceScale,
       volumeScale,
-      rsiScale,
-      macdScale,
+      oscillatorScales,
       marginLeft: margins.left,
     }
-  }, [slots, layout, margins.left, pricePanOffset, priceScaleFactor])
+  }, [slots, layout, margins.left, pricePanOffset, priceScaleFactor, oscillators])
 }
 
 export function barCenterX(

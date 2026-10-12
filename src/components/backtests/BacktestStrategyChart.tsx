@@ -688,11 +688,28 @@ function ChartInner({
           xScale={scales.xScale}
           priceScale={scales.priceScale}
           volumeScale={scales.volumeScale}
-          macdScale={hasOscillator ? scales.oscillatorScale : undefined}
+          oscillatorScales={
+            hasOscillator && scales.oscillatorScale
+              ? [{ key: 'backtest-oscillator', scale: scales.oscillatorScale }]
+              : []
+          }
           layout={{
-            ...layout,
-            macdTop: layout.oscillatorTop,
-            macdHeight: layout.oscillatorHeight,
+            priceTop: layout.priceTop,
+            priceHeight: layout.priceHeight,
+            volumeTop: layout.volumeTop,
+            volumeHeight: layout.volumeHeight,
+            innerWidth: layout.innerWidth,
+            innerHeight: layout.innerHeight,
+            oscillators:
+              layout.oscillatorTop !== undefined && layout.oscillatorHeight !== undefined
+                ? [
+                    {
+                      key: 'backtest-oscillator',
+                      top: layout.oscillatorTop,
+                      height: layout.oscillatorHeight,
+                    },
+                  ]
+                : [],
           }}
           timeframe={timeframe}
           left={CHART_MARGINS.left}

@@ -1,9 +1,8 @@
-import { memo, useMemo } from 'react'
+import { memo, useMemo, type ReactNode } from 'react'
 
-import { useIndicatorSeries } from '@/components/charts/hooks/useIndicatorSeries'
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
-
-import type { IndicatorConfig, ProcessedBar } from '@/components/charts/types/chart'
+import type { IndicatorRenderModel } from '@/lib/market/buildIndicatorRenderModel'
+import type { ProcessedBar } from '@/components/charts/types/chart'
 import { BRASS_COLOR } from '@/components/charts/types/chart'
 import {
   bandsAreaPath,
@@ -17,7 +16,7 @@ type IndicatorLayerProps = {
   visibleBars: ProcessedBar[]
   xScale: BandScale
   yScale: LinearScale
-  indicators: IndicatorConfig[]
+  model: IndicatorRenderModel
   left: number
 }
 
@@ -43,181 +42,75 @@ function IndicatorLayerImpl({
   visibleBars,
   xScale,
   yScale,
-  indicators,
+  model,
   left,
 }: IndicatorLayerProps) {
   const visibleSet = useMemo(
     () => visibleTimestampSet(visibleBars.map((bar) => bar.timestamp)),
     [visibleBars],
   )
-  const series = useIndicatorSeries(allBars, indicators)
 
-  const paths = useMemo(
-    () =>
-      series.map((entry) => {
-        if (entry.kind === 'line') {
-          const ind = entry.config
-          if (ind.type === 'sma') {
-            const color = ind.color ?? BRASS_COLOR
-            const strokeWidth = ind.strokeWidth ?? 1.2
-            const dash = getStrokeDasharray(ind.lineStyle ?? 'dashed')
-            return (
-              <path
-                key="sma"
-                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={dash}
-              />
-            )
-          }
-          if (ind.type === 'ema') {
-            const color = ind.color ?? '#6eb5ff'
-            const strokeWidth = ind.strokeWidth ?? 1.2
-            const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
-            return (
-              <path
-                key="ema"
-                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={dash}
-              />
-            )
-          }
-          if (ind.type === 'wma') {
-            const color = ind.color ?? '#f97316'
-            const strokeWidth = ind.strokeWidth ?? 1.2
-            const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
-            return (
-              <path
-                key="wma"
-                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={dash}
-              />
-            )
-          }
-          if (ind.type === 'hma') {
-            const color = ind.color ?? '#26a69a'
-            const strokeWidth = ind.strokeWidth ?? 1.2
-            const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
-            return (
-              <path
-                key="hma"
-                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={dash}
-              />
-            )
-          }
-          if (ind.type === 'smma') {
-            const color = ind.color ?? '#ef5350'
-            const strokeWidth = ind.strokeWidth ?? 1.2
-            const dash = getStrokeDasharray(ind.lineStyle ?? 'solid')
-            return (
-              <path
-                key="smma"
-                d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={dash}
-              />
-            )
-          }
-          return null
-        }
+  const paths = useMemo(() => {
+    const elements: ReactNode[] = []
 
-        const ind = entry.config
-        if (ind.type === 'bollinger') {
-          const color = ind.color ?? '#c9a227'
-          const strokeWidth = ind.strokeWidth ?? 1.0
-          const showCloud = ind.showCloud ?? true
-          return (
-            <g key="bollinger">
-              {showCloud && (
-                <path
-                  d={bandsAreaPath(entry.upper, entry.lower, allBars, visibleSet, xScale, yScale)}
-                  fill={getCloudFill(color)}
-                  stroke="none"
-                />
-              )}
-              <path
-                d={linePath(entry.upper, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                opacity={0.8}
-              />
-              <path
-                d={linePath(entry.middle, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                strokeDasharray="3 2"
-                opacity={0.5}
-              />
-              <path
-                d={linePath(entry.lower, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                opacity={0.8}
-              />
-            </g>
-          )
-        }
+    for (const entry of model.priceLines) {
+      const color = entry.config.style?.color ?? BRASS_COLOR
+      const strokeWidth = entry.config.style?.strokeWidth ?? 1.2
+      const dash = getStrokeDasharray(entry.config.style?.lineStyle ?? 'solid')
+      elements.push(
+        <path
+          key={entry.instanceKey}
+          data-testid={`market-indicator-line-${entry.catalogId}`}
+          d={linePath(entry.values, allBars, visibleSet, xScale, yScale)}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={dash}
+        />,
+      )
+    }
 
-        if (ind.type === 'donchian') {
-          const color = ind.color ?? '#6eb5ff'
-          const strokeWidth = ind.strokeWidth ?? 1.0
-          const showCloud = ind.showCloud ?? true
-          return (
-            <g key="donchian">
-              {showCloud && (
-                <path
-                  d={bandsAreaPath(entry.upper, entry.lower, allBars, visibleSet, xScale, yScale)}
-                  fill={getCloudFill(color)}
-                  stroke="none"
-                />
-              )}
-              <path
-                d={linePath(entry.upper, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                opacity={0.8}
-              />
-              <path
-                d={linePath(entry.middle, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                strokeDasharray="2 2"
-                opacity={0.4}
-              />
-              <path
-                d={linePath(entry.lower, allBars, visibleSet, xScale, yScale)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                opacity={0.8}
-              />
-            </g>
-          )
-        }
+    for (const entry of model.priceBands) {
+      const color = entry.config.style?.color ?? '#c9a227'
+      const strokeWidth = entry.config.style?.strokeWidth ?? 1.0
+      const showCloud = entry.config.style?.showCloud ?? true
+      elements.push(
+        <g key={entry.instanceKey} data-testid={`market-indicator-bands-${entry.catalogId}`}>
+          {showCloud && (
+            <path
+              d={bandsAreaPath(entry.upper, entry.lower, allBars, visibleSet, xScale, yScale)}
+              fill={getCloudFill(color)}
+              stroke="none"
+            />
+          )}
+          <path
+            d={linePath(entry.upper, allBars, visibleSet, xScale, yScale)}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            opacity={0.8}
+          />
+          <path
+            d={linePath(entry.middle, allBars, visibleSet, xScale, yScale)}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeDasharray="3 2"
+            opacity={0.5}
+          />
+          <path
+            d={linePath(entry.lower, allBars, visibleSet, xScale, yScale)}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            opacity={0.8}
+          />
+        </g>,
+      )
+    }
 
-        return null
-      }),
-    [allBars, series, visibleSet, xScale, yScale],
-  )
+    return elements
+  }, [allBars, model.priceBands, model.priceLines, visibleSet, xScale, yScale])
 
   return <g transform={`translate(${left}, 0)`}>{paths}</g>
 }

@@ -44,7 +44,7 @@ import { CrosshairLayer } from '@/components/charts/layers/CrosshairLayer'
 import { DrawingLayer } from '@/components/charts/layers/DrawingLayer'
 import { ChevronRight } from 'lucide-react'
 
-import { macd } from '@/lib/indicators'
+import { useMarketIndicatorRenderModel } from '@/components/charts/hooks/useIndicatorSeries'
 import { newDrawingId } from '@/components/charts/hooks/useDrawings'
 import type { OhlcvBar } from '@/types/api'
 
@@ -130,37 +130,31 @@ const ChartInner = forwardRef<
     scrollToEnd,
   ])
 
+  const { model: indicatorModel } = useMarketIndicatorRenderModel(
+    symbol,
+    timeframe,
+    data,
+    indicators,
+  )
+
+  const oscillatorPaneKeys = useMemo(
+    () => indicatorModel.oscillators.map((group) => group.instanceKey),
+    [indicatorModel.oscillators],
+  )
+
   const layout = useMemo(
-    () => computePaneLayout(width, height, indicators, CHART_MARGINS),
-    [width, height, indicators],
+    () => computePaneLayout(width, height, oscillatorPaneKeys, CHART_MARGINS),
+    [width, height, oscillatorPaneKeys],
   )
 
   const scales = useChartScales(
     viewportSlots,
     layout,
     CHART_MARGINS,
+    indicatorModel.oscillators,
     pricePanOffset,
     priceScaleFactor,
   )
-
-  const macdValues = useMemo(() => {
-    const macdInd = indicators.find((i) => i.type === 'macd' && i.enabled)
-    if (!macdInd || macdInd.type !== 'macd') return null
-    return macd(data, macdInd.fast, macdInd.slow, macdInd.signal)
-  }, [data, indicators])
-
-  const macdScale = useMemo(() => {
-    if (!macdValues || !layout.macdTop) return scales.macdScale
-    const vals = macdValues.macd.filter((v): v is number => v !== null)
-    const sig = macdValues.signal.filter((v): v is number => v !== null)
-    const hist = macdValues.histogram.filter((v): v is number => v !== null)
-    const all = [...vals, ...sig, ...hist]
-    if (all.length === 0) return scales.macdScale
-    const min = Math.min(...all)
-    const max = Math.max(...all)
-    const pad = (max - min) * 0.1 || 0.01
-    return scales.macdScale.copy().domain([min - pad, max + pad])
-  }, [macdValues, layout.macdTop, scales.macdScale])
 
   const [hoveredBar, setHoveredBar] = useState<(typeof visibleBars)[0] | null>(null)
   const [mouseY, setMouseY] = useState<number | null>(null)
@@ -363,9 +357,6 @@ const ChartInner = forwardRef<
     [stretchXByPixels, layout.innerWidth],
   )
 
-  const rsiInd = indicators.find((i) => i.type === 'rsi')
-  const macdInd = indicators.find((i) => i.type === 'macd')
-
   const hudBar = hoveredBar ?? visibleBars[visibleBars.length - 1] ?? null
   const hudInfo = useMemo(() => {
     if (!hudBar) return null
@@ -517,11 +508,9 @@ const ChartInner = forwardRef<
 
         <VolumeLayer
           visibleBars={visibleBars}
-          allBars={data}
           xScale={scales.xScale}
           yScale={scales.volumeScale}
           left={CHART_MARGINS.left}
-          indicators={indicators}
           volumeOpacity={settings.volumeOpacity}
         />
 
@@ -539,38 +528,28 @@ const ChartInner = forwardRef<
           visibleBars={visibleBars}
           xScale={scales.xScale}
           yScale={scales.priceScale}
-          indicators={indicators}
+          model={indicatorModel}
           left={CHART_MARGINS.left}
         />
 
-        {rsiInd && layout.rsiTop !== undefined && layout.rsiHeight !== undefined && (
-          <OscillatorPane
-            allBars={data}
-            visibleBars={visibleBars}
-            xScale={scales.xScale}
-            yScale={scales.rsiScale!}
-            top={layout.rsiTop}
-            height={layout.rsiHeight}
-            left={CHART_MARGINS.left}
-            type="rsi"
-            config={rsiInd}
-          />
-        )}
-
-        {macdInd && layout.macdTop !== undefined && layout.macdHeight !== undefined && (
-          <OscillatorPane
-            allBars={data}
-            visibleBars={visibleBars}
-            xScale={scales.xScale}
-            yScale={macdScale}
-            top={layout.macdTop}
-            height={layout.macdHeight}
-            left={CHART_MARGINS.left}
-            type="macd"
-            config={macdInd}
-            macdValues={macdValues}
-          />
-        )}
+        {indicatorModel.oscillators.map((group, index) => {
+          const slot = layout.oscillators[index]
+          const scaleEntry = scales.oscillatorScales[index]
+          if (!slot || !scaleEntry) return null
+          return (
+            <OscillatorPane
+              key={group.instanceKey}
+              allBars={data}
+              visibleBars={visibleBars}
+              xScale={scales.xScale}
+              yScale={scaleEntry.scale}
+              top={slot.top}
+              height={slot.height}
+              left={CHART_MARGINS.left}
+              group={group}
+            />
+          )
+        })}
 
         <DrawingLayer
           drawings={drawings}
@@ -598,8 +577,7 @@ const ChartInner = forwardRef<
           xScale={scales.xScale}
           priceScale={scales.priceScale}
           volumeScale={scales.volumeScale}
-          rsiScale={scales.rsiScale}
-          macdScale={macdScale}
+          oscillatorScales={scales.oscillatorScales}
           layout={layout}
           timeframe={timeframe}
           left={CHART_MARGINS.left}
