@@ -40,10 +40,12 @@ export async function fetchIndicatorCatalog(): Promise<IndicatorCatalogResponse>
 export async function fetchMarketIndicatorSeries(
   symbol: string,
   body: MarketIndicatorSeriesRequest,
+  signal?: AbortSignal,
 ): Promise<MarketIndicatorSeriesResponse> {
   const { data } = await apiClient.post<MarketIndicatorSeriesResponse>(
     `/api/v1/market/indicators/${encodeURIComponent(symbol)}/series`,
     body,
+    { signal },
   )
   return data
 }
