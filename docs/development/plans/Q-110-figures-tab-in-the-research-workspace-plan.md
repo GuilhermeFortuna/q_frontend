@@ -39,8 +39,8 @@
 
 **Files:** `src/types/features.ts`, `src/app/router.tsx`, `src/app/__tests__/researchRoute.test.ts`, `src/workspaces/research/ResearchWorkspace.tsx` and its test.
 
-- [ ] Add failing tests for spec acceptance item 1 and the `figure` search parameter.
-- [ ] Add the tab first, change the default, parse `figure`, update the description; commit.
+- [x] Add failing tests for spec acceptance item 1 and the `figure` search parameter.
+- [x] Add the tab first, change the default, parse `figure`, update the description; commit.
 
 ### 3. Grid, rail and image figures
 

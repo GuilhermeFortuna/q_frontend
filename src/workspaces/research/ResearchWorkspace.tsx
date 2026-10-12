@@ -8,6 +8,7 @@ import {
   FeatureScoringDashboard,
   type FeatureScoringSource,
 } from '@/components/research/FeatureScoringDashboard'
+import { FiguresTab } from '@/components/research/figures/FiguresTab'
 import { MLFiltersTab } from '@/components/research/ml-filters/MLFiltersTab'
 import { NeuralFeaturesTab } from '@/components/research/neural/NeuralFeaturesTab'
 import { FeatureStorePanel } from '@/components/research/FeatureStoreTable'
@@ -19,6 +20,7 @@ import { ExperimentsWorkspace } from '@/workspaces/research/ExperimentsWorkspace
 import type { ResearchTab } from '@/types/features'
 
 const TAB_OPTIONS: { value: ResearchTab; label: string }[] = [
+  { value: 'figures', label: 'Figures' },
   { value: 'store', label: 'Feature Store' },
   { value: 'scoring', label: 'Feature Scoring' },
   { value: 'lab', label: 'Feature Lab' },
@@ -30,6 +32,7 @@ const TAB_OPTIONS: { value: ResearchTab; label: string }[] = [
 type ResearchWorkspaceProps = {
   tab?: ResearchTab
   sourceRunId?: string
+  figureId?: string
 }
 
 function FeatureStoreTab() {
@@ -99,7 +102,7 @@ function FeatureLabTab({ recentRuns, onEvalStarted, onOpenRun }: FeatureLabTabPr
   return <FeatureLab recentRuns={recentRuns} onEvalStarted={onEvalStarted} onOpenRun={onOpenRun} />
 }
 
-export function ResearchWorkspace({ tab = 'store', sourceRunId }: ResearchWorkspaceProps) {
+export function ResearchWorkspace({ tab = 'figures', sourceRunId }: ResearchWorkspaceProps) {
   const navigate = useNavigate({ from: '/research' })
   const queryClient = useQueryClient()
   const setPendingBacktestConfig = useAppStore((state) => state.setPendingBacktestConfig)
@@ -184,8 +187,8 @@ export function ResearchWorkspace({ tab = 'store', sourceRunId }: ResearchWorksp
             Research
           </h1>
           <p className="text-silver-400 text-sm">
-            Feature intelligence workspace — store, scoring, lab, neural models, ML entry filters,
-            and experiments.
+            Figures from research scripts, feature intelligence — store, scoring, lab, neural
+            models, ML entry filters, and experiments.
           </p>
         </div>
         <SegmentedToggle
@@ -197,6 +200,7 @@ export function ResearchWorkspace({ tab = 'store', sourceRunId }: ResearchWorksp
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden" data-workspace-transition-surface="primary">
+        {tab === 'figures' ? <FiguresTab /> : null}
         {tab === 'store' ? <FeatureStoreTab /> : null}
         {tab === 'scoring' ? (
           <FeatureScoringTab

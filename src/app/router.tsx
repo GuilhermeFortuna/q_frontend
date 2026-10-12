@@ -195,10 +195,12 @@ const discoverRoute = createRoute({
 type ResearchSearch = {
   tab?: ResearchTab
   source_run_id?: string
+  figure?: string
 }
 
 function parseResearchTab(value: unknown): ResearchTab {
   if (
+    value === 'figures' ||
     value === 'scoring' ||
     value === 'lab' ||
     value === 'store' ||
@@ -208,7 +210,7 @@ function parseResearchTab(value: unknown): ResearchTab {
   ) {
     return value
   }
-  return 'store'
+  return 'figures'
 }
 
 const researchRoute = createRoute({
@@ -220,13 +222,19 @@ const researchRoute = createRoute({
       typeof search.source_run_id === 'string' && search.source_run_id.length > 0
         ? search.source_run_id
         : undefined,
+    figure:
+      typeof search.figure === 'string' && search.figure.length > 0 ? search.figure : undefined,
   }),
   beforeLoad: () => syncWorkspace('research'),
   component: () => {
     const search = researchRoute.useSearch()
     return (
       <LazyRouteBoundary label="Loading research">
-        <LazyResearchWorkspace tab={search.tab ?? 'store'} sourceRunId={search.source_run_id} />
+        <LazyResearchWorkspace
+          tab={search.tab ?? 'figures'}
+          sourceRunId={search.source_run_id}
+          figureId={search.figure}
+        />
       </LazyRouteBoundary>
     )
   },

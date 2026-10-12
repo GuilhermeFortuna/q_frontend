@@ -33,7 +33,16 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 describe('ResearchWorkspace', () => {
-  it('renders the five research tabs', async () => {
+  it('lists Figures first and opens on it when no tab is given', async () => {
+    renderWithQueryClient(<ResearchWorkspace />)
+
+    const tabs = screen.getAllByRole('radio')
+    expect(tabs[0]).toHaveAccessibleName('Figures')
+    expect(screen.getByRole('radio', { name: 'Figures' })).toBeChecked()
+    expect(screen.getByTestId('research-tab-figures')).toBeInTheDocument()
+  })
+
+  it('renders the research tabs', async () => {
     renderWithQueryClient(<ResearchWorkspace />)
 
     expect(screen.getByRole('radio', { name: 'Feature Store' })).toBeInTheDocument()
@@ -42,9 +51,6 @@ describe('ResearchWorkspace', () => {
     expect(screen.getByRole('radio', { name: 'Neural Features' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'ML Filters' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Experiments' })).toBeInTheDocument()
-    await waitFor(() => {
-      expect(screen.getByTestId('research-tab-store')).toBeInTheDocument()
-    })
   })
 
   it('renders the feature catalog table on the store tab', async () => {
