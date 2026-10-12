@@ -85,7 +85,7 @@ describe('useActiveJobs', () => {
       workspaceId: 'backtests',
       workspaceLabel: 'Backtests',
       pct: 0,
-      detail: 'Running…',
+      detail: 'Detailed progress unavailable',
       progressKind: 'indeterminate',
     })
   })
@@ -107,7 +107,7 @@ describe('useActiveJobs', () => {
       workspaceId: 'backtests',
       workspaceLabel: 'Backtests',
       pct: 42,
-      detail: 'Replaying ticks · 2023-03-22',
+      detail: 'Simulating · 42% of historical range',
       progressKind: 'determinate',
     })
   })
@@ -126,7 +126,7 @@ describe('useActiveJobs', () => {
     const { result } = renderHook(() => useActiveJobs())
 
     expect(result.current.backtests?.progressKind).toBe('indeterminate')
-    expect(result.current.backtests?.detail).toBe('Loading H1 candles for WSP$')
+    expect(result.current.backtests?.detail).toBe('Loading data')
   })
 
   it('prefers optimize over backtest when both are active', () => {

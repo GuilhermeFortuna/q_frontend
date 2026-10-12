@@ -1,4 +1,5 @@
 import { motion } from 'motion/react'
+import { LoaderCircle } from 'lucide-react'
 import {
   useEffect,
   useId,
@@ -105,7 +106,19 @@ function workspaceLabelForId(id: WorkspaceId): string {
 }
 
 function JobProgress({ job, compact }: { job: ActiveJobIslandJob; compact?: boolean }) {
+  const reduceMotion = useReducedMotion()
   if (job.progressKind === 'indeterminate') {
+    if (job.workspaceId === 'backtests') {
+      return (
+        <LoaderCircle
+          aria-hidden="true"
+          className={cn(
+            'text-brass-400 h-3.5 w-3.5 shrink-0',
+            !reduceMotion && 'motion-safe:animate-spin',
+          )}
+        />
+      )
+    }
     return (
       <div
         className={cn(
@@ -135,13 +148,21 @@ function JobProgress({ job, compact }: { job: ActiveJobIslandJob; compact?: bool
       aria-valuenow={job.pct}
       data-progress-kind="determinate"
     >
-      <motion.div
-        className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r"
-        initial={false}
-        animate={{ width: `${job.pct}%` }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        data-testid="active-job-progress-fill"
-      />
+      {reduceMotion ? (
+        <div
+          className="bg-brass-400 h-full rounded-full"
+          style={{ width: `${job.pct}%` }}
+          data-testid="active-job-progress-fill"
+        />
+      ) : (
+        <motion.div
+          className="from-brass-600 to-brass-400 h-full rounded-full bg-gradient-to-r"
+          initial={false}
+          animate={{ width: `${job.pct}%` }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+          data-testid="active-job-progress-fill"
+        />
+      )}
     </div>
   )
 }

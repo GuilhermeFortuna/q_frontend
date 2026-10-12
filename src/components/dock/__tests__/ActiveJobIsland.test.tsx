@@ -98,7 +98,16 @@ describe('ActiveJobIsland', () => {
 
     expect(screen.getByTestId('active-job-compact')).toHaveTextContent('Live')
     expect(screen.getByTestId('active-job-compact')).not.toHaveTextContent('0%')
-    expect(screen.getByRole('progressbar')).toHaveAttribute('data-progress-kind', 'indeterminate')
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+  })
+
+  it('updates backtest coverage immediately when reduced motion is enabled', () => {
+    reduceMotionState.value = true
+    const { rerender } = render(
+      <ControlledIsland jobs={[makeJob({ workspaceId: 'backtests', pct: 10 })]} />,
+    )
+    rerender(<ControlledIsland jobs={[makeJob({ workspaceId: 'backtests', pct: 80 })]} />)
+    expect(screen.getByTestId('active-job-progress-fill')).toHaveStyle({ width: '80%' })
   })
 
   it('shows +N for multiple jobs and expands to dock order', async () => {

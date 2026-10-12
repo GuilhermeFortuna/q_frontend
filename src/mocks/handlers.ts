@@ -146,7 +146,7 @@ const MOCK_BACKTEST_PROGRESS_STEPS = [
     message: 'Replaying ticks · 2024-03-04',
     simulated_until: '2024-03-04T10:00:00',
     bars_total: 1000,
-    candles_replayed: 200,
+    candles_replayed: 12,
     candles_substituted: 0,
   },
   {
@@ -155,7 +155,7 @@ const MOCK_BACKTEST_PROGRESS_STEPS = [
     message: 'Replaying ticks · 2024-06-11',
     simulated_until: '2024-06-11T15:00:00',
     bars_total: 1000,
-    candles_replayed: 600,
+    candles_replayed: 54,
     candles_substituted: 12,
   },
   { phase: 'saving', progress: null, message: 'Saving results' },
@@ -483,12 +483,41 @@ export const handlers = [
       ? MOCK_BACKTEST_PROGRESS_STEPS[job.polls]
       : undefined
     if (!step) return HttpResponse.json({ run_id: runId, status: 'completed', error: null })
+    const phaseHistory: { phase: string; started_at: string; finished_at: string | null }[] = []
+    for (const [index, previousStep] of MOCK_BACKTEST_PROGRESS_STEPS.slice(
+      0,
+      job.polls + 1,
+    ).entries()) {
+      if (phaseHistory.at(-1)?.phase === previousStep.phase) continue
+      const entered = new Date(Date.parse(job.startedAt) + index * 1000).toISOString()
+      const previous = phaseHistory.at(-1)
+      if (previous) previous.finished_at = entered
+      phaseHistory.push({ phase: previousStep.phase, started_at: entered, finished_at: null })
+    }
+    const kind =
+      step.phase === 'loading_data'
+        ? 'loading_candles'
+        : step.phase === 'simulating'
+          ? 'reading_ticks'
+          : step.phase === 'saving'
+            ? 'saving'
+            : 'computing'
     return HttpResponse.json({
       run_id: runId,
       status: 'running',
       error: null,
       started_at: job.startedAt,
       updated_at: new Date().toISOString(),
+      phase_history: phaseHistory,
+      activity:
+        step.phase === 'queued'
+          ? null
+          : {
+              kind,
+              started_at: phaseHistory.at(-1)?.started_at,
+              range_start: kind === 'reading_ticks' ? '2024-06-11T16:00:00' : null,
+              range_end: kind === 'reading_ticks' ? '2024-06-11T17:00:00' : null,
+            },
       ...step,
     })
   }),
