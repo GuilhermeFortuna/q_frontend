@@ -4,6 +4,7 @@ import { FileDown, FileSpreadsheet, Loader2 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 
 import { BacktestMetricsBar } from '@/components/backtests/BacktestMetricsBar'
+import { BacktestNotes } from '@/components/backtests/BacktestNotes'
 import { MLFilterSummaryCard } from '@/components/backtests/MLFilterSummaryCard'
 import { LazyBacktestStrategyChart } from '@/components/backtests/LazyBacktestStrategyChart'
 import {
@@ -17,6 +18,7 @@ import {
   formatCurrency,
   formatSignedCurrency,
   formatExitReason,
+  formatExitResolution,
 } from '@/components/backtests/chartUtils'
 import { cn } from '@/lib/utils'
 import type {
@@ -135,6 +137,11 @@ function TradeHistoryTable({
         render: (trade) => (
           <span className="font-mono">
             {trade.exit_reason ? formatExitReason(trade.exit_reason) : '-'}
+            {formatExitResolution(trade.exit_resolution) && (
+              <span className="text-brass-400 block text-[10px]">
+                {formatExitResolution(trade.exit_resolution)}
+              </span>
+            )}
           </span>
         ),
       },
@@ -264,6 +271,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
           summary={results.ml_filter_summary}
           config={request?.ml_filter ?? null}
         />
+        <BacktestNotes notes={results.notes} />
         {canTrainMlFilter ? (
           <button
             type="button"

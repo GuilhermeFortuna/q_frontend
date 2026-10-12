@@ -1,5 +1,6 @@
 import type { OhlcvBar } from '@/types/api'
 import type {
+  BacktestNote,
   BacktestOrigin,
   BacktestProvenance,
   MlFilterBacktestSummary,
@@ -92,6 +93,8 @@ export interface Trade {
   commission: number
   point_value: number
   exit_reason?: string | null
+  /** What decided an intrabar exit; `minute` and `candle` are approximations from bar prices. */
+  exit_resolution?: 'tick' | 'minute' | 'candle' | null
 }
 
 export interface BacktestMetrics {
@@ -131,6 +134,8 @@ export interface BacktestResponse {
   indicators: ChartIndicatorSeries[]
   run_id?: string | null
   ml_filter_summary?: MlFilterBacktestSummary | null
+  /** Absent on results stored before notes existed. */
+  notes?: BacktestNote[]
 }
 
 export type BacktestRunStatus = 'pending' | 'running' | 'completed' | 'failed'

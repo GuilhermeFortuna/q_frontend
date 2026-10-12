@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   formatCurrency,
   formatExitReason,
+  formatExitResolution,
   formatSignedCurrency,
 } from '@/components/backtests/chartUtils'
 
@@ -28,5 +29,15 @@ describe('chartUtils currency formatting', () => {
     expect(formatExitReason('profit_target_ratchet')).toBe('Profit Target Ratchet')
     expect(formatExitReason('time_stop')).toBe('Time Stop')
     expect(formatExitReason('donchian_stop')).toBe('Donchian Stop')
+  })
+})
+
+describe('chartUtils exit resolution', () => {
+  it('labels only substituted exits as approximate', () => {
+    expect(formatExitResolution('minute')).toBe('Approximate: one-minute bar')
+    expect(formatExitResolution('candle')).toBe('Approximate: candle prices')
+    expect(formatExitResolution('tick')).toBeNull()
+    expect(formatExitResolution(null)).toBeNull()
+    expect(formatExitResolution(undefined)).toBeNull()
   })
 })
