@@ -37,6 +37,15 @@ describe('tickCoverage', () => {
     expect(resolveTickCoverage(covered, ticks).status).toBe('covered')
   })
 
+  it('does not count the future part of today as missing history', () => {
+    const now = Date.parse('2021-12-20T15:30:00-03:00')
+    const endOfToday = request({
+      start: '2021-11-01T03:00:00.000Z',
+      end: '2021-12-21T02:59:59.999Z',
+    })
+    expect(resolveTickCoverage(endOfToday, ticks, now).status).toBe('covered')
+  })
+
   it('clamps both ends to the tick envelope', () => {
     const result = resolveTickCoverage(request(), ticks)
     expect(result).toMatchObject({
