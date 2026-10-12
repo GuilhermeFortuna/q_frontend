@@ -29,6 +29,10 @@ type BacktestFocusWorkbenchProps = {
   loading: boolean
   /** Live status of the running job: phase, progress and message. */
   runStatus?: BacktestStatusResponse
+  /** Cancels the running job. */
+  onCancel?: () => void
+  cancelling?: boolean
+  cancelError?: string | null
   error: string | null
   onSubmit: (request: BacktestRequest) => void
   results: BacktestResponse | undefined
@@ -54,6 +58,9 @@ export function BacktestFocusWorkbench({
   config,
   loading,
   runStatus,
+  onCancel,
+  cancelling,
+  cancelError,
   error,
   onSubmit,
   results,
@@ -143,7 +150,13 @@ export function BacktestFocusWorkbench({
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {loading ? (
               <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-4">
-                <BacktestRunProgress status={runStatus} request={lastRequest} />
+                <BacktestRunProgress
+                  status={runStatus}
+                  request={lastRequest}
+                  onCancel={onCancel}
+                  cancelling={cancelling}
+                  cancelError={cancelError}
+                />
               </div>
             ) : showResultsContent ? (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -161,7 +174,11 @@ export function BacktestFocusWorkbench({
               </div>
             ) : (
               <div className="border-carbon-600/60 flex flex-1 items-center justify-center rounded-xl border-2 border-dashed">
-                <p className="text-silver-400 text-sm">Run a simulation to see results here.</p>
+                <p className="text-silver-400 text-sm">
+                  {runStatus?.status === 'cancelled'
+                    ? 'Backtest cancelled. Run a simulation to see results here.'
+                    : 'Run a simulation to see results here.'}
+                </p>
               </div>
             )}
           </div>

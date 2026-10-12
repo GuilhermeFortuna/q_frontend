@@ -163,4 +163,29 @@ describe('BacktestRunProgress', () => {
     expect(backtestPhaseLabel(status({ phase: 'saving', progress: null }))).toBe('Saving')
     expect(backtestPhaseLabel(undefined)).toBe('Starting backtest…')
   })
+  it('offers cancelling the run and disables the control while cancelling', () => {
+    const onCancel = vi.fn()
+    const { rerender } = render(
+      <BacktestRunProgress status={status()} request={request} onCancel={onCancel} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel Run' }))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    rerender(
+      <BacktestRunProgress status={status()} request={request} onCancel={onCancel} cancelling />,
+    )
+    expect(screen.getByRole('button', { name: 'Cancelling…' })).toBeDisabled()
+  })
+  it('shows a cancel failure and hides the control when cancelling is unavailable', () => {
+    const { rerender } = render(
+      <BacktestRunProgress
+        status={status()}
+        request={request}
+        onCancel={vi.fn()}
+        cancelError="Backtest run not found."
+      />,
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('Backtest run not found.')
+    rerender(<BacktestRunProgress status={status()} request={request} />)
+    expect(screen.queryByRole('button', { name: 'Cancel Run' })).not.toBeInTheDocument()
+  })
 })

@@ -162,6 +162,7 @@ const MOCK_BACKTEST_PROGRESS_STEPS = [
 ] as const
 const MOCK_BACKTEST_PROGRESS_ENABLED = import.meta.env.MODE !== 'test'
 const mockBacktestJobStatusPolls = new Map<string, { polls: number; startedAt: string }>()
+const cancelledBacktestRunIds = new Set<string>()
 const mockBacktestRunsWithoutStoredResult = new Set(['run-stack-missing', 'run-script-missing'])
 
 /** Session-started jobs first, then seeded completed history runs with a stored result. */
@@ -459,6 +460,19 @@ export const handlers = [
     return HttpResponse.json({ run_id: runId, status: 'running' })
   }),
 
+  http.post('*/api/v1/backtest/:runId/cancel', ({ params }) => {
+    const runId = String(params.runId)
+    if (!mockBacktestJobs.has(runId)) {
+      return HttpResponse.json({ detail: 'Backtest run not found.' }, { status: 404 })
+    }
+    cancelledBacktestRunIds.add(runId)
+    return HttpResponse.json({
+      run_id: runId,
+      status: 'cancelled',
+      error: 'Cancelled by operator.',
+    })
+  }),
+
   http.get('*/api/v1/backtest/:runId/result', ({ params }) => {
     const runId = String(params.runId)
     const result = resolveMockBacktestResult(runId)
@@ -472,6 +486,13 @@ export const handlers = [
     const runId = params.runId as string
     if (!mockBacktestJobs.has(runId)) {
       return HttpResponse.json({ detail: 'Backtest run not found.' }, { status: 404 })
+    }
+    if (cancelledBacktestRunIds.has(runId)) {
+      return HttpResponse.json({
+        run_id: runId,
+        status: 'cancelled',
+        error: 'Cancelled by operator.',
+      })
     }
     const job = mockBacktestJobStatusPolls.get(runId) ?? {
       polls: 0,

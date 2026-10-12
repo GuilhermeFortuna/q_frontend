@@ -1,12 +1,17 @@
 import axios, { type AxiosError } from 'axios'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { createElement, type ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
+  backtestKeys,
   bulkDeleteBacktestRuns,
+  cancelBacktest,
+  fetchBacktestJobStatus,
+  startBacktest,
+  useCancelBacktest,
   deleteBacktestRun,
   fetchBacktestEquityArtifact,
   fetchBacktestHistory,
@@ -194,5 +199,44 @@ describe('backtest history API', () => {
     expect(axios.isAxiosError(result.current.error)).toBe(true)
     expect((result.current.error as AxiosError).response?.status).toBe(404)
     expect(result.current.failureCount).toBe(1)
+  })
+})
+
+describe('backtest cancellation', () => {
+  const request = {
+    symbol: 'WIN$',
+    timeframe: 'M5',
+    strategy: 'MACrossover',
+  } as Parameters<typeof startBacktest>[0]
+
+  it('cancelBacktest returns the cancelled status and later polls agree', async () => {
+    const { run_id } = await startBacktest(request)
+
+    const cancelled = await cancelBacktest(run_id)
+
+    expect(cancelled).toMatchObject({ run_id, status: 'cancelled' })
+    expect(await fetchBacktestJobStatus(run_id)).toMatchObject({ run_id, status: 'cancelled' })
+  })
+
+  it('cancelBacktest rejects for an unknown run', async () => {
+    await expect(cancelBacktest('missing-run')).rejects.toMatchObject({
+      response: { status: 404 },
+    })
+  })
+
+  it('useCancelBacktest writes the cancelled status into the status cache', async () => {
+    const { run_id } = await startBacktest(request)
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children)
+    const { result } = renderHook(() => useCancelBacktest(), { wrapper })
+
+    await act(async () => {
+      await result.current.mutateAsync(run_id)
+    })
+
+    expect(queryClient.getQueryData(backtestKeys.jobStatus(run_id))).toMatchObject({
+      status: 'cancelled',
+    })
   })
 })

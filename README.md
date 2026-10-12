@@ -256,6 +256,7 @@ a candle backtest.
 - `GET /api/v1/strategies` — Strategy registry and parameter schemas for dynamic forms.
 - `POST /api/v1/backtest` — Start an async backtest (poll status, then fetch result).
 - `GET /api/v1/backtest/{runId}` — Backtest job status.
+- `POST /api/v1/backtest/{runId}/cancel` — Cooperative cancellation.
 - `GET /api/v1/backtest/{runId}/result` — Full metrics, trades, bars, and indicators.
 - `GET /api/v1/backtests` — Paginated run history.
 - `GET /api/v1/backtests/{runId}` — Run metadata and summary metrics.

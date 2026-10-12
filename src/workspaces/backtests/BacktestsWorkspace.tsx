@@ -133,6 +133,13 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
         : 'Failed to run backtest'
     : null
 
+  const cancelError = runBacktest.cancelError
+    ? axios.isAxiosError(runBacktest.cancelError)
+      ? ((runBacktest.cancelError.response?.data as { detail?: string })?.detail ??
+        runBacktest.cancelError.message)
+      : 'Failed to cancel backtest'
+    : null
+
   return (
     <div
       className="text-silver-100 flex min-h-[calc(100dvh-4.5rem-7rem)] w-full flex-col overflow-hidden"
@@ -253,6 +260,9 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
                     config={backtestConfig}
                     loading={runBacktest.isPending}
                     runStatus={runBacktest.runStatus}
+                    onCancel={runBacktest.cancel}
+                    cancelling={runBacktest.isCancelling}
+                    cancelError={cancelError}
                     error={errorMessage}
                     onSubmit={handleSubmit}
                     results={resultsData}

@@ -61,6 +61,11 @@ export async function fetchBacktestJobStatus(runId: string): Promise<BacktestLiv
   return data
 }
 
+export async function cancelBacktest(runId: string): Promise<BacktestLiveStatus> {
+  const { data } = await apiClient.post<BacktestStatusResponse>(`/api/v1/backtest/${runId}/cancel`)
+  return data
+}
+
 export async function fetchBacktestResult(runId: string): Promise<BacktestResponse> {
   const { data } = await apiClient.get<BacktestResponse>(`/api/v1/backtest/${runId}/result`)
   return data
@@ -173,6 +178,20 @@ export function useBacktestJobStatus(runId: string | null, enabled = true) {
   })
 }
 
+export function useCancelBacktest() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: cancelBacktest,
+    onSuccess: (status, runId) => {
+      // Reflect the cancelled status immediately so polling stops and the
+      // progress panel closes without waiting for the next status poll.
+      queryClient.setQueryData(backtestKeys.jobStatus(runId), status)
+      queryClient.invalidateQueries({ queryKey: [...backtestKeys.all, 'history'] })
+    },
+  })
+}
+
 /**
  * Backtests run asynchronously on the worker pool. This hook mirrors the old
  * `useRunBacktest` mutation surface (`mutate`/`data`/`isPending`/`error`) but
@@ -198,6 +217,7 @@ export function useBacktestJob() {
     },
   })
 
+  const cancelMutation = useCancelBacktest()
   const status = useBacktestJobStatus(runId, simulationActive)
   const jobStatus = status.data?.status
 
@@ -210,7 +230,7 @@ export function useBacktestJob() {
 
   // Refresh history once a run reaches a terminal state.
   useEffect(() => {
-    if (jobStatus === 'completed' || jobStatus === 'failed') {
+    if (jobStatus === 'completed' || jobStatus === 'failed' || jobStatus === 'cancelled') {
       queryClient.invalidateQueries({ queryKey: [...backtestKeys.all, 'history'] })
     }
   }, [jobStatus, queryClient])
@@ -234,6 +254,11 @@ export function useBacktestJob() {
     data: jobStatus === 'completed' ? result.data : undefined,
     isPending,
     error,
+    cancel: () => {
+      if (runId) cancelMutation.mutate(runId)
+    },
+    isCancelling: cancelMutation.isPending,
+    cancelError: (cancelMutation.error as Error | null) ?? null,
     status: jobStatus,
     runStatus: start.isPending ? undefined : status.data,
   }

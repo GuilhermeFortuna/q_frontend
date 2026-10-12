@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { Check, ChevronDown, LoaderCircle } from 'lucide-react'
 
-import { Panel } from '@/components/ui'
+import { Button, Panel } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/motion/useReducedMotion'
 import {
@@ -19,11 +19,18 @@ const READ_KINDS = new Set(['loading_candles', 'loading_ticks', 'reading_m1', 'r
 const formatHistoryTime = (value: string) =>
   value.replace('T', ' ').replace(/:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/, '')
 
-type Props = { status: BacktestLiveStatus | undefined; request: BacktestRequest | null }
+type Props = {
+  status: BacktestLiveStatus | undefined
+  request: BacktestRequest | null
+  /** Cancels the run; the control is hidden when omitted. */
+  onCancel?: () => void
+  cancelling?: boolean
+  cancelError?: string | null
+}
 export function BacktestRunProgress(props: Props) {
   return <RunProgress key={props.status?.run_id ?? 'submitting'} {...props} />
 }
-function RunProgress({ status, request }: Props) {
+function RunProgress({ status, request, onCancel, cancelling = false, cancelError }: Props) {
   const reduceMotion = useReducedMotion()
   const [now, setNow] = useState(() => Date.now())
   const [changedAt, setChangedAt] = useState(() => Date.now())
@@ -63,6 +70,25 @@ function RunProgress({ status, request }: Props) {
           </span>
         ) : null}
       </div>
+      {onCancel ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            data-testid="cancel-simulation-button"
+            onClick={onCancel}
+            disabled={cancelling}
+          >
+            {cancelling ? 'Cancelling…' : 'Cancel Run'}
+          </Button>
+          {cancelError ? (
+            <p role="alert" className="text-sm text-red-400">
+              {cancelError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <div className="mt-6 flex items-start gap-3">
         <LoaderCircle
           aria-hidden="true"
