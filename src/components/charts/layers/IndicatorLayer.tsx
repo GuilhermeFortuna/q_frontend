@@ -90,14 +90,16 @@ function IndicatorLayerImpl({
             strokeWidth={strokeWidth}
             opacity={0.8}
           />
-          <path
-            d={linePath(entry.middle, allBars, visibleSet, xScale, yScale)}
-            fill="none"
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeDasharray="3 2"
-            opacity={0.5}
-          />
+          {entry.middle && (
+            <path
+              d={linePath(entry.middle, allBars, visibleSet, xScale, yScale)}
+              fill="none"
+              stroke={color}
+              strokeWidth={strokeWidth}
+              strokeDasharray="3 2"
+              opacity={0.5}
+            />
+          )}
           <path
             d={linePath(entry.lower, allBars, visibleSet, xScale, yScale)}
             fill="none"

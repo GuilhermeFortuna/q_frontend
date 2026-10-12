@@ -130,7 +130,7 @@ const ChartInner = forwardRef<
     scrollToEnd,
   ])
 
-  const { model: indicatorModel } = useMarketIndicatorRenderModel(
+  const { model: indicatorModel, notice: indicatorNotice } = useMarketIndicatorRenderModel(
     symbol,
     timeframe,
     data,
@@ -421,6 +421,16 @@ const ChartInner = forwardRef<
             <span className="text-silver-500 mr-1">V</span>
             <span className="text-silver-200">{hudInfo.volume}</span>
           </div>
+        </div>
+      )}
+
+      {indicatorNotice && (
+        <div
+          role="status"
+          data-testid="market-indicator-notice"
+          className="bg-carbon-900/95 absolute bottom-8 left-3 z-10 max-w-[70%] rounded border border-rose-500/30 px-2 py-1 font-mono text-[10px] text-rose-300"
+        >
+          Indicators: {indicatorNotice}
         </div>
       )}
 
