@@ -420,6 +420,11 @@ export function MarketDataWorkspace() {
                   updateActiveProfile({ chartSettings: val })
                 }}
                 symbol={selectedSymbol}
+                indicatorPreviewContext={{
+                  symbol: selectedSymbol,
+                  timeframe: selectedTimeframe,
+                  bars: ohlcv.bars,
+                }}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={() => {
                   if (isFullscreen) {

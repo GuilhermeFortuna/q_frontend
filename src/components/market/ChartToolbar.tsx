@@ -5,6 +5,7 @@ import type { IndicatorConfig, ChartSettings } from '@/components/charts/types/c
 import { LabeledField } from '@/components/ui/LabeledField'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { CHART_TIMEFRAMES } from '@/lib/market/timeframes'
+import type { IndicatorPreviewContext } from '@/components/charts/IndicatorPreview'
 export type ChartToolbarProps = {
   selectedTimeframe: string
   onTimeframeChange: (timeframe: string) => void
@@ -17,6 +18,7 @@ export type ChartToolbarProps = {
   chartSettings?: ChartSettings
   onChartSettingsChange?: (settings: ChartSettings) => void
   symbol?: string
+  indicatorPreviewContext?: IndicatorPreviewContext
   isFullscreen?: boolean
   onToggleFullscreen?: () => void
   onOpenSymbolPicker?: () => void
@@ -40,6 +42,7 @@ export function ChartToolbar({
   chartSettings,
   onChartSettingsChange,
   symbol,
+  indicatorPreviewContext,
   isFullscreen = false,
   onToggleFullscreen,
   onOpenSymbolPicker,
@@ -76,7 +79,11 @@ export function ChartToolbar({
           />
         </LabeledField>
 
-        <IndicatorsPopover indicators={indicators} onChange={onIndicatorsChange} />
+        <IndicatorsPopover
+          indicators={indicators}
+          onChange={onIndicatorsChange}
+          previewContext={indicatorPreviewContext}
+        />
 
         {chartSettings && onChartSettingsChange ? (
           <ChartSettingsPopover settings={chartSettings} onChange={onChartSettingsChange} />
