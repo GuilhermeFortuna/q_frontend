@@ -119,8 +119,7 @@ export function buildIndicatorRenderModel(
       const values = alignSeriesValuesToBars(barTimestamps, series.timestamps, raw.values)
       const renderOutput: OscillatorOutputRender = {
         outputKey: outputSpec.key,
-        kind:
-          outputSpec.pane === 'oscillator' && outputSpec.key === 'histogram' ? 'histogram' : 'line',
+        kind: entry.id === 'macd' && outputSpec.key === 'histogram' ? 'histogram' : 'line',
         label: outputSpec.label,
         values,
         color: config.style?.outputColors?.[outputSpec.key] ?? config.style?.color,

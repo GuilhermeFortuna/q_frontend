@@ -188,7 +188,8 @@ export function useChartScales(
       const slot = layout.oscillators[index]
       const flatValues = group.outputs.flatMap((output) => [
         ...output.values,
-        ...(output.kind === 'histogram' || output.outputKey === 'histogram'
+        ...(output.kind === 'histogram' ||
+        (group.catalogId === 'macd' && output.outputKey === 'histogram')
           ? [output.baseline ?? 0]
           : []),
       ])

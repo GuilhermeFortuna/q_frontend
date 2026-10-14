@@ -69,14 +69,13 @@ function OscillatorPaneImpl({
 
   const unavailable = group.outputs.find((output) => output.unavailableReason)?.unavailableReason
 
+  const isHistogram = (output: (typeof group.outputs)[number]) =>
+    output.kind === 'histogram' || (group.catalogId === 'macd' && output.outputKey === 'histogram')
   const lineOutputs = group.outputs.filter(
-    (output) =>
-      output.kind !== 'histogram' && output.outputKey !== 'histogram' && output.kind !== 'markers',
+    (output) => !isHistogram(output) && output.kind !== 'markers',
   )
   const markerOutputs = group.outputs.filter((output) => output.kind === 'markers')
-  const histogram = group.outputs.find(
-    (output) => output.kind === 'histogram' || output.outputKey === 'histogram',
-  )
+  const histogram = group.outputs.find(isHistogram)
 
   const histBars = useMemo(() => {
     if (!histogram) return []
