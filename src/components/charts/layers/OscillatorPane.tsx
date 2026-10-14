@@ -5,6 +5,30 @@ import type { OscillatorRenderGroup } from '@/lib/market/buildIndicatorRenderMod
 import type { ProcessedBar } from '@/components/charts/types/chart'
 import { linePath, visibleTimestampSet } from '@/components/charts/utils/indicatorPaths'
 import type { OhlcvBar } from '@/types/api'
+import { studyMarkerShape } from '@/components/charts/layers/MarkerGlyph'
+
+function stepPath(
+  values: (number | null)[],
+  bars: OhlcvBar[],
+  visible: Set<string>,
+  xScale: BandScale,
+  yScale: LinearScale,
+) {
+  let d = ''
+  let prev = false
+  bars.forEach((bar, i) => {
+    const value = visible.has(bar.timestamp) ? values[i] : null
+    if (value == null) {
+      prev = false
+      return
+    }
+    const x = (xScale(bar.timestamp) ?? 0) + xScale.bandwidth() / 2
+    const y = yScale(value)
+    d += prev ? ` H ${x} V ${y}` : ` M ${x} ${y}`
+    prev = true
+  })
+  return d
+}
 
 type OscillatorPaneProps = {
   allBars: OhlcvBar[]
@@ -45,8 +69,13 @@ function OscillatorPaneImpl({
 
   const unavailable = group.outputs.find((output) => output.unavailableReason)?.unavailableReason
 
-  const lineOutputs = group.outputs.filter((output) => output.outputKey !== 'histogram')
-  const histogram = group.outputs.find((output) => output.outputKey === 'histogram')
+  const isHistogram = (output: (typeof group.outputs)[number]) =>
+    output.kind === 'histogram' || (group.catalogId === 'macd' && output.outputKey === 'histogram')
+  const lineOutputs = group.outputs.filter(
+    (output) => !isHistogram(output) && output.kind !== 'markers',
+  )
+  const markerOutputs = group.outputs.filter((output) => output.kind === 'markers')
+  const histogram = group.outputs.find(isHistogram)
 
   const histBars = useMemo(() => {
     if (!histogram) return []
@@ -54,12 +83,12 @@ function OscillatorPaneImpl({
     const isNarrow = bw < 4
     return visibleBars
       .map((bar) => {
-        const idx = allBars.findIndex((entry) => entry.timestamp === bar.timestamp)
-        const val = idx >= 0 ? histogram.values[idx] : null
+        const val = histogram.values[bar.index] ?? null
         if (val === null) return null
         const x = xScale(bar.timestamp) ?? 0
         const cx = Math.round(x + bw / 2)
-        const y0 = Math.round(yScale(0))
+        const baseline = histogram.baseline ?? 0
+        const y0 = Math.round(yScale(baseline))
         const y1 = Math.round(yScale(val))
         const rectY = Math.min(y0, y1)
         const rectH = Math.max(Math.abs(y1 - y0), 1)
@@ -70,11 +99,14 @@ function OscillatorPaneImpl({
           y: rectY,
           w: width,
           h: rectH,
-          color: val >= 0 ? '#26a69a' : '#ef5350',
+          color:
+            val >= baseline
+              ? (histogram.color ?? '#26a69a')
+              : (histogram.negativeColor ?? histogram.color ?? '#ef5350'),
         }
       })
       .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
-  }, [allBars, histogram, visibleBars, xScale, yScale])
+  }, [histogram, visibleBars, xScale, yScale])
 
   const primaryColor = group.config.style?.color ?? '#a78bfa'
 
@@ -154,13 +186,65 @@ function OscillatorPaneImpl({
             />
           ))}
 
+          {group.outputs
+            .filter((output) => output.fillValues)
+            .map((output) => {
+              let d = ''
+              let segment: Array<{ x: number; a: number; b: number }> = []
+              const points = (side: 'a' | 'b', kind: 'line' | 'step') => {
+                const result: Array<{ x: number; y: number }> = []
+                segment.forEach((point, i) => {
+                  const value = point[side]
+                  if (i > 0 && kind === 'step')
+                    result.push({ x: point.x, y: yScale(segment[i - 1][side]) })
+                  result.push({ x: point.x, y: yScale(value) })
+                })
+                return result
+              }
+              const flush = () => {
+                if (segment.length > 1) {
+                  const top = points('a', output.kind === 'step' ? 'step' : 'line')
+                  const bottom = points('b', output.fillKind === 'step' ? 'step' : 'line').reverse()
+                  d += ` M ${top[0].x} ${top[0].y} ${top
+                    .slice(1)
+                    .map((p) => `L ${p.x} ${p.y}`)
+                    .join(' ')} ${bottom.map((p) => `L ${p.x} ${p.y}`).join(' ')} Z`
+                }
+                segment = []
+              }
+              allBars.forEach((bar, i) => {
+                const a = output.values[i],
+                  b = output.fillValues?.[i]
+                if (!visibleSet.has(bar.timestamp) || a == null || b == null) {
+                  flush()
+                  return
+                }
+                const x = (xScale(bar.timestamp) ?? 0) + xScale.bandwidth() / 2
+                segment.push({ x, a, b })
+              })
+              flush()
+              return (
+                <path
+                  key={`${output.outputKey}-fill`}
+                  data-testid={`market-study-oscillator-fill-${output.outputKey}`}
+                  d={d.trim()}
+                  fill={output.color ?? primaryColor}
+                  fillOpacity={output.fillOpacity ?? 0.15}
+                  stroke="none"
+                />
+              )
+            })}
+
           {lineOutputs.map((output) => {
             const color =
               output.color ??
               (output.outputKey === 'signal'
                 ? (group.config.style?.outputColors?.signal ?? '#c9a227')
                 : (group.config.style?.outputColors?.line ?? primaryColor))
-            const path = linePath(output.values, allBars, visibleSet, xScale, yScale)
+            const path =
+              output.kind === 'step'
+                ? stepPath(output.values, allBars, visibleSet, xScale, yScale)
+                : linePath(output.values, allBars, visibleSet, xScale, yScale)
             return (
               <path
                 key={`${group.instanceKey}-${output.outputKey}`}
@@ -172,6 +256,34 @@ function OscillatorPaneImpl({
               />
             )
           })}
+          {markerOutputs.map((output) =>
+            visibleBars.map((bar) => {
+              const value = output.values[bar.index] ?? null
+              if (
+                value == null ||
+                ((output.position === 'above-bar' || output.position === 'below-bar') &&
+                  value === 0)
+              )
+                return null
+              const x = xScale(bar.timestamp)
+              if (x == null) return null
+              return (
+                <g
+                  key={`${output.outputKey}-${bar.timestamp}`}
+                  data-testid={`market-study-oscillator-marker-${output.outputKey}`}
+                >
+                  <title>{`${output.studyName ?? ''} · ${output.seriesLabel ?? output.label}: ${value}`}</title>
+                  {studyMarkerShape(
+                    output.shape ?? 'circle',
+                    x + xScale.bandwidth() / 2,
+                    yScale(value),
+                    output.size ?? 8,
+                    output.color ?? primaryColor,
+                  )}
+                </g>
+              )
+            }),
+          )}
         </>
       )}
 

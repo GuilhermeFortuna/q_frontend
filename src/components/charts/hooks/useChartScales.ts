@@ -186,7 +186,13 @@ export function useChartScales(
 
     const oscillatorScales = oscillators.map((group, index) => {
       const slot = layout.oscillators[index]
-      const flatValues = group.outputs.flatMap((output) => output.values)
+      const flatValues = group.outputs.flatMap((output) => [
+        ...output.values,
+        ...(output.kind === 'histogram' ||
+        (group.catalogId === 'macd' && output.outputKey === 'histogram')
+          ? [output.baseline ?? 0]
+          : []),
+      ])
       const [min, max] =
         group.catalogId === 'rsi' ? ([0, 100] as [number, number]) : seriesDomain(flatValues)
       const scale = scaleLinear<number>({

@@ -47,6 +47,7 @@ import { ChevronRight } from 'lucide-react'
 import { useMarketIndicatorRenderModel } from '@/components/charts/hooks/useIndicatorSeries'
 import { useMarketStudyRenderModel } from '@/components/charts/hooks/useStudyRenderModel'
 import { mergeIndicatorRenderModels } from '@/lib/market/buildStudyRenderModel'
+import { studyMarkerShape } from '@/components/charts/layers/MarkerGlyph'
 import { newDrawingId } from '@/components/charts/hooks/useDrawings'
 import type { OhlcvBar } from '@/types/api'
 
@@ -149,6 +150,12 @@ const ChartInner = forwardRef<
     [indicatorModel, studyModel],
   )
   const indicatorNoticeText = [indicatorNotice, studyNotice].filter(Boolean).join(' ')
+  const studyLegend = [
+    ...renderModel.priceLines.filter((output) => output.studyName),
+    ...renderModel.oscillators.flatMap((group) =>
+      group.outputs.filter((output) => output.studyName),
+    ),
+  ]
 
   const oscillatorPaneKeys = useMemo(
     () => renderModel.oscillators.map((group) => group.instanceKey),
@@ -447,6 +454,47 @@ const ChartInner = forwardRef<
         </div>
       )}
 
+      {studyLegend.length > 0 && (
+        <div
+          aria-label="Study series legend"
+          className="bg-carbon-950/80 text-silver-300 absolute top-2 left-3 z-10 flex max-w-[70%] flex-wrap gap-x-3 gap-y-1 rounded px-2 py-1 font-mono text-[9px]"
+        >
+          {studyLegend.map((series) => {
+            const kind = series.kind ?? 'line'
+            const color =
+              ('color' in series ? series.color : undefined) ??
+              ('config' in series ? series.config.style?.color : undefined) ??
+              '#c9a227'
+            return (
+              <span
+                key={`${series.studyName}-${series.outputKey}`}
+                className="inline-flex items-center gap-1"
+                title={`${series.studyName} · ${series.seriesLabel ?? series.label}`}
+              >
+                <svg width="18" height="10" viewBox="0 0 18 10" aria-hidden>
+                  {kind === 'markers' ? (
+                    studyMarkerShape(
+                      series.shape ?? 'circle',
+                      9,
+                      5,
+                      Math.min(series.size ?? 6, 8),
+                      color,
+                    )
+                  ) : kind === 'histogram' ? (
+                    <rect x="7" y="1" width="5" height="8" fill={color} />
+                  ) : kind === 'step' ? (
+                    <path d="M1 7 H7 V3 H17" fill="none" stroke={color} strokeWidth="1.5" />
+                  ) : (
+                    <line x1="1" x2="17" y1="5" y2="5" stroke={color} strokeWidth="1.5" />
+                  )}
+                </svg>
+                {series.seriesLabel ?? series.label}
+              </span>
+            )
+          })}
+        </div>
+      )}
+
       {!isAtLatestCandle && (
         <div className="absolute top-2 right-3 z-10">
           <button
@@ -537,6 +585,16 @@ const ChartInner = forwardRef<
           volumeOpacity={settings.volumeOpacity}
         />
 
+        <IndicatorLayer
+          allBars={data}
+          visibleBars={visibleBars}
+          xScale={scales.xScale}
+          yScale={scales.priceScale}
+          model={renderModel}
+          left={CHART_MARGINS.left}
+          phase="fills"
+        />
+
         <CandlestickLayer
           bars={visibleBars}
           xScale={scales.xScale}
@@ -553,6 +611,7 @@ const ChartInner = forwardRef<
           yScale={scales.priceScale}
           model={renderModel}
           left={CHART_MARGINS.left}
+          phase="overlays"
         />
 
         {renderModel.oscillators.map((group, index) => {
