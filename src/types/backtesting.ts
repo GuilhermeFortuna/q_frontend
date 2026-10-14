@@ -1,3 +1,4 @@
+import type { StudyMarkerPosition, StudyMarkerShape } from '@/lib/market/buildIndicatorRenderModel'
 import type { OhlcvBar } from '@/types/api'
 import type {
   BacktestNote,
@@ -123,6 +124,17 @@ export interface ChartIndicatorSeries {
   color?: string
   line_style?: 'solid' | 'dashed' | 'dotted' | null
   line_width?: number | null
+  /** Absent on results stored before plot kinds existed; read as `line`. */
+  kind?: 'line' | 'step' | 'markers' | 'histogram' | 'segment' | null
+  shape?: StudyMarkerShape | null
+  size?: number | null
+  position?: StudyMarkerPosition | null
+  negative_color?: string | null
+  baseline?: number | null
+  fill_to?: string | null
+  fill_opacity?: number | null
+  /** Bar position of each segment's start bar, aligned with `values`; used by `segment` only. */
+  start_index?: (number | null)[] | null
   values: (number | null)[]
 }
 

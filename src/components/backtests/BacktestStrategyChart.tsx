@@ -7,6 +7,7 @@ import { isTauri } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
+import { studyMarkerShape } from '@/components/charts/layers/MarkerGlyph'
 import {
   indicatorStroke,
   StrategyIndicatorLayer,
@@ -177,9 +178,11 @@ function ChartInner({
     })
 
     if (oscillatorIndicators.length > 0 && layout.oscillatorTop !== undefined) {
-      const values = oscillatorIndicators.flatMap((ind) =>
-        ind.values.filter((v): v is number => v !== null),
-      )
+      // A histogram's bars grow from its baseline, so the baseline belongs in the domain too.
+      const values = oscillatorIndicators.flatMap((ind) => [
+        ...ind.values.filter((v): v is number => v !== null),
+        ...(ind.kind === 'histogram' ? [ind.baseline ?? 0] : []),
+      ])
       if (values.length > 0) {
         const min = Math.min(...values)
         const max = Math.max(...values)
@@ -795,7 +798,11 @@ function ChartLegend({ indicators }: { indicators: ChartIndicatorSeries[] }) {
       {priceIndicators.map((ind) => (
         <span key={ind.key} className="inline-flex items-center gap-1.5">
           <svg width={16} height={8} aria-hidden="true">
-            <line x1={1} x2={15} y1={4} y2={4} {...indicatorStroke(ind)} />
+            {ind.kind === 'markers' ? (
+              <g>{studyMarkerShape(ind.shape ?? 'circle', 8, 4, 6, ind.color ?? '#c9a227')}</g>
+            ) : (
+              <line x1={1} x2={15} y1={4} y2={4} {...indicatorStroke(ind)} />
+            )}
           </svg>
           {ind.label}
         </span>
