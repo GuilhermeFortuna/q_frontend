@@ -1305,10 +1305,7 @@ export const handlers = [
     const etag = `"${record.metadata.revision}"`
     const content = record.content
     if (content.kind === 'plotly') {
-      return HttpResponse.json(
-        { kind: 'plotly', figure: content.figure },
-        { headers: { ETag: etag } },
-      )
+      return HttpResponse.json(content.figure, { headers: { ETag: etag } })
     }
     if (content.mediaType === 'image/svg+xml') {
       return new HttpResponse(content.markup, {

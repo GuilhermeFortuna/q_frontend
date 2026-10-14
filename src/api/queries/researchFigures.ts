@@ -68,11 +68,12 @@ export async function fetchResearchFigurePlotly(
   figureId: string,
   revision: number,
 ): Promise<ResearchFigurePlotly> {
-  const { data } = await apiClient.get<ResearchFigurePlotly>(
+  // The content endpoint serves the stored Plotly JSON itself (`{ data, layout }`).
+  const { data } = await apiClient.get<ResearchFigurePlotly['figure']>(
     `/api/v1/research/figures/${encodeURIComponent(figureId)}/content`,
     { params: { rev: revision } },
   )
-  return data
+  return { kind: 'plotly', figure: data }
 }
 
 export async function fetchResearchFigureBlob(figureId: string, revision: number): Promise<Blob> {
