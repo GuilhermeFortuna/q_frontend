@@ -85,25 +85,56 @@ export function buildStudyRenderModel(
     }
 
     const outputs: OscillatorOutputRender[] = []
+    const alignedByKey = new Map<string, (number | null)[]>()
+    const metaByKey = new Map(study.series.map((meta) => [meta.key, meta]))
     for (const meta of study.series) {
       const raw = valuesByKey.get(meta.key)
-      if (!raw) continue
+      if (raw)
+        alignedByKey.set(meta.key, alignSeriesValuesToBars(barTimes, response.timestamps, raw))
+    }
+    for (const meta of study.series) {
+      const values = alignedByKey.get(meta.key)
+      if (!values) continue
       const color = meta.color ?? STUDY_SERIES_PALETTE[paletteIndex++ % STUDY_SERIES_PALETTE.length]
-      const values = alignSeriesValuesToBars(barTimes, response.timestamps, raw)
       const label = `${study.name} · ${meta.label}`
+      const kind = meta.kind ?? 'line'
+      const fillValues = meta.fillTo ? alignedByKey.get(meta.fillTo) : undefined
+      const fillKind = meta.fillTo ? (metaByKey.get(meta.fillTo)?.kind ?? 'line') : undefined
+      const common = {
+        kind,
+        shape: meta.shape ?? 'circle',
+        size: meta.size ?? 8,
+        position: meta.position ?? 'value',
+        studyName: study.name,
+        seriesLabel: meta.label,
+      }
 
       if (meta.pane === 'price') {
         priceLines.push({
-          kind: 'line',
           instanceKey: `study:${study.studyId}:${meta.key}`,
           catalogId: `study:${study.studyId}`,
           outputKey: meta.key,
           label,
           values,
+          ...common,
+          fillValues,
+          fillKind,
+          fillOpacity: meta.fillOpacity ?? 0.15,
           config: studyConfig(study.studyId, color, meta.lineStyle, meta.lineWidth),
         })
       } else {
-        outputs.push({ outputKey: meta.key, label, values, color })
+        outputs.push({
+          outputKey: meta.key,
+          label,
+          values,
+          color,
+          ...common,
+          baseline: meta.baseline ?? 0,
+          negativeColor: meta.negativeColor ?? undefined,
+          fillValues,
+          fillKind,
+          fillOpacity: meta.fillOpacity ?? 0.15,
+        })
       }
     }
 

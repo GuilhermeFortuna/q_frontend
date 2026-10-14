@@ -15,13 +15,31 @@ export type PriceBandRenderGroup = {
   config: IndicatorConfig
 }
 
+export type StudySeriesKind = 'line' | 'step' | 'markers' | 'histogram'
+export type StudyMarkerShape =
+  | 'circle'
+  | 'square'
+  | 'diamond'
+  | 'triangle-up'
+  | 'triangle-down'
+  | 'cross'
+export type StudyMarkerPosition = 'value' | 'above-bar' | 'below-bar'
+
 export type PriceLineRenderGroup = {
-  kind: 'line'
+  kind: StudySeriesKind
   instanceKey: string
   catalogId: string
   outputKey: string
   label: string
   values: (number | null)[]
+  fillValues?: (number | null)[]
+  fillKind?: StudySeriesKind
+  fillOpacity?: number
+  shape?: StudyMarkerShape
+  size?: number
+  position?: StudyMarkerPosition
+  studyName?: string
+  seriesLabel?: string
   config: IndicatorConfig
 }
 
@@ -30,6 +48,17 @@ export type OscillatorOutputRender = {
   label: string
   values: (number | null)[]
   color?: string
+  kind?: StudySeriesKind
+  baseline?: number
+  negativeColor?: string
+  fillValues?: (number | null)[]
+  fillKind?: StudySeriesKind
+  fillOpacity?: number
+  shape?: StudyMarkerShape
+  size?: number
+  position?: StudyMarkerPosition
+  studyName?: string
+  seriesLabel?: string
   unavailableReason?: string | null
 }
 
@@ -90,6 +119,8 @@ export function buildIndicatorRenderModel(
       const values = alignSeriesValuesToBars(barTimestamps, series.timestamps, raw.values)
       const renderOutput: OscillatorOutputRender = {
         outputKey: outputSpec.key,
+        kind:
+          outputSpec.pane === 'oscillator' && outputSpec.key === 'histogram' ? 'histogram' : 'line',
         label: outputSpec.label,
         values,
         color: config.style?.outputColors?.[outputSpec.key] ?? config.style?.color,
