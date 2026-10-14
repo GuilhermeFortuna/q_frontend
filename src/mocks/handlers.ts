@@ -27,6 +27,12 @@ import {
 } from '@/mocks/researchFigures'
 import type { ResearchFigureBulkDelete } from '@/types/researchFigures'
 import {
+  deleteMockResearchStudy,
+  getMockResearchStudySeries,
+  listMockResearchStudies,
+  renameMockResearchStudy,
+} from '@/mocks/researchStudies'
+import {
   getMockBacktestRunDetail,
   getMockOptimizationResults,
   getMockOptimizationAnalytics,
@@ -1257,6 +1263,46 @@ export const handlers = [
     }
     deletedStrategySearchRunIds.add(runId)
     mockStrategySearchJobs.delete(runId)
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('*/api/v1/research/studies', ({ request }) => {
+    const symbol = new URL(request.url).searchParams.get('symbol') ?? ''
+    return HttpResponse.json({ items: listMockResearchStudies(symbol) })
+  }),
+
+  http.get('*/api/v1/research/studies/:studyId/series', ({ params, request }) => {
+    const url = new URL(request.url)
+    const series = getMockResearchStudySeries(
+      String(params.studyId),
+      url.searchParams.get('start') ?? '',
+      url.searchParams.get('end') ?? '',
+    )
+    if (!series) {
+      return HttpResponse.json({ code: 'not_found', message: 'Study not found' }, { status: 404 })
+    }
+    return HttpResponse.json(series)
+  }),
+
+  http.patch('*/api/v1/research/studies/:studyId', async ({ params, request }) => {
+    const body = (await request.json()) as { name: string }
+    const result = renameMockResearchStudy(String(params.studyId), body.name)
+    if (result === null) {
+      return HttpResponse.json({ code: 'not_found', message: 'Study not found' }, { status: 404 })
+    }
+    if (result === 'conflict') {
+      return HttpResponse.json(
+        { code: 'conflict', message: 'Study name already exists' },
+        { status: 409 },
+      )
+    }
+    return HttpResponse.json(result)
+  }),
+
+  http.delete('*/api/v1/research/studies/:studyId', ({ params }) => {
+    if (!deleteMockResearchStudy(String(params.studyId))) {
+      return HttpResponse.json({ code: 'not_found', message: 'Study not found' }, { status: 404 })
+    }
     return new HttpResponse(null, { status: 204 })
   }),
 

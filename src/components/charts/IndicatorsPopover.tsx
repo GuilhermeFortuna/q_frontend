@@ -9,12 +9,16 @@ type IndicatorsPopoverProps = {
   indicators: IndicatorConfig[]
   onChange: (indicators: IndicatorConfig[]) => void
   previewContext?: IndicatorPreviewContext
+  symbol?: string
+  timeframe?: string
 }
 
 export function IndicatorsPopover({
   indicators,
   onChange,
   previewContext,
+  symbol,
+  timeframe,
 }: IndicatorsPopoverProps) {
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -47,6 +51,8 @@ export function IndicatorsPopover({
         onChange={onChange}
         previewContext={previewContext}
         triggerRef={triggerRef}
+        symbol={symbol}
+        timeframe={timeframe}
       />
     </div>
   )
