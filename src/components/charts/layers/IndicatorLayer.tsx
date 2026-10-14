@@ -7,10 +7,12 @@ import { BRASS_COLOR } from '@/components/charts/types/chart'
 import {
   bandsAreaPath,
   linePath,
+  pairedFillPath,
+  stepPath,
   visibleTimestampSet,
 } from '@/components/charts/utils/indicatorPaths'
 import type { OhlcvBar } from '@/types/api'
-import { studyMarkerShape } from '@/components/charts/layers/MarkerGlyph'
+import { studyMarkerShape, studyMarkerY } from '@/components/charts/layers/MarkerGlyph'
 
 type IndicatorLayerProps = {
   allBars: OhlcvBar[]
@@ -20,74 +22,6 @@ type IndicatorLayerProps = {
   model: IndicatorRenderModel
   left: number
   phase?: 'all' | 'fills' | 'overlays'
-}
-
-function stepPath(
-  values: (number | null)[],
-  bars: OhlcvBar[],
-  visible: Set<string>,
-  xScale: BandScale,
-  yScale: LinearScale,
-) {
-  let d = ''
-  let previous: { x: number; y: number } | null = null
-  for (let i = 0; i < bars.length; i += 1) {
-    const value = visible.has(bars[i].timestamp) ? values[i] : null
-    if (value == null) {
-      previous = null
-      continue
-    }
-    const x = (xScale(bars[i].timestamp) ?? 0) + xScale.bandwidth() / 2
-    const y = yScale(value)
-    d += previous ? ` H ${x} V ${y}` : ` M ${x} ${y}`
-    previous = { x, y }
-  }
-  return d
-}
-
-function pairedFillPath(
-  a: (number | null)[],
-  b: (number | null)[] | undefined,
-  aKind: 'line' | 'step',
-  bKind: 'line' | 'step',
-  bars: OhlcvBar[],
-  visible: Set<string>,
-  xScale: BandScale,
-  yScale: LinearScale,
-) {
-  if (!b) return ''
-  let d = ''
-  let segment: Array<{ x: number; a: number; b: number }> = []
-  const boundary = (side: 'a' | 'b', kind: 'line' | 'step') => {
-    const points: Array<{ x: number; y: number }> = []
-    segment.forEach((point, i) => {
-      const y = yScale(point[side])
-      if (i > 0 && kind === 'step') points.push({ x: point.x, y: yScale(segment[i - 1][side]) })
-      points.push({ x: point.x, y })
-    })
-    return points
-  }
-  const flush = () => {
-    if (segment.length > 1) {
-      const top = boundary('a', aKind)
-      const bottom = boundary('b', bKind).reverse()
-      d += ` M ${top[0].x} ${top[0].y} ${top
-        .slice(1)
-        .map((p) => `L ${p.x} ${p.y}`)
-        .join(' ')} ${bottom.map((p) => `L ${p.x} ${p.y}`).join(' ')} Z`
-    }
-    segment = []
-  }
-  for (let i = 0; i < bars.length; i += 1) {
-    const x = (xScale(bars[i].timestamp) ?? 0) + xScale.bandwidth() / 2
-    if (!visible.has(bars[i].timestamp) || a[i] == null || b[i] == null) {
-      flush()
-      continue
-    }
-    segment.push({ x, a: a[i]!, b: b[i]! })
-  }
-  flush()
-  return d.trim()
 }
 
 function getStrokeDasharray(style?: 'solid' | 'dashed' | 'dotted'): string | undefined {
@@ -163,12 +97,7 @@ function IndicatorLayerImpl({
               return
             const x = xScale(visibleBar.timestamp)
             if (x == null) return
-            const y =
-              entry.position === 'above-bar'
-                ? yScale(visibleBar.high) - 8 - (entry.size ?? 8) / 2
-                : entry.position === 'below-bar'
-                  ? yScale(visibleBar.low) + 8 + (entry.size ?? 8) / 2
-                  : yScale(value)
+            const y = studyMarkerY(entry.position, value, visibleBar, entry.size ?? 8, yScale)
             elements.push(
               <g
                 key={`${entry.instanceKey}-${visibleBar.timestamp}`}

@@ -1,8 +1,21 @@
 import type { ReactNode } from 'react'
 import type { ChartMarker } from '@/components/charts/types/chart'
 import type { LinearScale } from '@/components/charts/types/scales'
-import type { StudyMarkerShape } from '@/lib/market/buildIndicatorRenderModel'
+import type { StudyMarkerPosition, StudyMarkerShape } from '@/lib/market/buildIndicatorRenderModel'
 import { BEAR_COLOR, BULL_COLOR } from '@/components/charts/types/chart'
+
+/** Vertical centre of a study marker: at its value, or a fixed pixel gap above or below the bar. */
+export function studyMarkerY(
+  position: StudyMarkerPosition | null | undefined,
+  value: number,
+  bar: { high: number; low: number },
+  size: number,
+  priceScale: LinearScale,
+): number {
+  if (position === 'above-bar') return priceScale(bar.high) - 8 - size / 2
+  if (position === 'below-bar') return priceScale(bar.low) + 8 + size / 2
+  return priceScale(value)
+}
 
 export function studyMarkerShape(
   shape: StudyMarkerShape,
