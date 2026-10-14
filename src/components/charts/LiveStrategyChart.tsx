@@ -4,10 +4,9 @@ import { scaleBand, scaleLinear } from '@visx/scale'
 import { localPoint } from '@visx/event'
 
 import { CandlestickLayer } from '@/components/charts/layers/CandlestickLayer'
+import { liveStrategyMarkerGlyph } from '@/components/charts/layers/MarkerGlyph'
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 import {
-  BULL_COLOR,
-  BEAR_COLOR,
   GRID_COLOR,
   type ChartMarker,
   type PrecomputedIndicatorSeries,
@@ -53,56 +52,6 @@ function seriesDomain(values: (number | null)[]): [number, number] {
   const max = Math.max(...nums)
   const pad = (max - min) * 0.1 || Math.abs(max) * 0.1 || 1
   return [min - pad, max + pad]
-}
-
-function markerGlyph(
-  marker: ChartMarker,
-  cx: number,
-  barHigh: number,
-  barLow: number,
-  priceScale: LinearScale,
-) {
-  const detail = <title>{marker.detail}</title>
-  if (marker.kind === 'buy') {
-    const y = priceScale(barLow) + 14
-    return (
-      <g key={marker.id} data-testid={`live-chart-marker-${marker.id}`} data-kind="buy">
-        <path
-          d={`M ${cx} ${y - 9} L ${cx - 6} ${y + 3} L ${cx + 6} ${y + 3} Z`}
-          fill={BULL_COLOR}
-        />
-        {detail}
-      </g>
-    )
-  }
-  if (marker.kind === 'sell') {
-    const y = priceScale(barHigh) - 14
-    return (
-      <g key={marker.id} data-testid={`live-chart-marker-${marker.id}`} data-kind="sell">
-        <path
-          d={`M ${cx} ${y + 9} L ${cx - 6} ${y - 3} L ${cx + 6} ${y - 3} Z`}
-          fill={BEAR_COLOR}
-        />
-        {detail}
-      </g>
-    )
-  }
-  if (marker.kind === 'close') {
-    const y = priceScale(barHigh) - 14
-    return (
-      <g key={marker.id} data-testid={`live-chart-marker-${marker.id}`} data-kind="close">
-        <rect x={cx - 5} y={y - 5} width={10} height={10} rx={2} fill="#e5e7eb" />
-        {detail}
-      </g>
-    )
-  }
-  const y = marker.price != null ? priceScale(marker.price) : priceScale((barHigh + barLow) / 2)
-  return (
-    <g key={marker.id} data-testid={`live-chart-marker-${marker.id}`} data-kind="fill">
-      <circle cx={cx} cy={y} r={3.5} fill="#f5f5f5" stroke="#0b1220" strokeWidth={1} />
-      {detail}
-    </g>
-  )
 }
 
 function ChartBody({
@@ -403,7 +352,7 @@ function ChartBody({
           const bar = barByTimestamp.get(marker.timestamp)
           if (!bar) return null
           const cx = x + bandwidth / 2
-          return markerGlyph(marker, cx, bar.high, bar.low, priceScale)
+          return liveStrategyMarkerGlyph(marker, cx, bar.high, bar.low, priceScale)
         })}
 
         {oscillators.map((series, index) => {
