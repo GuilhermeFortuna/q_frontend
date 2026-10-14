@@ -83,6 +83,8 @@ export function ChartToolbar({
           indicators={indicators}
           onChange={onIndicatorsChange}
           previewContext={indicatorPreviewContext}
+          symbol={symbol}
+          timeframe={selectedTimeframe}
         />
 
         {chartSettings && onChartSettingsChange ? (

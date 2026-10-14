@@ -45,6 +45,8 @@ import { DrawingLayer } from '@/components/charts/layers/DrawingLayer'
 import { ChevronRight } from 'lucide-react'
 
 import { useMarketIndicatorRenderModel } from '@/components/charts/hooks/useIndicatorSeries'
+import { useMarketStudyRenderModel } from '@/components/charts/hooks/useStudyRenderModel'
+import { mergeIndicatorRenderModels } from '@/lib/market/buildStudyRenderModel'
 import { newDrawingId } from '@/components/charts/hooks/useDrawings'
 import type { OhlcvBar } from '@/types/api'
 
@@ -137,9 +139,20 @@ const ChartInner = forwardRef<
     indicators,
   )
 
+  const { model: studyModel, notice: studyNotice } = useMarketStudyRenderModel(
+    symbol,
+    timeframe,
+    data,
+  )
+  const renderModel = useMemo(
+    () => mergeIndicatorRenderModels(indicatorModel, studyModel),
+    [indicatorModel, studyModel],
+  )
+  const indicatorNoticeText = [indicatorNotice, studyNotice].filter(Boolean).join(' ')
+
   const oscillatorPaneKeys = useMemo(
-    () => indicatorModel.oscillators.map((group) => group.instanceKey),
-    [indicatorModel.oscillators],
+    () => renderModel.oscillators.map((group) => group.instanceKey),
+    [renderModel.oscillators],
   )
 
   const layout = useMemo(
@@ -151,7 +164,7 @@ const ChartInner = forwardRef<
     viewportSlots,
     layout,
     CHART_MARGINS,
-    indicatorModel.oscillators,
+    renderModel.oscillators,
     pricePanOffset,
     priceScaleFactor,
   )
@@ -424,13 +437,13 @@ const ChartInner = forwardRef<
         </div>
       )}
 
-      {indicatorNotice && (
+      {indicatorNoticeText && (
         <div
           role="status"
           data-testid="market-indicator-notice"
           className="bg-carbon-900/95 absolute bottom-8 left-3 z-10 max-w-[70%] rounded border border-rose-500/30 px-2 py-1 font-mono text-[10px] text-rose-300"
         >
-          Indicators: {indicatorNotice}
+          Indicators: {indicatorNoticeText}
         </div>
       )}
 
@@ -538,11 +551,11 @@ const ChartInner = forwardRef<
           visibleBars={visibleBars}
           xScale={scales.xScale}
           yScale={scales.priceScale}
-          model={indicatorModel}
+          model={renderModel}
           left={CHART_MARGINS.left}
         />
 
-        {indicatorModel.oscillators.map((group, index) => {
+        {renderModel.oscillators.map((group, index) => {
           const slot = layout.oscillators[index]
           const scaleEntry = scales.oscillatorScales[index]
           if (!slot || !scaleEntry) return null

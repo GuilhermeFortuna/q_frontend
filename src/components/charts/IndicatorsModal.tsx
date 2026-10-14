@@ -22,6 +22,7 @@ import {
   parameterHelp,
 } from '@/lib/market/indicatorDocumentation'
 import { IndicatorGuide } from './IndicatorGuide'
+import { StudiesGroup } from './StudiesGroup'
 import { IndicatorPreview, type IndicatorPreviewContext } from './IndicatorPreview'
 import type { IndicatorCatalogEntry, IndicatorParameterSpec } from '../../../contracts/api'
 
@@ -33,6 +34,10 @@ export type IndicatorsModalProps = {
   previewContext?: IndicatorPreviewContext
   /** Restore the toolbar control when the conditionally mounted modal closes. */
   triggerRef?: React.RefObject<HTMLButtonElement | null>
+  /** When set, the Studies group lists the studies published for this symbol. */
+  symbol?: string
+  /** The chart's timeframe; studies on another timeframe are listed but disabled. */
+  timeframe?: string
 }
 
 const PRESET_COLORS = [
@@ -114,6 +119,8 @@ function IndicatorsModalBody({
   onChange,
   previewContext,
   triggerRef,
+  symbol,
+  timeframe,
 }: Omit<IndicatorsModalProps, 'isOpen'>) {
   const catalogQuery = useIndicatorCatalog()
   const catalog = useMemo(() => catalogQuery.data?.indicators ?? [], [catalogQuery.data])
@@ -322,6 +329,7 @@ function IndicatorsModalBody({
               className="min-h-0 flex-1 space-y-5 overflow-y-auto px-2 pb-4"
               data-testid="indicator-catalog-list"
             >
+              {symbol && <StudiesGroup symbol={symbol} timeframe={timeframe ?? ''} />}
               {catalogQuery.isPending && (
                 <p role="status" className="text-silver-300 px-3 py-6 text-xs">
                   Loading indicators…
