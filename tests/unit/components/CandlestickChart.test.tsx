@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll, afterAll, afterEach } from 'vitest'
+import { describe, expect, it, beforeAll, afterAll, afterEach, vi } from 'vitest'
 import { createRef, type ComponentProps } from 'react'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -224,7 +224,7 @@ describe('CandlestickChart', () => {
       expect(document.querySelector('[data-testid="volume-profile-layer"]')).toBeTruthy(),
     )
     const row = document.querySelector('[data-testid="volume-profile-poc-row"]')!
-    const interaction = row.closest('svg')!.lastElementChild!
+    const interaction = screen.getByTestId('chart-interaction')
     fireEvent.mouseMove(interaction, {
       clientX: Number(row.getAttribute('x')) + 1,
       clientY: Number(row.getAttribute('y')) + Number(row.getAttribute('height')) / 2,
@@ -282,5 +282,73 @@ describe('CandlestickChart', () => {
       ).toBeTruthy()
       expect(document.querySelector('[data-testid="market-oscillator-rsi"]')).toBeTruthy()
     })
+  })
+})
+
+describe('oscillator pane layout', () => {
+  const atrIndicators: IndicatorConfig[] = [
+    { id: 'atr_fraction', enabled: true, parameters: { period: 14 } },
+  ]
+
+  async function waitForOscillatorPane() {
+    await screen.findByTestId('market-oscillator-atr_fraction', undefined, { timeout: 5000 })
+  }
+
+  // Pane keys include the indicator parameters, so match the id by prefix.
+  function paneHandle(prefix: string) {
+    const element = document.querySelector(`[data-testid^="${prefix}"]`)
+    if (!element) throw new Error(`No pane handle ${prefix}`)
+    return element as HTMLElement
+  }
+
+  it('commits a larger height when the oscillator top edge is dragged up', async () => {
+    const onPaneLayoutChange = vi.fn()
+    renderChart({ indicators: atrIndicators, onPaneLayoutChange })
+    await waitForChartSvg()
+    await waitForOscillatorPane()
+
+    const strip = paneHandle('pane-resize-atr_fraction')
+    fireEvent.mouseDown(strip, { button: 0, clientY: 100 })
+    fireEvent.mouseMove(window, { clientY: 80 })
+    fireEvent.mouseUp(window)
+
+    expect(onPaneLayoutChange).toHaveBeenCalledTimes(1)
+    const prefs = onPaneLayoutChange.mock.calls[0][0]
+    // Dragging up grows the oscillator and takes the space from volume above it.
+    const heights = prefs.heights as Record<string, number>
+    const oscillatorKey = Object.keys(heights).find((key) => key.startsWith('atr_fraction'))!
+    expect(heights[oscillatorKey]).toBeGreaterThan(0.14)
+    expect(heights.volume).toBeLessThan(0.18)
+  })
+
+  it('moves an oscillator above the price pane on Ctrl+drag', async () => {
+    const onPaneLayoutChange = vi.fn()
+    renderChart({ indicators: atrIndicators, onPaneLayoutChange })
+    await waitForChartSvg()
+    await waitForOscillatorPane()
+
+    const body = paneHandle('pane-move-atr_fraction')
+    fireEvent.mouseDown(body, { button: 0, clientY: 300, ctrlKey: true })
+    fireEvent.mouseMove(window, { clientY: 0 })
+    fireEvent.mouseUp(window)
+
+    expect(onPaneLayoutChange).toHaveBeenCalledTimes(1)
+    const order: string[] = onPaneLayoutChange.mock.calls[0][0].order
+    expect(order[0]).toMatch(/^atr_fraction/)
+    expect(order.slice(1)).toEqual(['price', 'volume'])
+  })
+
+  it('does not move a pane without Ctrl', async () => {
+    const onPaneLayoutChange = vi.fn()
+    renderChart({ indicators: atrIndicators, onPaneLayoutChange })
+    await waitForChartSvg()
+    await waitForOscillatorPane()
+
+    const body = paneHandle('pane-move-atr_fraction')
+    fireEvent.mouseDown(body, { button: 0, clientY: 300 })
+    fireEvent.mouseMove(window, { clientY: 0 })
+    fireEvent.mouseUp(window)
+
+    expect(onPaneLayoutChange).not.toHaveBeenCalled()
   })
 })

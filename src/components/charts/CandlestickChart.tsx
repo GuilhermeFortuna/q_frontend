@@ -21,10 +21,11 @@ import {
   type DrawingTool,
   type IndicatorConfig,
   type ChartSettings,
+  type PaneLayoutPrefs,
   DEFAULT_SETTINGS,
 } from '@/components/charts/types/chart'
+import { computePaneLayout } from '@/components/charts/paneLayout'
 import {
-  computePaneLayout,
   computePriceDomain,
   dataPointFromEvent,
   processBars,
@@ -38,6 +39,7 @@ import { VolumeLayer } from '@/components/charts/layers/VolumeLayer'
 import { GridLayer } from '@/components/charts/layers/GridLayer'
 import { ChartAxes } from '@/components/charts/layers/ChartAxes'
 import { ChartAxisDragHandles } from '@/components/charts/layers/ChartAxisDragHandles'
+import { OscillatorPaneHandles } from '@/components/charts/layers/OscillatorPaneHandles'
 import { IndicatorLayer } from '@/components/charts/layers/IndicatorLayer'
 import { OscillatorPane } from '@/components/charts/layers/OscillatorPane'
 import { CrosshairLayer } from '@/components/charts/layers/CrosshairLayer'
@@ -59,6 +61,8 @@ import {
 } from '@/components/charts/layers/VolumeProfileLayer'
 import { useDebounce } from '@/hooks/useDebounce'
 
+const EMPTY_PANE_PREFS: PaneLayoutPrefs = {}
+
 export type CandlestickChartHandle = {
   shiftViewport: (delta: number) => void
   panBy: (barDelta: number) => void
@@ -79,6 +83,8 @@ export type CandlestickChartProps = {
   onHoverBar?: (bar: OhlcvBar | null) => void
   onViewportChange?: (viewport: ChartViewport) => void
   chartSettings?: ChartSettings
+  paneLayout?: PaneLayoutPrefs
+  onPaneLayoutChange?: (prefs: PaneLayoutPrefs) => void
 }
 
 const ChartInner = forwardRef<
@@ -101,6 +107,8 @@ const ChartInner = forwardRef<
     onHoverBar,
     onViewportChange,
     chartSettings = DEFAULT_SETTINGS,
+    paneLayout,
+    onPaneLayoutChange,
   },
   ref,
 ) {
@@ -212,9 +220,20 @@ const ChartInner = forwardRef<
     [renderModel.oscillators],
   )
 
+  // A drag previews its layout here; the saved preference is only written on release.
+  const [paneDraft, setPaneDraft] = useState<PaneLayoutPrefs | null>(null)
+  const panePrefs = paneDraft ?? paneLayout ?? EMPTY_PANE_PREFS
+  const commitPaneLayout = useCallback(
+    (prefs: PaneLayoutPrefs) => {
+      setPaneDraft(null)
+      onPaneLayoutChange?.(prefs)
+    },
+    [onPaneLayoutChange],
+  )
+
   const layout = useMemo(
-    () => computePaneLayout(width, height, oscillatorPaneKeys, CHART_MARGINS),
-    [width, height, oscillatorPaneKeys],
+    () => computePaneLayout(width, height, oscillatorPaneKeys, CHART_MARGINS, panePrefs),
+    [width, height, oscillatorPaneKeys, panePrefs],
   )
 
   const scales = useChartScales(
@@ -722,10 +741,10 @@ const ChartInner = forwardRef<
           phase="overlays"
         />
 
-        {renderModel.oscillators.map((group, index) => {
-          const slot = layout.oscillators[index]
-          const scaleEntry = scales.oscillatorScales[index]
-          if (!slot || !scaleEntry) return null
+        {layout.oscillators.map((slot) => {
+          const group = renderModel.oscillators.find((item) => item.instanceKey === slot.key)
+          const scaleEntry = scales.oscillatorScales.find((item) => item.key === slot.key)
+          if (!group || !scaleEntry) return null
           return (
             <OscillatorPane
               key={group.instanceKey}
@@ -786,6 +805,7 @@ const ChartInner = forwardRef<
         />
 
         <rect
+          data-testid="chart-interaction"
           x={CHART_MARGINS.left}
           y={CHART_MARGINS.top}
           width={layout.innerWidth}
@@ -797,6 +817,15 @@ const ChartInner = forwardRef<
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
           onDoubleClick={handleDoubleClick}
+        />
+
+        <OscillatorPaneHandles
+          layout={layout}
+          margins={CHART_MARGINS}
+          prefs={panePrefs}
+          onPreview={setPaneDraft}
+          onCommit={commitPaneLayout}
+          disabled={activeDrawingTool !== 'cursor'}
         />
       </svg>
     </div>
