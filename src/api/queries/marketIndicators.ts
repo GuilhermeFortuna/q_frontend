@@ -4,6 +4,7 @@ import { isAxiosError } from 'axios'
 import { apiClient } from '@/api/client'
 import { toApiTimeframe } from '@/lib/market/timeframes'
 import { indicatorInstanceKey, type IndicatorConfig } from '@/lib/market/indicatorConfig'
+import { isOverlayOnlyIndicator } from '@/lib/market/volumeProfileConfig'
 import { barRangeForSeries } from '@/lib/market/indicatorSeriesAlign'
 import type {
   IndicatorCatalogEntry,
@@ -11,6 +12,8 @@ import type {
   MarketIndicatorSeriesOutput,
   MarketIndicatorSeriesRequest,
   MarketIndicatorSeriesResponse,
+  MarketVolumeProfileRequest,
+  MarketVolumeProfileResponse,
 } from '../../../contracts/api'
 
 export const marketIndicatorKeys = {
@@ -18,6 +21,24 @@ export const marketIndicatorKeys = {
   catalog: () => [...marketIndicatorKeys.all, 'catalog'] as const,
   series: (symbol: string, timeframe: string, start: string, end: string, indicatorsKey: string) =>
     [...marketIndicatorKeys.all, 'series', symbol, timeframe, start, end, indicatorsKey] as const,
+  volumeProfile: (
+    symbol: string,
+    segment: string,
+    start: string,
+    end: string,
+    rowTicks: number,
+    valueArea: number,
+  ) =>
+    [
+      ...marketIndicatorKeys.all,
+      'volume-profile',
+      symbol,
+      segment,
+      start,
+      end,
+      rowTicks,
+      valueArea,
+    ] as const,
 }
 
 /** One response, with each indicator's outputs filed under the instance that asked for them. */
@@ -34,6 +55,19 @@ export type RequestedIndicator = {
 
 export async function fetchIndicatorCatalog(): Promise<IndicatorCatalogResponse> {
   const { data } = await apiClient.get<IndicatorCatalogResponse>('/api/v1/market/indicators')
+  return data
+}
+
+export async function fetchMarketVolumeProfile(
+  symbol: string,
+  body: MarketVolumeProfileRequest,
+  signal?: AbortSignal,
+): Promise<MarketVolumeProfileResponse> {
+  const { data } = await apiClient.post<MarketVolumeProfileResponse>(
+    `/api/v1/market/volume-profile/${encodeURIComponent(symbol)}`,
+    body,
+    { signal },
+  )
   return data
 }
 
@@ -85,7 +119,9 @@ export function unknownIndicatorIds(
   const known = new Set(catalog.map((entry) => entry.id))
   return [
     ...new Set(
-      indicators.filter((item) => item.enabled && !known.has(item.id)).map((item) => item.id),
+      indicators
+        .filter((item) => item.enabled && !known.has(item.id) && !isOverlayOnlyIndicator(item.id))
+        .map((item) => item.id),
     ),
   ]
 }
@@ -148,6 +184,49 @@ export function useMarketIndicatorSeriesQuery(
       return seriesByInstance(response, requested)
     },
     enabled: symbol.length > 0 && requested.length > 0 && range !== null,
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useMarketVolumeProfileQuery(
+  symbol: string,
+  enabled: boolean,
+  segment: 'session' | 'visibleRange',
+  dataBars: { timestamp: string }[],
+  visibleBars: { timestamp: string }[],
+  rowTicks: number,
+  valueArea: number,
+) {
+  const sessionRange = barRangeForSeries(dataBars)
+  const visibleRange = barRangeForSeries(visibleBars)
+  const apiSegment = segment === 'visibleRange' ? 'range' : 'session'
+  const range = segment === 'visibleRange' ? visibleRange : sessionRange
+
+  return useQuery({
+    queryKey: marketIndicatorKeys.volumeProfile(
+      symbol,
+      apiSegment,
+      range?.start ?? '',
+      range?.end ?? '',
+      rowTicks,
+      valueArea,
+    ),
+    queryFn: async ({ signal }) => {
+      if (!range) return { segments: [], unavailableReason: null }
+      return fetchMarketVolumeProfile(
+        symbol,
+        {
+          start: range.start,
+          end: range.end,
+          segment: apiSegment,
+          rowTicks,
+          valueArea,
+        },
+        signal,
+      )
+    },
+    enabled: symbol.length > 0 && enabled && range !== null,
     staleTime: 30_000,
     placeholderData: keepPreviousData,
   })

@@ -50,6 +50,13 @@ import { mergeIndicatorRenderModels } from '@/lib/market/buildStudyRenderModel'
 import { studyMarkerShape } from '@/components/charts/layers/MarkerGlyph'
 import { newDrawingId } from '@/components/charts/hooks/useDrawings'
 import type { OhlcvBar } from '@/types/api'
+import { useMarketVolumeProfileQuery } from '@/api/queries/marketIndicators'
+import { volumeProfileFromIndicators } from '@/lib/market/volumeProfileConfig'
+import {
+  VolumeProfileLayer,
+  type VolumeProfileHoverRow,
+} from '@/components/charts/layers/VolumeProfileLayer'
+import { useDebounce } from '@/hooks/useDebounce'
 
 export type CandlestickChartHandle = {
   shiftViewport: (delta: number) => void
@@ -122,6 +129,44 @@ const ChartInner = forwardRef<
     [processed, viewport],
   )
   const visibleBars = useMemo(() => barsFromSlots(viewportSlots), [viewportSlots])
+  const volumeProfile = volumeProfileFromIndicators(indicators)
+  const visibleRangeSignature = useMemo(
+    () =>
+      visibleBars.length > 0
+        ? `${visibleBars[0].timestamp}|${visibleBars[visibleBars.length - 1].timestamp}|${visibleBars.length}`
+        : '',
+    [visibleBars],
+  )
+  const debouncedVisibleSignature = useDebounce(
+    visibleRangeSignature,
+    volumeProfile.enabled && volumeProfile.settings.segment === 'visibleRange' ? 300 : 0,
+  )
+  const profileBarsRef = useRef(visibleBars)
+  const barsForVolumeProfile = useMemo(() => {
+    if (!volumeProfile.enabled) return visibleBars
+    if (volumeProfile.settings.segment !== 'visibleRange') return data
+    if (debouncedVisibleSignature !== visibleRangeSignature) {
+      return profileBarsRef.current
+    }
+    profileBarsRef.current = visibleBars
+    return visibleBars
+  }, [
+    data,
+    debouncedVisibleSignature,
+    visibleBars,
+    visibleRangeSignature,
+    volumeProfile.enabled,
+    volumeProfile.settings.segment,
+  ])
+  const volumeProfileQuery = useMarketVolumeProfileQuery(
+    symbol,
+    volumeProfile.enabled,
+    volumeProfile.settings.segment,
+    data,
+    barsForVolumeProfile,
+    volumeProfile.settings.rowTicks,
+    volumeProfile.settings.valueArea,
+  )
 
   const isViewportUnset = viewport.startIndex === 0 && viewport.endIndex === 0
   const isAtLatestCandle =
@@ -149,7 +194,10 @@ const ChartInner = forwardRef<
     () => mergeIndicatorRenderModels(indicatorModel, studyModel),
     [indicatorModel, studyModel],
   )
-  const indicatorNoticeText = [indicatorNotice, studyNotice].filter(Boolean).join(' ')
+  const volumeProfileNotice = volumeProfileQuery.data?.unavailableReason ?? null
+  const indicatorNoticeText = [indicatorNotice, studyNotice, volumeProfileNotice]
+    .filter(Boolean)
+    .join(' ')
   const studyLegend = [
     ...renderModel.priceLines.filter((output) => output.studyName),
     ...renderModel.oscillators.flatMap((group) =>
@@ -177,6 +225,7 @@ const ChartInner = forwardRef<
   )
 
   const [hoveredBar, setHoveredBar] = useState<(typeof visibleBars)[0] | null>(null)
+  const [volumeProfileHover, setVolumeProfileHover] = useState<VolumeProfileHoverRow | null>(null)
   const [mouseY, setMouseY] = useState<number | null>(null)
   const [draftPoint, setDraftPoint] = useState<DataPoint | null>(null)
   const [draftDrawing, setDraftDrawing] = useState<DrawingObject | null>(null)
@@ -441,6 +490,39 @@ const ChartInner = forwardRef<
             <span className="text-silver-500 mr-1">V</span>
             <span className="text-silver-200">{hudInfo.volume}</span>
           </div>
+          {volumeProfileHover && (
+            <div
+              className="border-carbon-700/60 flex flex-wrap gap-x-3 gap-y-0.5 border-l pl-3"
+              data-testid="volume-profile-tooltip"
+            >
+              <span>
+                <span className="text-silver-500 mr-1">P</span>
+                <span className="text-silver-100">{volumeProfileHover.price.toFixed(2)}</span>
+              </span>
+              <span>
+                <span className="text-silver-500 mr-1">Tot</span>
+                <span className="text-silver-100">{volumeProfileHover.total.toLocaleString()}</span>
+              </span>
+              <span>
+                <span className="text-silver-500 mr-1">B</span>
+                <span className="text-emerald-400">{volumeProfileHover.buy.toLocaleString()}</span>
+              </span>
+              <span>
+                <span className="text-silver-500 mr-1">S</span>
+                <span className="text-rose-400">{volumeProfileHover.sell.toLocaleString()}</span>
+              </span>
+              <span>
+                <span className="text-silver-500 mr-1">U</span>
+                <span className="text-silver-200">
+                  {volumeProfileHover.unknown.toLocaleString()}
+                </span>
+              </span>
+              <span>
+                <span className="text-silver-500 mr-1">Δ</span>
+                <span className="text-silver-100">{volumeProfileHover.delta.toLocaleString()}</span>
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -594,6 +676,27 @@ const ChartInner = forwardRef<
           left={CHART_MARGINS.left}
           phase="fills"
         />
+
+        {volumeProfile.enabled &&
+        volumeProfileQuery.data &&
+        volumeProfileQuery.data.segments.length > 0 ? (
+          <VolumeProfileLayer
+            segments={volumeProfileQuery.data.segments}
+            segmentMode={volumeProfile.settings.segment}
+            allBars={processed}
+            visibleBars={visibleBars}
+            xScale={scales.xScale}
+            yScale={scales.priceScale}
+            left={CHART_MARGINS.left}
+            innerWidth={layout.innerWidth}
+            priceTop={layout.priceTop}
+            priceHeight={layout.priceHeight}
+            widthPercent={volumeProfile.settings.widthPercent}
+            splitBuySell={volumeProfile.settings.splitBuySell}
+            rowSize={volumeProfileQuery.data.rowSize}
+            onHoverRow={setVolumeProfileHover}
+          />
+        ) : null}
 
         <CandlestickLayer
           bars={visibleBars}

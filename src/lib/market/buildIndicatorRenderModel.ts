@@ -1,4 +1,4 @@
-import type { IndicatorCatalogEntry } from '../../../contracts/api'
+import type { IndicatorCatalogEntry, IndicatorOutputSpec } from '../../../contracts/api'
 import type { IndicatorSeriesByInstance } from '@/api/queries/marketIndicators'
 import { indicatorInstanceKey, type IndicatorConfig } from '@/lib/market/indicatorConfig'
 import { alignSeriesValuesToBars } from '@/lib/market/indicatorSeriesAlign'
@@ -83,6 +83,15 @@ function catalogById(catalog: IndicatorCatalogEntry[]): Map<string, IndicatorCat
   return new Map(catalog.map((entry) => [entry.id, entry]))
 }
 
+function renderKindForOutput(
+  entry: IndicatorCatalogEntry,
+  outputSpec: IndicatorOutputSpec,
+): StudySeriesKind {
+  if (outputSpec.kind === 'step') return 'step'
+  if (entry.id === 'macd' && outputSpec.key === 'histogram') return 'histogram'
+  return 'line'
+}
+
 export function buildIndicatorRenderModel(
   bars: OhlcvBar[],
   indicators: IndicatorConfig[],
@@ -121,7 +130,7 @@ export function buildIndicatorRenderModel(
       const values = alignSeriesValuesToBars(barTimestamps, series.timestamps, raw.values)
       const renderOutput: OscillatorOutputRender = {
         outputKey: outputSpec.key,
-        kind: entry.id === 'macd' && outputSpec.key === 'histogram' ? 'histogram' : 'line',
+        kind: renderKindForOutput(entry, outputSpec),
         label: outputSpec.label,
         values,
         color: config.style?.outputColors?.[outputSpec.key] ?? config.style?.color,
@@ -170,17 +179,15 @@ export function buildIndicatorRenderModel(
     }
 
     for (const output of priceOutputs) {
-      if (output.outputKey === 'line' || priceOutputs.length === 1) {
-        priceLines.push({
-          kind: 'line',
-          instanceKey: `${instanceKey}:${output.outputKey}`,
-          catalogId: config.id,
-          outputKey: output.outputKey,
-          label: output.label,
-          values: output.values,
-          config,
-        })
-      }
+      priceLines.push({
+        kind: output.kind ?? 'line',
+        instanceKey: `${instanceKey}:${output.outputKey}`,
+        catalogId: config.id,
+        outputKey: output.outputKey,
+        label: output.label,
+        values: output.values,
+        config,
+      })
     }
 
     if (oscillatorOutputs.length > 0) {

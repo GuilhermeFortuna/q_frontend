@@ -173,6 +173,61 @@ describe('CandlestickChart', () => {
     expect(screen.getByTestId('market-indicator-notice')).toHaveTextContent('retired_indicator')
   })
 
+  it('draws volume profile overlay when enabled', async () => {
+    const anchor = mockBars[mockBars.length - 1].close
+    server.use(
+      http.post('*/api/v1/market/volume-profile/:symbol', () =>
+        HttpResponse.json({
+          tickSize: 0.01,
+          rowSize: 0.01,
+          unavailableReason: null,
+          segments: [
+            {
+              start: mockBars[0].timestamp,
+              end: mockBars[mockBars.length - 1].timestamp,
+              total: 900,
+              buy: 500,
+              sell: 350,
+              unknown: 50,
+              trades: 10,
+              poc: anchor,
+              vah: anchor + 0.01,
+              val: anchor - 0.01,
+              rows: {
+                price: [anchor - 0.01, anchor, anchor + 0.01],
+                buy: [40, 200, 30],
+                sell: [30, 50, 80],
+                unknown: [5, 5, 0],
+              },
+            },
+          ],
+        }),
+      ),
+    )
+    renderChart({
+      indicators: [
+        {
+          id: 'volume_profile',
+          enabled: true,
+          parameters: {
+            segment: 'session',
+            rowTicks: 1,
+            valueArea: 0.7,
+            splitBuySell: true,
+            widthPercent: 25,
+          },
+        },
+      ],
+    })
+    await waitForChartSvg()
+    await waitFor(
+      () => {
+        expect(document.querySelector('[data-testid="volume-profile-layer"]')).toBeTruthy()
+      },
+      { timeout: 3000 },
+    )
+  })
+
   it('still renders migrated legacy SMA, Bollinger and RSI selections', async () => {
     const legacy = normalizeIndicatorConfigs([
       { type: 'sma', enabled: true, period: 5 },

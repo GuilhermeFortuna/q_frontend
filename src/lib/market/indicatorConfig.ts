@@ -13,7 +13,7 @@ export type IndicatorStyle = {
 export type IndicatorConfig = {
   id: string
   enabled: boolean
-  parameters: Record<string, number | string>
+  parameters: Record<string, number | string | boolean>
   style?: IndicatorStyle
 }
 
@@ -111,10 +111,10 @@ export function normalizeIndicatorConfig(raw: unknown): IndicatorConfig {
   if (!isRecord(raw) || typeof raw.id !== 'string') {
     throw new Error('Invalid indicator configuration')
   }
-  const parameters: Record<string, number | string> = {}
+  const parameters: Record<string, number | string | boolean> = {}
   if (isRecord(raw.parameters)) {
     for (const [key, value] of Object.entries(raw.parameters)) {
-      if (typeof value === 'number' || typeof value === 'string') {
+      if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
         parameters[key] = value
       }
     }

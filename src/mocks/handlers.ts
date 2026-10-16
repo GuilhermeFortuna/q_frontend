@@ -16,7 +16,11 @@ import {
   getMockBacktestResponse,
   getMockBacktestTradesCsv,
 } from '@/mocks/backtest'
-import { mockIndicatorCatalog, mockMarketIndicatorSeries } from '@/mocks/marketIndicators'
+import {
+  mockIndicatorCatalog,
+  mockMarketIndicatorSeries,
+  mockMarketVolumeProfile,
+} from '@/mocks/marketIndicators'
 import type { MarketIndicatorSeriesRequest } from '../../contracts/api'
 import { getMockBacktestEquityArtifact } from '@/mocks/backtestEquity'
 import {
@@ -469,6 +473,36 @@ export const handlers = [
       end: body.end,
     })
     return HttpResponse.json(mockMarketIndicatorSeries(bars, body))
+  }),
+
+  http.post('*/api/v1/market/volume-profile/:symbol', async ({ params, request }) => {
+    const symbol = String(params.symbol).toUpperCase()
+    const body = (await request.json()) as import('../../contracts/api').MarketVolumeProfileRequest
+    let bars = getMockOhlcv(symbol, 'D1', 5000, {
+      start: body.start,
+      end: body.end,
+    })
+    if (bars.length === 0 && body.start && body.end) {
+      bars = [
+        {
+          timestamp: body.start,
+          open: 100,
+          high: 101,
+          low: 99,
+          close: 100,
+          volume: 1000,
+        },
+        {
+          timestamp: body.end,
+          open: 100,
+          high: 101,
+          low: 99,
+          close: 100,
+          volume: 1000,
+        },
+      ]
+    }
+    return HttpResponse.json(mockMarketVolumeProfile(bars, body))
   }),
 
   http.post('*/api/v1/backtest/run', async ({ request }) => {
