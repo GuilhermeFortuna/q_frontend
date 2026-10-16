@@ -14,6 +14,27 @@ export function alignSeriesValuesToBars(
   return barTimestamps.map((timestamp) => byInstant.get(Date.parse(timestamp)) ?? null)
 }
 
+/** Remap study-relative segment starts onto chart bar indices. */
+export function alignSegmentStartIndexToBars(
+  barTimestamps: string[],
+  studyTimestamps: string[],
+  startIndex: (number | null)[],
+): (number | null)[] {
+  const chartIndexByInstant = new Map(
+    barTimestamps.map((timestamp, index) => [Date.parse(timestamp), index]),
+  )
+  const endByInstant = new Map<number, number | null>()
+  studyTimestamps.forEach((timestamp, studyIdx) => {
+    const rawStart = startIndex[studyIdx]
+    let chartStart: number | null = null
+    if (rawStart != null && rawStart >= 0 && rawStart < studyTimestamps.length) {
+      chartStart = chartIndexByInstant.get(Date.parse(studyTimestamps[rawStart])) ?? null
+    }
+    endByInstant.set(Date.parse(timestamp), chartStart)
+  })
+  return barTimestamps.map((timestamp) => endByInstant.get(Date.parse(timestamp)) ?? null)
+}
+
 export function barRangeForSeries(
   bars: { timestamp: string }[],
 ): { start: string; end: string } | null {

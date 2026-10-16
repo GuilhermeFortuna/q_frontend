@@ -142,3 +142,30 @@ export function pairedFillPath(
   flush()
   return d.trim()
 }
+
+/** Horizontal segment from each start bar to the bar holding its value on the Market chart. */
+export function studySegmentPath(
+  values: (number | null)[],
+  startIndex: (number | null)[] | undefined,
+  allBars: OhlcvBar[],
+  visibleTimestamps: Set<string>,
+  xScale: BandScale,
+  yScale: LinearScale,
+): string {
+  const bw = xScale.bandwidth()
+  const firstVisible = allBars.findIndex((bar) => visibleTimestamps.has(bar.timestamp))
+  if (firstVisible < 0 || !startIndex) return ''
+  let d = ''
+  values.forEach((value, end) => {
+    const start = startIndex[end]
+    if (value == null || start == null || start > end) return
+    if (!visibleTimestamps.has(allBars[end].timestamp)) return
+    const from = Math.max(start, firstVisible)
+    const x1 = (xScale(allBars[from].timestamp) ?? 0) + bw / 2
+    const x2 = (xScale(allBars[end].timestamp) ?? 0) + bw / 2
+    const y = yScale(value)
+    if (!Number.isFinite(x1) || !Number.isFinite(x2) || !Number.isFinite(y)) return
+    d += ` M ${x1} ${y} L ${x2} ${y}`
+  })
+  return d.trim()
+}

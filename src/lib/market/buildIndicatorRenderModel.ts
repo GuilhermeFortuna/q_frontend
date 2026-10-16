@@ -15,7 +15,7 @@ export type PriceBandRenderGroup = {
   config: IndicatorConfig
 }
 
-export type StudySeriesKind = 'line' | 'step' | 'markers' | 'histogram'
+export type StudySeriesKind = 'line' | 'step' | 'markers' | 'histogram' | 'segment'
 export type StudyMarkerShape =
   | 'circle'
   | 'square'
@@ -40,6 +40,8 @@ export type PriceLineRenderGroup = {
   position?: StudyMarkerPosition
   studyName?: string
   seriesLabel?: string
+  /** Chart bar index of each segment start, aligned with `values`; used by `segment` only. */
+  startIndex?: (number | null)[]
   config: IndicatorConfig
 }
 

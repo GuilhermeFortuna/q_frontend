@@ -6,7 +6,10 @@ import type {
   PriceLineRenderGroup,
 } from '@/lib/market/buildIndicatorRenderModel'
 import type { IndicatorConfig, IndicatorLineStyle } from '@/lib/market/indicatorConfig'
-import { alignSeriesValuesToBars } from '@/lib/market/indicatorSeriesAlign'
+import {
+  alignSegmentStartIndexToBars,
+  alignSeriesValuesToBars,
+} from '@/lib/market/indicatorSeriesAlign'
 import type { OhlcvBar } from '@/types/api'
 
 /**
@@ -72,6 +75,11 @@ export function buildStudyRenderModel(
 
   for (const { study, response } of inputs) {
     const valuesByKey = new Map(response.series.map((series) => [series.key, series.values]))
+    const startIndexByKey = new Map(
+      response.series
+        .filter((series) => series.startIndex != null)
+        .map((series) => [series.key, series.startIndex!]),
+    )
 
     const inRange = response.timestamps.filter((timestamp) => {
       const instant = Date.parse(timestamp)
@@ -110,6 +118,11 @@ export function buildStudyRenderModel(
       }
 
       if (meta.pane === 'price') {
+        const segmentStarts = startIndexByKey.get(meta.key) ?? meta.startIndex
+        const startIndex =
+          kind === 'segment' && segmentStarts
+            ? alignSegmentStartIndexToBars(barTimes, response.timestamps, segmentStarts)
+            : undefined
         priceLines.push({
           instanceKey: `study:${study.studyId}:${meta.key}`,
           catalogId: `study:${study.studyId}`,
@@ -117,6 +130,7 @@ export function buildStudyRenderModel(
           label,
           values,
           ...common,
+          startIndex,
           fillValues,
           fillKind,
           fillOpacity: meta.fillOpacity ?? 0.15,

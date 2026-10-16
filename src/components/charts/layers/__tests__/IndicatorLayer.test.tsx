@@ -80,6 +80,41 @@ describe('IndicatorLayer study plots', () => {
     ).toBe('Signals · Entry: 1')
   })
 
+  it('draws a segment from its start bar to the bar holding its value', () => {
+    const segmentModel: IndicatorRenderModel = {
+      priceBands: [],
+      oscillators: [],
+      priceLines: [
+        {
+          kind: 'segment',
+          instanceKey: 'top',
+          catalogId: 'study:s',
+          outputKey: 'top',
+          label: 'Swings · Top',
+          values: [null, null, 11, null],
+          startIndex: [null, null, 0, null],
+          config: { id: 'study:s', enabled: true, parameters: {}, style: { color: '#26a69a' } },
+        },
+      ],
+    }
+    const { container } = render(
+      <svg>
+        <IndicatorLayer
+          allBars={bars}
+          visibleBars={visible}
+          xScale={xScale}
+          yScale={yScale}
+          model={segmentModel}
+          left={0}
+          phase="overlays"
+        />
+      </svg>,
+    )
+    expect(
+      container.querySelector('[data-testid="market-study-segment-top"]')?.getAttribute('d'),
+    ).toBe('M 18.75 44.99999999999999 L 81.25 44.99999999999999')
+  })
+
   it('renders study fills in the underlay phase at the configured opacity', () => {
     render(
       <svg>

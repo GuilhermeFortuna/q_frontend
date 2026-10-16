@@ -9,6 +9,7 @@ import {
   linePath,
   pairedFillPath,
   stepPath,
+  studySegmentPath,
   visibleTimestampSet,
 } from '@/components/charts/utils/indicatorPaths'
 import type { OhlcvBar } from '@/types/api'
@@ -87,6 +88,32 @@ function IndicatorLayerImpl({
     if (phase !== 'fills')
       for (const entry of model.priceLines) {
         if (entry.kind === 'histogram') continue
+        if (entry.kind === 'segment') {
+          const color = entry.config.style?.color ?? BRASS_COLOR
+          const strokeWidth = entry.config.style?.strokeWidth ?? 1.2
+          const dash = getStrokeDasharray(entry.config.style?.lineStyle ?? 'solid')
+          const d = studySegmentPath(
+            entry.values,
+            entry.startIndex,
+            allBars,
+            visibleSet,
+            xScale,
+            yScale,
+          )
+          if (d)
+            elements.push(
+              <path
+                key={entry.instanceKey}
+                data-testid={`market-study-segment-${entry.outputKey}`}
+                d={d}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={dash}
+              />,
+            )
+          continue
+        }
         if (entry.kind === 'markers') {
           visibleBars.forEach((visibleBar) => {
             const value = entry.values[visibleBar.index]
