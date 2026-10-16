@@ -42,6 +42,8 @@ export function Dialog({
 }
 
 export const DialogTrigger = DialogPrimitive.Trigger
+// Only the fullscreen element's subtree is painted in fullscreen, so dialogs opened there
+// must portal into it instead of document.body.
 export const DialogPortal = DialogPrimitive.Portal
 export const DialogClose = DialogPrimitive.Close
 
@@ -61,7 +63,7 @@ export const DialogContent = forwardRef<
   return (
     <AnimatePresence>
       {open && (
-        <DialogPortal forceMount>
+        <DialogPortal forceMount container={document.fullscreenElement as HTMLElement | null}>
           <DialogPrimitive.Overlay asChild forceMount>
             <motion.div
               initial={{ opacity: 0 }}
