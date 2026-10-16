@@ -17,6 +17,19 @@ export type IndicatorParameterHelp = { label: string; description: string }
 // Explanations verified against q_backend's indicator_catalog/technical_indicators/
 // transforms and q_core's q-indicators kernels. The API owns defaults and constraints.
 export const indicatorParameterHelp: Record<string, IndicatorParameterHelp> = {
+  mode: {
+    label: 'Level mode',
+    description:
+      'Developing uses the current session through each bar close; prior session uses the previous stored session’s final profile.',
+  },
+  row_ticks: {
+    label: 'Row size (ticks)',
+    description: 'Number of instrument price ticks grouped into each volume profile row.',
+  },
+  value_area: {
+    label: 'Value area share',
+    description: 'Share of traded volume covered by expanding outward from the point of control.',
+  },
   period: {
     label: 'Period',
     description: 'Number of bars used by the average or smoothing calculation.',
@@ -383,6 +396,14 @@ export const indicatorDocumentation: Record<string, IndicatorDocumentation> = {
       example:
         'If short volatility is twice long volatility, the ratio is ln(2), approximately 0.693.',
     },
+  ),
+  value_area_levels: doc(
+    'Where volume concentrates within the trading session.',
+    'Point of control (POC), value area high (VAH), and value area low (VAL) from stored trades.',
+    'Developing levels are known at each bar close. Prior-session levels stay constant for the current session.',
+    'Bin trade volume on the instrument tick grid. POC is the largest-volume row; expand toward the larger adjacent row (both on ties) until the selected share is covered.',
+    'Requires stored trades and an instrument tick size. Developing includes earlier trades in the same session. Prior-session mode skips missing calendar days; sync contiguous history before using it. No earlier stored session means undefined levels.',
+    ['volume', 'poc', 'value area', 'trades', 'session'],
   ),
   quote_spread: doc(
     'The quoted cost of crossing the bid–ask spread.',

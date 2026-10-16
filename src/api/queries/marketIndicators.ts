@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 
 import { apiClient } from '@/api/client'
-import { toApiTimeframe } from '@/lib/market/timeframes'
+import { timeframeToMs, toApiTimeframe } from '@/lib/market/timeframes'
 import { indicatorInstanceKey, type IndicatorConfig } from '@/lib/market/indicatorConfig'
 import { isOverlayOnlyIndicator } from '@/lib/market/volumeProfileConfig'
 import { barRangeForSeries } from '@/lib/market/indicatorSeriesAlign'
@@ -193,6 +193,7 @@ export function useMarketVolumeProfileQuery(
   symbol: string,
   enabled: boolean,
   segment: 'session' | 'visibleRange',
+  timeframe: string,
   dataBars: { timestamp: string }[],
   visibleBars: { timestamp: string }[],
   rowTicks: number,
@@ -201,7 +202,14 @@ export function useMarketVolumeProfileQuery(
   const sessionRange = barRangeForSeries(dataBars)
   const visibleRange = barRangeForSeries(visibleBars)
   const apiSegment = segment === 'visibleRange' ? 'range' : 'session'
-  const range = segment === 'visibleRange' ? visibleRange : sessionRange
+  const barRange = segment === 'visibleRange' ? visibleRange : sessionRange
+  // Indicator series use inclusive bar opens; profiles use exclusive tick bounds.
+  const range = barRange
+    ? {
+        start: barRange.start,
+        end: new Date(Date.parse(barRange.end) + timeframeToMs(timeframe)).toISOString(),
+      }
+    : null
 
   return useQuery({
     queryKey: marketIndicatorKeys.volumeProfile(
