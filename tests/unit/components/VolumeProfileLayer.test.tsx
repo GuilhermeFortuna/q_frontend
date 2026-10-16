@@ -78,7 +78,6 @@ function renderLayer(
         widthPercent={25}
         splitBuySell={true}
         rowSize={0.01}
-        onHoverRow={() => {}}
         {...layerProps}
       />
     </svg>,
@@ -112,4 +111,25 @@ describe('VolumeProfileLayer', () => {
     const rowRects = container.querySelectorAll('rect[fill="rgba(38, 166, 154, 0.55)"]')
     expect(rowRects.length).toBeLessThan(segment.rows.price.length)
   })
+})
+
+it('keeps session width when the session endpoints are outside the viewport', () => {
+  const sessionBars = Array.from({ length: 10 }, (_, i) =>
+    bar(`2024-06-01T${String(10 + i).padStart(2, '0')}:00:00.000Z`, 100, i),
+  )
+  const visible = sessionBars.slice(3, 7)
+  const xScale = scaleBand<string>({
+    domain: visible.map((b) => b.timestamp),
+    range: [0, 400],
+    padding: 0.25,
+  })
+  const { container } = renderLayer({
+    segmentMode: 'session',
+    allBars: sessionBars,
+    visibleBars: visible,
+    xScale,
+    splitBuySell: false,
+  })
+  const poc = container.querySelector('[data-testid="volume-profile-poc-row"]')!
+  expect(Number(poc.getAttribute('width'))).toBe(100)
 })

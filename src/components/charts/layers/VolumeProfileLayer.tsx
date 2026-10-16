@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, type PointerEvent } from 'react'
+import { forwardRef, memo, useId, useImperativeHandle, useMemo, type ForwardedRef } from 'react'
 
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 import type { ProcessedBar } from '@/components/charts/types/chart'
@@ -12,6 +12,10 @@ export type VolumeProfileHoverRow = {
   sell: number
   unknown: number
   delta: number
+}
+
+export type VolumeProfileLayerHandle = {
+  hitTest: (x: number, y: number) => VolumeProfileHoverRow | null
 }
 
 type VolumeProfileLayerProps = {
@@ -28,7 +32,6 @@ type VolumeProfileLayerProps = {
   widthPercent: number
   splitBuySell: boolean
   rowSize: number | null | undefined
-  onHoverRow: (row: VolumeProfileHoverRow | null) => void
 }
 
 type RowGeom = {
@@ -57,27 +60,31 @@ function barsForSession(
   return allBars.filter((bar) => sessionDayKey(bar.timestamp) === key)
 }
 
-function xForBar(xScale: BandScale, left: number, bar: ProcessedBar): number {
-  const band = xScale(bar.timestamp)
-  return left + (band ?? 0)
+function xForBar(xScale: BandScale, left: number, bar: ProcessedBar, anchor: ProcessedBar): number {
+  // The scale only knows viewport slots. Extrapolate offscreen session bars
+  // from a visible anchor so their positions survive panning and zooming.
+  return left + (xScale(anchor.timestamp) ?? 0) + (bar.index - anchor.index) * xScale.step()
 }
 
-function VolumeProfileLayerImpl({
-  segments,
-  segmentMode,
-  allBars,
-  visibleBars,
-  xScale,
-  yScale,
-  left,
-  innerWidth,
-  priceTop,
-  priceHeight,
-  widthPercent,
-  splitBuySell,
-  rowSize,
-  onHoverRow,
-}: VolumeProfileLayerProps) {
+function VolumeProfileLayerImpl(
+  {
+    segments,
+    segmentMode,
+    allBars,
+    visibleBars,
+    xScale,
+    yScale,
+    left,
+    innerWidth,
+    priceTop,
+    priceHeight,
+    widthPercent,
+    splitBuySell,
+    rowSize,
+  }: VolumeProfileLayerProps,
+  ref: ForwardedRef<VolumeProfileLayerHandle>,
+) {
+  const clipId = useId()
   const [yMin, yMax] = yScale.domain()
   const tick = rowSize && rowSize > 0 ? rowSize : 0.01
   const maxProfileWidth = innerWidth * (widthPercent / 100)
@@ -121,8 +128,8 @@ function VolumeProfileLayerImpl({
         if (!sessionBars.length) continue
         const first = sessionBars[0]
         const last = sessionBars[sessionBars.length - 1]
-        xStart = xForBar(xScale, left, first)
-        const lastX = xForBar(xScale, left, last)
+        xStart = xForBar(xScale, left, first, visibleBars[0])
+        const lastX = xForBar(xScale, left, last, visibleBars[0])
         xEnd = Math.min(xStart + maxProfileWidth, lastX + bandwidth)
       }
 
@@ -164,6 +171,7 @@ function VolumeProfileLayerImpl({
     return out
   }, [
     allBars,
+    visibleBars,
     innerWidth,
     left,
     maxProfileWidth,
@@ -198,31 +206,35 @@ function VolumeProfileLayerImpl({
     return marks
   }, [segmentMode, segments, visibleSessionKeys, yMax, yMin, yScale])
 
-  const clearHover = useCallback(() => onHoverRow(null), [onHoverRow])
-
-  const handleRowEnter = useCallback(
-    (row: VolumeProfileHoverRow) => (event: PointerEvent) => {
-      event.stopPropagation()
-      onHoverRow(row)
-    },
-    [onHoverRow],
+  useImperativeHandle(
+    ref,
+    () => ({
+      hitTest(x, y) {
+        if (x < left || x > left + innerWidth || y < priceTop || y > priceTop + priceHeight)
+          return null
+        for (let i = geoms.length - 1; i >= 0; i -= 1) {
+          const geom = geoms[i]
+          if (x >= geom.x && x <= geom.x + geom.width && y >= geom.y && y <= geom.y + geom.height) {
+            return geom.row
+          }
+        }
+        return null
+      },
+    }),
+    [geoms, left, innerWidth, priceTop, priceHeight],
   )
 
   if (!geoms.length) return null
 
   return (
-    <g data-testid="volume-profile-layer" pointerEvents="none" onMouseLeave={clearHover}>
-      <rect
-        x={left}
-        y={priceTop}
-        width={innerWidth}
-        height={priceHeight}
-        fill="transparent"
-        pointerEvents="all"
-        onMouseLeave={clearHover}
-      />
+    <g data-testid="volume-profile-layer" pointerEvents="none" clipPath={`url(#${clipId})`}>
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={left} y={priceTop} width={innerWidth} height={priceHeight} />
+        </clipPath>
+      </defs>
       {geoms.map((geom) => (
-        <g key={geom.key} pointerEvents="all">
+        <g key={geom.key}>
           {splitBuySell ? (
             <>
               <rect
@@ -264,14 +276,6 @@ function VolumeProfileLayerImpl({
               data-testid={geom.isPoc ? 'volume-profile-poc-row' : undefined}
             />
           )}
-          <rect
-            x={geom.x}
-            y={geom.y}
-            width={Math.max(geom.width, 4)}
-            height={geom.height}
-            fill="transparent"
-            onPointerEnter={handleRowEnter(geom.row)}
-          />
         </g>
       ))}
       {levelMarks.map((mark) => (
@@ -291,4 +295,4 @@ function VolumeProfileLayerImpl({
   )
 }
 
-export const VolumeProfileLayer = memo(VolumeProfileLayerImpl)
+export const VolumeProfileLayer = memo(forwardRef(VolumeProfileLayerImpl))

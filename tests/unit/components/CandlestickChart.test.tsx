@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll, afterEach } from 'vitest'
 import { createRef, type ComponentProps } from 'react'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
@@ -173,13 +173,13 @@ describe('CandlestickChart', () => {
     expect(screen.getByTestId('market-indicator-notice')).toHaveTextContent('retired_indicator')
   })
 
-  it('draws volume profile overlay when enabled', async () => {
+  it('shows profile row values through the chart interaction overlay', async () => {
     const anchor = mockBars[mockBars.length - 1].close
     server.use(
       http.post('*/api/v1/market/volume-profile/:symbol', () =>
         HttpResponse.json({
-          tickSize: 0.01,
-          rowSize: 0.01,
+          tickSize: 0.5,
+          rowSize: 0.5,
           unavailableReason: null,
           segments: [
             {
@@ -191,10 +191,10 @@ describe('CandlestickChart', () => {
               unknown: 50,
               trades: 10,
               poc: anchor,
-              vah: anchor + 0.01,
-              val: anchor - 0.01,
+              vah: anchor + 0.5,
+              val: anchor - 0.5,
               rows: {
-                price: [anchor - 0.01, anchor, anchor + 0.01],
+                price: [anchor - 0.5, anchor, anchor + 0.5],
                 buy: [40, 200, 30],
                 sell: [30, 50, 80],
                 unknown: [5, 5, 0],
@@ -220,13 +220,50 @@ describe('CandlestickChart', () => {
       ],
     })
     await waitForChartSvg()
-    await waitFor(
-      () => {
-        expect(document.querySelector('[data-testid="volume-profile-layer"]')).toBeTruthy()
-      },
-      { timeout: 3000 },
+    await waitFor(() =>
+      expect(document.querySelector('[data-testid="volume-profile-layer"]')).toBeTruthy(),
+    )
+    const row = document.querySelector('[data-testid="volume-profile-poc-row"]')!
+    const interaction = row.closest('svg')!.lastElementChild!
+    fireEvent.mouseMove(interaction, {
+      clientX: Number(row.getAttribute('x')) + 1,
+      clientY: Number(row.getAttribute('y')) + Number(row.getAttribute('height')) / 2,
+    })
+    await waitFor(() =>
+      expect(screen.getByTestId('volume-profile-tooltip')).toHaveTextContent('255'),
+    )
+    fireEvent.mouseLeave(interaction)
+    await waitFor(() =>
+      expect(screen.queryByTestId('volume-profile-tooltip')).not.toBeInTheDocument(),
     )
   })
+
+  it.each(['session', 'visibleRange'])(
+    'requests the full final candle for %s profiles',
+    async (segment) => {
+      let received: { start: string; end: string } | undefined
+      server.use(
+        http.post('*/api/v1/market/volume-profile/:symbol', async ({ request }) => {
+          received = (await request.json()) as { start: string; end: string }
+          return HttpResponse.json({ segments: [], unavailableReason: null })
+        }),
+      )
+      renderChart({
+        data: [mockBars[0]],
+        timeframe: '5m',
+        indicators: [
+          {
+            id: 'volume_profile',
+            enabled: true,
+            parameters: { segment },
+          },
+        ],
+      })
+      await waitFor(() => expect(received).toBeDefined())
+      expect(received?.start).toBe('2024-06-01T00:00:00.000Z')
+      expect(received?.end).toBe('2024-06-01T00:05:00.000Z')
+    },
+  )
 
   it('still renders migrated legacy SMA, Bollinger and RSI selections', async () => {
     const legacy = normalizeIndicatorConfigs([

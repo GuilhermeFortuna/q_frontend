@@ -55,6 +55,7 @@ import { volumeProfileFromIndicators } from '@/lib/market/volumeProfileConfig'
 import {
   VolumeProfileLayer,
   type VolumeProfileHoverRow,
+  type VolumeProfileLayerHandle,
 } from '@/components/charts/layers/VolumeProfileLayer'
 import { useDebounce } from '@/hooks/useDebounce'
 
@@ -162,6 +163,7 @@ const ChartInner = forwardRef<
     symbol,
     volumeProfile.enabled,
     volumeProfile.settings.segment,
+    timeframe,
     data,
     barsForVolumeProfile,
     volumeProfile.settings.rowTicks,
@@ -225,6 +227,7 @@ const ChartInner = forwardRef<
   )
 
   const [hoveredBar, setHoveredBar] = useState<(typeof visibleBars)[0] | null>(null)
+  const volumeProfileLayerRef = useRef<VolumeProfileLayerHandle>(null)
   const [volumeProfileHover, setVolumeProfileHover] = useState<VolumeProfileHoverRow | null>(null)
   const [mouseY, setMouseY] = useState<number | null>(null)
   const [draftPoint, setDraftPoint] = useState<DataPoint | null>(null)
@@ -292,6 +295,7 @@ const ChartInner = forwardRef<
         return
       }
 
+      setVolumeProfileHover(volumeProfileLayerRef.current?.hitTest(point.x, y) ?? null)
       const bar = timestampAtX(scales.xScale, x, visibleBars)
       scheduleHoverUpdate(bar, y)
 
@@ -388,6 +392,7 @@ const ChartInner = forwardRef<
       hoverRafRef.current = null
     }
     setHoveredBar(null)
+    setVolumeProfileHover(null)
     setMouseY(null)
     isPanning.current = false
     onHoverBar?.(null)
@@ -681,6 +686,7 @@ const ChartInner = forwardRef<
         volumeProfileQuery.data &&
         volumeProfileQuery.data.segments.length > 0 ? (
           <VolumeProfileLayer
+            ref={volumeProfileLayerRef}
             segments={volumeProfileQuery.data.segments}
             segmentMode={volumeProfile.settings.segment}
             allBars={processed}
@@ -694,7 +700,6 @@ const ChartInner = forwardRef<
             widthPercent={volumeProfile.settings.widthPercent}
             splitBuySell={volumeProfile.settings.splitBuySell}
             rowSize={volumeProfileQuery.data.rowSize}
-            onHoverRow={setVolumeProfileHover}
           />
         ) : null}
 
