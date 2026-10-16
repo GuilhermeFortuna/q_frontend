@@ -118,6 +118,8 @@ export function MarketDataWorkspace() {
     return savedActive || 'profile-clean'
   })
 
+  const activeProfile = profiles.find((p) => p.id === activeProfileId)
+
   useEffect(() => {
     // Sync active profile settings to Zustand on mount
     const active = profiles.find((p) => p.id === activeProfileId)
@@ -173,6 +175,7 @@ export function MarketDataWorkspace() {
       showGrid: active.showGrid,
       indicators: [...active.indicators],
       chartSettings: { ...active.chartSettings },
+      paneLayout: active.paneLayout,
     }
 
     const next = [...profiles, newProfile]
@@ -454,6 +457,8 @@ export function MarketDataWorkspace() {
                 onHoverBar={setHoveredBar}
                 onViewportChange={ohlcv.handleViewportChange}
                 chartSettings={chartSettings}
+                paneLayout={activeProfile?.paneLayout}
+                onPaneLayoutChange={(val) => updateActiveProfile({ paneLayout: val })}
                 profiles={profiles}
                 activeProfileId={activeProfileId}
                 onSelectProfile={handleSelectProfile}

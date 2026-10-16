@@ -11,7 +11,7 @@ import type {
   ChartSettings,
   ChartProfile,
 } from '@/components/charts/types/chart'
-import { DEFAULT_SETTINGS } from '@/components/charts/types/chart'
+import { DEFAULT_SETTINGS, type PaneLayoutPrefs } from '@/components/charts/types/chart'
 import { OperationalFailureState } from '@/components/status/OperationalFailureState'
 import type { OhlcvBar } from '@/types/api'
 
@@ -34,6 +34,8 @@ export type ChartPanelProps = {
   onHoverBar: (bar: OhlcvBar | null) => void
   onViewportChange: (viewport: ChartViewport) => void
   chartSettings?: ChartSettings
+  paneLayout?: PaneLayoutPrefs
+  onPaneLayoutChange?: (prefs: PaneLayoutPrefs) => void
   profiles?: ChartProfile[]
   activeProfileId?: string
   onSelectProfile?: (id: string) => void
@@ -61,6 +63,8 @@ export function ChartPanel({
   onHoverBar,
   onViewportChange,
   chartSettings,
+  paneLayout,
+  onPaneLayoutChange,
   profiles = [],
   activeProfileId = '',
   onSelectProfile,
@@ -143,6 +147,8 @@ export function ChartPanel({
           onHoverBar={onHoverBar}
           onViewportChange={onViewportChange}
           chartSettings={settings}
+          paneLayout={paneLayout}
+          onPaneLayoutChange={onPaneLayoutChange}
         />
       ) : error ? (
         <OperationalFailureState

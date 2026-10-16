@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { scaleBand, scaleLinear } from '@visx/scale'
 
-import type {
-  ChartSlot,
-  OscillatorPaneSlot,
-  PaneLayout,
-  ProcessedBar,
-} from '@/components/charts/types/chart'
+import type { ChartSlot, PaneLayout, ProcessedBar } from '@/components/charts/types/chart'
 import type { OhlcvBar } from '@/types/api'
 import type { OscillatorRenderGroup } from '@/lib/market/buildIndicatorRenderModel'
 import {
@@ -89,9 +84,6 @@ export function usePricePan(resetKey: string) {
   }
 }
 
-const VOLUME_RATIO = 0.18
-const OSCILLATOR_RATIO = 0.14
-
 export function processBars(data: OhlcvBar[]): ProcessedBar[] {
   return data.map((bar, index) => {
     const isBullish = bar.close >= bar.open
@@ -103,44 +95,6 @@ export function processBars(data: OhlcvBar[]): ProcessedBar[] {
       color: isBullish ? BULL_COLOR : BEAR_COLOR,
     }
   })
-}
-
-export function computePaneLayout(
-  width: number,
-  height: number,
-  oscillatorPaneKeys: string[],
-  margins: { top: number; right: number; bottom: number; left: number },
-): PaneLayout {
-  const innerWidth = Math.max(width - margins.left - margins.right, 0)
-  const innerHeight = Math.max(height - margins.top - margins.bottom, 0)
-
-  const oscillatorCount = oscillatorPaneKeys.length
-  const volumeHeight = innerHeight * VOLUME_RATIO
-  const oscillatorHeight = oscillatorCount > 0 ? innerHeight * OSCILLATOR_RATIO : 0
-  const priceHeight = innerHeight - volumeHeight - oscillatorHeight * oscillatorCount
-
-  let cursor = margins.top
-  const priceTop = cursor
-  cursor += priceHeight
-
-  const volumeTop = cursor
-  cursor += volumeHeight
-
-  const oscillators: OscillatorPaneSlot[] = oscillatorPaneKeys.map((key) => {
-    const slot = { key, top: cursor, height: oscillatorHeight }
-    cursor += oscillatorHeight
-    return slot
-  })
-
-  return {
-    priceTop,
-    priceHeight,
-    volumeTop,
-    volumeHeight,
-    oscillators,
-    innerWidth,
-    innerHeight,
-  }
 }
 
 function seriesDomain(values: (number | null)[]): [number, number] {
@@ -184,8 +138,8 @@ export function useChartScales(
       nice: true,
     })
 
-    const oscillatorScales = oscillators.map((group, index) => {
-      const slot = layout.oscillators[index]
+    const oscillatorScales = oscillators.map((group) => {
+      const slot = layout.oscillators.find((item) => item.key === group.instanceKey)
       const flatValues = group.outputs.flatMap((output) => [
         ...output.values,
         ...(output.kind === 'histogram' ||

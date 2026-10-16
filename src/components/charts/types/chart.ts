@@ -208,12 +208,23 @@ export type OscillatorPaneSlot = {
   height: number
 }
 
+/** User layout of the price stack, persisted per chart profile. */
+export type PaneLayoutPrefs = {
+  /** Top-to-bottom pane keys: `price`, `volume` and oscillator instance keys. */
+  order?: string[]
+  /** Height as a fraction of the inner chart height, by pane key. */
+  heights?: Record<string, number>
+}
+
 export type PaneLayout = {
   priceTop: number
   priceHeight: number
   volumeTop: number
   volumeHeight: number
+  /** Oscillator panes in stack order. */
   oscillators: OscillatorPaneSlot[]
+  /** Every pane in stack order, including price and volume. */
+  stack: OscillatorPaneSlot[]
   innerWidth: number
   innerHeight: number
 }
@@ -235,4 +246,5 @@ export type ChartProfile = {
   showGrid: boolean
   indicators: IndicatorConfig[]
   chartSettings: ChartSettings
+  paneLayout?: PaneLayoutPrefs
 }

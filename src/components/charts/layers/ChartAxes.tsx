@@ -10,7 +10,16 @@ type ChartAxesProps = {
   priceScale: LinearScale
   volumeScale: LinearScale
   oscillatorScales: Array<{ key: string; scale: LinearScale }>
-  layout: PaneLayout
+  layout: Pick<
+    PaneLayout,
+    | 'innerWidth'
+    | 'innerHeight'
+    | 'priceTop'
+    | 'priceHeight'
+    | 'volumeTop'
+    | 'volumeHeight'
+    | 'oscillators'
+  >
   timeframe: string
   left: number
   bottom: number
