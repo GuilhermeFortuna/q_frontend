@@ -44,6 +44,28 @@ describe('Dialog', () => {
       expect(screen.queryByText('Escape me')).not.toBeInTheDocument()
     })
   })
+
+  it('portals into the fullscreen element so it stays visible in fullscreen', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    Object.defineProperty(document, 'fullscreenElement', { value: host, configurable: true })
+
+    try {
+      render(
+        <Dialog defaultOpen>
+          <DialogContent size="sm">
+            <DialogHeader title="Fullscreen dialog" />
+            <p>Inside fullscreen</p>
+          </DialogContent>
+        </Dialog>,
+      )
+
+      expect(host).toContainElement(screen.getByText('Inside fullscreen'))
+    } finally {
+      Reflect.deleteProperty(document, 'fullscreenElement')
+      host.remove()
+    }
+  })
 })
 
 describe('ConfirmDialog', () => {
