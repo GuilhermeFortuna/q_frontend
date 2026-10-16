@@ -3,7 +3,10 @@ import type {
   IndicatorCatalogResponse,
   MarketIndicatorSeriesRequest,
   MarketIndicatorSeriesResponse,
+  MarketVolumeProfileRequest,
+  MarketVolumeProfileResponse,
 } from '../../contracts/api'
+import { sessionDayKey } from '@/lib/market/volumeProfileConfig'
 import type { OhlcvBar } from '@/types/api'
 
 export const mockIndicatorCatalog = catalogJson as IndicatorCatalogResponse
@@ -80,6 +83,21 @@ export function mockMarketIndicatorSeries(
       continue
     }
 
+    if (request.id === 'value_area_levels') {
+      const base = closes[closes.length - 1] ?? 100
+      for (const output of entry.outputs) {
+        const offset = output.key === 'poc' ? 0 : output.key === 'vah' ? 0.5 : -0.5
+        series.push({
+          key: output.key,
+          pane: output.pane,
+          unit: entry.unit,
+          values: closes.map((_, index) => (index < 2 ? null : base + offset)),
+          unavailableReason: null,
+        })
+      }
+      continue
+    }
+
     const periodRaw = request.parameters?.period
     const period = typeof periodRaw === 'number' ? periodRaw : 14
 
@@ -122,4 +140,73 @@ export function mockMarketIndicatorSeries(
   }
 
   return { timestamps, series }
+}
+
+export function mockMarketVolumeProfile(
+  bars: OhlcvBar[],
+  body: MarketVolumeProfileRequest,
+): MarketVolumeProfileResponse {
+  if (bars.length === 0) {
+    return { segments: [], unavailableReason: 'No tick history for this range (mock)' }
+  }
+
+  const tickSize = 0.01
+  const rowSize = tickSize * (body.rowTicks ?? 1)
+  const buildRows = (anchor: number) => {
+    const prices = [anchor - rowSize, anchor, anchor + rowSize]
+    return {
+      price: prices,
+      buy: [120, 400, 90],
+      sell: [80, 50, 110],
+      unknown: [10, 5, 15],
+    }
+  }
+
+  if (body.segment === 'range') {
+    const anchor = bars[bars.length - 1].close
+    return {
+      tickSize,
+      rowSize,
+      segments: [
+        {
+          start: bars[0].timestamp,
+          end: bars[bars.length - 1].timestamp,
+          total: 880,
+          buy: 610,
+          sell: 240,
+          unknown: 30,
+          trades: 42,
+          poc: anchor,
+          vah: anchor + rowSize,
+          val: anchor - rowSize,
+          rows: buildRows(anchor),
+        },
+      ],
+    }
+  }
+
+  const bySession = new Map<string, OhlcvBar[]>()
+  for (const bar of bars) {
+    const key = sessionDayKey(bar.timestamp)
+    bySession.set(key, [...(bySession.get(key) ?? []), bar])
+  }
+
+  const segments = [...bySession.entries()].map(([, sessionBars]) => {
+    const anchor = sessionBars[Math.floor(sessionBars.length / 2)].close
+    return {
+      start: sessionBars[0].timestamp,
+      end: sessionBars[sessionBars.length - 1].timestamp,
+      total: 880,
+      buy: 610,
+      sell: 240,
+      unknown: 30,
+      trades: 42,
+      poc: anchor,
+      vah: anchor + rowSize,
+      val: anchor - rowSize,
+      rows: buildRows(anchor),
+    }
+  })
+
+  return { tickSize, rowSize, segments, unavailableReason: null }
 }

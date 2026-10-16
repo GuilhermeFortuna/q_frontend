@@ -108,6 +108,28 @@ describe('buildIndicatorRenderModel', () => {
     expect(model.priceLines.map((group) => group.values)).toEqual([[1, 2, 3]])
   })
 
+  it('draws value area levels as step series from catalog output kind', () => {
+    const config: IndicatorConfig = {
+      id: 'value_area_levels',
+      enabled: true,
+      parameters: { mode: 'developing', row_ticks: 1, value_area: 0.7 },
+    }
+    const series = respond([config], {
+      timestamps: backendTimestamps,
+      series: [
+        { key: 'poc', pane: 'price', values: [100, 101, 102] },
+        { key: 'vah', pane: 'price', values: [101, 102, 103] },
+        { key: 'val', pane: 'price', values: [99, 100, 101] },
+      ],
+    })
+    const model = buildIndicatorRenderModel(bars, [config], catalog, series)
+    expect(model.priceLines.map((line) => [line.outputKey, line.kind])).toEqual([
+      ['poc', 'step'],
+      ['vah', 'step'],
+      ['val', 'step'],
+    ])
+  })
+
   it('draws Donchian from the two backend outputs and computes no middle band', () => {
     const series = respond([donchian], {
       timestamps: backendTimestamps,

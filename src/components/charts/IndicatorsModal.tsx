@@ -16,6 +16,11 @@ import { Button } from '@/components/ui/button'
 import { indicatorRequestErrorMessage, useIndicatorCatalog } from '@/api/queries/marketIndicators'
 import { defaultParametersForEntry, type IndicatorConfig } from '@/lib/market/indicatorConfig'
 import {
+  VOLUME_PROFILE_INDICATOR_ID,
+  defaultVolumeProfileIndicatorConfig,
+  type VolumeProfileSegmentMode,
+} from '@/lib/market/volumeProfileConfig'
+import {
   indicatorChoiceLabels,
   indicatorDocumentation,
   indicatorParameterErrors,
@@ -110,6 +115,9 @@ function initialDrafts(indicators: IndicatorConfig[]) {
   const drafts = new Map<string, IndicatorConfig>()
   for (const indicator of indicators)
     if (!drafts.has(indicator.id)) drafts.set(indicator.id, indicator)
+  if (!drafts.has(VOLUME_PROFILE_INDICATOR_ID)) {
+    drafts.set(VOLUME_PROFILE_INDICATOR_ID, defaultVolumeProfileIndicatorConfig())
+  }
   return drafts
 }
 
@@ -149,8 +157,16 @@ function IndicatorsModalBody({
     })
   }, [catalog])
 
-  const activeEntry = catalog.find((entry) => entry.id === selectedId) ?? catalog[0]
-  const activeDraft = activeEntry ? draftById.get(activeEntry.id) : undefined
+  const volumeProfileDraft = draftById.get(VOLUME_PROFILE_INDICATOR_ID)
+  const isVolumeProfileSelected = selectedId === VOLUME_PROFILE_INDICATOR_ID
+  const activeEntry = isVolumeProfileSelected
+    ? undefined
+    : (catalog.find((entry) => entry.id === selectedId) ?? catalog[0])
+  const activeDraft = isVolumeProfileSelected
+    ? volumeProfileDraft
+    : activeEntry
+      ? draftById.get(activeEntry.id)
+      : undefined
   const activeErrors =
     activeEntry && activeDraft ? indicatorParameterErrors(activeEntry, activeDraft) : {}
   const knownIds = new Set(catalog.map((entry) => entry.id))
@@ -169,7 +185,7 @@ function IndicatorsModalBody({
     return counts
   }, [preserved])
   const enabledDrafts = [...draftById.values()].filter(
-    (item) => item.enabled && knownIds.has(item.id),
+    (item) => item.enabled && (knownIds.has(item.id) || item.id === VOLUME_PROFILE_INDICATOR_ID),
   )
   const enabledCount = enabledDrafts.length + preserved.filter((item) => item.enabled).length
   const invalidIds = catalog
@@ -223,7 +239,13 @@ function IndicatorsModalBody({
         ? [draft]
         : []
     })
-    onChange([...savedDrafts, ...preserved])
+    const volumeDraft = draftById.get(VOLUME_PROFILE_INDICATOR_ID)
+    const volumeSaved =
+      volumeDraft &&
+      (volumeDraft.enabled || indicators.some((item) => item.id === VOLUME_PROFILE_INDICATOR_ID))
+        ? [volumeDraft]
+        : []
+    onChange([...savedDrafts, ...volumeSaved, ...preserved])
     onClose()
   }
   const switchTab = (next: 'settings' | 'guide') => setTab(next)
@@ -330,6 +352,46 @@ function IndicatorsModalBody({
               data-testid="indicator-catalog-list"
             >
               {symbol && <StudiesGroup symbol={symbol} timeframe={timeframe ?? ''} />}
+              <section>
+                <h3 className="text-silver-300 mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] uppercase">
+                  Volume
+                </h3>
+                <div className="space-y-1">
+                  <div
+                    className={`group flex items-center gap-1 rounded-lg border ${isVolumeProfileSelected ? 'border-brass-500/25 bg-brass-500/10' : 'hover:bg-carbon-800/50 border-transparent'}`}
+                  >
+                    <button
+                      type="button"
+                      data-testid="indicator-catalog-item-volume_profile"
+                      aria-pressed={isVolumeProfileSelected}
+                      onClick={() => {
+                        setSelectedId(VOLUME_PROFILE_INDICATOR_ID)
+                        if (detailRef.current) detailRef.current.scrollTop = 0
+                      }}
+                      className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-medium ${isVolumeProfileSelected ? 'text-gold-400' : 'text-silver-200'}`}
+                    >
+                      <span className="min-w-0 flex-1">Volume profile</span>
+                      {isVolumeProfileSelected && (
+                        <ChevronRight aria-hidden className="h-3 w-3 shrink-0" />
+                      )}
+                    </button>
+                    <label
+                      className="mr-2 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center"
+                      title="Enable Volume profile"
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label="Enable Volume profile"
+                        checked={!!volumeProfileDraft?.enabled}
+                        onChange={(e) =>
+                          updateDraft(VOLUME_PROFILE_INDICATOR_ID, { enabled: e.target.checked })
+                        }
+                        className="accent-brass-500 h-4 w-4 cursor-pointer"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </section>
               {catalogQuery.isPending && (
                 <p role="status" className="text-silver-300 px-3 py-6 text-xs">
                   Loading indicators…
@@ -413,7 +475,115 @@ function IndicatorsModalBody({
           </aside>
 
           <div ref={detailRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto px-5 py-5 md:px-7">
-            {activeEntry && activeDraft ? (
+            {isVolumeProfileSelected && volumeProfileDraft ? (
+              <>
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-brass-400 mb-1 text-[10px] font-semibold tracking-[0.1em] uppercase">
+                      Volume
+                    </p>
+                    <h3 className="text-silver-100 font-display text-2xl font-semibold tracking-tight">
+                      Volume profile
+                    </h3>
+                    <p className="text-silver-200 mt-2 text-sm leading-relaxed">
+                      Horizontal volume-at-price histogram beside the candles. Session mode draws
+                      one profile per trading day; visible range docks a single profile on the right
+                      edge of the chart.
+                    </p>
+                  </div>
+                  <span
+                    className={`mt-1 flex shrink-0 items-center gap-1.5 text-xs ${volumeProfileDraft.enabled ? 'text-brass-400' : 'text-silver-300'}`}
+                  >
+                    {volumeProfileDraft.enabled && <Check aria-hidden className="h-3.5 w-3.5" />}
+                    {volumeProfileDraft.enabled ? 'Enabled' : 'Not enabled'}
+                  </span>
+                </div>
+                <div className="space-y-5">
+                  <LabeledField label="Segment" htmlFor={`${id}-vp-segment`}>
+                    <select
+                      id={`${id}-vp-segment`}
+                      className={CONTROL_CLASS}
+                      value={String(volumeProfileDraft.parameters.segment ?? 'session')}
+                      onChange={(e) =>
+                        updateDraft(VOLUME_PROFILE_INDICATOR_ID, {
+                          parameters: {
+                            ...volumeProfileDraft.parameters,
+                            segment: e.target.value as VolumeProfileSegmentMode,
+                          },
+                        })
+                      }
+                    >
+                      <option value="session">Session</option>
+                      <option value="visibleRange">Visible range</option>
+                    </select>
+                  </LabeledField>
+                  <LabeledField label="Row size (ticks)" htmlFor={`${id}-vp-row-ticks`}>
+                    <NumberInput
+                      id={`${id}-vp-row-ticks`}
+                      className={`${CONTROL_CLASS} font-mono`}
+                      value={Number(volumeProfileDraft.parameters.rowTicks ?? 1)}
+                      min={1}
+                      max={1000}
+                      step={1}
+                      onChange={(value) =>
+                        updateDraft(VOLUME_PROFILE_INDICATOR_ID, {
+                          parameters: { ...volumeProfileDraft.parameters, rowTicks: value },
+                        })
+                      }
+                    />
+                  </LabeledField>
+                  <LabeledField label="Value area share" htmlFor={`${id}-vp-value-area`}>
+                    <NumberInput
+                      id={`${id}-vp-value-area`}
+                      className={`${CONTROL_CLASS} font-mono`}
+                      value={Number(volumeProfileDraft.parameters.valueArea ?? 0.7)}
+                      min={0.05}
+                      max={1}
+                      step="any"
+                      onChange={(value) =>
+                        updateDraft(VOLUME_PROFILE_INDICATOR_ID, {
+                          parameters: { ...volumeProfileDraft.parameters, valueArea: value },
+                        })
+                      }
+                    />
+                  </LabeledField>
+                  <LabeledField label="Profile width (% of plot)" htmlFor={`${id}-vp-width`}>
+                    <NumberInput
+                      id={`${id}-vp-width`}
+                      className={`${CONTROL_CLASS} font-mono`}
+                      value={Number(volumeProfileDraft.parameters.widthPercent ?? 25)}
+                      min={5}
+                      max={50}
+                      step={1}
+                      onChange={(value) =>
+                        updateDraft(VOLUME_PROFILE_INDICATOR_ID, {
+                          parameters: { ...volumeProfileDraft.parameters, widthPercent: value },
+                        })
+                      }
+                    />
+                  </LabeledField>
+                  <label className="text-silver-200 flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="accent-brass-500 h-4 w-4"
+                      checked={
+                        volumeProfileDraft.parameters.splitBuySell !== false &&
+                        volumeProfileDraft.parameters.splitBuySell !== 'false'
+                      }
+                      onChange={(e) =>
+                        updateDraft(VOLUME_PROFILE_INDICATOR_ID, {
+                          parameters: {
+                            ...volumeProfileDraft.parameters,
+                            splitBuySell: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    Split buy / sell volume
+                  </label>
+                </div>
+              </>
+            ) : activeEntry && activeDraft ? (
               <>
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -432,7 +602,11 @@ function IndicatorsModalBody({
                         {activeEntry.pane === 'price' ? 'Price overlay' : 'Separate pane'}
                       </span>
                       <span className="border-carbon-700 rounded border px-2 py-1">
-                        {activeEntry.requiredData === 'quotes' ? 'Requires quotes' : 'OHLCV data'}
+                        {activeEntry.requiredData === 'quotes'
+                          ? 'Requires quotes'
+                          : activeEntry.requiredData === 'trades'
+                            ? 'Requires trades'
+                            : 'OHLCV data'}
                       </span>
                       {activeEntry.unit && (
                         <span className="border-carbon-700 rounded border px-2 py-1">
@@ -521,7 +695,10 @@ function IndicatorsModalBody({
                           >
                             <ParameterControl
                               spec={spec}
-                              value={activeDraft.parameters[spec.name]}
+                              value={(() => {
+                                const raw = activeDraft.parameters[spec.name]
+                                return typeof raw === 'boolean' ? undefined : raw
+                              })()}
                               id={fieldId}
                               error={activeErrors[spec.name]}
                               onChange={(value) =>

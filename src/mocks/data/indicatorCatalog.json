@@ -948,6 +948,60 @@
           "pane": "oscillator"
         }
       ]
+    },
+    {
+      "id": "value_area_levels",
+      "label": "Value area levels",
+      "category": "Volume",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "trades",
+      "parameters": [
+        {
+          "name": "mode",
+          "type": "string",
+          "default": "developing",
+          "minimum": null,
+          "maximum": null,
+          "choices": ["developing", "prior_session"]
+        },
+        {
+          "name": "row_ticks",
+          "type": "int",
+          "default": 1,
+          "minimum": 1.0,
+          "maximum": 1000.0,
+          "choices": null
+        },
+        {
+          "name": "value_area",
+          "type": "float",
+          "default": 0.7,
+          "minimum": 0.05,
+          "maximum": 1.0,
+          "choices": null
+        }
+      ],
+      "outputs": [
+        {
+          "key": "poc",
+          "label": "POC",
+          "pane": "price",
+          "kind": "step"
+        },
+        {
+          "key": "vah",
+          "label": "VAH",
+          "pane": "price",
+          "kind": "step"
+        },
+        {
+          "key": "val",
+          "label": "VAL",
+          "pane": "price",
+          "kind": "step"
+        }
+      ]
     }
   ]
 }

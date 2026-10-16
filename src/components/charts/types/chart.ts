@@ -218,6 +218,16 @@ export type PaneLayout = {
   innerHeight: number
 }
 
+export type {
+  VolumeProfileOverlaySettings,
+  VolumeProfileSegmentMode,
+} from '@/lib/market/volumeProfileConfig'
+export {
+  DEFAULT_VOLUME_PROFILE_SETTINGS,
+  VOLUME_PROFILE_INDICATOR_ID,
+  defaultVolumeProfileIndicatorConfig,
+} from '@/lib/market/volumeProfileConfig'
+
 export type ChartProfile = {
   id: string
   name: string
