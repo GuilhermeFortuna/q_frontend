@@ -34,6 +34,23 @@ export function applyPriceAxisTransform(
   return [center - halfSpan, center + halfSpan]
 }
 
+/** Multiplies a stretch factor by the exponential step for a vertical drag of `deltaY` px. */
+export function stretchScaleFactor(prev: number, deltaY: number): number {
+  const factor = Math.exp(deltaY * PRICE_AXIS_STRETCH_SENSITIVITY)
+  return Math.max(MIN_PRICE_SCALE_FACTOR, Math.min(MAX_PRICE_SCALE_FACTOR, prev * factor))
+}
+
+/** Stretches a [min, max] oscillator domain around its centre. */
+export function applyOscillatorAxisScale(
+  domain: [number, number],
+  scaleFactor: number,
+): [number, number] {
+  const [min, max] = domain
+  const center = (min + max) / 2
+  const halfSpan = ((max - min) / 2) * scaleFactor
+  return [center - halfSpan, center + halfSpan]
+}
+
 export function usePriceAxis(resetKey: string) {
   const [offset, setOffset] = useState(0)
   const [scaleFactor, setScaleFactor] = useState(1)
@@ -59,10 +76,7 @@ export function usePriceAxis(resetKey: string) {
 
   const stretchPriceByPixels = useCallback((deltaY: number) => {
     if (deltaY === 0) return
-    const factor = Math.exp(deltaY * PRICE_AXIS_STRETCH_SENSITIVITY)
-    setScaleFactor((prev) =>
-      Math.max(MIN_PRICE_SCALE_FACTOR, Math.min(MAX_PRICE_SCALE_FACTOR, prev * factor)),
-    )
+    setScaleFactor((prev) => stretchScaleFactor(prev, deltaY))
   }, [])
 
   return {
@@ -113,6 +127,7 @@ export function useChartScales(
   oscillators: OscillatorRenderGroup[],
   pricePanOffset = 0,
   priceScaleFactor = 1,
+  oscillatorScaleFactors: Record<string, number> = {},
 ) {
   return useMemo(() => {
     const barsInView = slots.flatMap((slot) => (slot.bar ? [slot.bar] : []))
@@ -147,10 +162,14 @@ export function useChartScales(
           ? [output.baseline ?? 0]
           : []),
       ])
-      const [min, max] =
-        group.catalogId === 'rsi' ? ([0, 100] as [number, number]) : seriesDomain(flatValues)
+      const baseDomain: [number, number] =
+        group.catalogId === 'rsi' ? [0, 100] : seriesDomain(flatValues)
+      const domain = applyOscillatorAxisScale(
+        baseDomain,
+        oscillatorScaleFactors[group.instanceKey] ?? 1,
+      )
       const scale = scaleLinear<number>({
-        domain: [min, max],
+        domain,
         range: [(slot?.top ?? 0) + (slot?.height ?? 0), slot?.top ?? 0],
         nice: group.catalogId !== 'rsi',
       })
@@ -164,7 +183,15 @@ export function useChartScales(
       oscillatorScales,
       marginLeft: margins.left,
     }
-  }, [slots, layout, margins.left, pricePanOffset, priceScaleFactor, oscillators])
+  }, [
+    slots,
+    layout,
+    margins.left,
+    pricePanOffset,
+    priceScaleFactor,
+    oscillators,
+    oscillatorScaleFactors,
+  ])
 }
 
 export function barCenterX(

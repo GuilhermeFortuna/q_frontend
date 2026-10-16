@@ -29,6 +29,7 @@ import {
   computePriceDomain,
   dataPointFromEvent,
   processBars,
+  stretchScaleFactor,
   timestampAtX,
   useChartScales,
   usePriceAxis,
@@ -40,6 +41,11 @@ import { GridLayer } from '@/components/charts/layers/GridLayer'
 import { ChartAxes } from '@/components/charts/layers/ChartAxes'
 import { ChartAxisDragHandles } from '@/components/charts/layers/ChartAxisDragHandles'
 import { OscillatorPaneHandles } from '@/components/charts/layers/OscillatorPaneHandles'
+import { OscillatorAxisHandles } from '@/components/charts/layers/OscillatorAxisHandles'
+import {
+  OscillatorHoverLayer,
+  type OscillatorHoverPane,
+} from '@/components/charts/layers/OscillatorHoverLayer'
 import { IndicatorLayer } from '@/components/charts/layers/IndicatorLayer'
 import { OscillatorPane } from '@/components/charts/layers/OscillatorPane'
 import { CrosshairLayer } from '@/components/charts/layers/CrosshairLayer'
@@ -236,6 +242,12 @@ const ChartInner = forwardRef<
     [width, height, oscillatorPaneKeys, panePrefs],
   )
 
+  // Per-oscillator value-axis stretch, keyed by instance. Session state like the price axis.
+  const [oscillatorScaleFactors, setOscillatorScaleFactors] = useState<Record<string, number>>({})
+  useEffect(() => {
+    setOscillatorScaleFactors({})
+  }, [viewportResetKey])
+
   const scales = useChartScales(
     viewportSlots,
     layout,
@@ -243,6 +255,19 @@ const ChartInner = forwardRef<
     renderModel.oscillators,
     pricePanOffset,
     priceScaleFactor,
+    oscillatorScaleFactors,
+  )
+
+  const oscillatorHoverPanes = useMemo<OscillatorHoverPane[]>(
+    () =>
+      layout.oscillators.flatMap((slot) => {
+        const group = renderModel.oscillators.find((item) => item.instanceKey === slot.key)
+        const scaleEntry = scales.oscillatorScales.find((item) => item.key === slot.key)
+        return group && scaleEntry
+          ? [{ key: slot.key, top: slot.top, height: slot.height, scale: scaleEntry.scale, group }]
+          : []
+      }),
+    [layout.oscillators, renderModel.oscillators, scales.oscillatorScales],
   )
 
   const [hoveredBar, setHoveredBar] = useState<(typeof visibleBars)[0] | null>(null)
@@ -433,14 +458,31 @@ const ChartInner = forwardRef<
     return () => el.removeEventListener('wheel', onWheel)
   }, [zoomAt, layout.innerWidth])
 
+  const stretchOscillator = useCallback((key: string, deltaY: number) => {
+    setOscillatorScaleFactors((prev) => ({
+      ...prev,
+      [key]: stretchScaleFactor(prev[key] ?? 1, deltaY),
+    }))
+  }, [])
+
+  const resetOscillator = useCallback((key: string) => {
+    setOscillatorScaleFactors((prev) => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }, [])
+
   const handleGoToLatest = useCallback(() => {
     scrollToEnd()
     resetPriceAxis()
+    setOscillatorScaleFactors({})
   }, [scrollToEnd, resetPriceAxis])
 
   const handleDoubleClick = useCallback(() => {
     fitAll()
     resetPriceAxis()
+    setOscillatorScaleFactors({})
   }, [fitAll, resetPriceAxis])
 
   const handleStretchX = useCallback(
@@ -760,6 +802,14 @@ const ChartInner = forwardRef<
           )
         })}
 
+        <OscillatorHoverLayer
+          bar={hoveredBar}
+          mouseY={activeDrawingTool === 'cursor' ? mouseY : null}
+          panes={oscillatorHoverPanes}
+          left={CHART_MARGINS.left}
+          innerWidth={layout.innerWidth}
+        />
+
         <DrawingLayer
           drawings={drawings}
           draft={draftDrawing}
@@ -825,6 +875,15 @@ const ChartInner = forwardRef<
           prefs={panePrefs}
           onPreview={setPaneDraft}
           onCommit={commitPaneLayout}
+          disabled={activeDrawingTool !== 'cursor'}
+        />
+
+        <OscillatorAxisHandles
+          oscillators={layout.oscillators}
+          margins={CHART_MARGINS}
+          innerWidth={layout.innerWidth}
+          onStretch={stretchOscillator}
+          onReset={resetOscillator}
           disabled={activeDrawingTool !== 'cursor'}
         />
       </svg>

@@ -351,4 +351,16 @@ describe('oscillator pane layout', () => {
 
     expect(onPaneLayoutChange).not.toHaveBeenCalled()
   })
+
+  it('shows the hover readout when the cursor is over an oscillator pane', async () => {
+    renderChart({
+      indicators: atrIndicators,
+    })
+    await waitForChartSvg()
+    await waitForOscillatorPane()
+
+    fireEvent.mouseMove(screen.getByTestId('chart-interaction'), { clientX: 700, clientY: 350 })
+
+    await waitFor(() => expect(screen.getByTestId('oscillator-hover')).toBeInTheDocument())
+  })
 })
