@@ -523,75 +523,6 @@ const ChartInner = forwardRef<
         backgroundColor: settings.backgroundType === 'solid' ? settings.backgroundColor : undefined,
       }}
     >
-      {/* HUD Info Panel */}
-      {hudInfo && (
-        <div className="text-silver-400 bg-carbon-950/80 border-carbon-800/40 pointer-events-none absolute top-3 left-4 z-10 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border px-3 py-1.5 font-mono text-[11px] shadow-xl">
-          <span className="text-silver-100 mr-1 font-sans text-xs font-bold tracking-wider uppercase">
-            {symbol}
-          </span>
-          <span className="bg-brass-500/15 text-brass-400 border-brass-500/10 mr-2 rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase">
-            {timeframe}
-          </span>
-          <div>
-            <span className="text-silver-500 mr-1">O</span>
-            <span className="text-silver-200">{hudInfo.open}</span>
-          </div>
-          <div>
-            <span className="text-silver-500 mr-1">H</span>
-            <span className="text-silver-200">{hudInfo.high}</span>
-          </div>
-          <div>
-            <span className="text-silver-500 mr-1">L</span>
-            <span className="text-silver-200">{hudInfo.low}</span>
-          </div>
-          <div>
-            <span className="text-silver-500 mr-1">C</span>
-            <span className={hudInfo.colorClass}>{hudInfo.close}</span>
-          </div>
-          <div className={`${hudInfo.colorClass} font-bold`}>
-            <span>{hudInfo.change}</span>
-            <span className="ml-1 text-[10px]">({hudInfo.pctChange})</span>
-          </div>
-          <div className="hidden md:inline">
-            <span className="text-silver-500 mr-1">V</span>
-            <span className="text-silver-200">{hudInfo.volume}</span>
-          </div>
-          {volumeProfileHover && (
-            <div
-              className="border-carbon-700/60 flex flex-wrap gap-x-3 gap-y-0.5 border-l pl-3"
-              data-testid="volume-profile-tooltip"
-            >
-              <span>
-                <span className="text-silver-500 mr-1">P</span>
-                <span className="text-silver-100">{volumeProfileHover.price.toFixed(2)}</span>
-              </span>
-              <span>
-                <span className="text-silver-500 mr-1">Tot</span>
-                <span className="text-silver-100">{volumeProfileHover.total.toLocaleString()}</span>
-              </span>
-              <span>
-                <span className="text-silver-500 mr-1">B</span>
-                <span className="text-emerald-400">{volumeProfileHover.buy.toLocaleString()}</span>
-              </span>
-              <span>
-                <span className="text-silver-500 mr-1">S</span>
-                <span className="text-rose-400">{volumeProfileHover.sell.toLocaleString()}</span>
-              </span>
-              <span>
-                <span className="text-silver-500 mr-1">U</span>
-                <span className="text-silver-200">
-                  {volumeProfileHover.unknown.toLocaleString()}
-                </span>
-              </span>
-              <span>
-                <span className="text-silver-500 mr-1">Δ</span>
-                <span className="text-silver-100">{volumeProfileHover.delta.toLocaleString()}</span>
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
       {indicatorNoticeText && (
         <div
           role="status"
@@ -602,46 +533,123 @@ const ChartInner = forwardRef<
         </div>
       )}
 
-      {studyLegend.length > 0 && (
-        <div
-          aria-label="Study series legend"
-          className="bg-carbon-950/80 text-silver-300 absolute top-2 left-3 z-10 flex max-w-[70%] flex-wrap gap-x-3 gap-y-1 rounded px-2 py-1 font-mono text-[9px]"
-        >
-          {studyLegend.map((series) => {
-            const kind = series.kind ?? 'line'
-            const color =
-              ('color' in series ? series.color : undefined) ??
-              ('config' in series ? series.config.style?.color : undefined) ??
-              '#c9a227'
-            return (
-              <span
-                key={`${series.studyName}-${series.outputKey}`}
-                className="inline-flex items-center gap-1"
-                title={`${series.studyName} · ${series.seriesLabel ?? series.label}`}
+      {/* Top-left overlay: OHLC HUD with the study legend stacked beneath it */}
+      <div className="pointer-events-none absolute top-3 left-4 z-10 flex max-w-[70%] flex-col items-start gap-1.5">
+        {hudInfo && (
+          <div className="text-silver-400 bg-carbon-950/80 border-carbon-800/40 pointer-events-none flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border px-3 py-1.5 font-mono text-[11px] shadow-xl">
+            <span className="text-silver-100 mr-1 font-sans text-xs font-bold tracking-wider uppercase">
+              {symbol}
+            </span>
+            <span className="bg-brass-500/15 text-brass-400 border-brass-500/10 mr-2 rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase">
+              {timeframe}
+            </span>
+            <div>
+              <span className="text-silver-500 mr-1">O</span>
+              <span className="text-silver-200">{hudInfo.open}</span>
+            </div>
+            <div>
+              <span className="text-silver-500 mr-1">H</span>
+              <span className="text-silver-200">{hudInfo.high}</span>
+            </div>
+            <div>
+              <span className="text-silver-500 mr-1">L</span>
+              <span className="text-silver-200">{hudInfo.low}</span>
+            </div>
+            <div>
+              <span className="text-silver-500 mr-1">C</span>
+              <span className={hudInfo.colorClass}>{hudInfo.close}</span>
+            </div>
+            <div className={`${hudInfo.colorClass} font-bold`}>
+              <span>{hudInfo.change}</span>
+              <span className="ml-1 text-[10px]">({hudInfo.pctChange})</span>
+            </div>
+            <div className="hidden md:inline">
+              <span className="text-silver-500 mr-1">V</span>
+              <span className="text-silver-200">{hudInfo.volume}</span>
+            </div>
+            {volumeProfileHover && (
+              <div
+                className="border-carbon-700/60 flex flex-wrap gap-x-3 gap-y-0.5 border-l pl-3"
+                data-testid="volume-profile-tooltip"
               >
-                <svg width="18" height="10" viewBox="0 0 18 10" aria-hidden>
-                  {kind === 'markers' ? (
-                    studyMarkerShape(
-                      series.shape ?? 'circle',
-                      9,
-                      5,
-                      Math.min(series.size ?? 6, 8),
-                      color,
-                    )
-                  ) : kind === 'histogram' ? (
-                    <rect x="7" y="1" width="5" height="8" fill={color} />
-                  ) : kind === 'step' ? (
-                    <path d="M1 7 H7 V3 H17" fill="none" stroke={color} strokeWidth="1.5" />
-                  ) : (
-                    <line x1="1" x2="17" y1="5" y2="5" stroke={color} strokeWidth="1.5" />
-                  )}
-                </svg>
-                {series.seriesLabel ?? series.label}
-              </span>
-            )
-          })}
-        </div>
-      )}
+                <span>
+                  <span className="text-silver-500 mr-1">P</span>
+                  <span className="text-silver-100">{volumeProfileHover.price.toFixed(2)}</span>
+                </span>
+                <span>
+                  <span className="text-silver-500 mr-1">Tot</span>
+                  <span className="text-silver-100">
+                    {volumeProfileHover.total.toLocaleString()}
+                  </span>
+                </span>
+                <span>
+                  <span className="text-silver-500 mr-1">B</span>
+                  <span className="text-emerald-400">
+                    {volumeProfileHover.buy.toLocaleString()}
+                  </span>
+                </span>
+                <span>
+                  <span className="text-silver-500 mr-1">S</span>
+                  <span className="text-rose-400">{volumeProfileHover.sell.toLocaleString()}</span>
+                </span>
+                <span>
+                  <span className="text-silver-500 mr-1">U</span>
+                  <span className="text-silver-200">
+                    {volumeProfileHover.unknown.toLocaleString()}
+                  </span>
+                </span>
+                <span>
+                  <span className="text-silver-500 mr-1">Δ</span>
+                  <span className="text-silver-100">
+                    {volumeProfileHover.delta.toLocaleString()}
+                  </span>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {studyLegend.length > 0 && (
+          <div
+            aria-label="Study series legend"
+            className="bg-carbon-950/80 text-silver-300 flex flex-wrap gap-x-3 gap-y-1 rounded px-2 py-1 font-mono text-[9px]"
+          >
+            {studyLegend.map((series) => {
+              const kind = series.kind ?? 'line'
+              const color =
+                ('color' in series ? series.color : undefined) ??
+                ('config' in series ? series.config.style?.color : undefined) ??
+                '#c9a227'
+              return (
+                <span
+                  key={`${series.studyName}-${series.outputKey}`}
+                  className="inline-flex items-center gap-1"
+                  title={`${series.studyName} · ${series.seriesLabel ?? series.label}`}
+                >
+                  <svg width="18" height="10" viewBox="0 0 18 10" aria-hidden>
+                    {kind === 'markers' ? (
+                      studyMarkerShape(
+                        series.shape ?? 'circle',
+                        9,
+                        5,
+                        Math.min(series.size ?? 6, 8),
+                        color,
+                      )
+                    ) : kind === 'histogram' ? (
+                      <rect x="7" y="1" width="5" height="8" fill={color} />
+                    ) : kind === 'step' ? (
+                      <path d="M1 7 H7 V3 H17" fill="none" stroke={color} strokeWidth="1.5" />
+                    ) : (
+                      <line x1="1" x2="17" y1="5" y2="5" stroke={color} strokeWidth="1.5" />
+                    )}
+                  </svg>
+                  {series.seriesLabel ?? series.label}
+                </span>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {!isAtLatestCandle && (
         <div className="absolute top-2 right-3 z-10">
