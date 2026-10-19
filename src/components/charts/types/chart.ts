@@ -153,6 +153,12 @@ export const DEFAULT_INDICATORS: IndicatorConfig[] = [
     style: { color: '#a78bfa', strokeWidth: 1.2, lineStyle: 'solid' },
   },
   {
+    id: 'vwap',
+    enabled: false,
+    parameters: {},
+    style: { color: '#38bdf8', strokeWidth: 1.2, lineStyle: 'solid' },
+  },
+  {
     id: 'wma',
     enabled: false,
     parameters: { period: 20 },
