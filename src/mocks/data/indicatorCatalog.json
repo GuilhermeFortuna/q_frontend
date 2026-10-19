@@ -151,6 +151,22 @@
       ]
     },
     {
+      "id": "vwap",
+      "label": "VWAP",
+      "category": "Volume",
+      "pane": "price",
+      "unit": null,
+      "requiredData": "bars",
+      "parameters": [],
+      "outputs": [
+        {
+          "key": "line",
+          "label": "VWAP",
+          "pane": "price"
+        }
+      ]
+    },
+    {
       "id": "bollinger",
       "label": "Bollinger bands",
       "category": "Bands and channels",

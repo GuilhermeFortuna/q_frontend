@@ -211,6 +211,14 @@ export const indicatorDocumentation: Record<string, IndicatorDocumentation> = {
     'Volume may represent ticks or traded units depending on the source. The catalog places this output in the price pane, although its units differ from price.',
     ['volume', 'activity', 'average'],
   ),
+  vwap: doc(
+    'The average price paid per unit of volume since the session opened.',
+    'Cumulative typical price weighted by volume, restarted at each calendar day in the Brasília chart timezone. Typical price is (high + low + close) / 3.',
+    'Price above VWAP means the session has traded above its volume-weighted average; below means the opposite. Heavily traded bars pull it harder.',
+    'VWAP = Σ(typical price × volume) / Σ(volume), summed from the session’s first bar through the current bar',
+    'Uses MT5 tick volume, the only volume the indicator series loads. A bar with missing price or volume has no value, and a session with no volume yet shows none.',
+    ['volume', 'session', 'average', 'fair value'],
+  ),
   bollinger: doc(
     'A price envelope whose width follows recent variability.',
     'A simple moving average surrounded by sample standard-deviation bands.',
