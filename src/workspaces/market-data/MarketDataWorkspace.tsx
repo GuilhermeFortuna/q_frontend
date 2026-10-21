@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { Group, Panel, Separator, useDefaultLayout, usePanelRef } from 'react-resizable-panels'
 
-import { useInstruments, useMarketSnapshot, useMarketSnapshots } from '@/api/queries/market-data'
+import {
+  useInstrumentInfo,
+  useInstruments,
+  useMarketSnapshot,
+  useMarketSnapshots,
+} from '@/api/queries/market-data'
 import { useProgressiveOhlcv } from '@/api/queries/useProgressiveOhlcv'
 import { useDrawings } from '@/components/charts/hooks/useDrawings'
 import { DEFAULT_SETTINGS, type ChartProfile } from '@/components/charts/types/chart'
 import { normalizeIndicatorConfigs } from '@/lib/market/indicatorConfig'
+import { resolvePriceFormat } from '@/lib/market/priceFormat'
 
 import { ChartPanel } from '@/components/market/ChartPanel'
 import { ChartToolbar } from '@/components/market/ChartToolbar'
@@ -272,7 +278,6 @@ export function MarketDataWorkspace() {
   )
   const snapshotsQuery = useMarketSnapshots(liveWatchlistSymbols)
   const snapshotsBySymbol = snapshotsQuery.data ?? {}
-  const priceDigits = snapshot?.digits ?? 2
   const mt5Status = resolveMt5ConnectionStatus(
     snapshotQuery.isLoading,
     snapshotQuery.data,
@@ -281,7 +286,17 @@ export function MarketDataWorkspace() {
     isHistoricalOnly,
   )
 
+  const instrumentInfoQuery = useInstrumentInfo(selectedSymbol)
   const ohlcv = useProgressiveOhlcv(selectedSymbol, selectedTimeframe)
+  const priceFormat = useMemo(
+    () =>
+      resolvePriceFormat({
+        instrument: instrumentInfoQuery.data,
+        snapshotDigits: snapshot?.digits,
+        bars: ohlcv.bars,
+      }),
+    [instrumentInfoQuery.data, snapshot?.digits, ohlcv.bars],
+  )
   const { drawings, setDrawings, clearDrawings } = useDrawings(selectedSymbol, selectedTimeframe)
 
   const latestBar = useMemo(() => {
@@ -329,7 +344,7 @@ export function MarketDataWorkspace() {
           activeBar={activeBar}
           snapshot={snapshot}
           connectionStatus={mt5Status}
-          priceDigits={priceDigits}
+          priceDigits={priceFormat.digits}
           sidebarCollapsed={sidebarCollapsed}
           detailCollapsed={detailCollapsed}
           isLoadingInstrument={instrumentsQuery.isLoading}
@@ -447,6 +462,7 @@ export function MarketDataWorkspace() {
                 activeDrawingTool={activeDrawingTool}
                 drawings={drawings}
                 onDrawingsChange={setDrawings}
+                priceFormat={priceFormat}
                 bars={ohlcv.bars}
                 isInitialLoading={ohlcv.isInitialLoading}
                 isBackfilling={ohlcv.isBackfilling}

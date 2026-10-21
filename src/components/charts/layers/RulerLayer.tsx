@@ -19,6 +19,8 @@ type RulerLayerProps = {
   allBars: ProcessedBar[]
   layout: { priceTop: number; priceHeight: number; innerWidth: number }
   left: number
+  /** Decimal places for the price delta, from the instrument's precision. */
+  digits?: number
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -38,6 +40,7 @@ export function RulerLayer({
   allBars,
   layout,
   left,
+  digits = 2,
 }: RulerLayerProps) {
   const p1 = pointToXY(start, xScale, priceScale, allBars)
   const p2 = pointToXY(end, xScale, priceScale, allBars)
@@ -93,7 +96,7 @@ export function RulerLayer({
         fontFamily="monospace"
         data-testid="chart-ruler-price"
       >
-        {`${signed(measurement.priceDelta, 2)} (${signed(measurement.percentDelta, 2)}%)`}
+        {`${signed(measurement.priceDelta, digits)} (${signed(measurement.percentDelta, 2)}%)`}
       </text>
       <text
         x={labelX + 7}

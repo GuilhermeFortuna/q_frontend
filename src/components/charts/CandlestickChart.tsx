@@ -49,6 +49,7 @@ import {
 import { IndicatorLayer } from '@/components/charts/layers/IndicatorLayer'
 import { OscillatorPane } from '@/components/charts/layers/OscillatorPane'
 import { CrosshairLayer } from '@/components/charts/layers/CrosshairLayer'
+import { LastPriceLayer } from '@/components/charts/layers/LastPriceLayer'
 import { DrawingLayer } from '@/components/charts/layers/DrawingLayer'
 import { RulerLayer } from '@/components/charts/layers/RulerLayer'
 import { measureRuler, type ChartMeasureMode } from '@/components/charts/ruler'
@@ -68,6 +69,7 @@ import {
   type VolumeProfileLayerHandle,
 } from '@/components/charts/layers/VolumeProfileLayer'
 import { useDebounce } from '@/hooks/useDebounce'
+import { formatPrice, resolvePriceFormat, type PriceFormat } from '@/lib/market/priceFormat'
 
 const EMPTY_PANE_PREFS: PaneLayoutPrefs = {}
 
@@ -93,6 +95,8 @@ export type CandlestickChartProps = {
   chartSettings?: ChartSettings
   paneLayout?: PaneLayoutPrefs
   onPaneLayoutChange?: (prefs: PaneLayoutPrefs) => void
+  /** Instrument precision for every price label; inferred from the bars when omitted. */
+  priceFormat?: PriceFormat
 }
 
 const ChartInner = forwardRef<
@@ -117,6 +121,7 @@ const ChartInner = forwardRef<
     chartSettings = DEFAULT_SETTINGS,
     paneLayout,
     onPaneLayoutChange,
+    priceFormat,
   },
   ref,
 ) {
@@ -130,6 +135,11 @@ const ChartInner = forwardRef<
   void settings
 
   const processed = useMemo(() => processBars(data), [data])
+  const format = useMemo(
+    () => priceFormat ?? resolvePriceFormat({ bars: data }),
+    [priceFormat, data],
+  )
+  const latestBar = processed[processed.length - 1] ?? null
   const viewportResetKey = resetKey ?? `${symbol}:${timeframe}`
   const { viewport, scrollToEnd, fitAll, zoomAt, panBy, shiftViewport, stretchXByPixels } =
     useChartViewport(processed.length, viewportResetKey)
@@ -562,16 +572,16 @@ const ChartInner = forwardRef<
     const isPositive = change >= 0
     const colorClass = isPositive ? 'text-emerald-400' : 'text-rose-400'
     return {
-      open: hudBar.open.toFixed(2),
-      high: hudBar.high.toFixed(2),
-      low: hudBar.low.toFixed(2),
-      close: hudBar.close.toFixed(2),
+      open: formatPrice(hudBar.open, format.digits),
+      high: formatPrice(hudBar.high, format.digits),
+      low: formatPrice(hudBar.low, format.digits),
+      close: formatPrice(hudBar.close, format.digits),
       volume: hudBar.volume.toLocaleString(),
-      change: (isPositive ? '+' : '') + change.toFixed(2),
+      change: (isPositive ? '+' : '') + change.toFixed(format.digits),
       pctChange: (isPositive ? '+' : '') + pctChange.toFixed(2) + '%',
       colorClass,
     }
-  }, [hudBar])
+  }, [hudBar, format.digits])
 
   const cursorStyle =
     activeDrawingTool === 'cursor'
@@ -644,7 +654,9 @@ const ChartInner = forwardRef<
               >
                 <span>
                   <span className="text-silver-500 mr-1">P</span>
-                  <span className="text-silver-100">{volumeProfileHover.price.toFixed(2)}</span>
+                  <span className="text-silver-100">
+                    {formatPrice(volumeProfileHover.price, format.digits)}
+                  </span>
                 </span>
                 <span>
                   <span className="text-silver-500 mr-1">Tot</span>
@@ -920,20 +932,32 @@ const ChartInner = forwardRef<
             allBars={processed}
             layout={layout}
             left={CHART_MARGINS.left}
+            digits={format.digits}
           />
         )}
 
-        {activeDrawingTool === 'cursor' && (
-          <CrosshairLayer
-            activeBar={hoveredBar}
-            xScale={scales.xScale}
-            priceScale={scales.priceScale}
-            layout={layout}
-            timeframe={timeframe}
-            left={CHART_MARGINS.left}
-            mouseY={mouseY}
-          />
-        )}
+        <LastPriceLayer
+          price={latestBar?.close ?? null}
+          isBullish={latestBar?.isBullish ?? true}
+          priceScale={scales.priceScale}
+          layout={layout}
+          left={CHART_MARGINS.left}
+          width={width}
+          digits={format.digits}
+        />
+
+        <CrosshairLayer
+          activeBar={hoveredBar}
+          xScale={scales.xScale}
+          priceScale={scales.priceScale}
+          layout={layout}
+          timeframe={timeframe}
+          left={CHART_MARGINS.left}
+          width={width}
+          mouseY={mouseY}
+          price={mouseY != null ? scales.priceScale.invert(mouseY) : null}
+          digits={format.digits}
+        />
 
         <ChartAxes
           xScale={scales.xScale}
@@ -942,6 +966,7 @@ const ChartInner = forwardRef<
           oscillatorScales={scales.oscillatorScales}
           layout={layout}
           timeframe={timeframe}
+          priceDigits={format.digits}
           left={CHART_MARGINS.left}
           bottom={CHART_MARGINS.bottom}
           height={height}

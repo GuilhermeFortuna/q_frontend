@@ -12,6 +12,7 @@ import type {
   ChartProfile,
 } from '@/components/charts/types/chart'
 import { DEFAULT_SETTINGS, type PaneLayoutPrefs } from '@/components/charts/types/chart'
+import type { PriceFormat } from '@/lib/market/priceFormat'
 import { OperationalFailureState } from '@/components/status/OperationalFailureState'
 import type { OhlcvBar } from '@/types/api'
 
@@ -42,6 +43,7 @@ export type ChartPanelProps = {
   onAddProfile?: () => void
   onDeleteProfile?: (id: string, e: React.MouseEvent | React.KeyboardEvent) => void
   onRenameProfile?: (id: string, name: string) => void
+  priceFormat?: PriceFormat
 }
 
 export function ChartPanel({
@@ -71,6 +73,7 @@ export function ChartPanel({
   onAddProfile,
   onDeleteProfile,
   onRenameProfile,
+  priceFormat,
 }: ChartPanelProps) {
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
@@ -149,6 +152,7 @@ export function ChartPanel({
           chartSettings={settings}
           paneLayout={paneLayout}
           onPaneLayoutChange={onPaneLayoutChange}
+          priceFormat={priceFormat}
         />
       ) : error ? (
         <OperationalFailureState

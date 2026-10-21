@@ -4,6 +4,7 @@ import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 import { isPaddingSlotKey, type PaneLayout } from '@/components/charts/types/chart'
 import { chartTheme } from '@/lib/charts/chartTheme'
 import { formatTimeAxisLabel } from '@/lib/market/timeframes'
+import { formatPrice } from '@/lib/market/priceFormat'
 
 type ChartAxesProps = {
   xScale: BandScale
@@ -21,6 +22,8 @@ type ChartAxesProps = {
     | 'oscillators'
   >
   timeframe: string
+  /** Decimal places for price ticks, from the instrument's precision. */
+  priceDigits?: number
   left: number
   bottom: number
   height: number
@@ -44,6 +47,7 @@ export function ChartAxes({
   oscillatorScales,
   layout,
   timeframe,
+  priceDigits = 2,
   left,
   bottom,
   height,
@@ -52,7 +56,13 @@ export function ChartAxes({
 
   return (
     <>
-      <AxisRight left={left + layout.innerWidth} scale={priceScale} numTicks={6} {...axisStyle} />
+      <AxisRight
+        left={left + layout.innerWidth}
+        scale={priceScale}
+        numTicks={6}
+        tickFormat={(v) => formatPrice(Number(v), priceDigits)}
+        {...axisStyle}
+      />
       <AxisRight
         left={left + layout.innerWidth}
         scale={volumeScale}
