@@ -61,18 +61,18 @@ After this task the crosshair reads the exact price at the pointer in the instru
 
 The rail groups tools into flyouts; each group button shows the group's last-used tool.
 
-| Group | Tool | Anchors | Options and labels |
-|---|---|---|---|
-| Lines | Trend line | 2 | extend left, extend right; optional angle and price-change label |
-| Lines | Horizontal line | 1 | price label on the axis |
-| Lines | Horizontal ray | 1 | extends right from its anchor; price label on the axis |
-| Lines | Vertical line | 1 | time label on the time axis; spans all panes |
-| Shapes | Parallel channel | 3 | the third anchor sets the parallel offset; optional middle line; fill |
-| Shapes | Rectangle | 2 | fill colour with opacity |
-| Fibonacci | Retracement | 2 | levels 0, 23.6, 38.2, 50, 61.8, 78.6, 100 % each with its price; levels can be toggled; extend right |
-| Fibonacci | Trend-based extension | 3 | levels 0, 61.8, 100, 161.8, 261.8 % projected from the third anchor, each with its price |
-| Positions | Long position, Short position | 3 (entry, stop, target) | profit and risk zones; labels with price, distance in ticks and percent, and reward-to-risk ratio |
-| Text | Text note | 1 | edited inline (Enter commits, Shift+Enter breaks a line, Escape cancels; empty text deletes); double-click edits again |
+| Group     | Tool                          | Anchors                 | Options and labels                                                                                                     |
+| --------- | ----------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Lines     | Trend line                    | 2                       | extend left, extend right; optional angle and price-change label                                                       |
+| Lines     | Horizontal line               | 1                       | price label on the axis                                                                                                |
+| Lines     | Horizontal ray                | 1                       | extends right from its anchor; price label on the axis                                                                 |
+| Lines     | Vertical line                 | 1                       | time label on the time axis; spans all panes                                                                           |
+| Shapes    | Parallel channel              | 3                       | the third anchor sets the parallel offset; optional middle line; fill                                                  |
+| Shapes    | Rectangle                     | 2                       | fill colour with opacity                                                                                               |
+| Fibonacci | Retracement                   | 2                       | levels 0, 23.6, 38.2, 50, 61.8, 78.6, 100 % each with its price; levels can be toggled; extend right                   |
+| Fibonacci | Trend-based extension         | 3                       | levels 0, 61.8, 100, 161.8, 261.8 % projected from the third anchor, each with its price                               |
+| Positions | Long position, Short position | 3 (entry, stop, target) | profit and risk zones; labels with price, distance in ticks and percent, and reward-to-risk ratio                      |
+| Text      | Text note                     | 1                       | edited inline (Enter commits, Shift+Enter breaks a line, Escape cancels; empty text deletes); double-click edits again |
 
 `window.prompt` is no longer used on the Market page drawing path.
 
