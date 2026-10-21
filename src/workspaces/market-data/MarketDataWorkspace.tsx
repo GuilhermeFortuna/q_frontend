@@ -95,9 +95,13 @@ export function MarketDataWorkspace() {
     showGrid,
     chartSettings,
     activeDrawingTool,
+    drawingMagnet,
+    keepDrawingTool,
+    hideAllDrawings,
     sidebarCollapsed,
     detailCollapsed,
   } = useAppStore((s) => s.marketDataSession)
+  const drawingSession = { drawingMagnet, keepDrawingTool, hideAllDrawings }
   const patchMarketDataSession = useAppStore((s) => s.patchMarketDataSession)
 
   const [profiles, setProfiles] = useState<ChartProfile[]>(() => {
@@ -297,7 +301,7 @@ export function MarketDataWorkspace() {
       }),
     [instrumentInfoQuery.data, snapshot?.digits, ohlcv.bars],
   )
-  const { drawings, setDrawings, clearDrawings } = useDrawings(selectedSymbol, selectedTimeframe)
+  const drawingStore = useDrawings(selectedSymbol)
 
   const latestBar = useMemo(() => {
     if (ohlcv.bars.length === 0) return null
@@ -460,8 +464,17 @@ export function MarketDataWorkspace() {
                 indicators={indicators}
                 showGrid={showGrid}
                 activeDrawingTool={activeDrawingTool}
-                drawings={drawings}
-                onDrawingsChange={setDrawings}
+                drawings={drawingStore.drawings}
+                onDrawingsChange={drawingStore.commit}
+                onUndoDrawings={drawingStore.undo}
+                onRedoDrawings={drawingStore.redo}
+                drawingNotice={drawingStore.notice}
+                drawingMagnet={drawingSession.drawingMagnet}
+                keepDrawingTool={drawingSession.keepDrawingTool}
+                hideAllDrawings={drawingSession.hideAllDrawings}
+                onActiveDrawingToolChange={(val) =>
+                  patchMarketDataSession({ activeDrawingTool: val })
+                }
                 priceFormat={priceFormat}
                 bars={ohlcv.bars}
                 isInitialLoading={ohlcv.isInitialLoading}
@@ -488,7 +501,7 @@ export function MarketDataWorkspace() {
               onActiveDrawingToolChange={(val) =>
                 patchMarketDataSession({ activeDrawingTool: val })
               }
-              onClearDrawings={clearDrawings}
+              onClearDrawings={() => drawingStore.commit([])}
             />
             <SymbolCommandPalette
               open={symbolPaletteOpen}

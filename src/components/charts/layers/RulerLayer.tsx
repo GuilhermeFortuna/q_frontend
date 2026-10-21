@@ -1,9 +1,9 @@
-import type { BandScale, LinearScale } from '@/components/charts/types/scales'
+import type { LinearScale } from '@/components/charts/types/scales'
 
-import type { DataPoint, ProcessedBar } from '@/components/charts/types/chart'
+import type { DrawingAnchor } from '@/components/charts/drawings/model'
+import type { TimeMapper } from '@/components/charts/drawings/timeMapping'
 import { BEAR_COLOR, BULL_COLOR } from '@/components/charts/types/chart'
 import { formatRulerDuration, type RulerMeasurement } from '@/components/charts/ruler'
-import { pointToXY } from '@/components/charts/hooks/useChartScales'
 
 const RULER_COLOR = '#6eb5ff'
 const LABEL_WIDTH = 132
@@ -11,12 +11,11 @@ const LABEL_HEIGHT = 34
 const LABEL_GAP = 10
 
 type RulerLayerProps = {
-  start: DataPoint
-  end: DataPoint
+  start: DrawingAnchor
+  end: DrawingAnchor
   measurement: RulerMeasurement
-  xScale: BandScale
+  mapper: TimeMapper
   priceScale: LinearScale
-  allBars: ProcessedBar[]
   layout: { priceTop: number; priceHeight: number; innerWidth: number }
   left: number
   /** Decimal places for the price delta, from the instrument's precision. */
@@ -35,16 +34,15 @@ export function RulerLayer({
   start,
   end,
   measurement,
-  xScale,
+  mapper,
   priceScale,
-  allBars,
   layout,
   left,
   digits = 2,
 }: RulerLayerProps) {
-  const p1 = pointToXY(start, xScale, priceScale, allBars)
-  const p2 = pointToXY(end, xScale, priceScale, allBars)
-  if (!p1 || !p2) return null
+  const p1 = { x: mapper.xOfTime(start.time), y: priceScale(start.price) }
+  const p2 = { x: mapper.xOfTime(end.time), y: priceScale(end.price) }
+  if (!Number.isFinite(p1.x) || !Number.isFinite(p2.x)) return null
 
   const x1 = left + p1.x
   const x2 = left + p2.x

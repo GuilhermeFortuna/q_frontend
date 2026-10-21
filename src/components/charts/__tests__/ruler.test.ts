@@ -1,25 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import { formatRulerDuration, measureRuler } from '@/components/charts/ruler'
-import { processBars } from '@/components/charts/hooks/useChartScales'
-import type { OhlcvBar } from '@/types/api'
+import { createTimeMapper } from '@/components/charts/drawings/timeMapping'
 
 const HOUR_MS = 3_600_000
-const bars: OhlcvBar[] = [0, 1, 2, 3, 4].map((i) => ({
-  timestamp: new Date(Date.UTC(2026, 0, 5, 10) + i * HOUR_MS).toISOString(),
-  open: 100,
-  high: 101,
-  low: 99,
-  close: 100 + i,
-  volume: 1,
-}))
-const processed = processBars(bars)
+const START = Date.UTC(2026, 0, 5, 10)
+const times = [0, 1, 2, 3, 4].map((i) => START + i * HOUR_MS)
+const positionOfTime = createTimeMapper({
+  times,
+  timeframeMs: HOUR_MS,
+  startIndex: 0,
+  firstSlotX: 0,
+  slotStep: 1,
+  left: 0,
+}).positionOfTime
 
 describe('measureRuler', () => {
-  it('reports price delta, percent, candle count and duration between two points', () => {
+  it('reports price delta, percent, candle count and duration between two anchors', () => {
     const measurement = measureRuler(
-      { timestamp: bars[1].timestamp, price: 100 },
-      { timestamp: bars[4].timestamp, price: 105 },
-      processed,
+      { time: times[1], price: 100 },
+      { time: times[4], price: 105 },
+      positionOfTime,
     )
 
     expect(measurement).toEqual({
@@ -32,33 +32,33 @@ describe('measureRuler', () => {
 
   it('counts candles and reports a negative delta regardless of drag direction', () => {
     const measurement = measureRuler(
-      { timestamp: bars[4].timestamp, price: 110 },
-      { timestamp: bars[2].timestamp, price: 99 },
-      processed,
+      { time: times[4], price: 110 },
+      { time: times[2], price: 99 },
+      positionOfTime,
     )
 
-    expect(measurement?.bars).toBe(2)
-    expect(measurement?.priceDelta).toBe(-11)
-    expect(measurement?.percentDelta).toBeCloseTo(-10)
+    expect(measurement.bars).toBe(2)
+    expect(measurement.priceDelta).toBe(-11)
+    expect(measurement.percentDelta).toBeCloseTo(-10)
   })
 
-  it('returns null when a point is not on a known bar', () => {
-    expect(
-      measureRuler(
-        { timestamp: '1999-01-01T00:00:00.000Z', price: 1 },
-        { timestamp: bars[0].timestamp, price: 2 },
-        processed,
-      ),
-    ).toBeNull()
+  it('counts candles between anchors that are off the loaded bars by extrapolation', () => {
+    const measurement = measureRuler(
+      { time: times[0] - 2 * HOUR_MS, price: 1 },
+      { time: times[0] + HOUR_MS, price: 2 },
+      positionOfTime,
+    )
+    expect(measurement.bars).toBe(3)
+    expect(measurement.durationMs).toBe(3 * HOUR_MS)
   })
 
   it('reports zero percent when the start price is zero', () => {
     const measurement = measureRuler(
-      { timestamp: bars[0].timestamp, price: 0 },
-      { timestamp: bars[1].timestamp, price: 3 },
-      processed,
+      { time: times[0], price: 0 },
+      { time: times[1], price: 3 },
+      positionOfTime,
     )
-    expect(measurement?.percentDelta).toBe(0)
+    expect(measurement.percentDelta).toBe(0)
   })
 })
 

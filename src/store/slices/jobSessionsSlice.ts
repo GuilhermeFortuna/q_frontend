@@ -5,9 +5,9 @@ import {
   DEFAULT_SETTINGS,
   type ChartSettings,
   type ChartType,
-  type DrawingTool,
   type IndicatorConfig,
 } from '@/components/charts/types/chart'
+import type { DrawingTool } from '@/components/charts/drawings/model'
 import type { MlFilterEvaluationRequest, MlFilterTrainingRequest } from '../../../contracts/api'
 import type { BacktestRequest, BacktestRunSummary } from '@/types/backtesting'
 import type { OptimizationBacktestConfig, OptimizationConfig } from '@/types/optimization'
@@ -93,6 +93,12 @@ export type MarketDataSession = {
   showGrid: boolean
   chartSettings: ChartSettings
   activeDrawingTool: DrawingTool
+  /** Snap anchors and the crosshair to OHLC or tick size. */
+  drawingMagnet: boolean
+  /** Keep the placement tool armed after each drawing. */
+  keepDrawingTool: boolean
+  /** Hide every drawing of the chart without changing their own hidden flags. */
+  hideAllDrawings: boolean
   sidebarCollapsed: boolean
   detailCollapsed: boolean
 }
@@ -187,6 +193,9 @@ const initialMarketDataSession: MarketDataSession = {
   showGrid: true,
   chartSettings: DEFAULT_SETTINGS,
   activeDrawingTool: 'cursor',
+  drawingMagnet: false,
+  keepDrawingTool: false,
+  hideAllDrawings: false,
   sidebarCollapsed: false,
   detailCollapsed: false,
 }

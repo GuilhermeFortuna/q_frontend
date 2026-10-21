@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { scaleBand, scaleLinear } from '@visx/scale'
 
-import type {
-  ChartSlot,
-  DataPoint,
-  PaneLayout,
-  ProcessedBar,
-} from '@/components/charts/types/chart'
-import type { BandScale, LinearScale } from '@/components/charts/types/scales'
+import type { ChartSlot, PaneLayout, ProcessedBar } from '@/components/charts/types/chart'
 import type { OhlcvBar } from '@/types/api'
 import type { OscillatorRenderGroup } from '@/lib/market/buildIndicatorRenderModel'
 import {
@@ -207,30 +201,6 @@ export function barCenterX(
   return (xScale(timestamp) ?? 0) + xScale.bandwidth() / 2
 }
 
-export function pointToXY(
-  point: DataPoint,
-  xScale: BandScale,
-  priceScale: LinearScale,
-  bars: ProcessedBar[],
-): { x: number; y: number } | null {
-  const bar = bars.find((b) => b.timestamp === point.timestamp)
-  if (!bar) {
-    const idx = bars.findIndex(
-      (b) => new Date(b.timestamp).getTime() >= new Date(point.timestamp).getTime(),
-    )
-    const fallback = bars[Math.max(0, idx)] ?? bars[bars.length - 1]
-    if (!fallback) return null
-    return {
-      x: barCenterX(xScale, fallback.timestamp),
-      y: priceScale(point.price),
-    }
-  }
-  return {
-    x: barCenterX(xScale, bar.timestamp),
-    y: priceScale(point.price),
-  }
-}
-
 export function timestampAtX(
   xScale: ReturnType<typeof scaleBand<string>>,
   x: number,
@@ -252,19 +222,4 @@ export function timestampAtX(
 
 export function priceAtY(priceScale: ReturnType<typeof scaleLinear<number>>, y: number): number {
   return priceScale.invert(y)
-}
-
-export function dataPointFromEvent(
-  x: number,
-  y: number,
-  xScale: ReturnType<typeof scaleBand<string>>,
-  priceScale: ReturnType<typeof scaleLinear<number>>,
-  bars: ProcessedBar[],
-): { timestamp: string; price: number } | null {
-  const bar = timestampAtX(xScale, x, bars)
-  if (!bar) return null
-  return {
-    timestamp: bar.timestamp,
-    price: priceAtY(priceScale, y),
-  }
 }

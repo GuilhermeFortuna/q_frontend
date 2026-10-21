@@ -3,19 +3,6 @@ import { chartTheme } from '@/lib/charts/chartTheme'
 
 export type ChartType = 'candles' | 'line' | 'area'
 
-export type DrawingTool = 'cursor' | 'trendline' | 'horizontal' | 'fibo' | 'text' | 'eraser'
-
-export type DataPoint = {
-  timestamp: string
-  price: number
-}
-
-export type DrawingObject =
-  | { id: string; type: 'trendline'; p1: DataPoint; p2: DataPoint }
-  | { id: string; type: 'horizontal'; price: number }
-  | { id: string; type: 'fibo'; p1: DataPoint; p2: DataPoint }
-  | { id: string; type: 'text'; point: DataPoint; label: string }
-
 export type {
   IndicatorConfig,
   IndicatorStyle,

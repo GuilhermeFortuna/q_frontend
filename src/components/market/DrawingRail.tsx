@@ -1,15 +1,15 @@
 import type { LucideIcon } from 'lucide-react'
 import { Eraser, Layers, Minus, MousePointer, TrendingUp, Type } from 'lucide-react'
 
-import type { DrawingTool } from '@/components/charts/types/chart'
+import type { DrawingTool } from '@/components/charts/drawings/model'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { cn } from '@/lib/utils'
 
 const DRAWING_TOOLS: Array<{ tool: DrawingTool; icon: LucideIcon; title: string }> = [
   { tool: 'cursor', icon: MousePointer, title: 'Crosshair Cursor Pointer' },
   { tool: 'trendline', icon: TrendingUp, title: 'Draw Trendline' },
-  { tool: 'horizontal', icon: Minus, title: 'Draw Support/Resistance Line' },
-  { tool: 'fibo', icon: Layers, title: 'Draw Fibonacci Retracements' },
+  { tool: 'hline', icon: Minus, title: 'Draw Support/Resistance Line' },
+  { tool: 'fib', icon: Layers, title: 'Draw Fibonacci Retracements' },
   { tool: 'text', icon: Type, title: 'Insert Text Annotation' },
 ]
 
