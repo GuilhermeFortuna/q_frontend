@@ -27,7 +27,9 @@ import {
   useDrawingInteraction,
   type DrawingScene,
 } from '@/components/charts/hooks/useDrawingInteraction'
-import { magnetPrice } from '@/components/charts/drawings/interaction'
+import { magnetPrice, pixelOfAnchor } from '@/components/charts/drawings/interaction'
+import { DrawingToolbar } from '@/components/charts/DrawingToolbar'
+import { TextNoteEditor } from '@/components/charts/TextNoteEditor'
 import { timeframeToMs, formatCrosshairLabel } from '@/lib/market/timeframes'
 import { computePaneLayout } from '@/components/charts/paneLayout'
 import {
@@ -613,6 +615,8 @@ const ChartInner = forwardRef<
     }
   }, [hudBar, format.digits])
 
+  const hiddenDrawingCount = drawings.filter((drawing) => drawing.hidden).length
+
   const cursorStyle =
     activeDrawingTool !== 'cursor' || measureMode === 'ruler'
       ? 'crosshair'
@@ -792,6 +796,24 @@ const ChartInner = forwardRef<
           >
             <ChevronRight className="h-3 w-3" aria-hidden />
             Latest
+          </button>
+        </div>
+      )}
+
+      {hiddenDrawingCount > 0 && !hideAllDrawings && (
+        <div className="absolute top-16 right-3 z-10">
+          <button
+            type="button"
+            onClick={() =>
+              onDrawingsChange?.(
+                drawings.map((drawing) =>
+                  drawing.hidden ? { ...drawing, hidden: false } : drawing,
+                ),
+              )
+            }
+            className="border-brass-500/40 bg-carbon-900/95 text-brass-400 hover:border-brass-500 flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[9px] uppercase shadow-lg"
+          >
+            Show {hiddenDrawingCount} hidden
           </button>
         </div>
       )}
@@ -1066,6 +1088,31 @@ const ChartInner = forwardRef<
           disabled={activeDrawingTool !== 'cursor'}
         />
       </svg>
+
+      {interaction.selected && interaction.selectedGeometry && (
+        <DrawingToolbar
+          drawing={interaction.selected}
+          handles={interaction.selectedGeometry.handles}
+          containerWidth={width}
+          containerHeight={height}
+          onUpdate={interaction.updateSelected}
+          onToggleHidden={() =>
+            interaction.updateSelected((drawing) => ({ ...drawing, hidden: true }) as DrawingObject)
+          }
+          onDelete={interaction.deleteSelected}
+        />
+      )}
+
+      {interaction.editing && (
+        <TextNoteEditor
+          key={interaction.editing.id ?? 'new-note'}
+          x={pixelOfAnchor(interaction.editing.anchor, scene).x}
+          y={pixelOfAnchor(interaction.editing.anchor, scene).y}
+          initialText={interaction.editing.text}
+          onCommit={interaction.commitText}
+          onCancel={interaction.cancelText}
+        />
+      )}
     </div>
   )
 })

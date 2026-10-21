@@ -274,6 +274,48 @@ describe('CandlestickChart drawings', () => {
     expect(onRedo).toHaveBeenCalledTimes(2)
   })
 
+  it('adds an inline text note on click and commits it with Enter', () => {
+    const onChange = vi.fn()
+    const { surface } = renderHarness({ tool: 'text', onChange })
+
+    press(surface, 300, 200)
+    const editor = screen.getByTestId('text-note-editor')
+    fireEvent.change(editor, { target: { value: 'support' } })
+    fireEvent.keyDown(editor, { key: 'Enter' })
+
+    expect(onChange).toHaveBeenCalledTimes(1)
+    const [[next]] = onChange.mock.calls as [[DrawingObject[]]]
+    expect(next[0]).toMatchObject({ type: 'text', options: { text: 'support' } })
+    expect(screen.queryByTestId('text-note-editor')).toBeNull()
+  })
+
+  it('removes an existing note when its text is cleared', () => {
+    const onChange = vi.fn()
+    const note: DrawingObject = {
+      id: 'n1',
+      type: 'text',
+      anchors: [{ time: Date.parse(BARS[10].timestamp), price: 105 }],
+      style: LINE_STYLE,
+      locked: false,
+      hidden: false,
+      options: { text: 'old' },
+    }
+    const { surface } = renderHarness({ initial: [note], onChange })
+    const label = document.querySelector('[data-drawing-type="text"] text')
+    if (!label) throw new Error('note not rendered')
+    fireEvent.doubleClick(surface, {
+      clientX: Number(label.getAttribute('x')) + 4,
+      clientY: Number(label.getAttribute('y')) - 4,
+    })
+
+    const editor = screen.getByTestId('text-note-editor')
+    expect(editor).toHaveValue('old')
+    fireEvent.change(editor, { target: { value: '   ' } })
+    fireEvent.keyDown(editor, { key: 'Enter' })
+
+    expect(onChange).toHaveBeenCalledWith([])
+  })
+
   it('keeps the placement tool armed with Keep drawing', () => {
     const onChange = vi.fn()
     const { surface } = renderHarness({ tool: 'hline', keepTool: true, onChange })

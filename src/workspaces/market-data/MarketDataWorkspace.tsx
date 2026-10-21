@@ -502,6 +502,13 @@ export function MarketDataWorkspace() {
                 patchMarketDataSession({ activeDrawingTool: val })
               }
               onClearDrawings={() => drawingStore.commit([])}
+              hasDrawings={drawingStore.drawings.length > 0}
+              magnet={drawingSession.drawingMagnet}
+              onMagnetChange={(value) => patchMarketDataSession({ drawingMagnet: value })}
+              keepDrawing={drawingSession.keepDrawingTool}
+              onKeepDrawingChange={(value) => patchMarketDataSession({ keepDrawingTool: value })}
+              hideAll={drawingSession.hideAllDrawings}
+              onHideAllChange={(value) => patchMarketDataSession({ hideAllDrawings: value })}
             />
             <SymbolCommandPalette
               open={symbolPaletteOpen}
