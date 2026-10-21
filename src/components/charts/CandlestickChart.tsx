@@ -50,6 +50,8 @@ import { IndicatorLayer } from '@/components/charts/layers/IndicatorLayer'
 import { OscillatorPane } from '@/components/charts/layers/OscillatorPane'
 import { CrosshairLayer } from '@/components/charts/layers/CrosshairLayer'
 import { DrawingLayer } from '@/components/charts/layers/DrawingLayer'
+import { RulerLayer } from '@/components/charts/layers/RulerLayer'
+import { measureRuler, type ChartMeasureMode } from '@/components/charts/ruler'
 import { ChevronRight } from 'lucide-react'
 
 import { useMarketIndicatorRenderModel } from '@/components/charts/hooks/useIndicatorSeries'
@@ -276,6 +278,13 @@ const ChartInner = forwardRef<
   const [mouseY, setMouseY] = useState<number | null>(null)
   const [draftPoint, setDraftPoint] = useState<DataPoint | null>(null)
   const [draftDrawing, setDraftDrawing] = useState<DrawingObject | null>(null)
+  const [measureMode, setMeasureMode] = useState<ChartMeasureMode>('hand')
+  const [ruler, setRuler] = useState<{ start: DataPoint; end: DataPoint } | null>(null)
+  const rulerMeasurement = useMemo(
+    () => (ruler ? measureRuler(ruler.start, ruler.end, processed) : null),
+    [ruler, processed],
+  )
+  const isRulerDragging = useRef(false)
   const isPanning = useRef(false)
   const panStart = useRef<{ x: number; y: number } | null>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -285,6 +294,12 @@ const ChartInner = forwardRef<
   useEffect(() => {
     onViewportChange?.(viewport)
   }, [viewport, onViewportChange])
+
+  // A measurement is anchored to one symbol's bars and means nothing after a switch.
+  useEffect(() => {
+    isRulerDragging.current = false
+    setRuler(null)
+  }, [viewportResetKey])
 
   useEffect(() => {
     return () => {
@@ -320,6 +335,11 @@ const ChartInner = forwardRef<
       if (!point) return
       const x = point.x - CHART_MARGINS.left
       const y = point.y
+
+      if (isRulerDragging.current) {
+        const dp = dataPointFromEvent(x, y, scales.xScale, scales.priceScale, visibleBars)
+        if (dp) setRuler((prev) => (prev ? { ...prev, end: dp } : prev))
+      }
 
       if (isPanning.current && panStart.current) {
         const barDelta = Math.round(
@@ -372,12 +392,36 @@ const ChartInner = forwardRef<
     [drawings, onDrawingsChange],
   )
 
+  const finishRulerDrag = useCallback(() => {
+    if (!isRulerDragging.current) return
+    isRulerDragging.current = false
+    // A press without movement is a click on empty chart, which clears the ruler.
+    setRuler((prev) =>
+      prev && prev.start.timestamp === prev.end.timestamp && prev.start.price === prev.end.price
+        ? null
+        : prev,
+    )
+  }, [])
+
   const handleMouseDown = useCallback(
     (event: React.MouseEvent<SVGRectElement>) => {
       if (activeDrawingTool === 'cursor') {
         if (event.button === 0) {
           const point = localPoint(event)
           if (!point) return
+          if (measureMode === 'ruler') {
+            const dp = dataPointFromEvent(
+              point.x - CHART_MARGINS.left,
+              point.y,
+              scales.xScale,
+              scales.priceScale,
+              visibleBars,
+            )
+            if (!dp) return
+            isRulerDragging.current = true
+            setRuler({ start: dp, end: dp })
+            return
+          }
           isPanning.current = true
           panStart.current = { x: point.x, y: point.y }
         }
@@ -421,13 +465,14 @@ const ChartInner = forwardRef<
         }
       }
     },
-    [activeDrawingTool, visibleBars, scales, draftPoint, finishDrawing],
+    [activeDrawingTool, measureMode, visibleBars, scales, draftPoint, finishDrawing],
   )
 
   const handleMouseUp = useCallback(() => {
     isPanning.current = false
     panStart.current = null
-  }, [])
+    finishRulerDrag()
+  }, [finishRulerDrag])
 
   const handleMouseLeave = useCallback(() => {
     pendingHoverRef.current = null
@@ -439,8 +484,25 @@ const ChartInner = forwardRef<
     setVolumeProfileHover(null)
     setMouseY(null)
     isPanning.current = false
+    finishRulerDrag()
     onHoverBar?.(null)
-  }, [onHoverBar])
+  }, [onHoverBar, finishRulerDrag])
+
+  // Ctrl (pressed alone) switches between hand and ruler. Only meaningful while the chart
+  // has focus and no drawing tool is armed, so it never fights the drawing workflow.
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (activeDrawingTool !== 'cursor') return
+      if (event.key === 'Control' && !event.repeat) {
+        finishRulerDrag()
+        setMeasureMode((mode) => (mode === 'hand' ? 'ruler' : 'hand'))
+      } else if (event.key === 'Escape') {
+        isRulerDragging.current = false
+        setRuler(null)
+      }
+    },
+    [activeDrawingTool, finishRulerDrag],
+  )
 
   useEffect(() => {
     const el = chartContainerRef.current
@@ -512,12 +574,20 @@ const ChartInner = forwardRef<
   }, [hudBar])
 
   const cursorStyle =
-    activeDrawingTool === 'cursor' ? (isPanning.current ? 'grabbing' : 'crosshair') : 'crosshair'
+    activeDrawingTool === 'cursor'
+      ? measureMode === 'ruler'
+        ? 'crosshair'
+        : isPanning.current
+          ? 'grabbing'
+          : 'grab'
+      : 'crosshair'
 
   return (
     <div
       ref={chartContainerRef}
-      className="border-carbon-700 relative h-full w-full overflow-hidden overscroll-contain rounded-lg border shadow-2xl select-none"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="border-carbon-700 focus-visible:ring-brass-500/40 relative h-full w-full overflow-hidden overscroll-contain rounded-lg border shadow-2xl select-none focus-visible:ring-1 focus-visible:outline-none"
       style={{
         background: settings.backgroundType === 'gradient' ? settings.backgroundColor : undefined,
         backgroundColor: settings.backgroundType === 'solid' ? settings.backgroundColor : undefined,
@@ -662,6 +732,18 @@ const ChartInner = forwardRef<
             <ChevronRight className="h-3 w-3" aria-hidden />
             Latest
           </button>
+        </div>
+      )}
+
+      {activeDrawingTool === 'cursor' && (
+        <div
+          className="pointer-events-none absolute top-10 right-3 z-10"
+          data-testid="chart-measure-mode"
+          aria-live="polite"
+        >
+          <span className="bg-carbon-950/80 text-silver-400 border-carbon-800/40 rounded border px-1.5 py-0.5 font-mono text-[9px] tracking-wider uppercase">
+            {measureMode === 'ruler' ? 'Ruler' : 'Hand'} · Ctrl
+          </span>
         </div>
       )}
 
@@ -827,6 +909,19 @@ const ChartInner = forwardRef<
           layout={layout}
           left={CHART_MARGINS.left}
         />
+
+        {ruler && rulerMeasurement && (
+          <RulerLayer
+            start={ruler.start}
+            end={ruler.end}
+            measurement={rulerMeasurement}
+            xScale={scales.xScale}
+            priceScale={scales.priceScale}
+            allBars={processed}
+            layout={layout}
+            left={CHART_MARGINS.left}
+          />
+        )}
 
         {activeDrawingTool === 'cursor' && (
           <CrosshairLayer

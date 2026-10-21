@@ -1,8 +1,8 @@
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
-import type { DataPoint, DrawingObject, ProcessedBar } from '@/components/charts/types/chart'
+import type { DrawingObject, ProcessedBar } from '@/components/charts/types/chart'
 import { BRASS_COLOR } from '@/components/charts/types/chart'
-import { barCenterX } from '@/components/charts/hooks/useChartScales'
+import { pointToXY } from '@/components/charts/hooks/useChartScales'
 
 const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 1]
 
@@ -14,30 +14,6 @@ type DrawingLayerProps = {
   allBars: ProcessedBar[]
   layout: { priceTop: number; priceHeight: number; innerWidth: number }
   left: number
-}
-
-function pointToXY(
-  point: DataPoint,
-  xScale: BandScale,
-  priceScale: LinearScale,
-  bars: ProcessedBar[],
-): { x: number; y: number } | null {
-  const bar = bars.find((b) => b.timestamp === point.timestamp)
-  if (!bar) {
-    const idx = bars.findIndex(
-      (b) => new Date(b.timestamp).getTime() >= new Date(point.timestamp).getTime(),
-    )
-    const fallback = bars[Math.max(0, idx)] ?? bars[bars.length - 1]
-    if (!fallback) return null
-    return {
-      x: barCenterX(xScale, fallback.timestamp),
-      y: priceScale(point.price),
-    }
-  }
-  return {
-    x: barCenterX(xScale, bar.timestamp),
-    y: priceScale(point.price),
-  }
 }
 
 function renderDrawing(
