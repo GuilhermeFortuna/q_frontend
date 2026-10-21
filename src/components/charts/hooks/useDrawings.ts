@@ -1,52 +1,84 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import type { DrawingObject } from '@/components/charts/types/chart'
+import {
+  browserDrawingStorage,
+  loadSymbolDrawings,
+  saveSymbolDrawings,
+  type DrawingStorage,
+} from '@/components/charts/drawings/storage'
+import {
+  commitDrawings,
+  redoDrawings,
+  startSession,
+  undoDrawings,
+  type DrawingSession,
+} from '@/components/charts/drawings/session'
+import type { DrawingObject } from '@/components/charts/drawings/model'
 
-function storageKey(symbol: string, timeframe: string) {
-  return `quant:drawings:${symbol}:${timeframe}`
-}
+const SAVE_FAILED_NOTICE =
+  'Drawings could not be saved in this browser; they stay until the page reloads.'
 
-export function useDrawings(symbol: string, timeframe: string) {
-  const [drawings, setDrawings] = useState<DrawingObject[]>([])
+type SessionsBySymbol = Record<string, DrawingSession>
+
+/**
+ * Drawings for one symbol, persisted to local storage and shared by every timeframe of that
+ * symbol. Changes go through `commit`, which records undo history; the write itself happens
+ * after render, so a failed write keeps the drawings in memory and shows a notice.
+ */
+export function useDrawings(symbol: string) {
+  const [sessions, setSessions] = useState<SessionsBySymbol>({})
+  const storage = useMemo<DrawingStorage | null>(() => browserDrawingStorage(), [])
+
+  const stored = sessions[symbol]
+  const session = useMemo<DrawingSession>(() => {
+    if (stored) return stored
+    const loaded = loadSymbolDrawings(storage, symbol)
+    return startSession(loaded.drawings, loaded.notices)
+  }, [stored, storage, symbol])
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey(symbol, timeframe))
-      setDrawings(raw ? (JSON.parse(raw) as DrawingObject[]) : [])
-    } catch {
-      setDrawings([])
-    }
-  }, [symbol, timeframe])
+    if (!session.dirty) return
+    const result = saveSymbolDrawings(storage, symbol, session.drawings)
+    setSessions((prev) => {
+      const current = prev[symbol]
+      // A newer change superseded this write; its own effect run will save it.
+      if (!current || current.drawings !== session.drawings) return prev
+      return {
+        ...prev,
+        [symbol]: {
+          ...current,
+          dirty: false,
+          notices: result.ok ? [] : [SAVE_FAILED_NOTICE],
+        },
+      }
+    })
+  }, [session, storage, symbol])
 
-  const persist = useCallback(
+  const commit = useCallback(
     (next: DrawingObject[]) => {
-      setDrawings(next)
-      localStorage.setItem(storageKey(symbol, timeframe), JSON.stringify(next))
+      setSessions((prev) => ({
+        ...prev,
+        [symbol]: commitDrawings(prev[symbol] ?? session, next),
+      }))
     },
-    [symbol, timeframe],
+    [session, symbol],
   )
 
-  const addDrawing = useCallback(
-    (drawing: DrawingObject) => {
-      persist([...drawings, drawing])
-    },
-    [drawings, persist],
-  )
+  const undo = useCallback(() => {
+    setSessions((prev) => ({ ...prev, [symbol]: undoDrawings(prev[symbol] ?? session) }))
+  }, [session, symbol])
 
-  const clearDrawings = useCallback(() => {
-    persist([])
-  }, [persist])
+  const redo = useCallback(() => {
+    setSessions((prev) => ({ ...prev, [symbol]: redoDrawings(prev[symbol] ?? session) }))
+  }, [session, symbol])
 
-  const removeDrawing = useCallback(
-    (id: string) => {
-      persist(drawings.filter((d) => d.id !== id))
-    },
-    [drawings, persist],
-  )
-
-  return { drawings, setDrawings: persist, addDrawing, clearDrawings, removeDrawing }
-}
-
-export function newDrawingId() {
-  return `draw-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  return {
+    drawings: session.drawings,
+    notice: session.notices.length > 0 ? session.notices.join(' ') : null,
+    canUndo: session.past.length > 0,
+    canRedo: session.future.length > 0,
+    commit,
+    undo,
+    redo,
+  }
 }

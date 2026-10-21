@@ -688,6 +688,7 @@ function ChartInner({
             })}
 
         <ChartAxes
+          priceDigits={2}
           xScale={scales.xScale}
           priceScale={scales.priceScale}
           volumeScale={scales.volumeScale}
@@ -769,10 +770,14 @@ function ChartInner({
               priceTop: layout.priceTop,
               priceHeight: layout.priceHeight,
               innerWidth: layout.innerWidth,
+              stack: [],
             }}
             timeframe={timeframe}
             left={CHART_MARGINS.left}
+            width={width}
             mouseY={mouseY}
+            price={mouseY != null ? scales.priceScale.invert(mouseY) : null}
+            digits={2}
           />
         )}
       </svg>

@@ -38,15 +38,18 @@ describe('CandlestickChart ruler', () => {
     expect(screen.getByTestId('chart-measure-mode')).toHaveTextContent('Hand · Ctrl')
 
     fireEvent.keyDown(chart, { key: 'Control' })
+    fireEvent.keyUp(chart, { key: 'Control' })
     expect(screen.getByTestId('chart-measure-mode')).toHaveTextContent('Ruler · Ctrl')
 
     fireEvent.keyDown(chart, { key: 'Control' })
+    fireEvent.keyUp(chart, { key: 'Control' })
     expect(screen.getByTestId('chart-measure-mode')).toHaveTextContent('Hand · Ctrl')
   })
 
   it('draws a measurement while dragging in ruler mode and clears it on Escape', () => {
     const { chart, surface } = renderChart()
     fireEvent.keyDown(chart, { key: 'Control' })
+    fireEvent.keyUp(chart, { key: 'Control' })
 
     fireEvent.mouseDown(surface, { button: 0, clientX: 100, clientY: 60 })
     fireEvent.mouseMove(surface, { clientX: 260, clientY: 140 })
@@ -62,6 +65,7 @@ describe('CandlestickChart ruler', () => {
   it('treats a press without movement in ruler mode as a click that clears the ruler', () => {
     const { chart, surface } = renderChart()
     fireEvent.keyDown(chart, { key: 'Control' })
+    fireEvent.keyUp(chart, { key: 'Control' })
 
     fireEvent.mouseDown(surface, { button: 0, clientX: 100, clientY: 60 })
     fireEvent.mouseMove(surface, { clientX: 220, clientY: 90 })

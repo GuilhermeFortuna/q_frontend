@@ -5,13 +5,13 @@ import { formatDisplayTimeSeconds } from '@/lib/formatDate'
 import type { CandlestickChartHandle } from '@/components/charts/CandlestickChart'
 import type {
   ChartViewport,
-  DrawingObject,
-  DrawingTool,
   IndicatorConfig,
   ChartSettings,
   ChartProfile,
 } from '@/components/charts/types/chart'
+import type { DrawingObject, DrawingTool } from '@/components/charts/drawings/model'
 import { DEFAULT_SETTINGS, type PaneLayoutPrefs } from '@/components/charts/types/chart'
+import type { PriceFormat } from '@/lib/market/priceFormat'
 import { OperationalFailureState } from '@/components/status/OperationalFailureState'
 import type { OhlcvBar } from '@/types/api'
 
@@ -24,6 +24,13 @@ export type ChartPanelProps = {
   activeDrawingTool: DrawingTool
   drawings: DrawingObject[]
   onDrawingsChange: (drawings: DrawingObject[]) => void
+  onUndoDrawings?: () => void
+  onRedoDrawings?: () => void
+  drawingNotice?: string | null
+  drawingMagnet?: boolean
+  keepDrawingTool?: boolean
+  hideAllDrawings?: boolean
+  onActiveDrawingToolChange?: (tool: DrawingTool) => void
   bars: OhlcvBar[]
   isInitialLoading: boolean
   isBackfilling: boolean
@@ -42,6 +49,7 @@ export type ChartPanelProps = {
   onAddProfile?: () => void
   onDeleteProfile?: (id: string, e: React.MouseEvent | React.KeyboardEvent) => void
   onRenameProfile?: (id: string, name: string) => void
+  priceFormat?: PriceFormat
 }
 
 export function ChartPanel({
@@ -53,6 +61,13 @@ export function ChartPanel({
   activeDrawingTool,
   drawings,
   onDrawingsChange,
+  onUndoDrawings,
+  onRedoDrawings,
+  drawingNotice,
+  drawingMagnet,
+  keepDrawingTool,
+  hideAllDrawings,
+  onActiveDrawingToolChange,
   bars,
   isInitialLoading,
   isBackfilling,
@@ -71,6 +86,7 @@ export function ChartPanel({
   onAddProfile,
   onDeleteProfile,
   onRenameProfile,
+  priceFormat,
 }: ChartPanelProps) {
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
@@ -144,11 +160,19 @@ export function ChartPanel({
           activeDrawingTool={activeDrawingTool}
           drawings={drawings}
           onDrawingsChange={onDrawingsChange}
+          onUndoDrawings={onUndoDrawings}
+          onRedoDrawings={onRedoDrawings}
+          drawingNotice={drawingNotice}
+          drawingMagnet={drawingMagnet}
+          keepDrawingTool={keepDrawingTool}
+          hideAllDrawings={hideAllDrawings}
+          onActiveDrawingToolChange={onActiveDrawingToolChange}
           onHoverBar={onHoverBar}
           onViewportChange={onViewportChange}
           chartSettings={settings}
           paneLayout={paneLayout}
           onPaneLayoutChange={onPaneLayoutChange}
+          priceFormat={priceFormat}
         />
       ) : error ? (
         <OperationalFailureState

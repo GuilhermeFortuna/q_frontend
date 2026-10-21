@@ -16,18 +16,24 @@ import {
   barsFromSlots,
   type ChartType,
   type ChartViewport,
-  type DataPoint,
-  type DrawingObject,
-  type DrawingTool,
   type IndicatorConfig,
   type ChartSettings,
   type PaneLayoutPrefs,
   DEFAULT_SETTINGS,
 } from '@/components/charts/types/chart'
+import type { DrawingAnchor, DrawingObject, DrawingTool } from '@/components/charts/drawings/model'
+import { timeMapperFromScale } from '@/components/charts/drawings/timeMapping'
+import {
+  useDrawingInteraction,
+  type DrawingScene,
+} from '@/components/charts/hooks/useDrawingInteraction'
+import { magnetPrice, pixelOfAnchor } from '@/components/charts/drawings/interaction'
+import { DrawingToolbar } from '@/components/charts/DrawingToolbar'
+import { TextNoteEditor } from '@/components/charts/TextNoteEditor'
+import { timeframeToMs, formatCrosshairLabel } from '@/lib/market/timeframes'
 import { computePaneLayout } from '@/components/charts/paneLayout'
 import {
   computePriceDomain,
-  dataPointFromEvent,
   processBars,
   stretchScaleFactor,
   timestampAtX,
@@ -49,6 +55,7 @@ import {
 import { IndicatorLayer } from '@/components/charts/layers/IndicatorLayer'
 import { OscillatorPane } from '@/components/charts/layers/OscillatorPane'
 import { CrosshairLayer } from '@/components/charts/layers/CrosshairLayer'
+import { LastPriceLayer } from '@/components/charts/layers/LastPriceLayer'
 import { DrawingLayer } from '@/components/charts/layers/DrawingLayer'
 import { RulerLayer } from '@/components/charts/layers/RulerLayer'
 import { measureRuler, type ChartMeasureMode } from '@/components/charts/ruler'
@@ -58,7 +65,6 @@ import { useMarketIndicatorRenderModel } from '@/components/charts/hooks/useIndi
 import { useMarketStudyRenderModel } from '@/components/charts/hooks/useStudyRenderModel'
 import { mergeIndicatorRenderModels } from '@/lib/market/buildStudyRenderModel'
 import { studyMarkerShape } from '@/components/charts/layers/MarkerGlyph'
-import { newDrawingId } from '@/components/charts/hooks/useDrawings'
 import type { OhlcvBar } from '@/types/api'
 import { useMarketVolumeProfileQuery } from '@/api/queries/marketIndicators'
 import { volumeProfileFromIndicators } from '@/lib/market/volumeProfileConfig'
@@ -68,6 +74,7 @@ import {
   type VolumeProfileLayerHandle,
 } from '@/components/charts/layers/VolumeProfileLayer'
 import { useDebounce } from '@/hooks/useDebounce'
+import { formatPrice, resolvePriceFormat, type PriceFormat } from '@/lib/market/priceFormat'
 
 const EMPTY_PANE_PREFS: PaneLayoutPrefs = {}
 
@@ -93,7 +100,22 @@ export type CandlestickChartProps = {
   chartSettings?: ChartSettings
   paneLayout?: PaneLayoutPrefs
   onPaneLayoutChange?: (prefs: PaneLayoutPrefs) => void
+  /** Instrument precision for every price label; inferred from the bars when omitted. */
+  priceFormat?: PriceFormat
+  /** Snap drawing anchors and the crosshair to OHLC within 10 px, otherwise to the tick size. */
+  drawingMagnet?: boolean
+  /** Keep the placement tool armed after each drawing instead of returning to the cursor. */
+  keepDrawingTool?: boolean
+  hideAllDrawings?: boolean
+  onActiveDrawingToolChange?: (tool: DrawingTool) => void
+  onUndoDrawings?: () => void
+  onRedoDrawings?: () => void
+  /** Message about drawing persistence, shown until the next successful save. */
+  drawingNotice?: string | null
 }
+
+const NO_DRAWINGS: DrawingObject[] = []
+const NO_OP = () => {}
 
 const ChartInner = forwardRef<
   CandlestickChartHandle,
@@ -110,13 +132,21 @@ const ChartInner = forwardRef<
     chartType = 'candles',
     indicators = [],
     activeDrawingTool = 'cursor',
-    drawings = [],
+    drawings = NO_DRAWINGS,
     onDrawingsChange,
     onHoverBar,
     onViewportChange,
     chartSettings = DEFAULT_SETTINGS,
     paneLayout,
     onPaneLayoutChange,
+    priceFormat,
+    drawingMagnet = false,
+    keepDrawingTool = false,
+    hideAllDrawings = false,
+    onActiveDrawingToolChange,
+    onUndoDrawings,
+    onRedoDrawings,
+    drawingNotice,
   },
   ref,
 ) {
@@ -130,6 +160,11 @@ const ChartInner = forwardRef<
   void settings
 
   const processed = useMemo(() => processBars(data), [data])
+  const format = useMemo(
+    () => priceFormat ?? resolvePriceFormat({ bars: data }),
+    [priceFormat, data],
+  )
+  const latestBar = processed[processed.length - 1] ?? null
   const viewportResetKey = resetKey ?? `${symbol}:${timeframe}`
   const { viewport, scrollToEnd, fitAll, zoomAt, panBy, shiftViewport, stretchXByPixels } =
     useChartViewport(processed.length, viewportResetKey)
@@ -272,19 +307,70 @@ const ChartInner = forwardRef<
     [layout.oscillators, renderModel.oscillators, scales.oscillatorScales],
   )
 
+  const timeframeMs = useMemo(() => timeframeToMs(timeframe), [timeframe])
+  const barTimes = useMemo(() => processed.map((bar) => bar.timeMs), [processed])
+  const mapper = useMemo(
+    () =>
+      timeMapperFromScale(
+        scales.xScale,
+        viewport.startIndex,
+        barTimes,
+        timeframeMs,
+        CHART_MARGINS.left,
+      ),
+    [scales.xScale, viewport.startIndex, barTimes, timeframeMs],
+  )
+  const plot = useMemo(
+    () => ({
+      left: CHART_MARGINS.left,
+      right: CHART_MARGINS.left + layout.innerWidth,
+      top: layout.priceTop,
+      bottom: layout.priceTop + layout.priceHeight,
+      chartTop: CHART_MARGINS.top,
+      chartBottom: CHART_MARGINS.top + layout.innerHeight,
+    }),
+    [layout],
+  )
+  const formatTime = useCallback(
+    (time: number) => formatCrosshairLabel(new Date(time).toISOString(), timeframe),
+    [timeframe],
+  )
+  const scene = useMemo<DrawingScene>(
+    () => ({
+      mapper,
+      priceScale: scales.priceScale,
+      format,
+      bars: processed,
+      magnet: drawingMagnet,
+      plot,
+      formatTime,
+    }),
+    [mapper, scales.priceScale, format, processed, drawingMagnet, plot, formatTime],
+  )
+  const interaction = useDrawingInteraction({
+    tool: activeDrawingTool,
+    drawings,
+    hideAll: hideAllDrawings,
+    keepTool: keepDrawingTool,
+    scene,
+    onCommit: onDrawingsChange ?? NO_OP,
+    onToolChange: onActiveDrawingToolChange ?? NO_OP,
+    resetKey: viewportResetKey,
+  })
+
   const [hoveredBar, setHoveredBar] = useState<(typeof visibleBars)[0] | null>(null)
   const volumeProfileLayerRef = useRef<VolumeProfileLayerHandle>(null)
   const [volumeProfileHover, setVolumeProfileHover] = useState<VolumeProfileHoverRow | null>(null)
   const [mouseY, setMouseY] = useState<number | null>(null)
-  const [draftPoint, setDraftPoint] = useState<DataPoint | null>(null)
-  const [draftDrawing, setDraftDrawing] = useState<DrawingObject | null>(null)
   const [measureMode, setMeasureMode] = useState<ChartMeasureMode>('hand')
-  const [ruler, setRuler] = useState<{ start: DataPoint; end: DataPoint } | null>(null)
+  const [ruler, setRuler] = useState<{ start: DrawingAnchor; end: DrawingAnchor } | null>(null)
   const rulerMeasurement = useMemo(
-    () => (ruler ? measureRuler(ruler.start, ruler.end, processed) : null),
-    [ruler, processed],
+    () => (ruler ? measureRuler(ruler.start, ruler.end, mapper.positionOfTime) : null),
+    [ruler, mapper],
   )
   const isRulerDragging = useRef(false)
+  // A Ctrl press toggles the ruler only if no other key is pressed before Ctrl is released.
+  const ctrlTapPending = useRef(false)
   const isPanning = useRef(false)
   const panStart = useRef<{ x: number; y: number } | null>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -329,150 +415,84 @@ const ChartInner = forwardRef<
     }
   }, [hoveredBar, activeDrawingTool, onHoverBar])
 
-  const handleMouseMove = useCallback(
-    (event: React.MouseEvent<SVGRectElement>) => {
-      const point = localPoint(event)
-      if (!point) return
-      const x = point.x - CHART_MARGINS.left
-      const y = point.y
+  const freeAnchor = (point: { x: number; y: number }): DrawingAnchor => ({
+    time: mapper.timeOfX(point.x),
+    price: scales.priceScale.invert(point.y),
+  })
 
-      if (isRulerDragging.current) {
-        const dp = dataPointFromEvent(x, y, scales.xScale, scales.priceScale, visibleBars)
-        if (dp) setRuler((prev) => (prev ? { ...prev, end: dp } : prev))
+  const handleMouseMove = (event: React.MouseEvent<SVGRectElement>) => {
+    const point = localPoint(event)
+    if (!point) return
+    const x = point.x - CHART_MARGINS.left
+    const y = point.y
+
+    if (isRulerDragging.current) {
+      const end = freeAnchor(point)
+      setRuler((prev) => (prev ? { ...prev, end } : prev))
+    }
+
+    if (isPanning.current && panStart.current) {
+      const barDelta = Math.round(
+        (point.x - panStart.current.x) / Math.max(scales.xScale.step(), 4),
+      )
+      const deltaY = point.y - panStart.current.y
+      if (barDelta !== 0) {
+        panBy(-barDelta)
       }
-
-      if (isPanning.current && panStart.current) {
-        const barDelta = Math.round(
-          (point.x - panStart.current.x) / Math.max(scales.xScale.step(), 4),
-        )
-        const deltaY = point.y - panStart.current.y
-        if (barDelta !== 0) {
-          panBy(-barDelta)
-        }
-        if (deltaY !== 0) {
-          const { span } = computePriceDomain(visibleBars)
-          panPriceByPixels(deltaY, layout.priceHeight, span)
-        }
-        if (barDelta !== 0 || deltaY !== 0) {
-          panStart.current = { x: point.x, y: point.y }
-        }
-        return
+      if (deltaY !== 0) {
+        const { span } = computePriceDomain(visibleBars)
+        panPriceByPixels(deltaY, layout.priceHeight, span)
       }
-
-      setVolumeProfileHover(volumeProfileLayerRef.current?.hitTest(point.x, y) ?? null)
-      const bar = timestampAtX(scales.xScale, x, visibleBars)
-      scheduleHoverUpdate(bar, y)
-
-      if (draftPoint && draftDrawing) {
-        const dp = dataPointFromEvent(x, y, scales.xScale, scales.priceScale, visibleBars)
-        if (!dp) return
-        if (draftDrawing.type === 'trendline' || draftDrawing.type === 'fibo') {
-          setDraftDrawing({ ...draftDrawing, p2: dp })
-        }
+      if (barDelta !== 0 || deltaY !== 0) {
+        panStart.current = { x: point.x, y: point.y }
       }
-    },
-    [
-      visibleBars,
-      scales,
-      draftPoint,
-      draftDrawing,
-      panBy,
-      panPriceByPixels,
-      layout.priceHeight,
-      scheduleHoverUpdate,
-    ],
-  )
+      return
+    }
 
-  const finishDrawing = useCallback(
-    (drawing: DrawingObject) => {
-      onDrawingsChange?.([...drawings, drawing])
-      setDraftPoint(null)
-      setDraftDrawing(null)
-    },
-    [drawings, onDrawingsChange],
-  )
+    if (!isRulerDragging.current && (activeDrawingTool !== 'cursor' || measureMode === 'hand')) {
+      interaction.move(point, event.shiftKey)
+    }
+
+    setVolumeProfileHover(volumeProfileLayerRef.current?.hitTest(point.x, y) ?? null)
+    const bar = timestampAtX(scales.xScale, x, visibleBars)
+    scheduleHoverUpdate(bar, y)
+  }
 
   const finishRulerDrag = useCallback(() => {
     if (!isRulerDragging.current) return
     isRulerDragging.current = false
     // A press without movement is a click on empty chart, which clears the ruler.
     setRuler((prev) =>
-      prev && prev.start.timestamp === prev.end.timestamp && prev.start.price === prev.end.price
+      prev && prev.start.time === prev.end.time && prev.start.price === prev.end.price
         ? null
         : prev,
     )
   }, [])
 
-  const handleMouseDown = useCallback(
-    (event: React.MouseEvent<SVGRectElement>) => {
-      if (activeDrawingTool === 'cursor') {
-        if (event.button === 0) {
-          const point = localPoint(event)
-          if (!point) return
-          if (measureMode === 'ruler') {
-            const dp = dataPointFromEvent(
-              point.x - CHART_MARGINS.left,
-              point.y,
-              scales.xScale,
-              scales.priceScale,
-              visibleBars,
-            )
-            if (!dp) return
-            isRulerDragging.current = true
-            setRuler({ start: dp, end: dp })
-            return
-          }
-          isPanning.current = true
-          panStart.current = { x: point.x, y: point.y }
-        }
-        return
-      }
+  const handleMouseDown = (event: React.MouseEvent<SVGRectElement>) => {
+    if (event.button !== 0) return
+    const point = localPoint(event)
+    if (!point) return
+    if (activeDrawingTool === 'cursor' && measureMode === 'ruler') {
+      const start = freeAnchor(point)
+      isRulerDragging.current = true
+      setRuler({ start, end: start })
+      return
+    }
+    if (interaction.press(point, event.shiftKey)) return
+    if (activeDrawingTool === 'cursor') {
+      isPanning.current = true
+      panStart.current = { x: point.x, y: point.y }
+    }
+  }
 
-      const point = localPoint(event)
-      if (!point) return
-      const x = point.x - CHART_MARGINS.left
-      const y = point.y
-      const dp = dataPointFromEvent(x, y, scales.xScale, scales.priceScale, visibleBars)
-      if (!dp) return
-
-      if (activeDrawingTool === 'horizontal') {
-        finishDrawing({ id: newDrawingId(), type: 'horizontal', price: dp.price })
-        return
-      }
-
-      if (activeDrawingTool === 'text') {
-        const label = window.prompt('Label', 'Note') ?? 'Note'
-        finishDrawing({ id: newDrawingId(), type: 'text', point: dp, label })
-        return
-      }
-
-      if (activeDrawingTool === 'trendline' || activeDrawingTool === 'fibo') {
-        if (!draftPoint) {
-          setDraftPoint(dp)
-          setDraftDrawing({
-            id: 'draft',
-            type: activeDrawingTool,
-            p1: dp,
-            p2: dp,
-          })
-        } else {
-          finishDrawing({
-            id: newDrawingId(),
-            type: activeDrawingTool,
-            p1: draftPoint,
-            p2: dp,
-          })
-        }
-      }
-    },
-    [activeDrawingTool, measureMode, visibleBars, scales, draftPoint, finishDrawing],
-  )
-
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = (event: React.MouseEvent<SVGRectElement>) => {
     isPanning.current = false
     panStart.current = null
     finishRulerDrag()
-  }, [finishRulerDrag])
+    const point = localPoint(event)
+    if (point) interaction.release(point, event.shiftKey)
+  }
 
   const handleMouseLeave = useCallback(() => {
     pendingHoverRef.current = null
@@ -485,24 +505,46 @@ const ChartInner = forwardRef<
     setMouseY(null)
     isPanning.current = false
     finishRulerDrag()
+    interaction.leave()
     onHoverBar?.(null)
-  }, [onHoverBar, finishRulerDrag])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onHoverBar, finishRulerDrag, interaction.leave])
 
-  // Ctrl (pressed alone) switches between hand and ruler. Only meaningful while the chart
-  // has focus and no drawing tool is armed, so it never fights the drawing workflow.
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (activeDrawingTool !== 'cursor') return
-      if (event.key === 'Control' && !event.repeat) {
-        finishRulerDrag()
-        setMeasureMode((mode) => (mode === 'hand' ? 'ruler' : 'hand'))
-      } else if (event.key === 'Escape') {
-        isRulerDragging.current = false
-        setRuler(null)
+  // Keyboard: Delete and Escape act on drawings first; Ctrl taps and Ctrl+Z/Y never toggle the ruler.
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Control') {
+      if (!event.repeat) ctrlTapPending.current = true
+      return
+    }
+    ctrlTapPending.current = false
+    if (event.ctrlKey || event.metaKey) {
+      const key = event.key.toLowerCase()
+      if (key === 'z') {
+        event.preventDefault()
+        if (event.shiftKey) onRedoDrawings?.()
+        else onUndoDrawings?.()
+        return
       }
-    },
-    [activeDrawingTool, finishRulerDrag],
-  )
+      if (key === 'y') {
+        event.preventDefault()
+        onRedoDrawings?.()
+        return
+      }
+    }
+    if (interaction.keyDown(event.key)) return
+    if (event.key === 'Escape') {
+      isRulerDragging.current = false
+      setRuler(null)
+    }
+  }
+
+  const handleKeyUp = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Control' || !ctrlTapPending.current) return
+    ctrlTapPending.current = false
+    if (activeDrawingTool !== 'cursor') return
+    finishRulerDrag()
+    setMeasureMode((mode) => (mode === 'hand' ? 'ruler' : 'hand'))
+  }
 
   useEffect(() => {
     const el = chartContainerRef.current
@@ -562,37 +604,58 @@ const ChartInner = forwardRef<
     const isPositive = change >= 0
     const colorClass = isPositive ? 'text-emerald-400' : 'text-rose-400'
     return {
-      open: hudBar.open.toFixed(2),
-      high: hudBar.high.toFixed(2),
-      low: hudBar.low.toFixed(2),
-      close: hudBar.close.toFixed(2),
+      open: formatPrice(hudBar.open, format.digits),
+      high: formatPrice(hudBar.high, format.digits),
+      low: formatPrice(hudBar.low, format.digits),
+      close: formatPrice(hudBar.close, format.digits),
       volume: hudBar.volume.toLocaleString(),
-      change: (isPositive ? '+' : '') + change.toFixed(2),
+      change: (isPositive ? '+' : '') + change.toFixed(format.digits),
       pctChange: (isPositive ? '+' : '') + pctChange.toFixed(2) + '%',
       colorClass,
     }
-  }, [hudBar])
+  }, [hudBar, format.digits])
+
+  const hiddenDrawingCount = drawings.filter((drawing) => drawing.hidden).length
 
   const cursorStyle =
-    activeDrawingTool === 'cursor'
-      ? measureMode === 'ruler'
-        ? 'crosshair'
-        : isPanning.current
-          ? 'grabbing'
-          : 'grab'
-      : 'crosshair'
+    activeDrawingTool !== 'cursor' || measureMode === 'ruler'
+      ? 'crosshair'
+      : (interaction.cursor ?? (isPanning.current ? 'grabbing' : 'grab'))
+
+  // The crosshair reads the price under the pointer, snapped to OHLC or tick size when Magnet is on.
+  const crosshairPrice =
+    mouseY == null
+      ? null
+      : drawingMagnet && hoveredBar
+        ? magnetPrice(
+            { x: mapper.xOfPosition(hoveredBar.index), y: mouseY },
+            scales.priceScale.invert(mouseY),
+            scene,
+          )
+        : scales.priceScale.invert(mouseY)
 
   return (
     <div
       ref={chartContainerRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
       className="border-carbon-700 focus-visible:ring-brass-500/40 relative h-full w-full overflow-hidden overscroll-contain rounded-lg border shadow-2xl select-none focus-visible:ring-1 focus-visible:outline-none"
       style={{
         background: settings.backgroundType === 'gradient' ? settings.backgroundColor : undefined,
         backgroundColor: settings.backgroundType === 'solid' ? settings.backgroundColor : undefined,
       }}
     >
+      {drawingNotice && (
+        <div
+          role="status"
+          data-testid="chart-drawing-notice"
+          className="bg-carbon-900/95 absolute bottom-14 left-3 z-10 max-w-[70%] rounded border border-amber-500/30 px-2 py-1 font-mono text-[10px] text-amber-300"
+        >
+          {drawingNotice}
+        </div>
+      )}
+
       {indicatorNoticeText && (
         <div
           role="status"
@@ -644,7 +707,9 @@ const ChartInner = forwardRef<
               >
                 <span>
                   <span className="text-silver-500 mr-1">P</span>
-                  <span className="text-silver-100">{volumeProfileHover.price.toFixed(2)}</span>
+                  <span className="text-silver-100">
+                    {formatPrice(volumeProfileHover.price, format.digits)}
+                  </span>
                 </span>
                 <span>
                   <span className="text-silver-500 mr-1">Tot</span>
@@ -731,6 +796,24 @@ const ChartInner = forwardRef<
           >
             <ChevronRight className="h-3 w-3" aria-hidden />
             Latest
+          </button>
+        </div>
+      )}
+
+      {hiddenDrawingCount > 0 && !hideAllDrawings && (
+        <div className="absolute top-16 right-3 z-10">
+          <button
+            type="button"
+            onClick={() =>
+              onDrawingsChange?.(
+                drawings.map((drawing) =>
+                  drawing.hidden ? { ...drawing, hidden: false } : drawing,
+                ),
+              )
+            }
+            className="border-brass-500/40 bg-carbon-900/95 text-brass-400 hover:border-brass-500 flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[9px] uppercase shadow-lg"
+          >
+            Show {hiddenDrawingCount} hidden
           </button>
         </div>
       )}
@@ -901,13 +984,12 @@ const ChartInner = forwardRef<
         />
 
         <DrawingLayer
-          drawings={drawings}
-          draft={draftDrawing}
-          xScale={scales.xScale}
-          priceScale={scales.priceScale}
-          allBars={processed}
-          layout={layout}
-          left={CHART_MARGINS.left}
+          placed={interaction.placed}
+          draft={interaction.draft}
+          selectedId={interaction.selectedId}
+          hoveredId={interaction.hoveredId}
+          plot={plot}
+          width={width}
         />
 
         {ruler && rulerMeasurement && (
@@ -915,25 +997,36 @@ const ChartInner = forwardRef<
             start={ruler.start}
             end={ruler.end}
             measurement={rulerMeasurement}
-            xScale={scales.xScale}
+            mapper={mapper}
             priceScale={scales.priceScale}
-            allBars={processed}
             layout={layout}
             left={CHART_MARGINS.left}
+            digits={format.digits}
           />
         )}
 
-        {activeDrawingTool === 'cursor' && (
-          <CrosshairLayer
-            activeBar={hoveredBar}
-            xScale={scales.xScale}
-            priceScale={scales.priceScale}
-            layout={layout}
-            timeframe={timeframe}
-            left={CHART_MARGINS.left}
-            mouseY={mouseY}
-          />
-        )}
+        <LastPriceLayer
+          price={latestBar?.close ?? null}
+          isBullish={latestBar?.isBullish ?? true}
+          priceScale={scales.priceScale}
+          layout={layout}
+          left={CHART_MARGINS.left}
+          width={width}
+          digits={format.digits}
+        />
+
+        <CrosshairLayer
+          activeBar={hoveredBar}
+          xScale={scales.xScale}
+          priceScale={scales.priceScale}
+          layout={layout}
+          timeframe={timeframe}
+          left={CHART_MARGINS.left}
+          width={width}
+          mouseY={mouseY}
+          price={crosshairPrice}
+          digits={format.digits}
+        />
 
         <ChartAxes
           xScale={scales.xScale}
@@ -942,6 +1035,7 @@ const ChartInner = forwardRef<
           oscillatorScales={scales.oscillatorScales}
           layout={layout}
           timeframe={timeframe}
+          priceDigits={format.digits}
           left={CHART_MARGINS.left}
           bottom={CHART_MARGINS.bottom}
           height={height}
@@ -969,7 +1063,11 @@ const ChartInner = forwardRef<
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          onDoubleClick={handleDoubleClick}
+          onDoubleClick={(event) => {
+            const point = localPoint(event)
+            if (point && interaction.doubleClick(point)) return
+            handleDoubleClick()
+          }}
         />
 
         <OscillatorPaneHandles
@@ -990,6 +1088,31 @@ const ChartInner = forwardRef<
           disabled={activeDrawingTool !== 'cursor'}
         />
       </svg>
+
+      {interaction.selected && interaction.selectedGeometry && (
+        <DrawingToolbar
+          drawing={interaction.selected}
+          handles={interaction.selectedGeometry.handles}
+          containerWidth={width}
+          containerHeight={height}
+          onUpdate={interaction.updateSelected}
+          onToggleHidden={() =>
+            interaction.updateSelected((drawing) => ({ ...drawing, hidden: true }) as DrawingObject)
+          }
+          onDelete={interaction.deleteSelected}
+        />
+      )}
+
+      {interaction.editing && (
+        <TextNoteEditor
+          key={interaction.editing.id ?? 'new-note'}
+          x={pixelOfAnchor(interaction.editing.anchor, scene).x}
+          y={pixelOfAnchor(interaction.editing.anchor, scene).y}
+          initialText={interaction.editing.text}
+          onCommit={interaction.commitText}
+          onCancel={interaction.cancelText}
+        />
+      )}
     </div>
   )
 })

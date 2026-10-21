@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { Group, Panel, Separator, useDefaultLayout, usePanelRef } from 'react-resizable-panels'
 
-import { useInstruments, useMarketSnapshot, useMarketSnapshots } from '@/api/queries/market-data'
+import {
+  useInstrumentInfo,
+  useInstruments,
+  useMarketSnapshot,
+  useMarketSnapshots,
+} from '@/api/queries/market-data'
 import { useProgressiveOhlcv } from '@/api/queries/useProgressiveOhlcv'
 import { useDrawings } from '@/components/charts/hooks/useDrawings'
 import { DEFAULT_SETTINGS, type ChartProfile } from '@/components/charts/types/chart'
 import { normalizeIndicatorConfigs } from '@/lib/market/indicatorConfig'
+import { resolvePriceFormat } from '@/lib/market/priceFormat'
 
 import { ChartPanel } from '@/components/market/ChartPanel'
 import { ChartToolbar } from '@/components/market/ChartToolbar'
@@ -89,9 +95,13 @@ export function MarketDataWorkspace() {
     showGrid,
     chartSettings,
     activeDrawingTool,
+    drawingMagnet,
+    keepDrawingTool,
+    hideAllDrawings,
     sidebarCollapsed,
     detailCollapsed,
   } = useAppStore((s) => s.marketDataSession)
+  const drawingSession = { drawingMagnet, keepDrawingTool, hideAllDrawings }
   const patchMarketDataSession = useAppStore((s) => s.patchMarketDataSession)
 
   const [profiles, setProfiles] = useState<ChartProfile[]>(() => {
@@ -272,7 +282,6 @@ export function MarketDataWorkspace() {
   )
   const snapshotsQuery = useMarketSnapshots(liveWatchlistSymbols)
   const snapshotsBySymbol = snapshotsQuery.data ?? {}
-  const priceDigits = snapshot?.digits ?? 2
   const mt5Status = resolveMt5ConnectionStatus(
     snapshotQuery.isLoading,
     snapshotQuery.data,
@@ -281,8 +290,18 @@ export function MarketDataWorkspace() {
     isHistoricalOnly,
   )
 
+  const instrumentInfoQuery = useInstrumentInfo(selectedSymbol)
   const ohlcv = useProgressiveOhlcv(selectedSymbol, selectedTimeframe)
-  const { drawings, setDrawings, clearDrawings } = useDrawings(selectedSymbol, selectedTimeframe)
+  const priceFormat = useMemo(
+    () =>
+      resolvePriceFormat({
+        instrument: instrumentInfoQuery.data,
+        snapshotDigits: snapshot?.digits,
+        bars: ohlcv.bars,
+      }),
+    [instrumentInfoQuery.data, snapshot?.digits, ohlcv.bars],
+  )
+  const drawingStore = useDrawings(selectedSymbol)
 
   const latestBar = useMemo(() => {
     if (ohlcv.bars.length === 0) return null
@@ -329,7 +348,7 @@ export function MarketDataWorkspace() {
           activeBar={activeBar}
           snapshot={snapshot}
           connectionStatus={mt5Status}
-          priceDigits={priceDigits}
+          priceDigits={priceFormat.digits}
           sidebarCollapsed={sidebarCollapsed}
           detailCollapsed={detailCollapsed}
           isLoadingInstrument={instrumentsQuery.isLoading}
@@ -445,8 +464,18 @@ export function MarketDataWorkspace() {
                 indicators={indicators}
                 showGrid={showGrid}
                 activeDrawingTool={activeDrawingTool}
-                drawings={drawings}
-                onDrawingsChange={setDrawings}
+                drawings={drawingStore.drawings}
+                onDrawingsChange={drawingStore.commit}
+                onUndoDrawings={drawingStore.undo}
+                onRedoDrawings={drawingStore.redo}
+                drawingNotice={drawingStore.notice}
+                drawingMagnet={drawingSession.drawingMagnet}
+                keepDrawingTool={drawingSession.keepDrawingTool}
+                hideAllDrawings={drawingSession.hideAllDrawings}
+                onActiveDrawingToolChange={(val) =>
+                  patchMarketDataSession({ activeDrawingTool: val })
+                }
+                priceFormat={priceFormat}
                 bars={ohlcv.bars}
                 isInitialLoading={ohlcv.isInitialLoading}
                 isBackfilling={ohlcv.isBackfilling}
@@ -472,7 +501,14 @@ export function MarketDataWorkspace() {
               onActiveDrawingToolChange={(val) =>
                 patchMarketDataSession({ activeDrawingTool: val })
               }
-              onClearDrawings={clearDrawings}
+              onClearDrawings={() => drawingStore.commit([])}
+              hasDrawings={drawingStore.drawings.length > 0}
+              magnet={drawingSession.drawingMagnet}
+              onMagnetChange={(value) => patchMarketDataSession({ drawingMagnet: value })}
+              keepDrawing={drawingSession.keepDrawingTool}
+              onKeepDrawingChange={(value) => patchMarketDataSession({ keepDrawingTool: value })}
+              hideAll={drawingSession.hideAllDrawings}
+              onHideAllChange={(value) => patchMarketDataSession({ hideAllDrawings: value })}
             />
             <SymbolCommandPalette
               open={symbolPaletteOpen}

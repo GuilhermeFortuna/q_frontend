@@ -1,4 +1,4 @@
-import type { DataPoint, ProcessedBar } from '@/components/charts/types/chart'
+import type { DrawingAnchor } from '@/components/charts/drawings/model'
 
 /** `hand` drags the chart; `ruler` measures between two points. Toggled with Ctrl. */
 export type ChartMeasureMode = 'hand' | 'ruler'
@@ -12,24 +12,20 @@ export type RulerMeasurement = {
 }
 
 /**
- * Measures the span between two chart points. Both must sit on bars of `bars`
- * (the full processed series), otherwise there is nothing to measure.
+ * Measures the span between two anchors. `positionOfTime` maps an instant to its bar position
+ * (see `timeMapping.ts`), so the candle count agrees with where the ruler is drawn.
  */
 export function measureRuler(
-  start: DataPoint,
-  end: DataPoint,
-  bars: ProcessedBar[],
-): RulerMeasurement | null {
-  const startBar = bars.find((bar) => bar.timestamp === start.timestamp)
-  const endBar = bars.find((bar) => bar.timestamp === end.timestamp)
-  if (!startBar || !endBar) return null
-
+  start: DrawingAnchor,
+  end: DrawingAnchor,
+  positionOfTime: (time: number) => number,
+): RulerMeasurement {
   const priceDelta = end.price - start.price
   return {
     priceDelta,
     percentDelta: start.price !== 0 ? (priceDelta / start.price) * 100 : 0,
-    bars: Math.abs(endBar.index - startBar.index),
-    durationMs: Math.abs(endBar.timeMs - startBar.timeMs),
+    bars: Math.round(Math.abs(positionOfTime(end.time) - positionOfTime(start.time))),
+    durationMs: Math.abs(end.time - start.time),
   }
 }
 
