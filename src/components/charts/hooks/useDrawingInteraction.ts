@@ -304,7 +304,11 @@ export function useDrawingInteraction({
       }
 
       if (tool === 'cursor' && !editing) {
-        setHover(hitTest(point))
+        const next = hitTest(point)
+        // Only a change of hovered drawing or handle re-renders the chart.
+        setHover((prev) =>
+          prev && next && prev.kind === next.kind && prev.id === next.id ? prev : next,
+        )
       }
     },
     [scene, findDrawing, setGesture, tool, editing, hitTest],
