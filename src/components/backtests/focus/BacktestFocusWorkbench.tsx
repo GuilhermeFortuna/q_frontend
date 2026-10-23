@@ -15,6 +15,7 @@ import type {
   EquityPoint,
   MonthlyStats,
 } from '@/types/backtesting'
+import type { BacktestDistributionData } from '@/lib/backtesting/distribution'
 
 export type BacktestWorkbenchFocus = 'setup' | 'results'
 
@@ -40,6 +41,7 @@ type BacktestFocusWorkbenchProps = {
   initialCapital: number
   equityCurve: EquityPoint[]
   monthlyStats: MonthlyStats[]
+  distribution?: BacktestDistributionData
   performanceComputing?: boolean
   allowMlFilterTraining?: boolean
   aiWorkflowBlocker?: string | null
@@ -68,6 +70,7 @@ export function BacktestFocusWorkbench({
   initialCapital,
   equityCurve,
   monthlyStats,
+  distribution,
   performanceComputing = false,
   allowMlFilterTraining = true,
   aiWorkflowBlocker = null,
@@ -166,6 +169,7 @@ export function BacktestFocusWorkbench({
                   initialCapital={initialCapital}
                   equityCurve={equityCurve}
                   monthlyStats={monthlyStats}
+                  distribution={distribution}
                   performanceComputing={performanceComputing}
                   allowMlFilterTraining={allowMlFilterTraining}
                   symbol={resultsSymbol}

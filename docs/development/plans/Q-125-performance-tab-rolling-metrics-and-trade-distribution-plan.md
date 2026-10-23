@@ -41,7 +41,7 @@
 
 **Files:** new `RollingMetricsChart.tsx`, plus tests; `BacktestRechartsPane.tsx`.
 
-- [ ] Write failing tests for acceptance items 4 and 7 (the rolling part), then implement the chart with its controls, reference lines and empty state. Commit.
+- [x] Write failing tests for acceptance items 4 and 7 (the rolling part), then implement the chart with its controls, reference lines and empty state. Commit.
 
 ### 4. Trade distribution panels
 

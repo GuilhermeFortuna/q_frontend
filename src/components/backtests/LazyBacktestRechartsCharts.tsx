@@ -3,6 +3,7 @@ import { Fragment, lazy, Suspense, useState } from 'react'
 import { FeatureIslandBoundary } from '@/components/islands/FeatureIslandBoundary'
 import { FeatureIslandFallback } from '@/components/islands/FeatureIslandFallback'
 import type { BacktestPerformance, EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
+import type { BacktestDistributionData } from '@/lib/backtesting/distribution'
 import type { OhlcvBar } from '@/types/api'
 
 const BacktestRechartsPane = lazy(() =>
@@ -17,6 +18,8 @@ type LazyBacktestPerformanceChartsProps = {
   bars: OhlcvBar[]
   trades: Trade[]
   performance?: BacktestPerformance | null
+  distribution?: BacktestDistributionData
+  onFocusTrade?: (id: string) => void
 }
 
 export function LazyBacktestPerformanceCharts({
@@ -25,6 +28,8 @@ export function LazyBacktestPerformanceCharts({
   bars,
   trades,
   performance,
+  distribution,
+  onFocusTrade,
 }: LazyBacktestPerformanceChartsProps) {
   const [retryKey, setRetryKey] = useState(0)
   return (
@@ -44,6 +49,8 @@ export function LazyBacktestPerformanceCharts({
             bars={bars}
             trades={trades}
             performance={performance}
+            distribution={distribution}
+            onFocusTrade={onFocusTrade}
           />
         </Suspense>
       </Fragment>

@@ -46,6 +46,7 @@ describe('BacktestRechartsPane performance variant', () => {
     expect(screen.getByText('Drawdown')).toBeTruthy()
     expect(screen.queryByText('Trade quality')).toBeNull()
     expect(screen.queryByText('Worst drawdowns')).toBeNull()
+    expect(screen.getByText('Rolling metrics')).toBeTruthy()
   })
 
   it('adds the metrics and worst-drawdowns panels when performance is available', () => {
@@ -98,6 +99,7 @@ describe('BacktestRechartsPane performance variant', () => {
 
     expect(screen.getByText('Trade quality')).toBeTruthy()
     expect(screen.getByText('Worst drawdowns')).toBeTruthy()
+    expect(screen.getByText('Rolling metrics')).toBeTruthy()
     expect(screen.getByText('Open')).toBeTruthy()
     expect(container.querySelectorAll('.recharts-reference-area')).toHaveLength(2)
 

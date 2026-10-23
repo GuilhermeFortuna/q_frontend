@@ -5,7 +5,9 @@ import { EquityCurveChart } from '@/components/backtests/EquityCurveChart'
 import { MonthlyPnLChart } from '@/components/backtests/MonthlyPnLChart'
 import { BacktestPerformanceSummary } from '@/components/backtests/BacktestPerformanceSummary'
 import { WorstDrawdownsTable } from '@/components/backtests/WorstDrawdownsTable'
+import { RollingMetricsChart } from '@/components/backtests/RollingMetricsChart'
 import type { BacktestPerformance, EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
+import type { BacktestDistributionData } from '@/lib/backtesting/distribution'
 import type { OhlcvBar } from '@/types/api'
 
 type BacktestRechartsPaneProps =
@@ -16,6 +18,8 @@ type BacktestRechartsPaneProps =
       bars: OhlcvBar[]
       trades: Trade[]
       performance?: BacktestPerformance | null
+      distribution?: BacktestDistributionData
+      onFocusTrade?: (id: string) => void
       monthlyStats?: never
     }
   | {
@@ -25,6 +29,8 @@ type BacktestRechartsPaneProps =
       initialCapital?: never
       bars?: never
       trades?: never
+      distribution?: never
+      onFocusTrade?: never
     }
 
 export function BacktestRechartsPane(props: BacktestRechartsPaneProps) {
@@ -62,6 +68,11 @@ export function BacktestRechartsPane(props: BacktestRechartsPaneProps) {
             onHighlight={setHighlightedDrawdownIndex}
           />
         ) : null}
+        <RollingMetricsChart
+          trades={props.trades}
+          distribution={props.distribution}
+          performance={props.performance}
+        />
       </div>
     )
   }
