@@ -1,19 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/performance'
+import {
+  computeDistributionData,
+  type BacktestDistributionData,
+} from '@/lib/backtesting/distribution'
 import { computeBacktestPerformance } from '@/lib/workers/backtestPerformanceClient'
 import { BACKTEST_WORKER_THRESHOLD } from '@/lib/virtualization/constants'
 import type { EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
 
-type BacktestPerformanceData = {
+export type BacktestPerformanceData = {
   equityCurve: EquityPoint[]
   monthlyStats: MonthlyStats[]
+  distribution: BacktestDistributionData
   computing: boolean
+}
+
+export const EMPTY_DISTRIBUTION: BacktestDistributionData = {
+  rolling: { 20: [], 50: [], 100: [] },
+  histogram: { bins: [], mean: null, median: null, totalTrades: 0 },
+  holdVsPnl: [],
+  byWeekday: [],
+  byHour: [],
 }
 
 const EMPTY: BacktestPerformanceData = {
   equityCurve: [],
   monthlyStats: [],
+  distribution: EMPTY_DISTRIBUTION,
   computing: false,
 }
 
@@ -27,6 +41,7 @@ export function useBacktestPerformanceData(
     return {
       equityCurve: buildEquityCurve(trades, initialCapital),
       monthlyStats: aggregateMonthlyStats(trades),
+      distribution: computeDistributionData(trades),
       computing: false,
     }
   }, [trades, initialCapital])
@@ -42,7 +57,12 @@ export function useBacktestPerformanceData(
 
     let cancelled = false
     const sequence = ++requestSequence.current
-    setAsyncResult({ equityCurve: [], monthlyStats: [], computing: true })
+    setAsyncResult({
+      equityCurve: [],
+      monthlyStats: [],
+      distribution: EMPTY_DISTRIBUTION,
+      computing: true,
+    })
 
     void computeBacktestPerformance(trades, initialCapital).then((payload) => {
       if (cancelled) return
@@ -50,6 +70,7 @@ export function useBacktestPerformanceData(
       setAsyncResult({
         equityCurve: payload.equityCurve,
         monthlyStats: payload.monthlyStats,
+        distribution: payload.distribution,
         computing: false,
       })
     })
@@ -61,5 +82,12 @@ export function useBacktestPerformanceData(
 
   if (!trades || trades.length === 0) return EMPTY
   if (syncResult) return syncResult
-  return asyncResult ?? { equityCurve: [], monthlyStats: [], computing: true }
+  return (
+    asyncResult ?? {
+      equityCurve: [],
+      monthlyStats: [],
+      distribution: EMPTY_DISTRIBUTION,
+      computing: true,
+    }
+  )
 }

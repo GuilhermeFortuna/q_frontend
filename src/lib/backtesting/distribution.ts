@@ -53,6 +53,32 @@ export type TimeBreakdownBucket = {
   hour?: number
 }
 
+export type BacktestDistributionData = {
+  rolling: {
+    20: RollingTradeStatPoint[]
+    50: RollingTradeStatPoint[]
+    100: RollingTradeStatPoint[]
+  }
+  histogram: PnlHistogramResult
+  holdVsPnl: HoldVsPnlPoint[]
+  byWeekday: TimeBreakdownBucket[]
+  byHour: TimeBreakdownBucket[]
+}
+
+export function computeDistributionData(trades: Trade[]): BacktestDistributionData {
+  return {
+    rolling: {
+      20: rollingTradeStats(trades, 20),
+      50: rollingTradeStats(trades, 50),
+      100: rollingTradeStats(trades, 100),
+    },
+    histogram: pnlHistogram(trades),
+    holdVsPnl: holdVsPnl(trades),
+    byWeekday: breakdownBy(trades, 'weekday'),
+    byHour: breakdownBy(trades, 'hour'),
+  }
+}
+
 function getClosedTrades(trades: Trade[]): Trade[] {
   return trades.filter((t) => t.status === 'CLOSED' && t.exit_time != null && t.pnl != null)
 }

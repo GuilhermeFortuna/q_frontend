@@ -35,7 +35,7 @@
 
 **Files:** `backtestPerformance.worker.ts`, `backtestPerformanceClient.ts`, `useBacktestPerformanceData.ts`, plus their tests.
 
-- [ ] Write a failing parity test for acceptance item 6, then return the derived series from both paths. Commit.
+- [x] Write a failing parity test for acceptance item 6, then return the derived series from both paths. Commit.
 
 ### 3. Rolling metrics chart
 
