@@ -6,7 +6,7 @@
 **Architecture:** Pure derivations in `src/lib/backtesting/distribution.ts` run inline or in the existing performance worker. Thin Recharts components render them in Q-124's panel framing.
 **Tech stack:** React 19, TypeScript, Tailwind v4 tokens, Recharts, Web Workers, Vitest and Testing Library, MSW.
 **Spec:** [Specification](../specs/Q-125-performance-tab-rolling-metrics-and-trade-distribution-spec.md)
-**Status:** written plan awaiting human review.
+**Status:** implemented and verified; awaiting human review.
 
 ## Global constraints
 
