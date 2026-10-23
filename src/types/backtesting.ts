@@ -9,7 +9,13 @@ import type {
   MlFilterConfig,
 } from '../../contracts/api'
 
-export type { BacktestOrigin, BacktestProvenance }
+export type {
+  BacktestOrigin,
+  BacktestPerformance,
+  BacktestProvenance,
+  DrawdownPeriod,
+  TradeStats,
+} from '../../contracts/api'
 
 export type FixedQuantityPositionSizing = {
   type: 'fixed_quantity'

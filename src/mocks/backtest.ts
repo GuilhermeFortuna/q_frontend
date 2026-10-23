@@ -5,8 +5,124 @@ import type {
   BacktestRequest,
   BacktestResponse,
   ChartIndicatorSeries,
+  BacktestPerformance,
   Trade,
 } from '@/types/backtesting'
+
+function buildMockPerformance(trades: Trade[]): BacktestPerformance {
+  const ordered = [...trades]
+    .filter((trade) => trade.exit_time)
+    .sort((a, b) => new Date(a.exit_time!).getTime() - new Date(b.exit_time!).getTime())
+  const timeAt = (index: number) =>
+    ordered[Math.min(index, ordered.length - 1)]?.exit_time ?? new Date().toISOString()
+  const tradeStats = {
+    total: 48,
+    winning: 28,
+    losing: 20,
+    breakeven: 1,
+    win_rate: 28 / 48,
+    profit_factor: 1.42,
+    expectancy: 51.75,
+    avg_win: 153.2,
+    avg_loss: -90.28,
+    payoff_ratio: 1.7,
+    largest_win: 430,
+    largest_loss: -285,
+    max_consecutive_wins: 6,
+    max_consecutive_losses: 3,
+    avg_hold_seconds: 14400,
+    avg_win_hold_seconds: 16200,
+    avg_loss_hold_seconds: 11700,
+  }
+
+  return {
+    basis: { equity: 'closed_trade', periods_per_year: 252, risk_free_rate: 0 },
+    portfolio: {
+      net_pnl: 2484,
+      gross_profit: 4290,
+      gross_loss: -1806,
+      total_commission: 288,
+      return_pct: 0.02484,
+      cagr_pct: 0.0512,
+      max_drawdown_value: 612,
+      max_drawdown_pct: 0.0061,
+      max_drawdown_duration_days: 12,
+      avg_drawdown_pct: 0.0024,
+      recovery_factor: 4.06,
+      calmar_ratio: 8.39,
+      sharpe_ratio: 1.23,
+      sortino_ratio: 1.87,
+      annual_volatility_pct: 0.041,
+      time_in_market_pct: 0.32,
+      trades_per_month: 8,
+    },
+    trades: {
+      all: tradeStats,
+      long: {
+        ...tradeStats,
+        total: 24,
+        winning: 15,
+        losing: 9,
+        win_rate: 15 / 24,
+        profit_factor: 1.5,
+        expectancy: 63.25,
+        avg_win: 168.4,
+        avg_loss: -112.25,
+      },
+      short: {
+        ...tradeStats,
+        total: 24,
+        winning: 13,
+        losing: 11,
+        breakeven: 1,
+        win_rate: 13 / 24,
+        profit_factor: 1.34,
+        expectancy: 40.25,
+        avg_win: 135.6,
+        avg_loss: -72.3,
+      },
+    },
+    drawdowns: [
+      {
+        peak_time: timeAt(6),
+        trough_time: timeAt(8),
+        recovery_time: timeAt(10),
+        depth_value: 612,
+        depth_pct: 0.0061,
+        duration_days: 4,
+        trades: 3,
+      },
+      {
+        peak_time: timeAt(14),
+        trough_time: timeAt(16),
+        recovery_time: timeAt(20),
+        depth_value: 480,
+        depth_pct: 0.0048,
+        duration_days: 7,
+        trades: 4,
+      },
+      {
+        peak_time: timeAt(28),
+        trough_time: timeAt(30),
+        recovery_time: timeAt(32),
+        depth_value: 360,
+        depth_pct: 0.0036,
+        duration_days: 4,
+        trades: 2,
+      },
+      {
+        peak_time: timeAt(40),
+        trough_time: timeAt(47),
+        recovery_time: null,
+        depth_value: 210,
+        depth_pct: 0.0021,
+        duration_days: 10,
+        trades: 5,
+      },
+    ],
+    exit_reasons: [],
+  }
+}
 
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000
@@ -283,6 +399,7 @@ export function getMockBacktestResponse(request: BacktestRequest): BacktestRespo
     trades: chartData.trades,
     bars: chartData.bars,
     indicators: chartData.indicators,
+    performance: buildMockPerformance(chartData.trades),
     run_id: request.engine === 'tick' ? 'mock-tick-run-id' : 'mock-persisted-run-id',
     ...(request.ml_filter ? { ml_filter_summary: getMockMlFilterBacktestSummary(request) } : {}),
   }

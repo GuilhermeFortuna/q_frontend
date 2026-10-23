@@ -41,6 +41,7 @@ export type DataTableProps<T> = {
   onRowClick?: (row: T) => void
   onRowMouseEnter?: (row: T) => void
   onRowMouseLeave?: () => void
+  onRowFocus?: (row: T) => void
   expandedKey?: string | number | null
   renderExpandedRow?: (row: T) => ReactNode
   sort?: { columnId: string; direction: 'asc' | 'desc' } | null
@@ -64,6 +65,7 @@ type RowProps<T> = {
   rowClassName?: string
   measureRef?: (element: Element | null) => void
   virtualIndex?: number
+  onFocus?: (row: T) => void
 }
 
 const Row = memo(function RowInner<T>({
@@ -75,6 +77,7 @@ const Row = memo(function RowInner<T>({
   rowClassName,
   measureRef,
   virtualIndex,
+  onFocus,
 }: RowProps<T>) {
   return (
     <TableRow
@@ -83,6 +86,8 @@ const Row = memo(function RowInner<T>({
       data-index={virtualIndex}
       ref={measureRef}
       className={rowClassName}
+      tabIndex={onFocus ? 0 : undefined}
+      onFocus={onFocus ? () => onFocus(row) : undefined}
     >
       {columns.map((col) => {
         const alignClass =
@@ -157,6 +162,7 @@ export function DataTable<T>({
   onRowClick,
   onRowMouseEnter,
   onRowMouseLeave,
+  onRowFocus,
   expandedKey,
   renderExpandedRow,
   sort,
@@ -297,6 +303,7 @@ export function DataTable<T>({
           rowClassName={getRowClassName?.(row)}
           measureRef={measureRef}
           virtualIndex={rowIndex}
+          onFocus={onRowFocus}
         />
         {expanded && renderExpandedRow ? (
           <TableRow>
