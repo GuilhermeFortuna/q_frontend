@@ -263,5 +263,36 @@ describe('distribution derivations', () => {
       const withSat = breakdownBy([...weekdayTrades, satTrade], 'weekday')
       expect(withSat.map((b) => b.key)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])
     })
+
+    it('processes a 10,000-trade dataset responsively', () => {
+      const n = 10_000
+      const largeDataset: Trade[] = Array.from({ length: n }, (_, i) =>
+        createTrade({
+          id: `t-${i}`,
+          entry_time: new Date(Date.UTC(2026, 0, 1, 9, 0) + i * 60_000).toISOString(),
+          exit_time: new Date(Date.UTC(2026, 0, 1, 9, 30) + i * 60_000).toISOString(),
+          pnl: ((i % 7) - 3) * 10,
+        }),
+      )
+
+      const start = performance.now()
+      const r100 = rollingTradeStats(largeDataset, 100)
+      const hist = pnlHistogram(largeDataset)
+      const hold = holdVsPnl(largeDataset)
+      const bdDay = breakdownBy(largeDataset, 'weekday')
+      const bdHour = breakdownBy(largeDataset, 'hour')
+      const elapsed = performance.now() - start
+
+      expect(r100).toHaveLength(n - 100 + 1)
+      expect(hist.bins.length).toBeGreaterThanOrEqual(10)
+      expect(hist.bins.length).toBeLessThanOrEqual(40)
+      expect(hist.bins.reduce((sum, b) => sum + b.count, 0)).toBe(n)
+      expect(hold).toHaveLength(n)
+      expect(bdDay.length).toBeGreaterThanOrEqual(5)
+      expect(bdHour.length).toBeGreaterThan(0)
+
+      // Entire suite of derivations over 10,000 trades should run well within 500ms
+      expect(elapsed).toBeLessThan(500)
+    })
   })
 })
