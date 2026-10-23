@@ -58,4 +58,5 @@
   - a 10,000-trade fixture for responsiveness.
 
   Keep screenshots outside the repository.
+
 - Review the whole change, then run `./work board set Q-125 in-review` with the results.

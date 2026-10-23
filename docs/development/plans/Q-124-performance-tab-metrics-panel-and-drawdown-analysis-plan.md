@@ -34,6 +34,7 @@
 ### 2. Metrics panel
 
 **Files:**
+
 - New: `src/lib/backtesting/performanceSummary.ts` with tests, and `src/components/backtests/BacktestPerformanceSummary.tsx` with tests.
 - Modified: `backtestMetricFormatters.ts` (hold-time format).
 
@@ -43,6 +44,7 @@
 ### 3. Linked charts and the drawdowns table
 
 **Files:**
+
 - New: `src/components/backtests/WorstDrawdownsTable.tsx` with tests.
 - Modified: `EquityCurveChart.tsx`, `DrawdownChart.tsx`, `BacktestRechartsPane.tsx`, `BacktestResultsTabs.tsx`.
 
@@ -58,4 +60,5 @@
   - a fixture without `performance`.
 
   Keep screenshots outside the repository.
+
 - Review the whole change, then run `./work board set Q-124 in-review` with the results and the references used.
