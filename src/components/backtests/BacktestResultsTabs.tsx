@@ -264,7 +264,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   }
 
   return (
-    <div className="grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(320px,1fr)] overflow-hidden pr-2">
+    <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[auto_auto_minmax(320px,1fr)] overflow-hidden pr-2">
       <div>
         <BacktestMetricsBar metrics={results.metrics} />
         <MLFilterSummaryCard
@@ -346,9 +346,9 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {activeTab === 'performance' && (
-          <div className="h-full space-y-3 overflow-y-auto">
+          <div className="h-full min-w-0 space-y-3 overflow-y-auto">
             {performanceComputing ? (
               <div className="text-silver-400 flex items-center gap-2 py-4 text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -360,6 +360,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
                 initialCapital={initialCapital}
                 bars={results.bars}
                 trades={results.trades}
+                performance={results.performance}
               />
             )}
           </div>

@@ -6,7 +6,7 @@
 **Architecture:** Declarative metric rows in `src/lib/backtesting/performanceSummary.ts` drive a presentational summary component. Charts share a Recharts `syncId`, and a hovered-period state lives in the Performance pane.
 **Tech stack:** React 19, TypeScript, Tailwind v4 tokens, Recharts, Vitest and Testing Library, MSW.
 **Spec:** [Specification](../specs/Q-124-performance-tab-metrics-panel-and-drawdown-analysis-spec.md)
-**Status:** written plan awaiting human review.
+**Status:** implementation complete; awaiting code review.
 
 ## Global constraints
 
@@ -29,7 +29,7 @@
 
 **Files:** `EquityCurveChart.tsx`, `tests/unit/components/EquityCurveChart.test.tsx`, `src/mocks/backtest.ts`.
 
-- [ ] Write a failing test for acceptance item 5, fix the scaling, and add a `performance` fixture with long and short trades, an unrecovered drawdown and a null ratio. Commit.
+- [x] Write a failing test for acceptance item 5, fix the scaling, and add a `performance` fixture with long and short trades, an unrecovered drawdown and a null ratio. Commit.
 
 ### 2. Metrics panel
 
@@ -38,8 +38,8 @@
 - New: `src/lib/backtesting/performanceSummary.ts` with tests, and `src/components/backtests/BacktestPerformanceSummary.tsx` with tests.
 - Modified: `backtestMetricFormatters.ts` (hold-time format).
 
-- [ ] Write failing tests for acceptance items 1 and 2.
-- [ ] Implement the row definitions, formats, tooltips and side toggle, then wire the panel into `BacktestRechartsPane` behind `performance`. Commit.
+- [x] Write failing tests for acceptance items 1 and 2.
+- [x] Implement the row definitions, formats, tooltips and side toggle, then wire the panel into `BacktestRechartsPane` behind `performance`. Commit.
 
 ### 3. Linked charts and the drawdowns table
 
@@ -48,16 +48,17 @@
 - New: `src/components/backtests/WorstDrawdownsTable.tsx` with tests.
 - Modified: `EquityCurveChart.tsx`, `DrawdownChart.tsx`, `BacktestRechartsPane.tsx`, `BacktestResultsTabs.tsx`.
 
-- [ ] Write failing tests for acceptance items 3, 4 and 6.
-- [ ] Add the shared `syncId`, the drawdown `ReferenceArea`s, the hovered-period state, the table with the Open badge, and keyboard focus. Commit.
+- [x] Write failing tests for acceptance items 3, 4 and 6.
+- [x] Add the shared `syncId`, the drawdown `ReferenceArea`s, the hovered-period state, the table with the Open badge, and keyboard focus. Commit.
 
 ## Verification
 
 - `pnpm lint`, `pnpm typecheck`, `TZ=America/Sao_Paulo pnpm test:run` and `pnpm build`.
 - Browser check of the MSW web preview:
-  - the Performance tab at desktop and narrow widths, in the dark and light themes;
-  - the toggle, tooltips, synchronized crosshair and row highlight;
-  - a fixture without `performance`.
+  - [x] the Performance tab at desktop and narrow widths in the available dark theme;
+  - [x] the toggle, metric tooltips, synchronized chart hover and table row highlight;
+  - [x] a fixture without `performance` (component test coverage);
+  - The app exposes only its dark theme, so a light-theme browser check is not applicable.
 
   Keep screenshots outside the repository.
 

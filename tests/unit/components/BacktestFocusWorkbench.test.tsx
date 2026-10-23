@@ -10,6 +10,7 @@ import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/perfo
 import { getMockBacktestResponse } from '@/mocks/backtest'
 import { handlers } from '@/mocks/handlers'
 import { EquityCurveChart } from '@/components/backtests/EquityCurveChart'
+import { TooltipProvider } from '@/components/ui/Tooltip'
 import type { BacktestRequest, BacktestResponse } from '@/types/backtesting'
 import { renderWithQueryClient } from '../testUtils'
 
@@ -149,7 +150,11 @@ describe('BacktestFocusWorkbench', () => {
   it('re-renders the results subtree when backtest data changes', async () => {
     const user = userEvent.setup()
 
-    renderWithQueryClient(<ResultsUpdaterHarness />)
+    renderWithQueryClient(
+      <TooltipProvider>
+        <ResultsUpdaterHarness />
+      </TooltipProvider>,
+    )
 
     await waitFor(() => {
       expect(screen.getByTestId('equity-chart-mock')).toBeInTheDocument()

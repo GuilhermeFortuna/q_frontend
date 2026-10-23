@@ -1,4 +1,11 @@
-import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip } from 'recharts'
+import {
+  Line,
+  LineChart,
+  ReferenceArea,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts'
 
 import { formatChartDate, formatCurrency } from '@/components/backtests/chartUtils'
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
@@ -11,7 +18,7 @@ import {
   chartMargin,
   themedTooltipCursor,
 } from '@/lib/charts/rechartsTheme'
-import type { EquityPoint, Trade } from '@/types/backtesting'
+import type { DrawdownPeriod, EquityPoint, Trade } from '@/types/backtesting'
 import type { OhlcvBar } from '@/types/api'
 
 const EQUITY_CHART_HEIGHT_PX = 260
@@ -24,6 +31,9 @@ type EquityCurveChartProps = {
   windowBoundaries?: string[]
   bars?: OhlcvBar[]
   trades?: Trade[]
+  drawdowns?: DrawdownPeriod[]
+  highlightedDrawdownIndex?: number | null
+  syncId?: string
 }
 
 export function CustomEquityTooltip({
@@ -144,6 +154,9 @@ export function EquityCurveChart({
   windowBoundaries = [],
   bars = [],
   trades = [],
+  drawdowns = [],
+  highlightedDrawdownIndex = null,
+  syncId,
 }: EquityCurveChartProps) {
   if (data.length === 0) {
     return (
@@ -158,6 +171,9 @@ export function EquityCurveChart({
     ...point,
     label: formatChartDate(point.timestamp),
   }))
+  const equityValues = chartData.map((point) => point.equity)
+  const minEquity = Math.min(...equityValues)
+  const maxEquity = Math.max(...equityValues)
 
   const boundaryLabels = windowBoundaries.map((timestamp) => formatChartDate(timestamp))
 
@@ -166,7 +182,7 @@ export function EquityCurveChart({
       <h4 className="text-silver-200 mb-3 text-sm font-medium">Equity Curve</h4>
       <div className="w-full" style={{ height: EQUITY_CHART_HEIGHT_PX }}>
         <ResponsiveContainer width="100%" height={EQUITY_CHART_HEIGHT_PX}>
-          <LineChart data={chartData} margin={chartMargin}>
+          <LineChart data={chartData} margin={chartMargin} syncId={syncId}>
             <ThemedCartesianGrid vertical={false} />
             <ThemedXAxis dataKey="label" minTickGap={40} />
             <ThemedYAxis tickFormatter={(v) => formatCurrency(v)} width={72} />
@@ -174,6 +190,40 @@ export function EquityCurveChart({
               cursor={themedTooltipCursor}
               content={<CustomEquityTooltip bars={bars} trades={trades} />}
             />
+            {drawdowns.slice(0, 3).map((period, index) => (
+              <ReferenceArea
+                key={`worst-drawdown-${index}`}
+                x1={formatChartDate(period.peak_time)}
+                x2={
+                  period.recovery_time
+                    ? formatChartDate(period.recovery_time)
+                    : chartData[chartData.length - 1]?.label
+                }
+                y1={minEquity}
+                y2={maxEquity}
+                ifOverflow="extendDomain"
+                fill={chartTheme.semantic.drawdown}
+                fillOpacity={0.1}
+                stroke="none"
+              />
+            ))}
+            {highlightedDrawdownIndex != null && drawdowns[highlightedDrawdownIndex] ? (
+              <ReferenceArea
+                x1={formatChartDate(drawdowns[highlightedDrawdownIndex].peak_time)}
+                x2={
+                  drawdowns[highlightedDrawdownIndex].recovery_time
+                    ? formatChartDate(drawdowns[highlightedDrawdownIndex].recovery_time!)
+                    : chartData[chartData.length - 1]?.label
+                }
+                y1={minEquity}
+                y2={maxEquity}
+                ifOverflow="extendDomain"
+                fill={chartTheme.semantic.drawdown}
+                fillOpacity={0.24}
+                stroke={chartTheme.semantic.drawdown}
+                strokeOpacity={0.7}
+              />
+            ) : null}
             <ReferenceLine
               y={initialCapital}
               stroke={chartTheme.baseline.stroke}
