@@ -32,8 +32,6 @@ import { chartTheme } from '@/lib/charts/chartTheme'
 import {
   chartMargin,
   ThemedCartesianGrid,
-  ThemedXAxis,
-  ThemedYAxis,
   themedTooltipCursor,
   themedXAxisProps,
   themedYAxisProps,
@@ -144,7 +142,7 @@ function PnlDistributionPanel({
               tickFormatter={(val) => formatSignedCurrency(Number(val))}
               {...themedXAxisProps}
             />
-            <ThemedYAxis allowDecimals={false} />
+            <YAxis allowDecimals={false} {...themedYAxisProps} />
             <Tooltip cursor={themedTooltipCursor} content={<HistogramTooltip />} />
 
             {meanBinLabel ? (
@@ -297,11 +295,12 @@ function HoldVsPnlPanel({
               tickFormatter={(v) => formatHoldTime(Number(v))}
               {...themedXAxisProps}
             />
-            <ThemedYAxis
+            <YAxis
               type="number"
               dataKey="pnl"
               name="P&L"
               tickFormatter={formatSignedCurrency}
+              {...themedYAxisProps}
             />
             <Tooltip cursor={themedTooltipCursor} content={<HoldScatterTooltip />} />
             <ReferenceLine
@@ -506,7 +505,7 @@ function TimeBreakdownPanel({
         <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={data} margin={chartMargin}>
             <ThemedCartesianGrid />
-            <ThemedXAxis dataKey="label" />
+            <XAxis dataKey="label" {...themedXAxisProps} />
             <YAxis
               yAxisId="pnl"
               orientation="left"

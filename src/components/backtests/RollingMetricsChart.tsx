@@ -1,5 +1,13 @@
 import { useId, useMemo, useState } from 'react'
-import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip } from 'recharts'
+import {
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
 import { formatChartDate, formatSignedCurrency } from '@/components/backtests/chartUtils'
@@ -9,9 +17,9 @@ import { chartTheme } from '@/lib/charts/chartTheme'
 import {
   chartMargin,
   ThemedCartesianGrid,
-  ThemedXAxis,
-  ThemedYAxis,
   themedTooltipCursor,
+  themedXAxisProps,
+  themedYAxisProps,
 } from '@/lib/charts/rechartsTheme'
 import {
   rollingTradeStats,
@@ -44,12 +52,13 @@ function RollingTooltip({
   metric,
 }: {
   active?: boolean
-  payload?: Array<{ value: number | null }>
+  payload?: Array<{ value: number | null; payload?: RollingTradeStatPoint & { label?: string } }>
   label?: string
   metric: RollingMetric
 }) {
   if (!active || !payload || !payload.length) return null
   const value = payload[0]?.value
+  const item = payload[0]?.payload
 
   let formattedValue = '—'
   if (value != null && Number.isFinite(value)) {
@@ -61,9 +70,17 @@ function RollingTooltip({
   const metricLabel =
     metric === 'expectancy' ? 'Expectancy' : metric === 'win_rate' ? 'Win rate' : 'Profit factor'
 
+  const dateLabel =
+    item?.label ??
+    (item?.timestamp
+      ? formatChartDate(item.timestamp)
+      : label && isNaN(Number(label))
+        ? formatChartDate(label)
+        : '—')
+
   return (
     <div className={chartTheme.tooltip.shellClass}>
-      <p className={chartTheme.tooltip.labelClass}>{label ? formatChartDate(label) : '—'}</p>
+      <p className={chartTheme.tooltip.labelClass}>{dateLabel}</p>
       <div className="mt-1 flex items-center justify-between gap-3">
         <span className={chartTheme.tooltip.nameClass}>{metricLabel}</span>
         <span
@@ -109,14 +126,20 @@ export function RollingMetricsChart({
     [tradeCount],
   )
 
-  const chartData = useMemo<RollingTradeStatPoint[]>(() => {
+  const chartData = useMemo(() => {
     if (tradeCount < windowNum) return []
+    let rawPoints: RollingTradeStatPoint[] = []
     if (distribution?.rolling) {
-      if (windowSize === '20') return distribution.rolling[20]
-      if (windowSize === '50') return distribution.rolling[50]
-      if (windowSize === '100') return distribution.rolling[100]
+      if (windowSize === '20') rawPoints = distribution.rolling[20]
+      else if (windowSize === '50') rawPoints = distribution.rolling[50]
+      else if (windowSize === '100') rawPoints = distribution.rolling[100]
+    } else {
+      rawPoints = rollingTradeStats(trades, windowNum)
     }
-    return rollingTradeStats(trades, windowNum)
+    return rawPoints.map((pt) => ({
+      ...pt,
+      label: formatChartDate(pt.timestamp),
+    }))
   }, [tradeCount, windowNum, distribution, windowSize, trades])
 
   const fullSampleValue = useMemo<number | null>(() => {
@@ -191,8 +214,8 @@ export function RollingMetricsChart({
                 </linearGradient>
               </defs>
               <ThemedCartesianGrid />
-              <ThemedXAxis dataKey="timestamp" tickFormatter={formatChartDate} />
-              <ThemedYAxis tickFormatter={yAxisFormatter} />
+              <XAxis dataKey="label" minTickGap={40} {...themedXAxisProps} />
+              <YAxis tickFormatter={yAxisFormatter} {...themedYAxisProps} />
               <Tooltip cursor={themedTooltipCursor} content={<RollingTooltip metric={metric} />} />
 
               {metric === 'profit_factor' ? (

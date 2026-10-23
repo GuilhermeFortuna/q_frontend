@@ -55,7 +55,10 @@ describe('RollingMetricsChart', () => {
   it('renders chart and toggles between window sizes when enough trades exist', async () => {
     const user = userEvent.setup()
     const trades = makeTrades(60)
-    render(<RollingMetricsChart trades={trades} performance={performance} />)
+    const { container } = render(<RollingMetricsChart trades={trades} performance={performance} />)
+
+    expect(container.querySelector('.recharts-xAxis')).toBeInTheDocument()
+    expect(container.querySelector('.recharts-yAxis')).toBeInTheDocument()
 
     // With 60 trades, window 50 is satisfied so no empty state
     expect(screen.queryByText(/Needs at least/)).not.toBeInTheDocument()
@@ -77,5 +80,16 @@ describe('RollingMetricsChart', () => {
     render(<RollingMetricsChart trades={[]} performance={performance} />)
 
     expect(screen.getByText(/No closed trades/i)).toBeInTheDocument()
+  })
+
+  it('formats dates with actual trade year and never displays 1969', () => {
+    const trades = makeTrades(60)
+    const { container } = render(<RollingMetricsChart trades={trades} performance={performance} />)
+
+    // Verify X-axis ticks contain the 2024 dates from makeTrades
+    const xAxis = container.querySelector('.recharts-xAxis')
+    expect(xAxis).toBeInTheDocument()
+    expect(xAxis?.textContent).toContain('2024')
+    expect(xAxis?.textContent).not.toContain('1969')
   })
 })

@@ -84,14 +84,87 @@ describe('TradeDistributionPanels', () => {
       />,
     )
 
-    const scatterNode = container.querySelector('.recharts-scatter')
-    expect(scatterNode).toBeInTheDocument()
-
-    // Find a scatter symbol/cell and click it
     const symbols = container.querySelectorAll('.recharts-scatter-symbol')
     if (symbols.length > 0) {
       fireEvent.click(symbols[0])
       expect(onFocusTrade).toHaveBeenCalled()
     }
+  })
+
+  it('renders scatter plot with visible X and Y axes and plots all trades', () => {
+    const trades: Trade[] = [
+      {
+        id: 't-1',
+        order_id: 'o-1',
+        symbol: 'PETR4',
+        action: 'BUY',
+        quantity: 100,
+        entry_time: '2024-01-01T10:00:00Z',
+        exit_time: '2024-01-01T11:05:00Z', // 3900s (1h 5m)
+        entry_price: 30,
+        exit_price: 31,
+        pnl: 100,
+        commission: 0,
+        point_value: 1,
+        status: 'CLOSED',
+      },
+      {
+        id: 't-2',
+        order_id: 'o-2',
+        symbol: 'PETR4',
+        action: 'BUY',
+        quantity: 100,
+        entry_time: '2024-01-01T10:00:00Z',
+        exit_time: '2024-01-01T11:45:00Z', // 6300s (1h 45m)
+        entry_price: 30,
+        exit_price: 29,
+        pnl: -50,
+        commission: 0,
+        point_value: 1,
+        status: 'CLOSED',
+      },
+      {
+        id: 't-3',
+        order_id: 'o-3',
+        symbol: 'PETR4',
+        action: 'BUY',
+        quantity: 100,
+        entry_time: '2024-01-01T10:00:00Z',
+        exit_time: '2024-01-01T12:05:00Z', // 7500s (2h 5m)
+        entry_price: 30,
+        exit_price: 32,
+        pnl: 200,
+        commission: 0,
+        point_value: 1,
+        status: 'CLOSED',
+      },
+      {
+        id: 't-4',
+        order_id: 'o-4',
+        symbol: 'PETR4',
+        action: 'BUY',
+        quantity: 100,
+        entry_time: '2024-01-01T10:00:00Z',
+        exit_time: '2024-01-01T13:00:00Z', // 10800s (3h)
+        entry_price: 30,
+        exit_price: 28,
+        pnl: -100,
+        commission: 0,
+        point_value: 1,
+        status: 'CLOSED',
+      },
+    ]
+
+    const { container } = render(<TradeDistributionPanels trades={trades} performance={null} />)
+
+    const symbols = container.querySelectorAll('.recharts-scatter-symbol')
+    expect(symbols).toHaveLength(4)
+
+    // Verify both axes are present in the scatter chart
+    const scatterContainer = container
+      .querySelector('.recharts-scatter')
+      ?.closest('.recharts-wrapper')
+    expect(scatterContainer?.querySelector('.recharts-xAxis')).toBeInTheDocument()
+    expect(scatterContainer?.querySelector('.recharts-yAxis')).toBeInTheDocument()
   })
 })
