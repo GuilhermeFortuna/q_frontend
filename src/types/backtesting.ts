@@ -3,6 +3,7 @@ import type { OhlcvBar } from '@/types/api'
 import type {
   BacktestNote,
   BacktestOrigin,
+  BacktestPerformance,
   BacktestProvenance,
   MlFilterBacktestSummary,
   MlFilterConfig,
@@ -148,6 +149,8 @@ export interface BacktestResponse {
   ml_filter_summary?: MlFilterBacktestSummary | null
   /** Absent on results stored before notes existed. */
   notes?: BacktestNote[]
+  /** Absent on results stored before performance existed; null when the run's initial capital is unknown. */
+  performance?: BacktestPerformance | null
 }
 
 export type BacktestRunStatus = 'pending' | 'running' | 'completed' | 'failed'
