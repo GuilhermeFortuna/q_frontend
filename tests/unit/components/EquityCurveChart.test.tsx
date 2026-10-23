@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { EquityCurveChart } from '@/components/backtests/EquityCurveChart'
+import { CustomEquityTooltip, EquityCurveChart } from '@/components/backtests/EquityCurveChart'
 import type { EquityPoint } from '@/types/backtesting'
 
 const samplePoints: EquityPoint[] = [
@@ -33,5 +33,19 @@ describe('EquityCurveChart', () => {
     expect(screen.getByText('Equity Curve')).toBeTruthy()
     expect(document.querySelector('.recharts-responsive-container')).toBeTruthy()
     expect(document.querySelector('.recharts-line')).toBeTruthy()
+  })
+
+  it('shows a fractional drawdown as a percentage in the tooltip', () => {
+    const point: EquityPoint = {
+      timestamp: '2024-01-15T00:00:00Z',
+      equity: 95_000,
+      pnl: -5_000,
+      drawdown: 5_000,
+      drawdownPct: 0.05,
+    }
+
+    render(<CustomEquityTooltip active payload={[{ payload: point }]} />)
+
+    expect(screen.getByText('-5.00%')).toBeTruthy()
   })
 })

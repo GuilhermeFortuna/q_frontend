@@ -26,7 +26,7 @@ type EquityCurveChartProps = {
   trades?: Trade[]
 }
 
-function CustomEquityTooltip({
+export function CustomEquityTooltip({
   active,
   payload,
   bars = [],
@@ -88,7 +88,7 @@ function CustomEquityTooltip({
         <div className="flex justify-between gap-4 text-xs">
           <span className="text-silver-300">Drawdown:</span>
           <span className="font-mono font-bold text-rose-400 tabular-nums">
-            -{point.drawdownPct.toFixed(2)}%
+            -{(point.drawdownPct * 100).toFixed(2)}%
           </span>
         </div>
 
