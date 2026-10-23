@@ -29,7 +29,7 @@
 
 **Files:** new `src/lib/backtesting/distribution.ts`, plus tests.
 
-- [ ] Write failing tests for acceptance items 1–3, then implement the four functions. Commit.
+- [x] Write failing tests for acceptance items 1–3, then implement the four functions. Commit.
 
 ### 2. Worker integration
 

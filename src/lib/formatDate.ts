@@ -34,6 +34,11 @@ const DISPLAY_TIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
   hour12: false,
 })
 
+const DISPLAY_WEEKDAY_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  timeZone: DISPLAY_TIMEZONE,
+  weekday: 'short',
+})
+
 function getParts(date: Date): Record<DateTimePart, string> {
   const parts = {} as Record<DateTimePart, string>
   for (const { type, value } of DISPLAY_TIME_FORMATTER.formatToParts(date)) {
@@ -109,4 +114,15 @@ export function formatDisplayMonthKey(value: Date | string | number): string {
   const year = parts.year
   const month = pad2(parts.month)
   return `${year}-${month}`
+}
+
+/** Short weekday name in display timezone: Mon, Tue, etc. */
+export function formatDisplayWeekday(value: Date | string | number): string {
+  return DISPLAY_WEEKDAY_FORMATTER.format(toDate(value))
+}
+
+/** Hour of the day in display timezone: 0..23 */
+export function getDisplayHour(value: Date | string | number): number {
+  const parts = getParts(toDate(value))
+  return parseInt(parts.hour, 10)
 }
