@@ -6,6 +6,7 @@ import { MonthlyPnLChart } from '@/components/backtests/MonthlyPnLChart'
 import { BacktestPerformanceSummary } from '@/components/backtests/BacktestPerformanceSummary'
 import { WorstDrawdownsTable } from '@/components/backtests/WorstDrawdownsTable'
 import { RollingMetricsChart } from '@/components/backtests/RollingMetricsChart'
+import { TradeDistributionPanels } from '@/components/backtests/TradeDistributionPanels'
 import type { BacktestPerformance, EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
 import type { BacktestDistributionData } from '@/lib/backtesting/distribution'
 import type { OhlcvBar } from '@/types/api'
@@ -72,6 +73,12 @@ export function BacktestRechartsPane(props: BacktestRechartsPaneProps) {
           trades={props.trades}
           distribution={props.distribution}
           performance={props.performance}
+        />
+        <TradeDistributionPanels
+          trades={props.trades}
+          distribution={props.distribution}
+          performance={props.performance}
+          onFocusTrade={props.onFocusTrade}
         />
       </div>
     )

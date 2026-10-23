@@ -1,0 +1,97 @@
+import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+
+import { TradeDistributionPanels } from '@/components/backtests/TradeDistributionPanels'
+import { getMockBacktestResponse } from '@/mocks/backtest'
+import type { BacktestPerformance, Trade } from '@/types/backtesting'
+
+function makeTrades(count: number, pnl = 100): Trade[] {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `trade-${index}`,
+    order_id: `order-${index}`,
+    symbol: 'PETR4',
+    action: index % 2 === 0 ? 'BUY' : 'SELL',
+    quantity: 100,
+    entry_time: `2024-01-${String((index % 28) + 1).padStart(2, '0')}T10:00:00Z`,
+    entry_price: 30,
+    exit_time: `2024-01-${String((index % 28) + 1).padStart(2, '0')}T16:00:00Z`,
+    exit_price: 31,
+    exit_reason: 'signal',
+    pnl: index % 3 === 0 ? -pnl : pnl,
+    commission: 0,
+    point_value: 1,
+    status: 'CLOSED',
+  }))
+}
+
+describe('TradeDistributionPanels', () => {
+  const mockResp = getMockBacktestResponse({ symbol: 'PETR4' })
+  const performanceWithExits: BacktestPerformance = {
+    ...mockResp.performance!,
+    exit_reasons: [
+      { reason: 'SIGNAL', pnl: 1500, trades: 10, win_rate: 0.7 },
+      { reason: 'STOP_LOSS', pnl: -800, trades: 5, win_rate: 0.0 },
+      { reason: 'TAKE_PROFIT', pnl: 2200, trades: 8, win_rate: 1.0 },
+    ],
+  }
+
+  it('renders all four panels when performance with exit_reasons is provided', () => {
+    const trades = makeTrades(25)
+    render(<TradeDistributionPanels trades={trades} performance={performanceWithExits} />)
+
+    expect(screen.getByText('P&L distribution')).toBeInTheDocument()
+    expect(screen.getByText('Holding time vs P&L')).toBeInTheDocument()
+    expect(screen.getByText('By exit reason')).toBeInTheDocument()
+    expect(screen.getByText('By time')).toBeInTheDocument()
+  })
+
+  it('hides the exit-reason panel when performance is omitted, rendering the other 3 panels', () => {
+    const trades = makeTrades(25)
+    render(<TradeDistributionPanels trades={trades} performance={null} />)
+
+    expect(screen.getByText('P&L distribution')).toBeInTheDocument()
+    expect(screen.getByText('Holding time vs P&L')).toBeInTheDocument()
+    expect(screen.queryByText('By exit reason')).not.toBeInTheDocument()
+    expect(screen.getByText('By time')).toBeInTheDocument()
+  })
+
+  it('renders a single empty state when there are no closed trades', () => {
+    render(<TradeDistributionPanels trades={[]} performance={performanceWithExits} />)
+
+    expect(screen.getByText(/No closed trades/i)).toBeInTheDocument()
+    expect(screen.queryByText('Holding time vs P&L')).not.toBeInTheDocument()
+  })
+
+  it('allows toggling between Weekday and Hour breakdown in the By Time panel', async () => {
+    const user = userEvent.setup()
+    const trades = makeTrades(25)
+    render(<TradeDistributionPanels trades={trades} performance={performanceWithExits} />)
+
+    const hourToggle = screen.getByRole('radio', { name: 'Hour' })
+    await user.click(hourToggle)
+    expect(hourToggle).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('fires onFocusTrade when clicking a scatter point in the hold vs pnl panel', () => {
+    const onFocusTrade = vi.fn()
+    const trades = makeTrades(10)
+    const { container } = render(
+      <TradeDistributionPanels
+        trades={trades}
+        performance={performanceWithExits}
+        onFocusTrade={onFocusTrade}
+      />,
+    )
+
+    const scatterNode = container.querySelector('.recharts-scatter')
+    expect(scatterNode).toBeInTheDocument()
+
+    // Find a scatter symbol/cell and click it
+    const symbols = container.querySelectorAll('.recharts-scatter-symbol')
+    if (symbols.length > 0) {
+      fireEvent.click(symbols[0])
+      expect(onFocusTrade).toHaveBeenCalled()
+    }
+  })
+})

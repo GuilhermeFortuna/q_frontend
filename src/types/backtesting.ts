@@ -14,6 +14,7 @@ export type {
   BacktestPerformance,
   BacktestProvenance,
   DrawdownPeriod,
+  ExitReasonStats,
   TradeStats,
 } from '../../contracts/api'
 

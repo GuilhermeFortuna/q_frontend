@@ -47,7 +47,7 @@
 
 **Files:** new `TradeDistributionPanels.tsx` and per-panel components, plus tests; `BacktestRechartsPane.tsx`, `BacktestResultsTabs.tsx`.
 
-- [ ] Write failing tests for acceptance items 5 and 7, then implement the histogram, scatter with trade focus, exit-reason bars and the time breakdown. Commit.
+- [x] Write failing tests for acceptance items 5 and 7, then implement the histogram, scatter with trade focus, exit-reason bars and the time breakdown. Commit.
 
 ## Verification
 
