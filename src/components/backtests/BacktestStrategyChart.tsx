@@ -14,7 +14,10 @@ import {
   StrategyOscillatorLayer,
 } from '@/components/backtests/StrategyIndicatorLayer'
 import { TradeHoverCard } from '@/components/backtests/TradeHoverCard'
-import { TradeMarkersLayer, findBarTimestamp } from '@/components/backtests/TradeMarkersLayer'
+import {
+  TradeMarkersLayer,
+  createBarTimestampLookup,
+} from '@/components/backtests/TradeMarkersLayer'
 import {
   processBars,
   applyPriceAxisTransform,
@@ -103,6 +106,7 @@ function ChartInner({
   onHoverTradeChange,
 }: BacktestStrategyChartProps & { width: number; height: number }) {
   const processed = useMemo(() => processBars(bars), [bars])
+  const findBar = useMemo(() => createBarTimestampLookup(bars), [bars])
   const hasOscillator = indicators.some((ind) => ind.pane === 'oscillator')
   const layout = useMemo(
     () => computeBacktestLayout(width, height, hasOscillator),
@@ -118,7 +122,7 @@ function ChartInner({
     const trade = trades.find((t) => t.id === focusedTradeId)
     if (!trade) return
 
-    const timestamp = findBarTimestamp(bars, trade.entry_time)
+    const timestamp = findBar(trade.entry_time)
     if (!timestamp) return
 
     const index = processed.findIndex((b) => b.timestamp === timestamp)
@@ -130,7 +134,7 @@ function ChartInner({
     const end = Math.min(processed.length - 1, start + visibleBarsCount - 1)
 
     setViewport({ startIndex: start, endIndex: end })
-  }, [focusedTradeId, processed, trades, bars, setViewport])
+  }, [focusedTradeId, processed, trades, findBar, setViewport])
   const { pricePanOffset, priceScaleFactor, resetPriceAxis, stretchPriceByPixels } = usePriceAxis(
     String(processed.length),
   )

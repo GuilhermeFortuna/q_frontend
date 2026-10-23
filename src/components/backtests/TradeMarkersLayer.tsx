@@ -27,20 +27,39 @@ const ENTRY_MARKER_SIZE = 8
 const EXIT_MARKER_RADIUS = 6
 const MARKER_STROKE = '#07101c'
 
-export function findBarTimestamp(allBars: OhlcvBar[], tradeTime: string): string | null {
-  const targetMs = new Date(tradeTime).getTime()
-  let closest: OhlcvBar | null = null
-  let minDist = Infinity
+export type BarTimestampLookup = (tradeTime: string) => string | null
 
-  for (const bar of allBars) {
-    const dist = Math.abs(new Date(bar.timestamp).getTime() - targetMs)
-    if (dist < minDist) {
-      minDist = dist
-      closest = bar
+/**
+ * Builds a nearest-bar lookup that parses bar timestamps once and answers each query with a
+ * binary search, so placing many trades on many bars stays O((bars + trades) log bars).
+ * Ties resolve to the earlier bar.
+ */
+export function createBarTimestampLookup(allBars: OhlcvBar[]): BarTimestampLookup {
+  const entries = allBars
+    .map((bar) => ({ ms: new Date(bar.timestamp).getTime(), timestamp: bar.timestamp }))
+    .filter((entry) => !Number.isNaN(entry.ms))
+    .sort((a, b) => a.ms - b.ms)
+
+  return (tradeTime) => {
+    const targetMs = new Date(tradeTime).getTime()
+    if (entries.length === 0 || Number.isNaN(targetMs)) return null
+
+    // First entry at or after the target.
+    let lo = 0
+    let hi = entries.length
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1
+      if (entries[mid].ms < targetMs) lo = mid + 1
+      else hi = mid
     }
-  }
 
-  return closest?.timestamp ?? null
+    if (lo === 0) return entries[0].timestamp
+    if (lo === entries.length) return entries[lo - 1].timestamp
+
+    const before = entries[lo - 1]
+    const after = entries[lo]
+    return targetMs - before.ms <= after.ms - targetMs ? before.timestamp : after.timestamp
+  }
 }
 
 function tradeLineColor(pnl: number | null): string {
@@ -139,13 +158,11 @@ export function TradeMarkersLayer({
   onTradeHover,
 }: TradeMarkersLayerProps) {
   const placedTrades = useMemo<PlacedTrade[]>(() => {
+    const findBar = createBarTimestampLookup(allBars)
     return trades.map((trade) => ({
       trade,
-      entryTimestamp: findBarTimestamp(allBars, trade.entry_time),
-      exitTimestamp:
-        trade.exit_time && trade.exit_price != null
-          ? findBarTimestamp(allBars, trade.exit_time)
-          : null,
+      entryTimestamp: findBar(trade.entry_time),
+      exitTimestamp: trade.exit_time && trade.exit_price != null ? findBar(trade.exit_time) : null,
     }))
   }, [trades, allBars])
 
