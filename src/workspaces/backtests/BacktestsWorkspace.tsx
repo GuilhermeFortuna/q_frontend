@@ -101,6 +101,7 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
   const {
     equityCurve,
     monthlyStats,
+    distribution,
     computing: performanceComputing,
   } = useBacktestPerformanceData(resultsData?.trades, resultsCapital)
 
@@ -270,6 +271,7 @@ export function BacktestsWorkspace({ initialMode }: BacktestsWorkspaceProps) {
                     initialCapital={resultsCapital}
                     equityCurve={equityCurve}
                     monthlyStats={monthlyStats}
+                    distribution={distribution}
                     performanceComputing={performanceComputing}
                     allowMlFilterTraining={storedRun?.origin !== 'script'}
                   />

@@ -28,6 +28,7 @@ import type {
   MonthlyStats,
   Trade,
 } from '@/types/backtesting'
+import type { BacktestDistributionData } from '@/lib/backtesting/distribution'
 
 type TabId = 'performance' | 'monthly' | 'trade-chart' | 'trades'
 
@@ -44,6 +45,7 @@ type BacktestResultsTabsProps = {
   initialCapital: number
   equityCurve: EquityPoint[]
   monthlyStats: MonthlyStats[]
+  distribution?: BacktestDistributionData
   performanceComputing?: boolean
   allowMlFilterTraining?: boolean
   symbol: string
@@ -199,6 +201,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   initialCapital,
   equityCurve,
   monthlyStats,
+  distribution,
   performanceComputing = false,
   allowMlFilterTraining = true,
   symbol,
@@ -361,6 +364,11 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
                 bars={results.bars}
                 trades={results.trades}
                 performance={results.performance}
+                distribution={distribution}
+                onFocusTrade={(id) => {
+                  setFocusedTradeId(id)
+                  setActiveTab('trade-chart')
+                }}
               />
             )}
           </div>

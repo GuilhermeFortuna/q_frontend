@@ -1,10 +1,15 @@
 import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/performance'
+import {
+  computeDistributionData,
+  type BacktestDistributionData,
+} from '@/lib/backtesting/distribution'
 import { BACKTEST_WORKER_THRESHOLD } from '@/lib/virtualization/constants'
 import type { EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
 
 export type BacktestPerformancePayload = {
   equityCurve: EquityPoint[]
   monthlyStats: MonthlyStats[]
+  distribution: BacktestDistributionData
 }
 
 type WorkerRequestEnvelope = {
@@ -43,6 +48,7 @@ function computeOnMainThread(trades: Trade[], initialCapital: number): BacktestP
   return {
     equityCurve: buildEquityCurve(trades, initialCapital),
     monthlyStats: aggregateMonthlyStats(trades),
+    distribution: computeDistributionData(trades),
   }
 }
 

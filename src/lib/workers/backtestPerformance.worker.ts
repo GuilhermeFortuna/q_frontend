@@ -1,4 +1,8 @@
 import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/performance'
+import {
+  computeDistributionData,
+  type BacktestDistributionData,
+} from '@/lib/backtesting/distribution'
 import type { Trade } from '@/types/backtesting'
 
 type WorkerRequestEnvelope = {
@@ -12,6 +16,7 @@ type WorkerSuccessEnvelope = {
   payload: {
     equityCurve: ReturnType<typeof buildEquityCurve>
     monthlyStats: ReturnType<typeof aggregateMonthlyStats>
+    distribution: BacktestDistributionData
   }
 }
 
@@ -27,6 +32,7 @@ self.onmessage = (event: MessageEvent<WorkerRequestEnvelope>) => {
     const payload: WorkerSuccessEnvelope['payload'] = {
       equityCurve: buildEquityCurve(trades, initialCapital),
       monthlyStats: aggregateMonthlyStats(trades),
+      distribution: computeDistributionData(trades),
     }
     const response: WorkerSuccessEnvelope = { requestId, payload }
     self.postMessage(response)

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { buildEquityCurve, aggregateMonthlyStats } from '@/lib/backtesting/performance'
+import { computeDistributionData } from '@/lib/backtesting/distribution'
 import {
   computeBacktestPerformance,
   terminateBacktestPerformanceWorker,
@@ -110,6 +111,7 @@ describe('computeBacktestPerformance', () => {
       payload: {
         equityCurve: buildEquityCurve(tradesB, 200_000),
         monthlyStats: aggregateMonthlyStats(tradesB),
+        distribution: computeDistributionData(tradesB),
       },
     })
     worker.emitMessage({
@@ -117,6 +119,7 @@ describe('computeBacktestPerformance', () => {
       payload: {
         equityCurve: buildEquityCurve(tradesA, 100_000),
         monthlyStats: aggregateMonthlyStats(tradesA),
+        distribution: computeDistributionData(tradesA),
       },
     })
 
@@ -156,5 +159,32 @@ describe('computeBacktestPerformance', () => {
     const [resultA, resultB] = await Promise.all([promiseA, promiseB])
     expect(resultA.equityCurve).toEqual(buildEquityCurve(tradesA, 100_000))
     expect(resultB.equityCurve).toEqual(buildEquityCurve(tradesB, 200_000))
+  })
+
+  it('returns identical derived distribution series between worker and inline paths', async () => {
+    vi.stubGlobal('Worker', FakeWorker)
+
+    const trades = makeTrades(500, 50)
+    const expected = computeDistributionData(trades)
+
+    const promise = computeBacktestPerformance(trades, 100_000)
+    const worker = FakeWorker.instances[0]
+
+    worker.emitMessage({
+      requestId: 1,
+      payload: {
+        equityCurve: buildEquityCurve(trades, 100_000),
+        monthlyStats: aggregateMonthlyStats(trades),
+        distribution: computeDistributionData(trades),
+      },
+    })
+
+    const workerResult = await promise
+    expect(workerResult.distribution).toEqual(expected)
+
+    vi.stubGlobal('Worker', undefined)
+    terminateBacktestPerformanceWorker()
+    const inlineResult = await computeBacktestPerformance(trades, 100_000)
+    expect(inlineResult.distribution).toEqual(expected)
   })
 })

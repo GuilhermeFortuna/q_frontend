@@ -1,8 +1,12 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { useBacktestPerformanceData } from '@/lib/backtesting/useBacktestPerformanceData'
+import {
+  EMPTY_DISTRIBUTION,
+  useBacktestPerformanceData,
+} from '@/lib/backtesting/useBacktestPerformanceData'
 import { buildEquityCurve } from '@/lib/backtesting/performance'
+import { computeDistributionData } from '@/lib/backtesting/distribution'
 import {
   computeBacktestPerformance,
   terminateBacktestPerformanceWorker,
@@ -57,6 +61,7 @@ describe('useBacktestPerformanceData', () => {
       return Promise.resolve({
         equityCurve: buildEquityCurve(trades, initialCapital),
         monthlyStats: [],
+        distribution: computeDistributionData(trades),
       })
     })
 
@@ -78,6 +83,7 @@ describe('useBacktestPerformanceData', () => {
     resolveA({
       equityCurve: buildEquityCurve(tradesA, 100_000),
       monthlyStats: [],
+      distribution: EMPTY_DISTRIBUTION,
     })
 
     await waitFor(() => {

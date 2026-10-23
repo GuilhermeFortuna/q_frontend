@@ -6,7 +6,7 @@
 **Architecture:** Pure derivations in `src/lib/backtesting/distribution.ts` run inline or in the existing performance worker. Thin Recharts components render them in Q-124's panel framing.
 **Tech stack:** React 19, TypeScript, Tailwind v4 tokens, Recharts, Web Workers, Vitest and Testing Library, MSW.
 **Spec:** [Specification](../specs/Q-125-performance-tab-rolling-metrics-and-trade-distribution-spec.md)
-**Status:** written plan awaiting human review.
+**Status:** implemented and verified; awaiting human review.
 
 ## Global constraints
 
@@ -29,25 +29,25 @@
 
 **Files:** new `src/lib/backtesting/distribution.ts`, plus tests.
 
-- [ ] Write failing tests for acceptance items 1–3, then implement the four functions. Commit.
+- [x] Write failing tests for acceptance items 1–3, then implement the four functions. Commit.
 
 ### 2. Worker integration
 
 **Files:** `backtestPerformance.worker.ts`, `backtestPerformanceClient.ts`, `useBacktestPerformanceData.ts`, plus their tests.
 
-- [ ] Write a failing parity test for acceptance item 6, then return the derived series from both paths. Commit.
+- [x] Write a failing parity test for acceptance item 6, then return the derived series from both paths. Commit.
 
 ### 3. Rolling metrics chart
 
 **Files:** new `RollingMetricsChart.tsx`, plus tests; `BacktestRechartsPane.tsx`.
 
-- [ ] Write failing tests for acceptance items 4 and 7 (the rolling part), then implement the chart with its controls, reference lines and empty state. Commit.
+- [x] Write failing tests for acceptance items 4 and 7 (the rolling part), then implement the chart with its controls, reference lines and empty state. Commit.
 
 ### 4. Trade distribution panels
 
 **Files:** new `TradeDistributionPanels.tsx` and per-panel components, plus tests; `BacktestRechartsPane.tsx`, `BacktestResultsTabs.tsx`.
 
-- [ ] Write failing tests for acceptance items 5 and 7, then implement the histogram, scatter with trade focus, exit-reason bars and the time breakdown. Commit.
+- [x] Write failing tests for acceptance items 5 and 7, then implement the histogram, scatter with trade focus, exit-reason bars and the time breakdown. Commit.
 
 ## Verification
 

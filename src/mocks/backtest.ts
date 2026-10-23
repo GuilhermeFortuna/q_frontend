@@ -120,7 +120,12 @@ function buildMockPerformance(trades: Trade[]): BacktestPerformance {
         trades: 5,
       },
     ],
-    exit_reasons: [],
+    exit_reasons: [
+      { reason: 'SIGNAL', pnl: 2840, trades: 18, win_rate: 0.61 },
+      { reason: 'TAKE_PROFIT', pnl: 3100, trades: 14, win_rate: 1.0 },
+      { reason: 'TRAILING_STOP', pnl: 650, trades: 6, win_rate: 0.67 },
+      { reason: 'STOP_LOSS', pnl: -1420, trades: 12, win_rate: 0.0 },
+    ],
   }
 }
 
