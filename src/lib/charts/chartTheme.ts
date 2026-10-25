@@ -82,8 +82,8 @@ export const chartLegacyColors = {
   positive: chartTheme.semantic.positive,
   negative: chartTheme.semantic.negative,
   reference: chartTheme.semantic.reference,
-  tooltipBg: 'transparent',
-  tooltipBorder: 'transparent',
+  tooltipBg: 'rgba(14, 14, 16, 0.88)',
+  tooltipBorder: 'rgba(255, 255, 255, 0.14)',
 } as const
 
 export type ChartTheme = typeof chartTheme

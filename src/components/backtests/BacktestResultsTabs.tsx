@@ -401,18 +401,20 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
         )}
 
         {activeTab === 'trade-chart' && (
-          <div className="flex h-full min-h-0 flex-col overflow-hidden">
-            <LazyBacktestStrategyChart
-              bars={results.bars}
-              indicators={results.indicators}
-              trades={results.trades}
-              symbol={symbol}
-              timeframe={timeframe}
-              runId={results.run_id || undefined}
-              focusedTradeId={focusedTradeId}
-              hoveredTradeId={hoveredTradeId}
-              onHoverTradeChange={setHoveredTradeId}
-            />
+          <div className="flex h-full min-h-0 flex-col overflow-y-auto">
+            <div className="flex h-[80vh] min-h-[640px] shrink-0 flex-col">
+              <LazyBacktestStrategyChart
+                bars={results.bars}
+                indicators={results.indicators}
+                trades={results.trades}
+                symbol={symbol}
+                timeframe={timeframe}
+                runId={results.run_id || undefined}
+                focusedTradeId={focusedTradeId}
+                hoveredTradeId={hoveredTradeId}
+                onHoverTradeChange={setHoveredTradeId}
+              />
+            </div>
           </div>
         )}
 

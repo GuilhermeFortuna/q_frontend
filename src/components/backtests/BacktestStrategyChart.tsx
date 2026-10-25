@@ -2,11 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParentSize } from '@visx/responsive'
 import { scaleBand, scaleLinear } from '@visx/scale'
 import { localPoint } from '@visx/event'
-import { Grid, RotateCcw, BarChart3, LineChart, AreaChart, ExternalLink } from 'lucide-react'
+import {
+  Grid,
+  RotateCcw,
+  BarChart3,
+  LineChart,
+  AreaChart,
+  ExternalLink,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react'
 import { isTauri } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
+import { useFullscreen } from '@/hooks/useFullscreen'
 import { studyMarkerShape } from '@/components/charts/layers/MarkerGlyph'
 import {
   indicatorStroke,
@@ -104,7 +114,14 @@ function ChartInner({
   focusedTradeId,
   hoveredTradeId,
   onHoverTradeChange,
-}: BacktestStrategyChartProps & { width: number; height: number }) {
+  isFullscreen,
+  onToggleFullscreen,
+}: BacktestStrategyChartProps & {
+  width: number
+  height: number
+  isFullscreen: boolean
+  onToggleFullscreen: () => void
+}) {
   const processed = useMemo(() => processBars(bars), [bars])
   const findBar = useMemo(() => createBarTimestampLookup(bars), [bars])
   const hasOscillator = indicators.some((ind) => ind.pane === 'oscillator')
@@ -553,6 +570,21 @@ function ChartInner({
         </button>
 
         {/* Popout Standalone Window Button */}
+        {/* Fullscreen Button */}
+        <button
+          type="button"
+          onClick={onToggleFullscreen}
+          aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          className="text-silver-400 hover:text-brass-400 hover:bg-carbon-850/50 rounded-md border border-transparent p-1.5 transition-all duration-150 active:scale-90"
+        >
+          {isFullscreen ? (
+            <Minimize2 className="h-3.5 w-3.5" />
+          ) : (
+            <Maximize2 className="h-3.5 w-3.5" />
+          )}
+        </button>
+
         {!isStandalone && (
           <button
             type="button"
@@ -880,17 +912,35 @@ function ChartLegend({ indicators }: { indicators: ChartIndicatorSeries[] }) {
 
 export function BacktestStrategyChart(props: BacktestStrategyChartProps) {
   const { parentRef, width, height } = useParentSize({ debounceTime: 50 })
+  const { elementRef: fullscreenRef, isFullscreen, enter, exit } = useFullscreen<HTMLDivElement>()
 
   if (props.bars.length === 0) {
     return <ChartEmptyState message="No price data available for this backtest." />
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+    <div
+      ref={fullscreenRef}
+      className={`flex h-full min-h-0 flex-col gap-3 overflow-hidden ${
+        isFullscreen ? 'bg-carbon-950 h-screen w-screen p-3' : ''
+      }`}
+    >
       <div ref={parentRef} className="relative min-h-0 flex-1 overflow-hidden">
         {width > 0 && height > 0 ? (
           <div className="absolute inset-0">
-            <ChartInner {...props} width={width} height={height} />
+            <ChartInner
+              {...props}
+              width={width}
+              height={height}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={() => {
+                if (isFullscreen) {
+                  void exit()
+                } else {
+                  void enter()
+                }
+              }}
+            />
           </div>
         ) : null}
       </div>
