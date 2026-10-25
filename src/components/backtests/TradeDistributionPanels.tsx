@@ -38,7 +38,7 @@ import {
 } from '@/lib/charts/rechartsTheme'
 import { formatDisplayDateTime } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
-import type { BacktestPerformance, ExitReasonStats, Trade } from '@/types/backtesting'
+import type { BacktestPerformance, ReasonStats, Trade } from '@/types/backtesting'
 
 export type TradeDistributionPanelsProps = {
   trades: Trade[]
@@ -336,15 +336,22 @@ function HoldVsPnlPanel({
 }
 
 // -----------------------------------------------------------------------------
-// 3. By Exit Reason Panel
+// 3. By Reason Panel (entry or exit reasons)
 // -----------------------------------------------------------------------------
 
-function ExitReasonTooltip({
+type ReasonKind = 'entry' | 'exit'
+
+const REASON_KIND_OPTIONS: SegmentedOption<ReasonKind>[] = [
+  { value: 'entry', label: 'Entry' },
+  { value: 'exit', label: 'Exit' },
+]
+
+function ReasonTooltip({
   active,
   payload,
 }: {
   active?: boolean
-  payload?: Array<{ payload: ExitReasonStats & { label: string } }>
+  payload?: Array<{ payload: ReasonStats & { label: string } }>
 }) {
   if (!active || !payload || !payload.length) return null
   const item = payload[0]?.payload
@@ -378,52 +385,74 @@ function ExitReasonTooltip({
   )
 }
 
-function ExitReasonPanel({ exitReasons }: { exitReasons: ExitReasonStats[] }) {
+function ReasonPanel({
+  entryReasons,
+  exitReasons,
+}: {
+  entryReasons: ReasonStats[]
+  exitReasons: ReasonStats[]
+}) {
+  const [kind, setKind] = useState<ReasonKind>('exit')
+  const reasons = kind === 'entry' ? entryReasons : exitReasons
   const chartData = useMemo(
     () =>
-      exitReasons.map((item) => ({
+      reasons.map((item) => ({
         ...item,
         label: formatExitReason(item.reason),
       })),
-    [exitReasons],
+    [reasons],
   )
 
   return (
     <div className="border-carbon-700/50 bg-carbon-900/35 space-y-3 rounded-xl border p-4">
-      <SectionHeader title="By exit reason" />
-      <div className="h-[260px] w-full">
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart layout="vertical" data={chartData} margin={{ ...chartMargin, left: 32 }}>
-            <ThemedCartesianGrid horizontal={false} />
-            <XAxis type="number" tickFormatter={formatSignedCurrency} {...themedXAxisProps} />
-            <YAxis
-              type="category"
-              dataKey="label"
-              width={120}
-              tick={{ fontSize: 10, fill: 'var(--color-silver-300)' }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip cursor={themedTooltipCursor} content={<ExitReasonTooltip />} />
-            <ReferenceLine
-              x={0}
-              stroke={chartTheme.semantic.reference}
-              strokeDasharray="3 3"
-              strokeOpacity={0.6}
-            />
-            <Bar dataKey="pnl" isAnimationActive={false}>
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`exit-cell-${index}`}
-                  fill={
-                    entry.pnl >= 0 ? chartTheme.semantic.positive : chartTheme.semantic.negative
-                  }
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="flex items-center justify-between gap-3">
+        <SectionHeader title="By reason" />
+        <SegmentedToggle
+          aria-label="Reason kind"
+          options={REASON_KIND_OPTIONS}
+          value={kind}
+          onChange={setKind}
+        />
       </div>
+      {chartData.length === 0 ? (
+        <ChartEmptyState
+          message={kind === 'entry' ? 'No entry reasons recorded.' : 'No exit reasons recorded.'}
+        />
+      ) : (
+        <div className="h-[260px] w-full">
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart layout="vertical" data={chartData} margin={{ ...chartMargin, left: 32 }}>
+              <ThemedCartesianGrid horizontal={false} />
+              <XAxis type="number" tickFormatter={formatSignedCurrency} {...themedXAxisProps} />
+              <YAxis
+                type="category"
+                dataKey="label"
+                width={120}
+                tick={{ fontSize: 10, fill: 'var(--color-silver-300)' }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip cursor={themedTooltipCursor} content={<ReasonTooltip />} />
+              <ReferenceLine
+                x={0}
+                stroke={chartTheme.semantic.reference}
+                strokeDasharray="3 3"
+                strokeOpacity={0.6}
+              />
+              <Bar dataKey="pnl" isAnimationActive={false}>
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`${kind}-cell-${index}`}
+                    fill={
+                      entry.pnl >= 0 ? chartTheme.semantic.positive : chartTheme.semantic.negative
+                    }
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   )
 }
@@ -604,7 +633,9 @@ export function TradeDistributionPanels({
     )
   }
 
-  const showExitReasons = Boolean(performance?.exit_reasons && performance.exit_reasons.length > 0)
+  const entryReasons = performance?.entry_reasons ?? []
+  const exitReasons = performance?.exit_reasons ?? []
+  const showReasons = entryReasons.length > 0 || exitReasons.length > 0
 
   return (
     <section
@@ -617,7 +648,7 @@ export function TradeDistributionPanels({
         median={histogramData.median}
       />
       <HoldVsPnlPanel points={holdVsPnlData} onFocusTrade={onFocusTrade} />
-      {showExitReasons ? <ExitReasonPanel exitReasons={performance!.exit_reasons} /> : null}
+      {showReasons ? <ReasonPanel entryReasons={entryReasons} exitReasons={exitReasons} /> : null}
       <TimeBreakdownPanel weekdayData={weekdayData} hourData={hourData} />
     </section>
   )

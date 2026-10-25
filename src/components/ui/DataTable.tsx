@@ -19,6 +19,8 @@ export type DataColumn<T> = {
   numeric?: boolean
   tone?: 'signed' | 'neutral'
   sortable?: boolean
+  /** Value the internal sort compares; defaults to the row's own field named by `id`. */
+  sortValue?: (row: T) => string | number | null | undefined
   width?: string | number
   minWidth?: string | number
   sticky?: boolean
@@ -237,14 +239,23 @@ export function DataTable<T>({
     if (onSortChange) return rows
     if (!activeSort) return rows
 
+    const sortColumn = columns.find((col) => col.id === activeSort.columnId)
+    const valueOf = (row: T): unknown =>
+      sortColumn?.sortValue ? sortColumn.sortValue(row) : row[activeSort.columnId as keyof T]
+
     return [...rows]
       .map((row, idx) => ({ row, idx }))
       .sort((a, b) => {
-        const valA = a.row[activeSort.columnId as keyof T]
-        const valB = b.row[activeSort.columnId as keyof T]
+        const valA = valueOf(a.row)
+        const valB = valueOf(b.row)
+        const missingA = valA === undefined || valA === null
+        const missingB = valB === undefined || valB === null
 
-        if (valA === undefined || valA === null) return 1
-        if (valB === undefined || valB === null) return -1
+        // Missing values sort last whichever direction is active; ties keep the original order.
+        if (missingA || missingB) {
+          if (missingA && missingB) return a.idx - b.idx
+          return missingA ? 1 : -1
+        }
 
         if (typeof valA === 'number' && typeof valB === 'number') {
           if (valA === valB) return a.idx - b.idx
@@ -259,7 +270,7 @@ export function DataTable<T>({
         return 0
       })
       .map((item) => item.row)
-  }, [rows, activeSort, onSortChange])
+  }, [rows, activeSort, onSortChange, columns])
 
   const renderSortIndicator = (colId: string) => {
     if (activeSort?.columnId !== colId) {

@@ -96,6 +96,14 @@ export function TradeHoverCard({
             )}
           </dd>
         </div>
+        {trade.entry_reason && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-silver-500">Entry Reason</dt>
+            <dd className="text-silver-100 text-right font-medium">
+              {formatExitReason(trade.entry_reason)}
+            </dd>
+          </div>
+        )}
         {trade.exit_reason && (
           <div className="flex justify-between gap-3">
             <dt className="text-silver-500">Exit Reason</dt>

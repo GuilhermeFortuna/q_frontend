@@ -126,6 +126,11 @@ function buildMockPerformance(trades: Trade[]): BacktestPerformance {
       { reason: 'TRAILING_STOP', pnl: 650, trades: 6, win_rate: 0.67 },
       { reason: 'STOP_LOSS', pnl: -1420, trades: 12, win_rate: 0.0 },
     ],
+    entry_reasons: [
+      { reason: 'VWAP reclaim', pnl: 2310, trades: 16, win_rate: 0.625 },
+      { reason: 'Breakout', pnl: 1180, trades: 9, win_rate: 0.56 },
+      { reason: 'unspecified', pnl: 520, trades: 7, win_rate: 0.43 },
+    ],
   }
 }
 
@@ -133,6 +138,8 @@ function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000
   return x - Math.floor(x)
 }
+
+const MOCK_ENTRY_REASONS: (string | null)[] = ['VWAP reclaim', 'Breakout', null]
 
 function generateMockTrades(symbol: string, count: number): Trade[] {
   const trades: Trade[] = []
@@ -157,6 +164,7 @@ function generateMockTrades(symbol: string, count: number): Trade[] {
       quantity: 1,
       entry_time: entryTime,
       entry_price: Number(entryPrice.toFixed(2)),
+      entry_reason: MOCK_ENTRY_REASONS[i % MOCK_ENTRY_REASONS.length],
       exit_time: exitTime,
       exit_price: Number(exitPrice.toFixed(2)),
       status: 'CLOSED',
@@ -437,7 +445,7 @@ export function getMockBacktestMarketDataCsv(result: BacktestResponse): string {
 /** Mirrors `GET /api/v1/backtests/{run_id}/export/trades`. */
 export function getMockBacktestTradesCsv(result: BacktestResponse): string {
   const lines = [
-    'trade_id,symbol,side,entry_time,entry_price,exit_time,exit_price,pnl,quantity,commission,point_value,exit_reason',
+    'trade_id,symbol,side,entry_time,entry_price,exit_time,exit_price,pnl,quantity,commission,point_value,entry_reason,exit_reason',
   ]
   for (const trade of result.trades) {
     lines.push(
@@ -453,6 +461,7 @@ export function getMockBacktestTradesCsv(result: BacktestResponse): string {
         trade.quantity,
         trade.commission,
         trade.point_value,
+        trade.entry_reason,
         trade.exit_reason,
       ]),
     )

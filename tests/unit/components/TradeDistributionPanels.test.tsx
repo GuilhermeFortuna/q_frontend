@@ -36,24 +36,42 @@ describe('TradeDistributionPanels', () => {
     ],
   }
 
-  it('renders all four panels when performance with exit_reasons is provided', () => {
+  it('renders all four panels when performance with reasons is provided', () => {
     const trades = makeTrades(25)
     render(<TradeDistributionPanels trades={trades} performance={performanceWithExits} />)
 
     expect(screen.getByText('P&L distribution')).toBeInTheDocument()
     expect(screen.getByText('Holding time vs P&L')).toBeInTheDocument()
-    expect(screen.getByText('By exit reason')).toBeInTheDocument()
+    expect(screen.getByText('By reason')).toBeInTheDocument()
     expect(screen.getByText('By time')).toBeInTheDocument()
   })
 
-  it('hides the exit-reason panel when performance is omitted, rendering the other 3 panels', () => {
+  it('hides the reason panel when performance is omitted, rendering the other 3 panels', () => {
     const trades = makeTrades(25)
     render(<TradeDistributionPanels trades={trades} performance={null} />)
 
     expect(screen.getByText('P&L distribution')).toBeInTheDocument()
     expect(screen.getByText('Holding time vs P&L')).toBeInTheDocument()
-    expect(screen.queryByText('By exit reason')).not.toBeInTheDocument()
+    expect(screen.queryByText('By reason')).not.toBeInTheDocument()
     expect(screen.getByText('By time')).toBeInTheDocument()
+  })
+
+  it('switches the By reason panel between entry and exit reasons', async () => {
+    const user = userEvent.setup()
+    const trades = makeTrades(25)
+    const exitOnly: BacktestPerformance = { ...performanceWithExits, entry_reasons: [] }
+    render(<TradeDistributionPanels trades={trades} performance={exitOnly} />)
+
+    const exitToggle = screen.getByRole('radio', { name: 'Exit' })
+    expect(exitToggle).toHaveAttribute('aria-checked', 'true')
+    expect(screen.queryByText('No entry reasons recorded.')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: 'Entry' }))
+    expect(screen.getByRole('radio', { name: 'Entry' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByText('No entry reasons recorded.')).toBeInTheDocument()
+
+    await user.click(exitToggle)
+    expect(screen.queryByText('No entry reasons recorded.')).not.toBeInTheDocument()
   })
 
   it('renders a single empty state when there are no closed trades', () => {

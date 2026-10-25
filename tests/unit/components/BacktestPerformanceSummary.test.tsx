@@ -87,6 +87,7 @@ const performance: BacktestPerformance = {
   },
   drawdowns: [],
   exit_reasons: [],
+  entry_reasons: [],
 }
 
 describe('BacktestPerformanceSummary', () => {
