@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { CustomEquityTooltip, EquityCurveChart } from '@/components/backtests/EquityCurveChart'
@@ -16,7 +17,7 @@ const samplePoints: EquityPoint[] = [
 ]
 
 describe('EquityCurveChart', () => {
-  it('renders the equity line chart with fixed height when data is present', () => {
+  it('renders the equity line chart at 16:9 when data is present', () => {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
       width: 640,
       height: 260,
@@ -92,5 +93,34 @@ describe('EquityCurveChart', () => {
     )
 
     expect(container.querySelectorAll('.recharts-reference-area').length).toBe(4)
+  })
+
+  it('reports X-axis mode changes when the toggle is used', async () => {
+    const user = userEvent.setup()
+    const onXModeChange = vi.fn()
+
+    render(
+      <EquityCurveChart
+        data={samplePoints}
+        initialCapital={100_000}
+        xMode="time"
+        onXModeChange={onXModeChange}
+      />,
+    )
+
+    expect(screen.getByRole('radio', { name: 'Time' })).toHaveAttribute('aria-checked', 'true')
+    await user.click(screen.getByRole('radio', { name: 'Trades' }))
+    expect(onXModeChange).toHaveBeenCalledWith('trades')
+  })
+
+  it('offers the log Y scale only when every equity value is positive', () => {
+    const negativePoints: EquityPoint[] = [{ ...samplePoints[0], equity: -250 }]
+
+    const { unmount } = render(<EquityCurveChart data={samplePoints} initialCapital={100_000} />)
+    expect(screen.getByRole('radio', { name: 'Log' })).toBeEnabled()
+    unmount()
+
+    render(<EquityCurveChart data={negativePoints} initialCapital={100_000} />)
+    expect(screen.getByRole('radio', { name: 'Log' })).toBeDisabled()
   })
 })

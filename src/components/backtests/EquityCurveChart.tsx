@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Line,
   LineChart,
@@ -7,8 +8,16 @@ import {
   Tooltip,
 } from 'recharts'
 
-import { formatChartDate, formatCurrency } from '@/components/backtests/chartUtils'
+import {
+  CURVE_X_MODE_OPTIONS,
+  formatCurveXTick,
+  timestampToX,
+  toCurvePoints,
+  type CurveXMode,
+} from '@/components/backtests/curveAxis'
+import { formatCurrency } from '@/components/backtests/chartUtils'
 import { ChartEmptyState } from '@/components/backtests/ChartEmptyState'
+import { SegmentedToggle, type SegmentedOption } from '@/components/ui/SegmentedToggle'
 import { cn } from '@/lib/utils'
 import { chartTheme } from '@/lib/charts/chartTheme'
 import {
@@ -21,7 +30,7 @@ import {
 import type { DrawdownPeriod, EquityPoint, Trade } from '@/types/backtesting'
 import type { OhlcvBar } from '@/types/api'
 
-const EQUITY_CHART_HEIGHT_PX = 260
+type YScale = 'linear' | 'log'
 
 type EquityCurveChartProps = {
   data: EquityPoint[]
@@ -34,6 +43,9 @@ type EquityCurveChartProps = {
   drawdowns?: DrawdownPeriod[]
   highlightedDrawdownIndex?: number | null
   syncId?: string
+  xMode?: CurveXMode
+  /** When provided, the X-axis toggle is shown and changes are reported here. */
+  onXModeChange?: (mode: CurveXMode) => void
 }
 
 export function CustomEquityTooltip({
@@ -157,7 +169,11 @@ export function EquityCurveChart({
   drawdowns = [],
   highlightedDrawdownIndex = null,
   syncId,
+  xMode = 'time',
+  onXModeChange,
 }: EquityCurveChartProps) {
+  const [yScale, setYScale] = useState<YScale>('linear')
+
   if (data.length === 0) {
     return (
       <ChartEmptyState
@@ -167,25 +183,68 @@ export function EquityCurveChart({
     )
   }
 
-  const chartData = data.map((point) => ({
-    ...point,
-    label: formatChartDate(point.timestamp),
-  }))
+  const chartData = toCurvePoints(data, xMode)
   const equityValues = chartData.map((point) => point.equity)
   const minEquity = Math.min(...equityValues)
   const maxEquity = Math.max(...equityValues)
+  const lastX = chartData[chartData.length - 1].x
 
-  const boundaryLabels = windowBoundaries.map((timestamp) => formatChartDate(timestamp))
+  // A log axis cannot show zero or negative equity, so it is only offered for strictly positive curves.
+  const logAvailable = minEquity > 0
+  const activeYScale: YScale = yScale === 'log' && logAvailable ? 'log' : 'linear'
+  const yScaleOptions: SegmentedOption<YScale>[] = [
+    { value: 'linear', label: 'Linear' },
+    { value: 'log', label: 'Log', disabled: !logAvailable },
+  ]
+
+  const periodBounds = (period: DrawdownPeriod) => ({
+    x1: timestampToX(period.peak_time, data, xMode),
+    x2: period.recovery_time ? timestampToX(period.recovery_time, data, xMode) : lastX,
+  })
+  const highlightedPeriod =
+    highlightedDrawdownIndex != null ? drawdowns[highlightedDrawdownIndex] : undefined
 
   return (
     <div className={cn('border-carbon-600/40 rounded-lg border bg-transparent p-4', className)}>
-      <h4 className="text-silver-200 mb-3 text-sm font-medium">Equity Curve</h4>
-      <div className="w-full" style={{ height: EQUITY_CHART_HEIGHT_PX }}>
-        <ResponsiveContainer width="100%" height={EQUITY_CHART_HEIGHT_PX}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-silver-200 text-sm font-medium">Equity Curve</h4>
+        <div className="flex flex-wrap items-center gap-2">
+          {onXModeChange ? (
+            <SegmentedToggle
+              aria-label="Equity X axis"
+              options={CURVE_X_MODE_OPTIONS}
+              value={xMode}
+              onChange={onXModeChange}
+            />
+          ) : null}
+          <SegmentedToggle
+            aria-label="Equity Y axis scale"
+            options={yScaleOptions}
+            value={activeYScale}
+            onChange={setYScale}
+          />
+        </div>
+      </div>
+      <div className="w-full">
+        <ResponsiveContainer width="100%" aspect={16 / 9}>
           <LineChart data={chartData} margin={chartMargin} syncId={syncId}>
             <ThemedCartesianGrid vertical={false} />
-            <ThemedXAxis dataKey="label" minTickGap={40} />
-            <ThemedYAxis tickFormatter={(v) => formatCurrency(v)} width={72} />
+            <ThemedXAxis
+              type="number"
+              dataKey="x"
+              domain={['dataMin', 'dataMax']}
+              scale={xMode === 'time' ? 'time' : 'auto'}
+              allowDecimals={xMode === 'time'}
+              tickFormatter={formatCurveXTick(xMode)}
+              minTickGap={40}
+            />
+            <ThemedYAxis
+              scale={activeYScale}
+              domain={activeYScale === 'log' ? ['auto', 'auto'] : [0, 'auto']}
+              allowDataOverflow={activeYScale === 'log'}
+              tickFormatter={(v) => formatCurrency(v)}
+              width={72}
+            />
             <Tooltip
               cursor={themedTooltipCursor}
               content={<CustomEquityTooltip bars={bars} trades={trades} />}
@@ -193,12 +252,7 @@ export function EquityCurveChart({
             {drawdowns.slice(0, 3).map((period, index) => (
               <ReferenceArea
                 key={`worst-drawdown-${index}`}
-                x1={formatChartDate(period.peak_time)}
-                x2={
-                  period.recovery_time
-                    ? formatChartDate(period.recovery_time)
-                    : chartData[chartData.length - 1]?.label
-                }
+                {...periodBounds(period)}
                 y1={minEquity}
                 y2={maxEquity}
                 ifOverflow="extendDomain"
@@ -207,14 +261,9 @@ export function EquityCurveChart({
                 stroke="none"
               />
             ))}
-            {highlightedDrawdownIndex != null && drawdowns[highlightedDrawdownIndex] ? (
+            {highlightedPeriod ? (
               <ReferenceArea
-                x1={formatChartDate(drawdowns[highlightedDrawdownIndex].peak_time)}
-                x2={
-                  drawdowns[highlightedDrawdownIndex].recovery_time
-                    ? formatChartDate(drawdowns[highlightedDrawdownIndex].recovery_time!)
-                    : chartData[chartData.length - 1]?.label
-                }
+                {...periodBounds(highlightedPeriod)}
                 y1={minEquity}
                 y2={maxEquity}
                 ifOverflow="extendDomain"
@@ -235,15 +284,18 @@ export function EquityCurveChart({
                 position: 'insideTopRight',
               }}
             />
-            {boundaryLabels.map((label) => (
-              <ReferenceLine
-                key={label}
-                x={label}
-                stroke={chartTheme.semantic.reference}
-                strokeDasharray="2 4"
-                strokeOpacity={0.65}
-              />
-            ))}
+            {windowBoundaries.map((timestamp) => {
+              const x = timestampToX(timestamp, data, xMode)
+              return (
+                <ReferenceLine
+                  key={timestamp}
+                  x={x}
+                  stroke={chartTheme.semantic.reference}
+                  strokeDasharray="2 4"
+                  strokeOpacity={0.65}
+                />
+              )
+            })}
             <Line
               type="monotone"
               dataKey="equity"

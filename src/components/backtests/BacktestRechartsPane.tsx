@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import type { CurveXMode } from '@/components/backtests/curveAxis'
 import { DrawdownChart } from '@/components/backtests/DrawdownChart'
 import { EquityCurveChart } from '@/components/backtests/EquityCurveChart'
 import { MonthlyPnLChart } from '@/components/backtests/MonthlyPnLChart'
@@ -36,6 +37,8 @@ type BacktestRechartsPaneProps =
 
 export function BacktestRechartsPane(props: BacktestRechartsPaneProps) {
   const [highlightedDrawdownIndex, setHighlightedDrawdownIndex] = useState<number | null>(null)
+  // Shared so the synced equity and drawdown charts keep the same X axis.
+  const [xMode, setXMode] = useState<CurveXMode>('time')
 
   if (props.variant === 'performance') {
     return (
@@ -51,6 +54,8 @@ export function BacktestRechartsPane(props: BacktestRechartsPaneProps) {
             drawdowns={props.performance?.drawdowns}
             highlightedDrawdownIndex={highlightedDrawdownIndex}
             syncId="backtest-performance"
+            xMode={xMode}
+            onXModeChange={setXMode}
             className="border-0 bg-transparent p-0"
           />
           <DrawdownChart
@@ -59,6 +64,7 @@ export function BacktestRechartsPane(props: BacktestRechartsPaneProps) {
             drawdowns={props.performance?.drawdowns}
             highlightedDrawdownIndex={highlightedDrawdownIndex}
             syncId="backtest-performance"
+            xMode={xMode}
             className="border-0 bg-transparent p-0"
           />
         </div>

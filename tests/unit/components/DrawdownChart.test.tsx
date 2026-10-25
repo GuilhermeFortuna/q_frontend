@@ -1,7 +1,8 @@
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { DrawdownChart } from '@/components/backtests/DrawdownChart'
+import { CustomDrawdownTooltip, DrawdownChart } from '@/components/backtests/DrawdownChart'
 import type { DrawdownPeriod, EquityPoint } from '@/types/backtesting'
 
 const data: EquityPoint[] = [
@@ -45,5 +46,36 @@ describe('DrawdownChart', () => {
     )
 
     expect(container.querySelectorAll('.recharts-reference-area').length).toBe(1)
+  })
+
+  it('switches between percentage and value units', async () => {
+    const user = userEvent.setup()
+    render(<DrawdownChart data={data} drawdowns={drawdowns} />)
+
+    expect(screen.getByRole('radio', { name: '%' })).toHaveAttribute('aria-checked', 'true')
+    await user.click(screen.getByRole('radio', { name: 'Value' }))
+    expect(screen.getByRole('radio', { name: 'Value' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('shows the drawdown and its containing period on hover', () => {
+    const underwater = { ...data[1], x: 2 }
+
+    render(
+      <CustomDrawdownTooltip active payload={[{ payload: underwater }]} drawdowns={drawdowns} />,
+    )
+
+    // Drawdown row and the period's depth row both show -5.00%.
+    expect(screen.getAllByText('-5.00%')).toHaveLength(2)
+    expect(screen.getByText('-5,000.00')).toBeTruthy()
+    expect(screen.getByText('Drawdown period')).toBeTruthy()
+    expect(screen.getByText(/→ ongoing$/)).toBeTruthy()
+  })
+
+  it('omits the period section when the hovered point is at a peak', () => {
+    const atPeak = { ...data[0], x: 1 }
+
+    render(<CustomDrawdownTooltip active payload={[{ payload: atPeak }]} drawdowns={drawdowns} />)
+
+    expect(screen.queryByText('Drawdown period')).toBeNull()
   })
 })
