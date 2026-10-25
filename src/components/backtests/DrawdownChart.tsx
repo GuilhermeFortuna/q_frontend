@@ -138,6 +138,8 @@ export function DrawdownChart({
   xMode = 'time',
 }: DrawdownChartProps) {
   const [unit, setUnit] = useState<DrawdownUnit>('pct')
+  // The area draws once per mount; later re-renders and resizes update it without replaying the draw.
+  const [hasDrawn, setHasDrawn] = useState(false)
 
   if (data.length === 0) {
     return <ChartEmptyState message="No drawdown data available." className={className} />
@@ -210,6 +212,8 @@ export function DrawdownChart({
               fill={chartTheme.semantic.drawdown}
               fillOpacity={0.25}
               strokeWidth={1.5}
+              isAnimationActive={!hasDrawn}
+              onAnimationEnd={() => setHasDrawn(true)}
             />
           </AreaChart>
         </ResponsiveContainer>

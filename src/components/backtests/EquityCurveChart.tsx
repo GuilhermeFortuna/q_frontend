@@ -173,6 +173,8 @@ export function EquityCurveChart({
   onXModeChange,
 }: EquityCurveChartProps) {
   const [yScale, setYScale] = useState<YScale>('linear')
+  // The line draws once per mount; later re-renders and resizes update it without replaying the draw.
+  const [hasDrawn, setHasDrawn] = useState(false)
 
   if (data.length === 0) {
     return (
@@ -303,6 +305,8 @@ export function EquityCurveChart({
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4, fill: chartTheme.semantic.equity }}
+              isAnimationActive={!hasDrawn}
+              onAnimationEnd={() => setHasDrawn(true)}
             />
           </LineChart>
         </ResponsiveContainer>
