@@ -14,7 +14,7 @@ export type {
   BacktestPerformance,
   BacktestProvenance,
   DrawdownPeriod,
-  ExitReasonStats,
+  ReasonStats,
   TradeStats,
 } from '../../contracts/api'
 
@@ -101,6 +101,8 @@ export interface Trade {
   pnl: number | null
   commission: number
   point_value: number
+  /** Reason the strategy gave for the entry order that opened the trade; null when none. */
+  entry_reason?: string | null
   exit_reason?: string | null
   /** What decided an intrabar exit; `minute` and `candle` are approximations from bar prices. */
   exit_resolution?: 'tick' | 'minute' | 'candle' | null

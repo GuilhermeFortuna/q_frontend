@@ -42,7 +42,7 @@ describe('exportBacktestCsv', () => {
     expect(args.baseName).toBe(csvBaseName('PETR4', 'M5'))
     expect(args.marketDataCsv.split('\n')[0]).toMatch(/^time,open,high,low,close,volume,/)
     expect(args.tradesCsv.split('\n')[0]).toBe(
-      'trade_id,symbol,side,entry_time,entry_price,exit_time,exit_price,pnl,quantity,commission,point_value,exit_reason',
+      'trade_id,symbol,side,entry_time,entry_price,exit_time,exit_price,pnl,quantity,commission,point_value,entry_reason,exit_reason',
     )
     expect(args.tradesCsv.trim().split('\n').length).toBeGreaterThan(1)
   })

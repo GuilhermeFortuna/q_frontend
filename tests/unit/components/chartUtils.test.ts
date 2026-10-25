@@ -32,6 +32,24 @@ describe('chartUtils currency formatting', () => {
   })
 })
 
+describe('formatExitReason for strategy reasons', () => {
+  it('shows strategy-supplied reasons verbatim, including lookalike codes', () => {
+    expect(formatExitReason('VWAP reclaim')).toBe('VWAP reclaim')
+    expect(formatExitReason('momentum_faded')).toBe('momentum_faded')
+    expect(formatExitReason('signal')).toBe('signal')
+    expect(formatExitReason('tp')).toBe('tp')
+  })
+
+  it('labels the engine codes that stored runs and q_core emit', () => {
+    expect(formatExitReason('SIGNAL')).toBe('Signal Exit')
+    expect(formatExitReason('STOP_LOSS')).toBe('Fixed Stop Loss')
+    expect(formatExitReason('TAKE_PROFIT')).toBe('Fixed Take Profit')
+    expect(formatExitReason('END_OF_DAY')).toBe('End of Day')
+    expect(formatExitReason('FORCE_CLOSE')).toBe('Force Close')
+    expect(formatExitReason('trailing')).toBe('Trailing Stop')
+  })
+})
+
 describe('chartUtils exit resolution', () => {
   it('labels only substituted exits as approximate', () => {
     expect(formatExitResolution('minute')).toBe('Approximate: one-minute bar')

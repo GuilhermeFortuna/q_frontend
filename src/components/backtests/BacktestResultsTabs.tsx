@@ -101,6 +101,7 @@ function TradeHistoryTable({
         header: 'Size',
         align: 'right',
         numeric: true,
+        sortable: true,
         render: (trade) => formatPositionSize(trade.quantity),
       },
       {
@@ -116,6 +117,18 @@ function TradeHistoryTable({
         align: 'right',
         numeric: true,
         render: (trade) => formatCurrency(trade.entry_price),
+      },
+      {
+        id: 'entry_reason',
+        header: 'Entry Reason',
+        sortable: true,
+        sortValue: (trade) => (trade.entry_reason ? formatExitReason(trade.entry_reason) : null),
+        render: (trade) =>
+          trade.entry_reason ? (
+            <span className="font-mono">{formatExitReason(trade.entry_reason)}</span>
+          ) : (
+            '-'
+          ),
       },
       {
         id: 'exit_time',
@@ -136,6 +149,8 @@ function TradeHistoryTable({
       {
         id: 'exit_reason',
         header: 'Exit Reason',
+        sortable: true,
+        sortValue: (trade) => (trade.exit_reason ? formatExitReason(trade.exit_reason) : null),
         render: (trade) => (
           <span className="font-mono">
             {trade.exit_reason ? formatExitReason(trade.exit_reason) : '-'}
@@ -152,6 +167,7 @@ function TradeHistoryTable({
         header: 'PnL',
         align: 'right',
         numeric: true,
+        sortable: true,
         render: (trade) => (
           <span
             className={cn(

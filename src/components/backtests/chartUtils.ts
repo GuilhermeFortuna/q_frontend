@@ -23,27 +23,46 @@ export function formatSignedCurrency(value: number) {
   return formatted
 }
 
-export function formatExitReason(reason: string): string {
-  const r = reason.toUpperCase()
-  if (r === 'STOP_LOSS' || r === 'SL' || r === 'FIXED_SL') return 'Fixed Stop Loss'
-  if (r === 'ATR_SL') return 'ATR Stop Loss'
-  if (r === 'TAKE_PROFIT' || r === 'TP' || r === 'FIXED_TP') return 'Fixed Take Profit'
-  if (r === 'ATR_TP') return 'ATR Take Profit'
-  if (r === 'TRAILING_STOP' || r === 'TRAILING') return 'Trailing Stop'
-  if (r === 'CHANDELIER') return 'Chandelier Exit'
-  if (r === 'BREAKEVEN') return 'Breakeven Stop'
-  if (r === 'PSAR') return 'Parabolic SAR'
-  if (r === 'PROFIT_TARGET_RATCHET') return 'Profit Target Ratchet'
-  if (r === 'TIME_STOP') return 'Time Stop'
-  if (r === 'DONCHIAN_STOP') return 'Donchian Stop'
-  if (r === 'SIGNAL') return 'Signal Exit'
-  if (r === 'END_OF_DAY') return 'End of Day'
-  if (r === 'FORCE_CLOSE') return 'Force Close'
+/**
+ * Labels for engine reason codes: the q_core exit-rule ids, the engine exit codes, and the
+ * legacy aliases that older stored runs carry. Matching is exact, so a strategy's own reason
+ * never picks up a label by accident.
+ */
+const ENGINE_REASON_LABELS = new Map<string, string>([
+  ['fixed_sl', 'Fixed Stop Loss'],
+  ['atr_sl', 'ATR Stop Loss'],
+  ['fixed_tp', 'Fixed Take Profit'],
+  ['atr_tp', 'ATR Take Profit'],
+  ['trailing', 'Trailing Stop'],
+  ['chandelier', 'Chandelier Exit'],
+  ['breakeven', 'Breakeven Stop'],
+  ['psar', 'Parabolic SAR'],
+  ['profit_target_ratchet', 'Profit Target Ratchet'],
+  ['time_stop', 'Time Stop'],
+  ['donchian_stop', 'Donchian Stop'],
+  ['SIGNAL', 'Signal Exit'],
+  ['STOP_LOSS', 'Fixed Stop Loss'],
+  ['TAKE_PROFIT', 'Fixed Take Profit'],
+  ['END_OF_DAY', 'End of Day'],
+  ['FORCE_CLOSE', 'Force Close'],
+  ['SL', 'Fixed Stop Loss'],
+  ['TP', 'Fixed Take Profit'],
+  ['FIXED_SL', 'Fixed Stop Loss'],
+  ['FIXED_TP', 'Fixed Take Profit'],
+  ['ATR_SL', 'ATR Stop Loss'],
+  ['ATR_TP', 'ATR Take Profit'],
+  ['TRAILING_STOP', 'Trailing Stop'],
+  ['CHANDELIER', 'Chandelier Exit'],
+  ['BREAKEVEN', 'Breakeven Stop'],
+  ['PSAR', 'Parabolic SAR'],
+  ['PROFIT_TARGET_RATCHET', 'Profit Target Ratchet'],
+  ['TIME_STOP', 'Time Stop'],
+  ['DONCHIAN_STOP', 'Donchian Stop'],
+])
 
-  return reason
-    .toLowerCase()
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+/** Label for an entry or exit reason: engine codes get their label, any other string is shown verbatim. */
+export function formatExitReason(reason: string): string {
+  return ENGINE_REASON_LABELS.get(reason) ?? reason
 }
 
 /** Label for exits that were decided on substituted prices; null for real ticks and closed bars. */
