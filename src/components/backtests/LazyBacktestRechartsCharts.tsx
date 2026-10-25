@@ -3,6 +3,7 @@ import { Fragment, lazy, Suspense, useState } from 'react'
 import { FeatureIslandBoundary } from '@/components/islands/FeatureIslandBoundary'
 import { FeatureIslandFallback } from '@/components/islands/FeatureIslandFallback'
 import type { BacktestPerformance, EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
+import type { PostExitAnalysis } from '@/types/backtesting'
 import type { BacktestDistributionData } from '@/lib/backtesting/distribution'
 import type { OhlcvBar } from '@/types/api'
 
@@ -20,6 +21,13 @@ type LazyBacktestPerformanceChartsProps = {
   performance?: BacktestPerformance | null
   distribution?: BacktestDistributionData
   onFocusTrade?: (id: string) => void
+  postExitBars?: number
+  storedPostExitBars?: number
+  postExitAnalysis?: PostExitAnalysis
+  postExitLoading?: boolean
+  postExitError?: string | null
+  onPostExitBarsChange?: (bars: number) => void
+  onPostExitReset?: () => void
 }
 
 export function LazyBacktestPerformanceCharts({
@@ -30,6 +38,13 @@ export function LazyBacktestPerformanceCharts({
   performance,
   distribution,
   onFocusTrade,
+  postExitBars,
+  storedPostExitBars,
+  postExitAnalysis,
+  postExitLoading,
+  postExitError,
+  onPostExitBarsChange,
+  onPostExitReset,
 }: LazyBacktestPerformanceChartsProps) {
   const [retryKey, setRetryKey] = useState(0)
   return (
@@ -51,6 +66,13 @@ export function LazyBacktestPerformanceCharts({
             performance={performance}
             distribution={distribution}
             onFocusTrade={onFocusTrade}
+            postExitBars={postExitBars}
+            storedPostExitBars={storedPostExitBars}
+            postExitAnalysis={postExitAnalysis}
+            postExitLoading={postExitLoading}
+            postExitError={postExitError}
+            onPostExitBarsChange={onPostExitBarsChange}
+            onPostExitReset={onPostExitReset}
           />
         </Suspense>
       </Fragment>

@@ -22,6 +22,11 @@ function makeTrades(count: number, pnl = 100): Trade[] {
     commission: 0,
     point_value: 1,
     status: 'CLOSED',
+    mfe_points: 5,
+    mae_points: 2,
+    mfe_capture: 0.6,
+    mfe_time: `2024-01-${String((index % 28) + 1).padStart(2, '0')}T11:00:00Z`,
+    post_exit_return_points: index % 2 === 0 ? 1 : -1,
   }))
 }
 
@@ -44,6 +49,28 @@ describe('TradeDistributionPanels', () => {
     expect(screen.getByText('Holding time vs P&L')).toBeInTheDocument()
     expect(screen.getByText('By reason')).toBeInTheDocument()
     expect(screen.getByText('By time')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Trade excursions' })).toBeInTheDocument()
+  })
+
+  it('updates the post-exit window and provides a reset action', () => {
+    const onChange = vi.fn()
+    const onReset = vi.fn()
+    render(
+      <TradeDistributionPanels
+        trades={makeTrades(25)}
+        performance={performanceWithExits}
+        postExitBars={5}
+        storedPostExitBars={10}
+        onPostExitBarsChange={onChange}
+        onPostExitReset={onReset}
+      />,
+    )
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Post-exit bars' }), { target: { value: '3' } })
+    expect(onChange).toHaveBeenCalledWith(3)
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
+    expect(onReset).toHaveBeenCalledOnce()
+    expect(screen.getByText('MAE vs PnL')).toBeInTheDocument()
+    expect(screen.getByText('MFE vs PnL')).toBeInTheDocument()
   })
 
   it('hides the reason panel when performance is omitted, rendering the other 3 panels', () => {

@@ -16,6 +16,8 @@ export type {
   DrawdownPeriod,
   ReasonStats,
   TradeStats,
+  ExcursionSummary,
+  PostExitAnalysis,
 } from '../../contracts/api'
 
 export type FixedQuantityPositionSizing = {
@@ -78,6 +80,7 @@ export interface BacktestRequest {
   day_trade_start_time?: string
   day_trade_end_time?: string
   day_trade_close_time?: string
+  post_exit_bars?: number
   engine?: 'candle' | 'tick'
   /** Tick-only: bar size for chart resampling (e.g. M1). */
   display_timeframe?: string
@@ -106,6 +109,16 @@ export interface Trade {
   exit_reason?: string | null
   /** What decided an intrabar exit; `minute` and `candle` are approximations from bar prices. */
   exit_resolution?: 'tick' | 'minute' | 'candle' | null
+  mfe_points?: number | null
+  mae_points?: number | null
+  mfe_time?: string | null
+  mae_time?: string | null
+  mfe_capture?: number | null
+  post_exit_mfe_points?: number | null
+  post_exit_mae_points?: number | null
+  post_exit_return_points?: number | null
+  post_exit_bars_observed?: number | null
+  excursion_resolution?: 'tick' | 'minute' | 'candle' | null
 }
 
 export interface BacktestMetrics {

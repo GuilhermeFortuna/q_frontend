@@ -7,6 +7,7 @@ export type ExportBacktestCsvArgs = {
   runId: string
   symbol: string
   timeframe: string
+  postExitBars?: number
 }
 
 export function csvBaseName(symbol: string, timeframe: string, now: Date = new Date()): string {
@@ -25,6 +26,7 @@ export async function exportBacktestCsv({
   runId,
   symbol,
   timeframe,
+  postExitBars,
 }: ExportBacktestCsvArgs): Promise<string[] | null> {
   let marketDataCsv: string
   let tradesCsv: string
@@ -32,7 +34,7 @@ export async function exportBacktestCsv({
     // Fetch first so a missing export surfaces before the dialog opens.
     ;[marketDataCsv, tradesCsv] = await Promise.all([
       fetchBacktestMarketDataCsv(runId),
-      fetchBacktestTradesCsv(runId),
+      fetchBacktestTradesCsv(runId, postExitBars),
     ])
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {

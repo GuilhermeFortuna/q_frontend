@@ -19,6 +19,12 @@ const trade: Trade = {
   commission: 0,
   point_value: 10,
   exit_reason: 'breakeven',
+  mfe_points: 3,
+  mae_points: 1,
+  mfe_time: '2024-01-02T10:10:00-03:00',
+  mfe_capture: 0.5,
+  post_exit_return_points: -0.5,
+  excursion_resolution: 'minute',
 }
 
 function renderCard(exit_resolution?: Trade['exit_resolution']) {
@@ -34,6 +40,17 @@ function renderCard(exit_resolution?: Trade['exit_resolution']) {
 }
 
 describe('TradeHoverCard exit basis', () => {
+  it('shows excursion values and names an approximate measurement resolution', () => {
+    renderCard()
+
+    expect(screen.getByText('MFE')).toBeInTheDocument()
+    expect(screen.getByText('MAE')).toBeInTheDocument()
+    expect(screen.getByText('MFE capture')).toBeInTheDocument()
+    expect(screen.getByText('Time to MFE')).toBeInTheDocument()
+    expect(screen.getByText('Post-exit')).toBeInTheDocument()
+    expect(screen.getByText('Resolution')).toBeInTheDocument()
+    expect(screen.getByText('minute')).toBeInTheDocument()
+  })
   it('labels an exit decided on a substituted minute as approximate', () => {
     renderCard('minute')
 

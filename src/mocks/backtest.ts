@@ -33,6 +33,14 @@ function buildMockPerformance(trades: Trade[]): BacktestPerformance {
     avg_hold_seconds: 14400,
     avg_win_hold_seconds: 16200,
     avg_loss_hold_seconds: 11700,
+    excursion_trades: 48,
+    avg_mfe: 180,
+    avg_mae: 95,
+    mfe_capture: 0.62,
+    median_mfe_capture: 0.58,
+    median_time_to_mfe_seconds: 5400,
+    avg_post_exit_return: 12.5,
+    post_exit_continuation_rate: 0.42,
   }
 
   return {
@@ -131,6 +139,10 @@ function buildMockPerformance(trades: Trade[]): BacktestPerformance {
       { reason: 'Breakout', pnl: 1180, trades: 9, win_rate: 0.56 },
       { reason: 'unspecified', pnl: 520, trades: 7, win_rate: 0.43 },
     ],
+    excursions: {
+      post_exit_bars: 10,
+      resolution: { tick: 42, minute: 4, candle: 2 },
+    },
   }
 }
 
@@ -171,6 +183,13 @@ function generateMockTrades(symbol: string, count: number): Trade[] {
       pnl: Number(pnl.toFixed(2)),
       commission: 0,
       point_value: 1,
+      mfe_points: Number((Math.max(10, Math.abs(pnl) * 1.25)).toFixed(2)),
+      mae_points: Number((Math.max(5, Math.abs(pnl) * 0.55)).toFixed(2)),
+      mfe_time: new Date(new Date(entryTime).getTime() + (i % 4) * 60 * 60 * 1000).toISOString(),
+      mfe_capture: Number((pnl / Math.max(10, Math.abs(pnl) * 1.25)).toFixed(3)),
+      post_exit_return_points: Number(((seededRandom(i * 17) - 0.5) * 80).toFixed(2)),
+      post_exit_bars_observed: 10,
+      excursion_resolution: i % 11 === 0 ? 'candle' : i % 7 === 0 ? 'minute' : 'tick',
     })
   }
 

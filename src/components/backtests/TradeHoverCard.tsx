@@ -6,6 +6,7 @@ import {
   formatExitResolution,
 } from '@/components/backtests/chartUtils'
 import { formatDisplayDateTime } from '@/lib/formatDate'
+import { formatHoldTime } from '@/lib/backtesting/backtestMetricFormatters'
 import type { Trade } from '@/types/backtesting'
 
 type TradeHoverCardProps = {
@@ -17,7 +18,7 @@ type TradeHoverCardProps = {
 }
 
 const CARD_WIDTH = 232
-const CARD_ESTIMATED_HEIGHT = 168
+const CARD_ESTIMATED_HEIGHT = 280
 
 function formatPositionSize(quantity: number): string {
   return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2)
@@ -134,6 +135,52 @@ export function TradeHoverCard({
             {trade.pnl != null ? formatSignedCurrency(trade.pnl) : '—'}
           </dd>
         </div>
+        {trade.mfe_points != null && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-silver-500">MFE</dt>
+            <dd className="text-silver-100 font-mono tabular-nums">
+              {formatCurrency(trade.mfe_points * trade.quantity * trade.point_value)}
+            </dd>
+          </div>
+        )}
+        {trade.mae_points != null && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-silver-500">MAE</dt>
+            <dd className="text-silver-100 font-mono tabular-nums">
+              {formatCurrency(trade.mae_points * trade.quantity * trade.point_value)}
+            </dd>
+          </div>
+        )}
+        {trade.mfe_capture != null && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-silver-500">MFE capture</dt>
+            <dd className="text-silver-100 font-mono tabular-nums">
+              {(trade.mfe_capture * 100).toFixed(1)}%
+            </dd>
+          </div>
+        )}
+        {trade.mfe_time && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-silver-500">Time to MFE</dt>
+            <dd className="text-silver-100 font-mono tabular-nums">
+              {formatHoldTime((Date.parse(trade.mfe_time) - Date.parse(trade.entry_time)) / 1000)}
+            </dd>
+          </div>
+        )}
+        {trade.post_exit_return_points != null && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-silver-500">Post-exit</dt>
+            <dd className="text-silver-100 font-mono tabular-nums">
+              {formatSignedCurrency(trade.post_exit_return_points * trade.quantity * trade.point_value)}
+            </dd>
+          </div>
+        )}
+        {trade.excursion_resolution && trade.excursion_resolution !== 'tick' && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-silver-500">Resolution</dt>
+            <dd className="text-brass-300 font-mono capitalize">{trade.excursion_resolution}</dd>
+          </div>
+        )}
       </dl>
     </div>
   )
