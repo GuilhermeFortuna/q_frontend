@@ -2,6 +2,7 @@ import axios, { type AxiosError } from 'axios'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { setupServer } from 'msw/node'
+import { http, HttpResponse } from 'msw'
 import { createElement, type ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
@@ -10,6 +11,8 @@ import {
   bulkDeleteBacktestRuns,
   cancelBacktest,
   fetchBacktestJobStatus,
+  fetchBacktestTradesCsv,
+  fetchPostExitAnalysis,
   startBacktest,
   useCancelBacktest,
   deleteBacktestRun,
@@ -20,6 +23,7 @@ import {
   useBacktestHistory,
   useBacktestRun,
   useStoredBacktestResult,
+  usePostExitAnalysis,
 } from '@/api/queries/backtests'
 import { handlers, resetMockBacktestDeletes } from '@/mocks/handlers'
 
@@ -46,6 +50,49 @@ function createWrapper() {
 }
 
 describe('backtest history API', () => {
+  it('fetches post-exit values for the selected bar window', async () => {
+    let requestedBars = ''
+    server.use(http.get('*/api/v1/backtests/run-1/post-exit', ({ request }) => {
+      requestedBars = new URL(request.url).searchParams.get('bars') ?? ''
+      return HttpResponse.json({
+        post_exit_bars: 3,
+        trades: [],
+        all: { avg_post_exit_return: 1, post_exit_continuation_rate: 0.5 },
+        long: { avg_post_exit_return: 1, post_exit_continuation_rate: 1 },
+        short: { avg_post_exit_return: -1, post_exit_continuation_rate: 0 },
+      })
+    }))
+
+    const result = await fetchPostExitAnalysis('run-1', 3)
+
+    expect(requestedBars).toBe('3')
+    expect(result.post_exit_bars).toBe(3)
+  })
+
+  it('passes the selected post-exit window to trades CSV export', async () => {
+    let requestedBars = ''
+    server.use(http.get('*/api/v1/backtests/run-1/export/trades', ({ request }) => {
+      requestedBars = new URL(request.url).searchParams.get('post_exit_bars') ?? ''
+      return new HttpResponse('trade_id\n', { headers: { 'Content-Type': 'text/csv' } })
+    }))
+
+    await fetchBacktestTradesCsv('run-1', 7)
+
+    expect(requestedBars).toBe('7')
+  })
+
+  it('debounces the post-exit query and loads the selected values', async () => {
+    server.use(http.get('*/api/v1/backtests/run-1/post-exit', () => HttpResponse.json({
+      post_exit_bars: 4,
+      trades: [],
+      all: { avg_post_exit_return: 1, post_exit_continuation_rate: 0.5 },
+      long: { avg_post_exit_return: 1, post_exit_continuation_rate: 1 },
+      short: { avg_post_exit_return: -1, post_exit_continuation_rate: 0 },
+    })))
+    const { result } = renderHook(() => usePostExitAnalysis('run-1', 4, 10), { wrapper: createWrapper() })
+
+    await waitFor(() => expect(result.current.data?.post_exit_bars).toBe(4))
+  })
   it('fetchBacktestHistory returns paginated items', async () => {
     const result = await fetchBacktestHistory()
 

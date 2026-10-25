@@ -1,5 +1,5 @@
-import { memo, useMemo, useState } from 'react'
-import { FileDown, FileSpreadsheet, Loader2 } from 'lucide-react'
+import { memo, useEffect, useMemo, useState } from 'react'
+import { FileDown, FileSpreadsheet, Info, Loader2 } from 'lucide-react'
 
 import { useNavigate } from '@tanstack/react-router'
 
@@ -12,8 +12,10 @@ import {
   LazyBacktestPerformanceCharts,
 } from '@/components/backtests/LazyBacktestRechartsCharts'
 import { MonthlyBreakdownTable } from '@/components/backtests/MonthlyBreakdownTable'
+import { usePostExitAnalysis } from '@/api/queries/backtests'
 import { DataTable, type DataColumn } from '@/components/ui/DataTable'
 import { formatDisplayDateTime } from '@/lib/formatDate'
+import { formatHoldTime } from '@/lib/backtesting/backtestMetricFormatters'
 import {
   formatCurrency,
   formatSignedCurrency,
@@ -54,6 +56,15 @@ type BacktestResultsTabsProps = {
 
 function formatPositionSize(quantity: number): string {
   return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2)
+}
+
+function excursionMoney(points: number | null | undefined, trade: Trade): number | null {
+  return points == null ? null : points * trade.quantity * trade.point_value
+}
+
+function timeToMfeSeconds(trade: Trade): number | null {
+  if (!trade.mfe_time) return null
+  return Math.max(0, (Date.parse(trade.mfe_time) - Date.parse(trade.entry_time)) / 1000)
 }
 
 const TRADE_ROW_HEIGHT = 34
@@ -179,6 +190,65 @@ function TradeHistoryTable({
           </span>
         ),
       },
+      {
+        id: 'mfe',
+        header: 'MFE',
+        align: 'right',
+        numeric: true,
+        sortable: true,
+        sortValue: (trade) => excursionMoney(trade.mfe_points, trade),
+        render: (trade) => (
+          <span title={trade.excursion_resolution && trade.excursion_resolution !== 'tick' ? `Measured at ${trade.excursion_resolution} resolution` : undefined}>
+            {excursionMoney(trade.mfe_points, trade) == null ? '-' : formatCurrency(excursionMoney(trade.mfe_points, trade)!)}
+            {trade.excursion_resolution && trade.excursion_resolution !== 'tick' ? <Info className="text-brass-400 ml-1 inline h-3 w-3" aria-label={`Measured at ${trade.excursion_resolution} resolution`} /> : null}
+          </span>
+        ),
+      },
+      {
+        id: 'mae',
+        header: 'MAE',
+        align: 'right',
+        numeric: true,
+        sortable: true,
+        sortValue: (trade) => excursionMoney(trade.mae_points, trade),
+        render: (trade) => {
+          const value = excursionMoney(trade.mae_points, trade)
+          return value == null ? '-' : formatCurrency(value)
+        },
+      },
+      {
+        id: 'mfe_capture',
+        header: 'Capture',
+        align: 'right',
+        numeric: true,
+        sortable: true,
+        sortValue: (trade) => trade.mfe_capture,
+        render: (trade) => trade.mfe_capture == null ? '-' : `${(trade.mfe_capture * 100).toFixed(1)}%`,
+      },
+      {
+        id: 'time_to_mfe',
+        header: 'Time to MFE',
+        align: 'right',
+        numeric: true,
+        sortable: true,
+        sortValue: timeToMfeSeconds,
+        render: (trade) => {
+          const seconds = timeToMfeSeconds(trade)
+          return seconds == null ? '-' : formatHoldTime(seconds)
+        },
+      },
+      {
+        id: 'post_exit_return_points',
+        header: 'Post-exit',
+        align: 'right',
+        numeric: true,
+        sortable: true,
+        sortValue: (trade) => excursionMoney(trade.post_exit_return_points, trade),
+        render: (trade) => {
+          const value = excursionMoney(trade.post_exit_return_points, trade)
+          return value == null ? '-' : formatSignedCurrency(value)
+        },
+      },
     ],
     [],
   )
@@ -231,6 +301,35 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
 
   const [focusedTradeId, setFocusedTradeId] = useState<string | null>(null)
   const [hoveredTradeId, setHoveredTradeId] = useState<string | null>(null)
+  const runId = results.run_id ?? null
+  const storedPostExitBars = results.performance?.excursions?.post_exit_bars ?? request?.post_exit_bars ?? 10
+  const [postExitBars, setPostExitBars] = useState(storedPostExitBars)
+
+  useEffect(() => {
+    setPostExitBars(storedPostExitBars)
+  }, [runId, storedPostExitBars])
+
+  const postExitQuery = usePostExitAnalysis(runId, postExitBars, storedPostExitBars)
+  const selectedPostExitAnalysis = postExitBars === storedPostExitBars ? undefined : postExitQuery.data
+  const displayTrades = useMemo(
+    () => {
+      const postExitValues = new Map(
+        selectedPostExitAnalysis?.trades.map((trade) => [trade.trade_id, trade]) ?? [],
+      )
+      return results.trades.map((trade) => {
+      const values = postExitValues.get(trade.id)
+      return values ? {
+        ...trade,
+        post_exit_mfe_points: values.post_exit_mfe_points,
+        post_exit_mae_points: values.post_exit_mae_points,
+        post_exit_return_points: values.post_exit_return_points,
+        post_exit_bars_observed: values.post_exit_bars_observed,
+      } : trade
+      })
+    },
+    [results.trades, selectedPostExitAnalysis],
+  )
+  const storedPostExitError = postExitQuery.error instanceof Error ? postExitQuery.error.message : null
 
   const handleExport = async () => {
     if (exporting) return
@@ -256,7 +355,6 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
     }
   }
 
-  const runId = results.run_id ?? null
   const navigate = useNavigate()
   // Only a completed single-entry MA Crossover run can be a training source.
   const canTrainMlFilter =
@@ -272,7 +370,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
     setExportError(null)
     try {
       const { exportBacktestCsv } = await import('@/lib/reports/backtestCsvExport')
-      await exportBacktestCsv({ runId, symbol, timeframe })
+      await exportBacktestCsv({ runId, symbol, timeframe, postExitBars })
     } catch (err) {
       setExportError(
         err instanceof Error ? err.message : typeof err === 'string' ? err : 'Failed to export CSV',
@@ -378,9 +476,16 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
                 equityCurve={equityCurve}
                 initialCapital={initialCapital}
                 bars={results.bars}
-                trades={results.trades}
+                trades={displayTrades}
                 performance={results.performance}
                 distribution={distribution}
+                postExitBars={postExitBars}
+                storedPostExitBars={storedPostExitBars}
+                postExitAnalysis={selectedPostExitAnalysis}
+                postExitLoading={postExitQuery.isFetching}
+                postExitError={storedPostExitError}
+                onPostExitBarsChange={setPostExitBars}
+                onPostExitReset={() => setPostExitBars(storedPostExitBars)}
                 onFocusTrade={(id) => {
                   setFocusedTradeId(id)
                   setActiveTab('trade-chart')
@@ -406,7 +511,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
               <LazyBacktestStrategyChart
                 bars={results.bars}
                 indicators={results.indicators}
-                trades={results.trades}
+                trades={displayTrades}
                 symbol={symbol}
                 timeframe={timeframe}
                 runId={results.run_id || undefined}
@@ -422,7 +527,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
           <div className="h-full overflow-y-auto">
             <h3 className="text-silver-100 mb-4 text-lg font-semibold">Trade History</h3>
             <TradeHistoryTable
-              trades={results.trades}
+              trades={displayTrades}
               focusedTradeId={focusedTradeId}
               hoveredTradeId={hoveredTradeId}
               onHoverTrade={setHoveredTradeId}

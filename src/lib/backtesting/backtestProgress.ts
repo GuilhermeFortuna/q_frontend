@@ -12,6 +12,7 @@ export const BACKTEST_PHASES: { id: BacktestPhase; label: string }[] = [
   { id: 'loading_data', label: 'Loading data' },
   { id: 'preparing', label: 'Preparing' },
   { id: 'simulating', label: 'Simulating' },
+  { id: 'measuring', label: 'Measuring trade excursions' },
   { id: 'saving', label: 'Saving' },
 ]
 const ACTIVITY_LABELS = {
@@ -44,7 +45,7 @@ export function retainBacktestProgress(
   }
 }
 export function backtestProgressPercent(status: BacktestStatusResponse | undefined): number | null {
-  return status?.phase === 'simulating' &&
+  return (status?.phase === 'simulating' || status?.phase === 'measuring') &&
     typeof status.progress === 'number' &&
     Number.isFinite(status.progress)
     ? Math.round(Math.min(1, Math.max(0, status.progress)) * 100)
@@ -54,8 +55,10 @@ export function backtestActivityLabel(status: BacktestStatusResponse | undefined
   if (!status) return 'Starting backtest…'
   if (!status.phase) return 'Detailed progress unavailable'
   if (status.activity) {
-    if (status.activity.kind === 'computing' && status.phase === 'preparing')
-      return 'Preparing strategy and indicators'
+    if (status.activity.kind === 'computing') {
+      if (status.phase === 'preparing') return 'Preparing strategy and indicators'
+      if (status.phase === 'measuring') return 'Measuring trade excursions'
+    }
     return ACTIVITY_LABELS[status.activity.kind]
   }
   return status.message || BACKTEST_PHASES.find((step) => step.id === status.phase)!.label
@@ -67,7 +70,10 @@ export function backtestPhaseLabel(status: BacktestLiveStatus | undefined): stri
     ? backtestActivityLabel(status)
     : BACKTEST_PHASES.find((step) => step.id === status.phase)!.label
   const pct = backtestProgressPercent(status)
-  return pct == null ? label : `${label} · ${pct}% of historical range`
+  if (pct == null) return label
+  return status.phase === 'measuring'
+    ? `${label} · ${pct}% of trades`
+    : `${label} · ${pct}% of historical range`
 }
 export function formatBacktestDuration(ms: number): string {
   const seconds = Math.max(0, Math.floor(ms / 1000))

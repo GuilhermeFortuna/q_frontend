@@ -7,8 +7,10 @@ import {
 } from '@tanstack/react-query'
 import axios from 'axios'
 import { useEffect } from 'react'
+import { keepPreviousData } from '@tanstack/react-query'
 
 import { apiClient } from '@/api/client'
+import { useDebounce } from '@/hooks/useDebounce'
 import type { BacktestStatusResponse } from '../../../contracts/api'
 import { retainBacktestProgress, type BacktestLiveStatus } from '@/lib/backtesting/backtestProgress'
 import { useJobStream } from '@/lib/stream/jobStreamContext'
@@ -24,6 +26,7 @@ import type {
   BacktestRunDetail,
   BacktestRunListResponse,
   BulkDeleteResponse,
+  PostExitAnalysis,
 } from '@/types/backtesting'
 
 export type BacktestStartResponse = { run_id: string; status: string }
@@ -49,6 +52,7 @@ export const backtestKeys = {
   jobStatus: (runId: string) => [...backtestKeys.all, 'job-status', runId] as const,
   jobResult: (runId: string) => [...backtestKeys.all, 'job-result', runId] as const,
   storedResult: (runId: string) => [...backtestKeys.all, 'stored-result', runId] as const,
+  postExit: (runId: string, bars: number) => [...backtestKeys.all, 'post-exit', runId, bars] as const,
 }
 
 export async function startBacktest(request: BacktestRequest): Promise<BacktestStartResponse> {
@@ -135,11 +139,30 @@ export async function fetchBacktestMarketDataCsv(runId: string): Promise<string>
   return data
 }
 
-export async function fetchBacktestTradesCsv(runId: string): Promise<string> {
+export async function fetchBacktestTradesCsv(runId: string, postExitBars?: number): Promise<string> {
   const { data } = await apiClient.get<string>(`/api/v1/backtests/${runId}/export/trades`, {
+    params: postExitBars == null ? undefined : { post_exit_bars: postExitBars },
     responseType: 'text',
   })
   return data
+}
+
+export async function fetchPostExitAnalysis(runId: string, bars: number): Promise<PostExitAnalysis> {
+  const { data } = await apiClient.get<PostExitAnalysis>(`/api/v1/backtests/${runId}/post-exit`, {
+    params: { bars },
+  })
+  return data
+}
+
+export function usePostExitAnalysis(runId: string | null, bars: number, storedBars: number) {
+  const debouncedBars = useDebounce(bars, 300)
+  const valid = Number.isInteger(bars) && bars >= 1 && bars <= 500
+  return useQuery({
+    queryKey: backtestKeys.postExit(runId ?? '', debouncedBars),
+    queryFn: () => fetchPostExitAnalysis(runId as string, debouncedBars),
+    enabled: Boolean(runId) && valid && bars !== storedBars && bars === debouncedBars,
+    placeholderData: keepPreviousData,
+  })
 }
 
 export function useBacktestEquityArtifact(runId: string | null) {

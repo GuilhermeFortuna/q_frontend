@@ -9,6 +9,7 @@ import { WorstDrawdownsTable } from '@/components/backtests/WorstDrawdownsTable'
 import { RollingMetricsChart } from '@/components/backtests/RollingMetricsChart'
 import { TradeDistributionPanels } from '@/components/backtests/TradeDistributionPanels'
 import type { BacktestPerformance, EquityPoint, MonthlyStats, Trade } from '@/types/backtesting'
+import type { PostExitAnalysis } from '@/types/backtesting'
 import type { BacktestDistributionData } from '@/lib/backtesting/distribution'
 import type { OhlcvBar } from '@/types/api'
 
@@ -22,6 +23,13 @@ type BacktestRechartsPaneProps =
       performance?: BacktestPerformance | null
       distribution?: BacktestDistributionData
       onFocusTrade?: (id: string) => void
+      postExitBars?: number
+      storedPostExitBars?: number
+      postExitAnalysis?: PostExitAnalysis
+      postExitLoading?: boolean
+      postExitError?: string | null
+      onPostExitBarsChange?: (bars: number) => void
+      onPostExitReset?: () => void
       monthlyStats?: never
     }
   | {
@@ -33,6 +41,13 @@ type BacktestRechartsPaneProps =
       trades?: never
       distribution?: never
       onFocusTrade?: never
+      postExitBars?: never
+      storedPostExitBars?: never
+      postExitAnalysis?: never
+      postExitLoading?: never
+      postExitError?: never
+      onPostExitBarsChange?: never
+      onPostExitReset?: never
     }
 
 export function BacktestRechartsPane(props: BacktestRechartsPaneProps) {
@@ -85,6 +100,13 @@ export function BacktestRechartsPane(props: BacktestRechartsPaneProps) {
           distribution={props.distribution}
           performance={props.performance}
           onFocusTrade={props.onFocusTrade}
+          postExitBars={props.postExitBars}
+          storedPostExitBars={props.storedPostExitBars}
+          postExitAnalysis={props.postExitAnalysis}
+          postExitLoading={props.postExitLoading}
+          postExitError={props.postExitError}
+          onPostExitBarsChange={props.onPostExitBarsChange}
+          onPostExitReset={props.onPostExitReset}
         />
       </div>
     )
