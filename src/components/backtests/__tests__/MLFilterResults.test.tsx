@@ -14,6 +14,8 @@ import { MLFilterSummaryCard } from '@/components/backtests/MLFilterSummaryCard'
 import { getMockBacktestResponse } from '@/mocks/backtest'
 import type { BacktestRequest } from '@/types/backtesting'
 
+import { renderWithQueryClient } from '../../../../tests/unit/testUtils'
+
 beforeEach(() => navigateMock.mockClear())
 
 function renderResults(request: BacktestRequest, runId = 'run-win-ma') {
@@ -21,7 +23,7 @@ function renderResults(request: BacktestRequest, runId = 'run-win-ma') {
     ...getMockBacktestResponse(request),
     run_id: runId,
   }
-  return render(
+  return renderWithQueryClient(
     <BacktestResultsTabs
       results={results}
       request={request}

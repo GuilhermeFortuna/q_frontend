@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -6,12 +6,14 @@ import { BacktestResultsTabs } from '@/components/backtests/BacktestResultsTabs'
 import { getMockBacktestResponse } from '@/mocks/backtest'
 import type { BacktestResponse, Trade } from '@/types/backtesting'
 
+import { renderWithQueryClient } from '../testUtils'
+
 vi.mock('@/lib/reports/backtestCsvExport', () => ({ exportBacktestCsv: vi.fn() }))
 
 function renderTradeList(trades: Trade[]) {
   const base = getMockBacktestResponse({ symbol: 'WDO$N', timeframe: 'M15' })
   const results: BacktestResponse = { ...base, trades }
-  render(
+  renderWithQueryClient(
     <BacktestResultsTabs
       results={results}
       request={null}

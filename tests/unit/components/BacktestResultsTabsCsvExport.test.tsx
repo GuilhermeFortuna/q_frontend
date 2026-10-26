@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,11 +6,13 @@ import { BacktestResultsTabs } from '@/components/backtests/BacktestResultsTabs'
 import { getMockBacktestResponse } from '@/mocks/backtest'
 import type { BacktestResponse } from '@/types/backtesting'
 
+import { renderWithQueryClient } from '../testUtils'
+
 const exportBacktestCsv = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/reports/backtestCsvExport', () => ({ exportBacktestCsv }))
 
 function renderTabs(results: BacktestResponse) {
-  return render(
+  return renderWithQueryClient(
     <BacktestResultsTabs
       results={results}
       request={null}
@@ -43,6 +45,7 @@ describe('BacktestResultsTabs CSV export', () => {
         runId: 'run-1',
         symbol: 'PETR4',
         timeframe: 'M5',
+        postExitBars: 10,
       }),
     )
   })
