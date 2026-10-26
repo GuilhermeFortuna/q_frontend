@@ -24,6 +24,8 @@ type ChartAxesProps = {
   timeframe: string
   /** Decimal places for price ticks, from the instrument's precision. */
   priceDigits?: number
+  /** Hides the volume value axis when the volume pane is turned off. */
+  showVolume?: boolean
   left: number
   bottom: number
   height: number
@@ -48,6 +50,7 @@ export function ChartAxes({
   layout,
   timeframe,
   priceDigits = 2,
+  showVolume = true,
   left,
   bottom,
   height,
@@ -63,13 +66,15 @@ export function ChartAxes({
         tickFormat={(v) => formatPrice(Number(v), priceDigits)}
         {...axisStyle}
       />
-      <AxisRight
-        left={left + layout.innerWidth}
-        scale={volumeScale}
-        numTicks={2}
-        tickFormat={() => ''}
-        {...axisStyle}
-      />
+      {showVolume && (
+        <AxisRight
+          left={left + layout.innerWidth}
+          scale={volumeScale}
+          numTicks={2}
+          tickFormat={() => ''}
+          {...axisStyle}
+        />
+      )}
       {oscillatorScales.map((entry) => (
         <AxisRight
           key={entry.key}

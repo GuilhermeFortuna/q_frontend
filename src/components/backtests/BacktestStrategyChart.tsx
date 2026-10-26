@@ -6,6 +6,7 @@ import {
   Grid,
   RotateCcw,
   BarChart3,
+  ChartColumn,
   LineChart,
   AreaChart,
   ExternalLink,
@@ -77,10 +78,11 @@ function computeBacktestLayout(
   width: number,
   height: number,
   hasOscillator: boolean,
+  showVolume: boolean,
 ): BacktestPaneLayout {
   const innerWidth = Math.max(width - CHART_MARGINS.left - CHART_MARGINS.right, 0)
   const innerHeight = Math.max(height - CHART_MARGINS.top - CHART_MARGINS.bottom, 0)
-  const volumeHeight = innerHeight * 0.12
+  const volumeHeight = showVolume ? innerHeight * 0.12 : 0
   const oscillatorHeight = hasOscillator ? innerHeight * 0.18 : 0
   const priceHeight = innerHeight - volumeHeight - oscillatorHeight
 
@@ -124,10 +126,11 @@ function ChartInner({
 }) {
   const processed = useMemo(() => processBars(bars), [bars])
   const findBar = useMemo(() => createBarTimestampLookup(bars), [bars])
+  const [showVolume, setShowVolume] = useState<boolean>(true)
   const hasOscillator = indicators.some((ind) => ind.pane === 'oscillator')
   const layout = useMemo(
-    () => computeBacktestLayout(width, height, hasOscillator),
-    [width, height, hasOscillator],
+    () => computeBacktestLayout(width, height, hasOscillator, showVolume),
+    [width, height, hasOscillator, showVolume],
   )
   const { viewport, setViewport, resetViewport, fitAll, zoomAt, panBy, stretchXByPixels } =
     useChartViewport(processed.length)
@@ -559,6 +562,21 @@ function ChartInner({
           <Grid className="h-3.5 w-3.5" />
         </button>
 
+        {/* Volume Toggle */}
+        <button
+          type="button"
+          onClick={() => setShowVolume(!showVolume)}
+          aria-pressed={showVolume}
+          title="Toggle Volume"
+          className={`rounded-md border p-1.5 transition-all duration-150 active:scale-90 ${
+            showVolume
+              ? 'bg-brass-600/20 text-brass-400 border-brass-500/25 shadow-[0_0_10px_rgba(196,165,116,0.12)]'
+              : 'text-silver-500 hover:text-silver-300 hover:bg-carbon-850/50 border-transparent'
+          }`}
+        >
+          <ChartColumn className="h-3.5 w-3.5" />
+        </button>
+
         {/* Reset View Button */}
         <button
           type="button"
@@ -665,12 +683,14 @@ function ChartInner({
           />
         )}
 
-        <VolumeLayer
-          bars={visibleBars}
-          xScale={scales.xScale}
-          yScale={scales.volumeScale}
-          left={CHART_MARGINS.left}
-        />
+        {showVolume && (
+          <VolumeLayer
+            bars={visibleBars}
+            xScale={scales.xScale}
+            yScale={scales.volumeScale}
+            left={CHART_MARGINS.left}
+          />
+        )}
 
         <CandlestickLayer
           bars={visibleBars}
@@ -725,6 +745,7 @@ function ChartInner({
 
         <ChartAxes
           priceDigits={2}
+          showVolume={showVolume}
           xScale={scales.xScale}
           priceScale={scales.priceScale}
           volumeScale={scales.volumeScale}

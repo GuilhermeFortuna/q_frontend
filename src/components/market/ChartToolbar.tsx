@@ -1,7 +1,11 @@
 import { IndicatorsPopover } from '@/components/charts/IndicatorsPopover'
 import { ChartSettingsPopover } from '@/components/charts/ChartSettingsPopover'
 import { Maximize2, Minimize2, Search } from 'lucide-react'
-import type { IndicatorConfig, ChartSettings } from '@/components/charts/types/chart'
+import {
+  DEFAULT_SETTINGS,
+  type IndicatorConfig,
+  type ChartSettings,
+} from '@/components/charts/types/chart'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { CHART_TIMEFRAMES } from '@/lib/market/timeframes'
@@ -47,6 +51,9 @@ export function ChartToolbar({
   onToggleFullscreen,
   onOpenSymbolPicker,
 }: ChartToolbarProps) {
+  // Profiles saved before the volume toggle existed have no `showVolume` key.
+  const showVolume = chartSettings?.showVolume ?? DEFAULT_SETTINGS.showVolume
+
   return (
     <div className="surface-well border-brass-600/10 relative !z-20 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -102,6 +109,22 @@ export function ChartToolbar({
             Grid
           </span>
         </label>
+
+        {chartSettings && onChartSettingsChange ? (
+          <label className="flex cursor-pointer items-center gap-1.5 select-none">
+            <input
+              type="checkbox"
+              checked={showVolume}
+              onChange={(e) =>
+                onChartSettingsChange({ ...chartSettings, showVolume: e.target.checked })
+              }
+              className="border-carbon-700 text-brass-500 accent-brass-500 cursor-pointer rounded focus:ring-0"
+            />
+            <span className="accent-wayfinding text-2xs font-[560] tracking-[0.08em] uppercase">
+              Volume
+            </span>
+          </label>
+        ) : null}
 
         {onToggleFullscreen ? (
           <button

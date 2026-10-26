@@ -53,6 +53,16 @@ describe('computePaneLayout', () => {
     expect(layout.stack.map((slot) => slot.key)).toEqual(['b', 'price', 'volume'])
   })
 
+  it('gives the volume pane space to the price pane when volume is hidden', () => {
+    const shown = computePaneLayout(WIDTH, HEIGHT, ['a'], MARGINS)
+    const hidden = computePaneLayout(WIDTH, HEIGHT, ['a'], MARGINS, undefined, false)
+
+    expect(hidden.stack.map((slot) => slot.key)).toEqual(['price', 'a'])
+    expect(hidden.volumeHeight).toBe(0)
+    expect(hidden.priceHeight).toBeCloseTo(shown.priceHeight + shown.volumeHeight)
+    expect(hidden.stack.reduce((sum, slot) => sum + slot.height, 0)).toBeCloseTo(INNER_HEIGHT)
+  })
+
   it('keeps the price pane readable when oscillators crowd it out', () => {
     const keys = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
     const layout = computePaneLayout(WIDTH, HEIGHT, keys, MARGINS)

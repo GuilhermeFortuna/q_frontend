@@ -42,6 +42,8 @@ export type ChartSettings = {
   backgroundColor: string
   showWatermark: boolean
   candleOpacity: number
+  /** Optional so profiles saved before the toggle existed still load; defaults to shown. */
+  showVolume?: boolean
   volumeOpacity: number
   crosshairColor: string
 }
@@ -176,6 +178,7 @@ export const DEFAULT_SETTINGS: ChartSettings = {
   backgroundColor: 'radial-gradient(circle at 50% 30%, #16273f 0%, #07101c 100%)',
   showWatermark: true,
   candleOpacity: 0.85,
+  showVolume: true,
   volumeOpacity: 0.4,
   crosshairColor: chartTheme.crosshair.stroke,
 }

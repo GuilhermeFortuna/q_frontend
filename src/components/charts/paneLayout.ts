@@ -101,10 +101,14 @@ export function computePaneLayout(
   oscillatorKeys: string[],
   margins: ChartMargins,
   prefs?: PaneLayoutPrefs,
+  showVolume = true,
 ): PaneLayout {
   const innerWidth = Math.max(width - margins.left - margins.right, 0)
   const innerHeight = Math.max(height - margins.top - margins.bottom, 0)
-  const order = resolvePaneOrder(oscillatorKeys, prefs?.order)
+  // A hidden volume pane leaves the stack entirely so the price pane takes its space.
+  const order = resolvePaneOrder(oscillatorKeys, prefs?.order).filter(
+    (key) => showVolume || key !== VOLUME_PANE,
+  )
   const stack = computePaneStack(innerHeight, margins.top, order, prefs?.heights)
 
   const price = stack.find((slot) => slot.key === PRICE_PANE)

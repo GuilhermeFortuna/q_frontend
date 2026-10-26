@@ -275,8 +275,16 @@ const ChartInner = forwardRef<
   )
 
   const layout = useMemo(
-    () => computePaneLayout(width, height, oscillatorPaneKeys, CHART_MARGINS, panePrefs),
-    [width, height, oscillatorPaneKeys, panePrefs],
+    () =>
+      computePaneLayout(
+        width,
+        height,
+        oscillatorPaneKeys,
+        CHART_MARGINS,
+        panePrefs,
+        settings.showVolume,
+      ),
+    [width, height, oscillatorPaneKeys, panePrefs, settings.showVolume],
   )
 
   // Per-oscillator value-axis stretch, keyed by instance. Session state like the price axis.
@@ -898,13 +906,15 @@ const ChartInner = forwardRef<
           />
         )}
 
-        <VolumeLayer
-          visibleBars={visibleBars}
-          xScale={scales.xScale}
-          yScale={scales.volumeScale}
-          left={CHART_MARGINS.left}
-          volumeOpacity={settings.volumeOpacity}
-        />
+        {settings.showVolume && (
+          <VolumeLayer
+            visibleBars={visibleBars}
+            xScale={scales.xScale}
+            yScale={scales.volumeScale}
+            left={CHART_MARGINS.left}
+            volumeOpacity={settings.volumeOpacity}
+          />
+        )}
 
         <IndicatorLayer
           allBars={data}
@@ -1036,6 +1046,7 @@ const ChartInner = forwardRef<
           layout={layout}
           timeframe={timeframe}
           priceDigits={format.digits}
+          showVolume={settings.showVolume}
           left={CHART_MARGINS.left}
           bottom={CHART_MARGINS.bottom}
           height={height}
