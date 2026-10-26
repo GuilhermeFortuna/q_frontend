@@ -6,6 +6,7 @@ import type { ProcessedBar } from '@/components/charts/types/chart'
 import { linePath, visibleTimestampSet } from '@/components/charts/utils/indicatorPaths'
 import type { OhlcvBar } from '@/types/api'
 import { studyMarkerShape } from '@/components/charts/layers/MarkerGlyph'
+import { rsiLevels } from '@/lib/market/indicatorConfig'
 
 function stepPath(
   values: (number | null)[],
@@ -68,6 +69,7 @@ function OscillatorPaneImpl({
   )
 
   const unavailable = group.outputs.find((output) => output.unavailableReason)?.unavailableReason
+  const rsi = rsiLevels(group.config)
 
   const isHistogram = (output: (typeof group.outputs)[number]) =>
     output.kind === 'histogram' || (group.catalogId === 'macd' && output.outputKey === 'histogram')
@@ -131,9 +133,9 @@ function OscillatorPaneImpl({
           {group.catalogId === 'rsi' && group.config.style?.showCloud !== false && (
             <rect
               x={0}
-              y={Math.round(yScale(70))}
+              y={Math.round(yScale(rsi.overbought))}
               width={xScale.range()[1]}
-              height={Math.max(Math.round(yScale(30) - yScale(70)), 1)}
+              height={Math.max(Math.round(yScale(rsi.oversold) - yScale(rsi.overbought)), 1)}
               fill={getRsiCloudFill(primaryColor)}
               stroke="none"
             />
@@ -143,8 +145,8 @@ function OscillatorPaneImpl({
               <line
                 x1={0}
                 x2={xScale.range()[1]}
-                y1={Math.round(yScale(70))}
-                y2={Math.round(yScale(70))}
+                y1={Math.round(yScale(rsi.overbought))}
+                y2={Math.round(yScale(rsi.overbought))}
                 stroke="rgba(239, 83, 80, 0.35)"
                 strokeDasharray="3 2"
                 shapeRendering="crispEdges"
@@ -152,8 +154,8 @@ function OscillatorPaneImpl({
               <line
                 x1={0}
                 x2={xScale.range()[1]}
-                y1={Math.round(yScale(30))}
-                y2={Math.round(yScale(30))}
+                y1={Math.round(yScale(rsi.oversold))}
+                y2={Math.round(yScale(rsi.oversold))}
                 stroke="rgba(38, 166, 154, 0.35)"
                 strokeDasharray="3 2"
                 shapeRendering="crispEdges"

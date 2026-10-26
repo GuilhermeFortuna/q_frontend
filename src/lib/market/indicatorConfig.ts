@@ -8,6 +8,34 @@ export type IndicatorStyle = {
   lineStyle?: IndicatorLineStyle
   showCloud?: boolean
   outputColors?: Record<string, string>
+  /** RSI only: display levels, not sent to the backend. */
+  overboughtLevel?: number
+  oversoldLevel?: number
+}
+
+export const RSI_DEFAULT_LEVELS = { overbought: 70, oversold: 30 } as const
+
+export type RsiLevels = { overbought: number; oversold: number }
+
+/** RSI overbought and oversold levels, falling back to the standard 70 and 30. */
+export function rsiLevels(config: IndicatorConfig): RsiLevels {
+  return {
+    overbought: config.style?.overboughtLevel ?? RSI_DEFAULT_LEVELS.overbought,
+    oversold: config.style?.oversoldLevel ?? RSI_DEFAULT_LEVELS.oversold,
+  }
+}
+
+/** Error per RSI level field. Levels must lie in [0, 100] with oversold below overbought. */
+export function rsiLevelErrors(config: IndicatorConfig): Record<string, string> {
+  const { overbought, oversold } = rsiLevels(config)
+  const errors: Record<string, string> = {}
+  if (!Number.isFinite(overbought) || overbought < 0 || overbought > 100)
+    errors.overboughtLevel = 'Overbought level must be between 0 and 100.'
+  if (!Number.isFinite(oversold) || oversold < 0 || oversold > 100)
+    errors.oversoldLevel = 'Oversold level must be between 0 and 100.'
+  if (!errors.overboughtLevel && !errors.oversoldLevel && oversold >= overbought)
+    errors.oversoldLevel = 'Oversold level must be below the overbought level.'
+  return errors
 }
 
 export type IndicatorConfig = {
@@ -130,6 +158,10 @@ export function normalizeIndicatorConfig(raw: unknown): IndicatorConfig {
             ? raw.style.lineStyle
             : undefined,
         showCloud: typeof raw.style.showCloud === 'boolean' ? raw.style.showCloud : undefined,
+        overboughtLevel:
+          typeof raw.style.overboughtLevel === 'number' ? raw.style.overboughtLevel : undefined,
+        oversoldLevel:
+          typeof raw.style.oversoldLevel === 'number' ? raw.style.oversoldLevel : undefined,
         outputColors: isRecord(raw.style.outputColors)
           ? Object.fromEntries(
               Object.entries(raw.style.outputColors).filter(

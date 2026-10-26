@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   migrateLegacyIndicatorConfig,
   normalizeIndicatorConfigs,
+  rsiLevelErrors,
+  rsiLevels,
 } from '@/lib/market/indicatorConfig'
 
 describe('indicatorConfig migration', () => {
@@ -55,5 +57,30 @@ describe('indicatorConfig migration', () => {
       slow_period: 21,
       signal_period: 5,
     })
+  })
+})
+
+describe('RSI levels', () => {
+  const rsi = (style = {}) => ({ id: 'rsi', enabled: true, parameters: { period: 14 }, style })
+
+  it('defaults to 70 and 30 and keeps saved levels through normalization', () => {
+    expect(rsiLevels(rsi())).toEqual({ overbought: 70, oversold: 30 })
+    const [saved] = normalizeIndicatorConfigs([
+      { id: 'rsi', enabled: true, parameters: { period: 14 }, style: { overboughtLevel: 80 } },
+    ])
+    expect(saved.style?.overboughtLevel).toBe(80)
+    expect(rsiLevels(saved)).toEqual({ overbought: 80, oversold: 30 })
+  })
+
+  it('accepts levels in range with oversold below overbought', () => {
+    expect(rsiLevelErrors(rsi({ overboughtLevel: 80, oversoldLevel: 20 }))).toEqual({})
+  })
+
+  it('rejects levels outside 0 to 100 and an oversold level at or above overbought', () => {
+    expect(rsiLevelErrors(rsi({ overboughtLevel: 120 }))).toHaveProperty('overboughtLevel')
+    expect(rsiLevelErrors(rsi({ oversoldLevel: -1 }))).toHaveProperty('oversoldLevel')
+    expect(rsiLevelErrors(rsi({ overboughtLevel: 60, oversoldLevel: 60 }))).toHaveProperty(
+      'oversoldLevel',
+    )
   })
 })

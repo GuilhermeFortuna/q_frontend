@@ -155,6 +155,34 @@ describe('IndicatorsModal', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
+  it('saves RSI levels as display settings and blocks an oversold level above overbought', async () => {
+    const user = userEvent.setup()
+    const { onChange } = renderModal()
+    await user.click(await screen.findByTestId('indicator-catalog-item-rsi'))
+    fireEvent.change(await screen.findByRole('spinbutton', { name: 'Overbought level' }), {
+      target: { value: '80' },
+    })
+    await user.click(screen.getByRole('button', { name: 'Apply changes' }))
+    expect(onChange).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'rsi',
+        parameters: { period: 20 },
+        style: { overboughtLevel: 80 },
+      }),
+    ])
+
+    onChange.mockClear()
+    await user.click(screen.getByRole('checkbox', { name: 'Enable RSI' }))
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Oversold level' }), {
+      target: { value: '85' },
+    })
+    expect(screen.getByRole('spinbutton', { name: 'Oversold level' })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    )
+    expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled()
+  })
+
   it('clears search and filters enabled indicators without discarding drafts', async () => {
     const user = userEvent.setup()
     renderModal([{ id: 'sma', enabled: true, parameters: { period: 20 } }])

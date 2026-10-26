@@ -14,7 +14,7 @@ import {
   buildIndicatorRenderModel,
   type IndicatorRenderModel,
 } from '@/lib/market/buildIndicatorRenderModel'
-import { indicatorInstanceKey, type IndicatorConfig } from '@/lib/market/indicatorConfig'
+import { indicatorInstanceKey, rsiLevels, type IndicatorConfig } from '@/lib/market/indicatorConfig'
 import { indicatorDocumentation } from '@/lib/market/indicatorDocumentation'
 import { barRangeForSeries } from '@/lib/market/indicatorSeriesAlign'
 import { formatTimeAxisLabel, toApiTimeframe } from '@/lib/market/timeframes'
@@ -217,7 +217,10 @@ function PreviewPlot({
         }),
       )
     const oscillator = model.oscillators.length > 0
-    const reference = indicatorDocumentation[entry.id]?.referenceLines ?? []
+    const reference =
+      entry.id === 'rsi'
+        ? [rsiLevels(config).oversold, 50, rsiLevels(config).overbought]
+        : (indicatorDocumentation[entry.id]?.referenceLines ?? [])
     const left = 10
     const right = width - 58
     const x = scaleLinear()
@@ -271,7 +274,7 @@ function PreviewPlot({
           .y1((index) => y(upper[index]!))(visible.map((_, index) => index)) ?? ''
     }
     return { visible, outputs, x, y, priceY, left, right, reference, oscillator, lineFor, bandPath }
-  }, [bars, model, entry.id, config.style, width])
+  }, [bars, model, entry.id, config, width])
 
   const index = hover ?? chart.visible.length - 1
   const activeBar = chart.visible[index]

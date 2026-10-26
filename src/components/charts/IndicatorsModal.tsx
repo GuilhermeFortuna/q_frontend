@@ -14,7 +14,11 @@ import { NumberInput } from '@/components/ui/number-input'
 import { LabeledField } from '@/components/ui/LabeledField'
 import { Button } from '@/components/ui/button'
 import { indicatorRequestErrorMessage, useIndicatorCatalog } from '@/api/queries/marketIndicators'
-import { defaultParametersForEntry, type IndicatorConfig } from '@/lib/market/indicatorConfig'
+import {
+  defaultParametersForEntry,
+  rsiLevels,
+  type IndicatorConfig,
+} from '@/lib/market/indicatorConfig'
 import {
   VOLUME_PROFILE_INDICATOR_ID,
   defaultVolumeProfileIndicatorConfig,
@@ -53,6 +57,8 @@ const PRESET_COLORS = [
   { value: '#26a69a', name: 'Teal' },
   { value: '#ef5350', name: 'Red' },
 ]
+const RSI_LEVEL_FIELDS: string[] = ['overboughtLevel', 'oversoldLevel']
+
 const CONTROL_CLASS =
   'surface-well text-silver-100 focus-visible:outline-brass-400 w-full rounded-md border border-carbon-700 px-3 py-2 text-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2'
 
@@ -724,13 +730,58 @@ function IndicatorsModalBody({
                     </div>
                     {Object.entries(activeErrors)
                       .filter(
-                        ([name]) => !activeEntry.parameters.some((spec) => spec.name === name),
+                        ([name]) =>
+                          !activeEntry.parameters.some((spec) => spec.name === name) &&
+                          !RSI_LEVEL_FIELDS.includes(name),
                       )
                       .map(([name, message]) => (
                         <p key={name} className="text-xs text-rose-300">
                           {message}
                         </p>
                       ))}
+                    {activeEntry.id === 'rsi' && (
+                      <section className="border-carbon-700/60 border-t pt-5">
+                        <h4 className="text-silver-100 text-sm font-semibold">Levels</h4>
+                        <p className="text-silver-300 mt-1 text-xs leading-relaxed">
+                          Reference lines drawn on the chart. They do not change the calculation.
+                        </p>
+                        <div className="mt-3 grid gap-x-5 gap-y-5 sm:grid-cols-2">
+                          {(
+                            [
+                              [
+                                'overboughtLevel',
+                                'Overbought level',
+                                rsiLevels(activeDraft).overbought,
+                              ],
+                              ['oversoldLevel', 'Oversold level', rsiLevels(activeDraft).oversold],
+                            ] as const
+                          ).map(([field, label, value]) => {
+                            const fieldId = `${id}-${activeEntry.id}-${field}`
+                            return (
+                              <LabeledField key={field} label={label} htmlFor={fieldId}>
+                                <NumberInput
+                                  id={fieldId}
+                                  value={value}
+                                  onChange={(next) =>
+                                    updateDraft(activeEntry.id, {
+                                      style: { ...activeDraft.style, [field]: next },
+                                    })
+                                  }
+                                  min={0}
+                                  max={100}
+                                  step="any"
+                                  aria-invalid={!!activeErrors[field]}
+                                  className={`${CONTROL_CLASS} font-mono`}
+                                />
+                                {activeErrors[field] && (
+                                  <p className="text-xs text-rose-300">{activeErrors[field]}</p>
+                                )}
+                              </LabeledField>
+                            )
+                          })}
+                        </div>
+                      </section>
+                    )}
                     <section className="border-carbon-700/60 border-t pt-5">
                       <h4 className="text-silver-100 text-sm font-semibold">Line color</h4>
                       <div

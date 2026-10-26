@@ -1,5 +1,5 @@
 import type { IndicatorCatalogEntry } from '../../../contracts/api'
-import type { IndicatorConfig } from './indicatorConfig'
+import { rsiLevelErrors, type IndicatorConfig } from './indicatorConfig'
 
 export type IndicatorDocumentation = {
   summary: string
@@ -468,6 +468,7 @@ export function indicatorParameterErrors(
         `${parameterHelp(fast).label} must be smaller than ${parameterHelp(slow).label.toLowerCase()}.`
   }
   if (entry.id === 'macd') lessThan('fast_period', 'slow_period')
+  if (entry.id === 'rsi') Object.assign(errors, rsiLevelErrors(config))
   if (entry.id === 'ewma_trend_spread' || entry.id === 'normalized_ewma_trend_spread')
     lessThan('fast_half_life', 'slow_half_life')
   if (entry.id === 'volatility_log_ratio') {
