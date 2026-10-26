@@ -198,9 +198,22 @@ function TradeHistoryTable({
         sortable: true,
         sortValue: (trade) => excursionMoney(trade.mfe_points, trade),
         render: (trade) => (
-          <span title={trade.excursion_resolution && trade.excursion_resolution !== 'tick' ? `Measured at ${trade.excursion_resolution} resolution` : undefined}>
-            {excursionMoney(trade.mfe_points, trade) == null ? '-' : formatCurrency(excursionMoney(trade.mfe_points, trade)!)}
-            {trade.excursion_resolution && trade.excursion_resolution !== 'tick' ? <Info className="text-brass-400 ml-1 inline h-3 w-3" aria-label={`Measured at ${trade.excursion_resolution} resolution`} /> : null}
+          <span
+            title={
+              trade.excursion_resolution && trade.excursion_resolution !== 'tick'
+                ? `Measured at ${trade.excursion_resolution} resolution`
+                : undefined
+            }
+          >
+            {excursionMoney(trade.mfe_points, trade) == null
+              ? '-'
+              : formatCurrency(excursionMoney(trade.mfe_points, trade)!)}
+            {trade.excursion_resolution && trade.excursion_resolution !== 'tick' ? (
+              <Info
+                className="text-brass-400 ml-1 inline h-3 w-3"
+                aria-label={`Measured at ${trade.excursion_resolution} resolution`}
+              />
+            ) : null}
           </span>
         ),
       },
@@ -223,7 +236,8 @@ function TradeHistoryTable({
         numeric: true,
         sortable: true,
         sortValue: (trade) => trade.mfe_capture,
-        render: (trade) => trade.mfe_capture == null ? '-' : `${(trade.mfe_capture * 100).toFixed(1)}%`,
+        render: (trade) =>
+          trade.mfe_capture == null ? '-' : `${(trade.mfe_capture * 100).toFixed(1)}%`,
       },
       {
         id: 'time_to_mfe',
@@ -302,7 +316,8 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   const [focusedTradeId, setFocusedTradeId] = useState<string | null>(null)
   const [hoveredTradeId, setHoveredTradeId] = useState<string | null>(null)
   const runId = results.run_id ?? null
-  const storedPostExitBars = results.performance?.excursions?.post_exit_bars ?? request?.post_exit_bars ?? 10
+  const storedPostExitBars =
+    results.performance?.excursions?.post_exit_bars ?? request?.post_exit_bars ?? 10
   const [postExitBars, setPostExitBars] = useState(storedPostExitBars)
 
   useEffect(() => {
@@ -310,26 +325,27 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
   }, [runId, storedPostExitBars])
 
   const postExitQuery = usePostExitAnalysis(runId, postExitBars, storedPostExitBars)
-  const selectedPostExitAnalysis = postExitBars === storedPostExitBars ? undefined : postExitQuery.data
-  const displayTrades = useMemo(
-    () => {
-      const postExitValues = new Map(
-        selectedPostExitAnalysis?.trades.map((trade) => [trade.trade_id, trade]) ?? [],
-      )
-      return results.trades.map((trade) => {
+  const selectedPostExitAnalysis =
+    postExitBars === storedPostExitBars ? undefined : postExitQuery.data
+  const displayTrades = useMemo(() => {
+    const postExitValues = new Map(
+      selectedPostExitAnalysis?.trades.map((trade) => [trade.trade_id, trade]) ?? [],
+    )
+    return results.trades.map((trade) => {
       const values = postExitValues.get(trade.id)
-      return values ? {
-        ...trade,
-        post_exit_mfe_points: values.post_exit_mfe_points,
-        post_exit_mae_points: values.post_exit_mae_points,
-        post_exit_return_points: values.post_exit_return_points,
-        post_exit_bars_observed: values.post_exit_bars_observed,
-      } : trade
-      })
-    },
-    [results.trades, selectedPostExitAnalysis],
-  )
-  const storedPostExitError = postExitQuery.error instanceof Error ? postExitQuery.error.message : null
+      return values
+        ? {
+            ...trade,
+            post_exit_mfe_points: values.post_exit_mfe_points,
+            post_exit_mae_points: values.post_exit_mae_points,
+            post_exit_return_points: values.post_exit_return_points,
+            post_exit_bars_observed: values.post_exit_bars_observed,
+          }
+        : trade
+    })
+  }, [results.trades, selectedPostExitAnalysis])
+  const storedPostExitError =
+    postExitQuery.error instanceof Error ? postExitQuery.error.message : null
 
   const handleExport = async () => {
     if (exporting) return

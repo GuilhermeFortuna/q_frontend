@@ -52,7 +52,8 @@ export const backtestKeys = {
   jobStatus: (runId: string) => [...backtestKeys.all, 'job-status', runId] as const,
   jobResult: (runId: string) => [...backtestKeys.all, 'job-result', runId] as const,
   storedResult: (runId: string) => [...backtestKeys.all, 'stored-result', runId] as const,
-  postExit: (runId: string, bars: number) => [...backtestKeys.all, 'post-exit', runId, bars] as const,
+  postExit: (runId: string, bars: number) =>
+    [...backtestKeys.all, 'post-exit', runId, bars] as const,
 }
 
 export async function startBacktest(request: BacktestRequest): Promise<BacktestStartResponse> {
@@ -139,7 +140,10 @@ export async function fetchBacktestMarketDataCsv(runId: string): Promise<string>
   return data
 }
 
-export async function fetchBacktestTradesCsv(runId: string, postExitBars?: number): Promise<string> {
+export async function fetchBacktestTradesCsv(
+  runId: string,
+  postExitBars?: number,
+): Promise<string> {
   const { data } = await apiClient.get<string>(`/api/v1/backtests/${runId}/export/trades`, {
     params: postExitBars == null ? undefined : { post_exit_bars: postExitBars },
     responseType: 'text',
@@ -147,7 +151,10 @@ export async function fetchBacktestTradesCsv(runId: string, postExitBars?: numbe
   return data
 }
 
-export async function fetchPostExitAnalysis(runId: string, bars: number): Promise<PostExitAnalysis> {
+export async function fetchPostExitAnalysis(
+  runId: string,
+  bars: number,
+): Promise<PostExitAnalysis> {
   const { data } = await apiClient.get<PostExitAnalysis>(`/api/v1/backtests/${runId}/post-exit`, {
     params: { bars },
   })

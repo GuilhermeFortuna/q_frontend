@@ -171,7 +171,9 @@ export function TradeHoverCard({
           <div className="flex justify-between gap-3">
             <dt className="text-silver-500">Post-exit</dt>
             <dd className="text-silver-100 font-mono tabular-nums">
-              {formatSignedCurrency(trade.post_exit_return_points * trade.quantity * trade.point_value)}
+              {formatSignedCurrency(
+                trade.post_exit_return_points * trade.quantity * trade.point_value,
+              )}
             </dd>
           </div>
         )}

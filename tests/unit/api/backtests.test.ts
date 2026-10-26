@@ -52,16 +52,18 @@ function createWrapper() {
 describe('backtest history API', () => {
   it('fetches post-exit values for the selected bar window', async () => {
     let requestedBars = ''
-    server.use(http.get('*/api/v1/backtests/run-1/post-exit', ({ request }) => {
-      requestedBars = new URL(request.url).searchParams.get('bars') ?? ''
-      return HttpResponse.json({
-        post_exit_bars: 3,
-        trades: [],
-        all: { avg_post_exit_return: 1, post_exit_continuation_rate: 0.5 },
-        long: { avg_post_exit_return: 1, post_exit_continuation_rate: 1 },
-        short: { avg_post_exit_return: -1, post_exit_continuation_rate: 0 },
-      })
-    }))
+    server.use(
+      http.get('*/api/v1/backtests/run-1/post-exit', ({ request }) => {
+        requestedBars = new URL(request.url).searchParams.get('bars') ?? ''
+        return HttpResponse.json({
+          post_exit_bars: 3,
+          trades: [],
+          all: { avg_post_exit_return: 1, post_exit_continuation_rate: 0.5 },
+          long: { avg_post_exit_return: 1, post_exit_continuation_rate: 1 },
+          short: { avg_post_exit_return: -1, post_exit_continuation_rate: 0 },
+        })
+      }),
+    )
 
     const result = await fetchPostExitAnalysis('run-1', 3)
 
@@ -71,10 +73,12 @@ describe('backtest history API', () => {
 
   it('passes the selected post-exit window to trades CSV export', async () => {
     let requestedBars = ''
-    server.use(http.get('*/api/v1/backtests/run-1/export/trades', ({ request }) => {
-      requestedBars = new URL(request.url).searchParams.get('post_exit_bars') ?? ''
-      return new HttpResponse('trade_id\n', { headers: { 'Content-Type': 'text/csv' } })
-    }))
+    server.use(
+      http.get('*/api/v1/backtests/run-1/export/trades', ({ request }) => {
+        requestedBars = new URL(request.url).searchParams.get('post_exit_bars') ?? ''
+        return new HttpResponse('trade_id\n', { headers: { 'Content-Type': 'text/csv' } })
+      }),
+    )
 
     await fetchBacktestTradesCsv('run-1', 7)
 
@@ -82,14 +86,20 @@ describe('backtest history API', () => {
   })
 
   it('debounces the post-exit query and loads the selected values', async () => {
-    server.use(http.get('*/api/v1/backtests/run-1/post-exit', () => HttpResponse.json({
-      post_exit_bars: 4,
-      trades: [],
-      all: { avg_post_exit_return: 1, post_exit_continuation_rate: 0.5 },
-      long: { avg_post_exit_return: 1, post_exit_continuation_rate: 1 },
-      short: { avg_post_exit_return: -1, post_exit_continuation_rate: 0 },
-    })))
-    const { result } = renderHook(() => usePostExitAnalysis('run-1', 4, 10), { wrapper: createWrapper() })
+    server.use(
+      http.get('*/api/v1/backtests/run-1/post-exit', () =>
+        HttpResponse.json({
+          post_exit_bars: 4,
+          trades: [],
+          all: { avg_post_exit_return: 1, post_exit_continuation_rate: 0.5 },
+          long: { avg_post_exit_return: 1, post_exit_continuation_rate: 1 },
+          short: { avg_post_exit_return: -1, post_exit_continuation_rate: 0 },
+        }),
+      ),
+    )
+    const { result } = renderHook(() => usePostExitAnalysis('run-1', 4, 10), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.data?.post_exit_bars).toBe(4))
   })

@@ -65,7 +65,9 @@ describe('TradeDistributionPanels', () => {
         onPostExitReset={onReset}
       />,
     )
-    fireEvent.change(screen.getByRole('spinbutton', { name: 'Post-exit bars' }), { target: { value: '3' } })
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Post-exit bars' }), {
+      target: { value: '3' },
+    })
     expect(onChange).toHaveBeenCalledWith(3)
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
     expect(onReset).toHaveBeenCalledOnce()

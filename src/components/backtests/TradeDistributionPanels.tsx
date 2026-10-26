@@ -654,7 +654,9 @@ export function TradeDistributionPanels({
   const showReasons = entryReasons.length > 0 || exitReasons.length > 0
   const excursionStats = performance?.trades?.all
   const resolution = performance?.excursions?.resolution
-  const hasApproximateResolution = Boolean(resolution && (resolution.minute > 0 || resolution.candle > 0))
+  const hasApproximateResolution = Boolean(
+    resolution && (resolution.minute > 0 || resolution.candle > 0),
+  )
 
   return (
     <section
@@ -720,24 +722,33 @@ function TradeExcursionsPanel({
   const stats = performance.trades[side]
   const dynamicPostExit = postExitAnalysis?.[side]
   const postExitReturn = dynamicPostExit?.avg_post_exit_return ?? stats.avg_post_exit_return
-  const continuation = dynamicPostExit?.post_exit_continuation_rate ?? stats.post_exit_continuation_rate
+  const continuation =
+    dynamicPostExit?.post_exit_continuation_rate ?? stats.post_exit_continuation_rate
   const scatterData = (key: 'mfe_points' | 'mae_points') => {
     const points = trades.flatMap((trade) => {
       const value = trade[key]
       if (value == null || trade.pnl == null) return []
       return [{ id: trade.id, x: value * trade.quantity * trade.point_value, y: trade.pnl }]
     })
-    return { winners: points.filter((point) => point.y > 0), losers: points.filter((point) => point.y <= 0) }
+    return {
+      winners: points.filter((point) => point.y > 0),
+      losers: points.filter((point) => point.y <= 0),
+    }
   }
   const mfe = scatterData('mfe_points')
   const mae = scatterData('mae_points')
 
   return (
-    <section aria-label="Trade excursions" className="border-carbon-700/50 bg-carbon-900/35 space-y-3 rounded-xl border p-4 lg:col-span-2">
+    <section
+      aria-label="Trade excursions"
+      className="border-carbon-700/50 bg-carbon-900/35 space-y-3 rounded-xl border p-4 lg:col-span-2"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SectionHeader title="Trade excursions" />
         <div className="flex items-center gap-2 text-xs">
-          <label htmlFor="post-exit-bars" className="text-silver-300">Post-exit bars</label>
+          <label htmlFor="post-exit-bars" className="text-silver-300">
+            Post-exit bars
+          </label>
           <input
             id="post-exit-bars"
             aria-label="Post-exit bars"
@@ -749,25 +760,85 @@ function TradeExcursionsPanel({
             className="border-carbon-600 bg-carbon-950 text-silver-100 focus:border-brass-400 w-20 rounded-md border px-2 py-1 font-mono focus:outline-none"
           />
           {postExitBars !== storedPostExitBars ? (
-            <button type="button" onClick={onPostExitReset} className="text-brass-300 hover:text-brass-200 underline underline-offset-2">Reset</button>
+            <button
+              type="button"
+              onClick={onPostExitReset}
+              className="text-brass-300 hover:text-brass-200 underline underline-offset-2"
+            >
+              Reset
+            </button>
           ) : null}
-          {postExitLoading ? <span role="status" className="text-silver-400">Updating…</span> : null}
+          {postExitLoading ? (
+            <span role="status" className="text-silver-400">
+              Updating…
+            </span>
+          ) : null}
         </div>
       </div>
-      {postExitError ? <p role="alert" className="text-rose-400 text-xs">{postExitError}</p> : null}
-      <SegmentedToggle options={EXCURSION_SIDES} value={side} onChange={setSide} aria-label="Excursion trade side" />
+      {postExitError ? (
+        <p role="alert" className="text-xs text-rose-400">
+          {postExitError}
+        </p>
+      ) : null}
+      <SegmentedToggle
+        options={EXCURSION_SIDES}
+        value={side}
+        onChange={setSide}
+        aria-label="Excursion trade side"
+      />
       <div className="text-silver-300 grid grid-cols-2 gap-x-5 gap-y-2 text-xs md:grid-cols-4">
-        <p>Trades <span className="text-silver-100 font-mono">{stats.excursion_trades}</span></p>
-        <p>Avg MFE <span className="text-silver-100 font-mono">{stats.avg_mfe == null ? '—' : formatCurrency(stats.avg_mfe)}</span></p>
-        <p>Avg MAE <span className="text-silver-100 font-mono">{stats.avg_mae == null ? '—' : formatCurrency(stats.avg_mae)}</span></p>
-        <p>Capture <span className="text-silver-100 font-mono">{stats.mfe_capture == null ? '—' : `${(stats.mfe_capture * 100).toFixed(1)}%`}</span></p>
-        <p>Median capture <span className="text-silver-100 font-mono">{stats.median_mfe_capture == null ? '—' : `${(stats.median_mfe_capture * 100).toFixed(1)}%`}</span></p>
-        <p>Median time to MFE <span className="text-silver-100 font-mono">{formatHoldTime(stats.median_time_to_mfe_seconds)}</span></p>
-        <p>Avg post-exit <span className="text-silver-100 font-mono">{postExitReturn == null ? '—' : formatSignedCurrency(postExitReturn)}</span></p>
-        <p>Continuation <span className="text-silver-100 font-mono">{continuation == null ? '—' : `${(continuation * 100).toFixed(1)}%`}</span></p>
+        <p>
+          Trades <span className="text-silver-100 font-mono">{stats.excursion_trades}</span>
+        </p>
+        <p>
+          Avg MFE{' '}
+          <span className="text-silver-100 font-mono">
+            {stats.avg_mfe == null ? '—' : formatCurrency(stats.avg_mfe)}
+          </span>
+        </p>
+        <p>
+          Avg MAE{' '}
+          <span className="text-silver-100 font-mono">
+            {stats.avg_mae == null ? '—' : formatCurrency(stats.avg_mae)}
+          </span>
+        </p>
+        <p>
+          Capture{' '}
+          <span className="text-silver-100 font-mono">
+            {stats.mfe_capture == null ? '—' : `${(stats.mfe_capture * 100).toFixed(1)}%`}
+          </span>
+        </p>
+        <p>
+          Median capture{' '}
+          <span className="text-silver-100 font-mono">
+            {stats.median_mfe_capture == null
+              ? '—'
+              : `${(stats.median_mfe_capture * 100).toFixed(1)}%`}
+          </span>
+        </p>
+        <p>
+          Median time to MFE{' '}
+          <span className="text-silver-100 font-mono">
+            {formatHoldTime(stats.median_time_to_mfe_seconds)}
+          </span>
+        </p>
+        <p>
+          Avg post-exit{' '}
+          <span className="text-silver-100 font-mono">
+            {postExitReturn == null ? '—' : formatSignedCurrency(postExitReturn)}
+          </span>
+        </p>
+        <p>
+          Continuation{' '}
+          <span className="text-silver-100 font-mono">
+            {continuation == null ? '—' : `${(continuation * 100).toFixed(1)}%`}
+          </span>
+        </p>
       </div>
       {showResolutionNote ? (
-        <p className="text-silver-400 text-xs">Resolution: {resolutionSummary(performance.excursions.resolution)}</p>
+        <p className="text-silver-400 text-xs">
+          Resolution: {resolutionSummary(performance.excursions.resolution)}
+        </p>
       ) : null}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <ExcursionScatter title="MAE vs PnL" data={mae} />
@@ -786,7 +857,10 @@ function ExcursionScatter({
   data,
 }: {
   title: string
-  data: { winners: Array<{ id: string; x: number; y: number }>; losers: Array<{ id: string; x: number; y: number }> }
+  data: {
+    winners: Array<{ id: string; x: number; y: number }>
+    losers: Array<{ id: string; x: number; y: number }>
+  }
 }) {
   return (
     <div className="border-carbon-700/50 rounded-lg border p-3">

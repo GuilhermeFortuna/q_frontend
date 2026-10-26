@@ -14,6 +14,8 @@ describe('backtest excursion progress', () => {
     }
 
     expect(backtestProgressPercent(status)).toBe(40)
-    expect(backtestPhaseLabel({ ...status, telemetryUnavailable: false })).toContain('40% of trades')
+    expect(backtestPhaseLabel({ ...status, telemetryUnavailable: false })).toContain(
+      '40% of trades',
+    )
   })
 })
