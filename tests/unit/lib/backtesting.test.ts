@@ -2,8 +2,12 @@ import { format } from 'date-fns'
 import { describe, expect, it } from 'vitest'
 
 import { getAllAvailableDateRange } from '@/lib/backtesting/dateRange'
-import { aggregateMonthlyStats, buildEquityCurve } from '@/lib/backtesting/performance'
-import type { Trade } from '@/types/backtesting'
+import {
+  aggregateMonthlyStats,
+  buildEquityCurve,
+  summarizeMonthlyStats,
+} from '@/lib/backtesting/performance'
+import type { MonthlyStats, Trade } from '@/types/backtesting'
 
 function makeTrade(
   id: string,
@@ -109,5 +113,75 @@ describe('aggregateMonthlyStats', () => {
     expect(stats[1].trades).toBe(2)
     expect(stats[1].wins).toBe(2)
     expect(stats[1].winRate).toBe(1)
+  })
+})
+
+describe('summarizeMonthlyStats', () => {
+  function makeMonth(month: string, pnl: number, trades = 1): MonthlyStats {
+    return { month, label: month, pnl, trades, wins: 0, losses: 0, winRate: 0 }
+  }
+
+  it('returns null for no months', () => {
+    expect(summarizeMonthlyStats([])).toBeNull()
+  })
+
+  it('counts positive, negative and average/median results for mixed months', () => {
+    const summary = summarizeMonthlyStats([
+      makeMonth('2025-01', 100, 2),
+      makeMonth('2025-02', -50, 1),
+      makeMonth('2025-03', 200, 3),
+    ])
+
+    expect(summary).toMatchObject({
+      totalMonths: 3,
+      positiveMonths: 2,
+      negativeMonths: 1,
+      flatMonths: 0,
+      positiveMonthRate: 2 / 3,
+      averagePnl: 250 / 3,
+      medianPnl: 100,
+      bestMonth: { label: '2025-03', pnl: 200 },
+      worstMonth: { label: '2025-02', pnl: -50 },
+      averageTradesPerMonth: 2,
+    })
+  })
+
+  it('counts flat months in neither group and lets them break a streak', () => {
+    const summary = summarizeMonthlyStats([
+      makeMonth('2025-01', 100),
+      makeMonth('2025-02', 0),
+      makeMonth('2025-03', 100),
+    ])
+
+    expect(summary?.positiveMonths).toBe(2)
+    expect(summary?.negativeMonths).toBe(0)
+    expect(summary?.flatMonths).toBe(1)
+    expect(summary?.longestWinStreak).toBe(1)
+  })
+
+  it('treats a calendar gap as a streak break', () => {
+    const summary = summarizeMonthlyStats([
+      makeMonth('2025-01', 10),
+      makeMonth('2025-02', 10),
+      makeMonth('2025-03', 10),
+      makeMonth('2025-04', -10),
+      makeMonth('2025-05', -10),
+      makeMonth('2025-07', -10),
+      makeMonth('2025-08', 10),
+    ])
+
+    expect(summary?.longestWinStreak).toBe(3)
+    expect(summary?.longestLossStreak).toBe(2)
+  })
+
+  it('averages the two middle values for an even number of months', () => {
+    const summary = summarizeMonthlyStats([
+      makeMonth('2025-01', 40),
+      makeMonth('2025-02', 10),
+      makeMonth('2025-03', 30),
+      makeMonth('2025-04', 20),
+    ])
+
+    expect(summary?.medianPnl).toBe(25)
   })
 })

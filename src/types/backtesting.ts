@@ -259,3 +259,18 @@ export interface MonthlyStats {
   losses: number
   winRate: number
 }
+
+export interface MonthlySummary {
+  totalMonths: number
+  positiveMonths: number
+  negativeMonths: number
+  flatMonths: number
+  positiveMonthRate: number
+  averagePnl: number
+  medianPnl: number
+  bestMonth: { label: string; pnl: number }
+  worstMonth: { label: string; pnl: number }
+  longestWinStreak: number
+  longestLossStreak: number
+  averageTradesPerMonth: number
+}

@@ -12,6 +12,7 @@ import {
   LazyBacktestPerformanceCharts,
 } from '@/components/backtests/LazyBacktestRechartsCharts'
 import { MonthlyBreakdownTable } from '@/components/backtests/MonthlyBreakdownTable'
+import { MonthlySummaryTiles } from '@/components/backtests/MonthlySummaryTiles'
 import { usePostExitAnalysis } from '@/api/queries/backtests'
 import { DataTable, type DataColumn } from '@/components/ui/DataTable'
 import { formatDisplayDateTime } from '@/lib/formatDate'
@@ -513,6 +514,7 @@ export const BacktestResultsTabs = memo(function BacktestResultsTabs({
 
         {activeTab === 'monthly' && (
           <div className="h-full space-y-6 overflow-y-auto">
+            <MonthlySummaryTiles monthlyStats={monthlyStats} />
             <LazyBacktestMonthlyChart monthlyStats={monthlyStats} />
             <div>
               <h3 className="text-silver-100 mb-4 text-lg font-semibold">Monthly Breakdown</h3>
