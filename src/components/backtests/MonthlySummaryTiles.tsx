@@ -25,7 +25,7 @@ export function MonthlySummaryTiles({ monthlyStats }: MonthlySummaryTilesProps) 
         value={`${summary.positiveMonths} of ${summary.totalMonths}`}
         delta={`${(summary.positiveMonthRate * 100).toFixed(1)}% of months`}
         deltaTone={summary.positiveMonthRate >= 0.5 ? 'up' : 'down'}
-        valueTone="up"
+        valueTone={summary.positiveMonths > 0 ? 'up' : 'neutral'}
       />
       <StatTile
         label="Negative Months"
