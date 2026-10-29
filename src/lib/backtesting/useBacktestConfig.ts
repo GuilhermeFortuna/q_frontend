@@ -214,11 +214,12 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
 
   if (strategyFileId) {
     // A strategy file runs alone: the stack takes its class and parameters from the file.
+    // The registry strategy's exit parameters do not apply, so they are never sent with it.
     return {
       ...common,
       strategy_file: strategyFileId,
       strategy_params: strategyFileParams ?? {},
-      exit_params: exitParams,
+      exit_params: {},
     }
   }
 

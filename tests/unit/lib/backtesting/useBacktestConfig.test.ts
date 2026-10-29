@@ -502,6 +502,19 @@ describe('buildBacktestRequest for strategy files', () => {
     expect(payload.strategy_version_id).toBeUndefined()
   })
 
+  it('never sends registry strategy parameters as exit parameters', () => {
+    const payload = buildBacktestRequest(
+      candleFields({
+        strategyFileId: 'late_session_trend',
+        strategyFileParams: { fade: false, min_trend_z: 0.25 },
+        strategyParams: { fade: false, min_trend_z: 0.25 },
+      }),
+    )
+
+    expect(payload.strategy_params).toEqual({ fade: false, min_trend_z: 0.25 })
+    expect(payload.exit_params).toEqual({})
+  })
+
   it('keeps the registry request shape when no strategy file is selected', () => {
     const payload = buildBacktestRequest(candleFields({ strategyFileId: null }))
 
