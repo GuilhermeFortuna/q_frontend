@@ -1,7 +1,7 @@
 import type { StrategyParamSpec } from '@/types/strategies'
 import type { SearchParam } from '@/types/optimization'
 
-export type StrategyParamValue = string | number
+export type StrategyParamValue = string | number | boolean
 
 // `step` is the optimizer sampling grid for this parameter. A non-null value
 // constrains Optuna to discrete points (e.g. 0.1, 0.2, …) which keeps results

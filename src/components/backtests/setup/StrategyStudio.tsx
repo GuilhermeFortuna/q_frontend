@@ -63,6 +63,9 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
     entries,
     entryManager,
     strategies,
+    strategyFiles,
+    strategyFilesLoading,
+    selectedStrategyFile,
   } = config
 
   const { data: signalManagersData } = useSignalManagers()
@@ -132,8 +135,16 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
             strategyCatalog={config.strategies}
             customStrategies={customStrategies}
             engine={fields.engine}
-            selectedStrategyName={authoring.loadedCustomName ? undefined : selectedStrategy?.name}
+            selectedStrategyName={
+              authoring.loadedCustomName || fields.strategyFileId
+                ? undefined
+                : selectedStrategy?.name
+            }
             selectedCustomName={authoring.loadedCustomName}
+            strategyFiles={strategyFiles}
+            strategyFilesLoading={strategyFilesLoading}
+            selectedStrategyFileId={fields.strategyFileId ?? null}
+            onSelectStrategyFile={setters.selectStrategyFile}
             onSelectBuiltIn={handleSelectBuiltIn}
             onSelectCustom={handleSelectCustom}
             onDeleteCustom={authoring.deleteCustom}
@@ -191,6 +202,27 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
             <div className="text-silver-500 text-xs italic">
               Composite genome parameters are managed outside multi-entry instances.
             </div>
+          ) : selectedStrategyFile ? (
+            <section
+              className="bg-carbon-900/20 border-carbon-800/40 rounded-lg border p-3"
+              data-testid="strategy-file-params"
+            >
+              <h5 className="text-silver-400 mb-3 text-xs font-semibold tracking-wide uppercase">
+                {selectedStrategyFile.label} · strategy file
+              </h5>
+              {selectedStrategyFile.parameters.length > 0 ? (
+                <StrategyParamFields
+                  params={selectedStrategyFile.parameters}
+                  values={fields.strategyFileParams ?? {}}
+                  onChange={setters.handleStrategyFileParamChange}
+                  className="grid gap-3 sm:grid-cols-2"
+                  showHints
+                  hintMode="compact"
+                />
+              ) : (
+                <p className="text-silver-500 text-xs italic">No parameters.</p>
+              )}
+            </section>
           ) : (
             entries.map((entry, index) => {
               const strategyInfo = strategies.find((item) => item.name === entry.strategy)

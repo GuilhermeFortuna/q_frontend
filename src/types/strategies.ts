@@ -1,4 +1,5 @@
-export type StrategyParamType = 'int' | 'float' | 'categorical'
+/** `bool` and `time` are declared by strategy files only. */
+export type StrategyParamType = 'int' | 'float' | 'categorical' | 'bool' | 'time'
 
 export type StrategyCategory = 'trend' | 'mean_reversion' | 'breakout' | 'momentum' | 'other'
 
@@ -8,7 +9,7 @@ export type StrategyParamSpec = {
   name: string
   label: string
   type: StrategyParamType
-  default: number | string
+  default: number | string | boolean
   min?: number | null
   max?: number | null
   step?: number | null
@@ -50,7 +51,7 @@ export type CustomStrategy = {
   name: string
   base_strategy: string
   description?: string
-  parameters: Record<string, number | string>
+  parameters: Record<string, number | string | boolean>
   ai_metadata?: AiStrategyMetadata | null
 }
 

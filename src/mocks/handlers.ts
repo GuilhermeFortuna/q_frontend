@@ -127,6 +127,7 @@ import {
   validateMockMlFilterBacktest,
   type MlFilterMockError,
 } from '@/mocks/mlFilters'
+import { mockStrategyFiles, mockStrategyVersion } from '@/mocks/strategyFiles'
 import type { BacktestRequest } from '@/types/backtesting'
 import type {
   MlFilterComparisonRequest,
@@ -323,6 +324,12 @@ export const handlers = [
   }),
 
   http.get('*/api/v1/strategies', () => HttpResponse.json(mockStrategies)),
+
+  http.get('*/api/v1/strategy-files', () => HttpResponse.json(mockStrategyFiles)),
+
+  http.get('*/api/v1/strategy-versions/:versionId', ({ params }) =>
+    HttpResponse.json(mockStrategyVersion(String(params.versionId))),
+  ),
 
   http.get('*/api/v1/strategy-builder/capabilities', () =>
     HttpResponse.json(MOCK_STRATEGY_BUILDER_CAPABILITIES),

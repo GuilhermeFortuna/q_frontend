@@ -93,3 +93,49 @@ describe('StrategyParamFields', () => {
     expect(onChange).toHaveBeenCalledWith('period', 21)
   })
 })
+
+describe('StrategyParamFields for strategy-file parameters', () => {
+  const fileParams: StrategyParamSpec[] = [
+    { name: 'use_filter', label: 'Use filter', type: 'bool', default: true },
+    { name: 'enter_after', label: 'Enter after', type: 'time', default: '10:00' },
+  ]
+
+  it('renders a checkbox for a bool param and reports the toggled value', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <StrategyParamFields
+        params={fileParams}
+        values={{ use_filter: true, enter_after: '10:00' }}
+        onChange={onChange}
+      />,
+    )
+
+    const checkbox = screen.getByLabelText('Use filter')
+    expect(checkbox).toHaveAttribute('type', 'checkbox')
+    expect(checkbox).toBeChecked()
+
+    await user.click(checkbox)
+
+    expect(onChange).toHaveBeenCalledWith('use_filter', false)
+  })
+
+  it('renders an HH:MM time input and reports the chosen time', () => {
+    const onChange = vi.fn()
+    render(
+      <StrategyParamFields
+        params={fileParams}
+        values={{ use_filter: true, enter_after: '10:00' }}
+        onChange={onChange}
+      />,
+    )
+
+    const input = screen.getByLabelText('Enter after')
+    expect(input).toHaveAttribute('type', 'time')
+    expect(input).toHaveValue('10:00')
+
+    fireEvent.change(input, { target: { value: '09:30' } })
+
+    expect(onChange).toHaveBeenCalledWith('enter_after', '09:30')
+  })
+})
