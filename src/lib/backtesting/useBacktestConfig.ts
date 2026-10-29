@@ -9,6 +9,7 @@ import {
   useSaveCustomStrategy,
 } from '@/api/queries/customStrategies'
 import { useExitRuleCatalog, useStrategies } from '@/api/queries/strategies'
+import { useStrategyFiles } from '@/api/queries/strategyFiles'
 import {
   createEntrySlotId,
   defaultEntryManager,
@@ -59,6 +60,7 @@ import { useAppStore } from '@/store/useAppStore'
 import type { BacktestRequest } from '@/types/backtesting'
 import type { CustomStrategy, ExitRuleCatalogResponse, StrategyParamSpec } from '@/types/strategies'
 import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbenchGroups'
+import type { StrategyFile } from '../../../contracts/api'
 
 export type BacktestEngine = 'candle' | 'tick'
 
@@ -92,6 +94,10 @@ export type BacktestConfigFields = {
   tickFlags: 'all' | 'trade'
   /** Only meaningful for MACrossoverMLFilter; omitted from every other request. */
   mlFilter?: MlFilterFormState
+  /** A strategy file in the stack's strategy directory, by id; when set, the run uses it. */
+  strategyFileId?: string | null
+  /** Parameter values of the selected strategy file, in their wire form. */
+  strategyFileParams?: Record<string, StrategyParamValue>
 }
 
 export type BacktestConfigSetters = {
@@ -113,6 +119,8 @@ export type BacktestConfigSetters = {
   setEngine: (value: BacktestEngine) => void
   setDisplayTimeframe: (value: string) => void
   setTickFlags: (value: 'all' | 'trade') => void
+  selectStrategyFile: (id: string) => void
+  handleStrategyFileParamChange: (name: string, value: StrategyParamValue) => void
   handleEngineChange: (nextEngine: BacktestEngine) => void
   handleStrategyChange: (nextStrategy: string) => void
   handleParamChange: (name: string, value: StrategyParamValue) => void
@@ -175,6 +183,8 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
     displayTimeframe,
     tickFlags,
     mlFilter,
+    strategyFileId,
+    strategyFileParams,
   } = fields
 
   const common = {
@@ -200,6 +210,16 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
           tick_flags: tickFlags,
         }
       : {}),
+  }
+
+  if (strategyFileId) {
+    // A strategy file runs alone: the stack takes its class and parameters from the file.
+    return {
+      ...common,
+      strategy_file: strategyFileId,
+      strategy_params: strategyFileParams ?? {},
+      exit_params: exitParams,
+    }
   }
 
   if (strategy === 'CompositeStrategy') {
@@ -274,11 +294,24 @@ export function useBacktestConfig() {
   const [authoringError, setAuthoringError] = useState<string | null>(null)
   const [mlFilterForm, setMlFilterForm] = useState<MlFilterFormState>(defaultMlFilterFormState)
   const [mlFilterBaselineError, setMlFilterBaselineError] = useState<string | null>(null)
+  const [strategyFileId, setStrategyFileId] = useState<string | null>(null)
+  const [strategyFileParams, setStrategyFileParams] = useState<Record<string, StrategyParamValue>>(
+    {},
+  )
   const queryClient = useQueryClient()
 
   const { data: strategiesData, isLoading: strategiesLoading } = useStrategies()
   const { data: exitCatalog, isLoading: exitCatalogLoading } = useExitRuleCatalog()
   const { data: customStrategies, isLoading: customLoading } = useCustomStrategies()
+  const { data: strategyFilesData, isLoading: strategyFilesLoading } = useStrategyFiles()
+  const strategyFiles = useMemo<StrategyFile[]>(
+    () => strategyFilesData?.strategy_files ?? [],
+    [strategyFilesData?.strategy_files],
+  )
+  const selectedStrategyFile = useMemo(
+    () => strategyFiles.find((file) => file.id === strategyFileId) ?? null,
+    [strategyFiles, strategyFileId],
+  )
   const saveCustomStrategy = useSaveCustomStrategy()
   const deleteCustomStrategy = useDeleteCustomStrategy()
   const strategies = useMemo(() => strategiesData?.strategies ?? [], [strategiesData?.strategies])
@@ -331,6 +364,7 @@ export function useBacktestConfig() {
       mergedParams?: Record<string, unknown>,
       strategyInfo = strategies.find((entry) => entry.name === strategyName),
     ) => {
+      setStrategyFileId(null)
       if (strategyName === 'CompositeStrategy') {
         setStrategy(strategyName)
         setEntries([])
@@ -497,6 +531,8 @@ export function useBacktestConfig() {
   const handleEngineChange = useCallback(
     (nextEngine: BacktestEngine) => {
       setEngine(nextEngine)
+      // Strategy files run on the candle engine only.
+      if (nextEngine === 'tick') setStrategyFileId(null)
       const pool = strategies.filter((entry) => strategyEngine(entry) === nextEngine)
       if (pool.length === 0) return
       const currentValid = pool.some((entry) => entry.name === strategy)
@@ -520,6 +556,7 @@ export function useBacktestConfig() {
     (strategyName: string) => {
       const info = strategies.find((entry) => entry.name === strategyName)
       if (!info) return
+      setStrategyFileId(null)
       // The ML variant supports exactly one entry; extra-entry controls are hidden for it.
       if (strategy === ML_FILTER_STRATEGY || strategyName === ML_FILTER_STRATEGY) return
       setEntries((current) => [
@@ -568,6 +605,27 @@ export function useBacktestConfig() {
     setCustomName('')
     setDescription('')
     setAuthoringError(null)
+  }, [])
+
+  const selectStrategyFile = useCallback(
+    (id: string) => {
+      const file = strategyFiles.find((entry) => entry.id === id)
+      if (!file || !file.valid) return
+      setEngine('candle')
+      setEntries([])
+      setStrategyFileId(file.id)
+      setStrategyFileParams(
+        Object.fromEntries(
+          file.parameters.map((spec) => [spec.name, spec.default as StrategyParamValue]),
+        ),
+      )
+      clearAuthoringDraft()
+    },
+    [strategyFiles, clearAuthoringDraft],
+  )
+
+  const handleStrategyFileParamChange = useCallback((name: string, value: StrategyParamValue) => {
+    setStrategyFileParams((current) => ({ ...current, [name]: value }))
   }, [])
 
   const newDraft = useCallback(() => {
@@ -714,6 +772,8 @@ export function useBacktestConfig() {
     engine,
     displayTimeframe,
     tickFlags,
+    strategyFileId,
+    strategyFileParams,
   }
 
   const mlFilterValidation = useMemo<MlFilterValidation>(() => {
@@ -820,6 +880,8 @@ export function useBacktestConfig() {
     displayTimeframe,
     tickFlags,
     mlFilter: mlFilterForm,
+    strategyFileId,
+    strategyFileParams,
   }
 
   const setters: BacktestConfigSetters = {
@@ -844,6 +906,8 @@ export function useBacktestConfig() {
     handleEngineChange,
     handleStrategyChange,
     handleParamChange,
+    selectStrategyFile,
+    handleStrategyFileParamChange,
     addEntry,
     removeEntry,
     handleEntryParamChange,
@@ -895,6 +959,9 @@ export function useBacktestConfig() {
     exitCatalogLoading,
     customStrategies: customStrategies ?? [],
     customLoading,
+    strategyFiles,
+    strategyFilesLoading,
+    selectedStrategyFile,
     validation,
     buildRequest,
     authoring,

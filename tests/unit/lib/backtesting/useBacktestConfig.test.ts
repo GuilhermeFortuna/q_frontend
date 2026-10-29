@@ -479,3 +479,33 @@ describe('useBacktestConfig staged from an optimization trial', () => {
     expect(request.strategy_params).toEqual(request.exit_params)
   })
 })
+
+describe('buildBacktestRequest for strategy files', () => {
+  it('sends the file id and its parameters, with no registry strategy or entries', () => {
+    const payload = buildBacktestRequest(
+      candleFields({
+        strategyFileId: 'session_breakout',
+        strategyFileParams: { range_bars: 12, enter_after: '10:30', use_filter: false },
+      }),
+    )
+
+    expect(payload.strategy_file).toBe('session_breakout')
+    expect(payload.strategy_params).toEqual({
+      range_bars: 12,
+      enter_after: '10:30',
+      use_filter: false,
+    })
+    expect(payload.timeframe).toBe('D1')
+    expect(payload.strategy).toBeUndefined()
+    expect(payload.entries).toBeUndefined()
+    expect(payload.entry_manager).toBeUndefined()
+    expect(payload.strategy_version_id).toBeUndefined()
+  })
+
+  it('keeps the registry request shape when no strategy file is selected', () => {
+    const payload = buildBacktestRequest(candleFields({ strategyFileId: null }))
+
+    expect(payload.strategy_file).toBeUndefined()
+    expect(payload.strategy).toBe('MACrossover')
+  })
+})

@@ -70,6 +70,10 @@ export interface BacktestRequest {
   initial_capital?: number
   point_value?: number
   strategy?: string
+  /** A strategy file in the stack's strategy directory, by id. Excludes strategy and entries. */
+  strategy_file?: string | null
+  /** A frozen strategy version to re-run. Excludes strategy, entries and strategy_file. */
+  strategy_version_id?: string | null
   strategy_params?: Record<string, unknown>
   entries?: EntryInstance[]
   entry_manager?: EntryManagerConfig
@@ -191,6 +195,10 @@ export interface BacktestRunSummary {
   origin?: BacktestOrigin
   /** Null when the run failed or metrics were not stored. */
   summary: BacktestMetrics | null
+  /** Set for runs of a strategy file; the frozen version the run executed. */
+  strategy_version_id?: string | null
+  /** Bundle hash of that version; history shows its first eight characters. */
+  strategy_bundle_hash?: string | null
 }
 
 /** Persisted run detail — metrics + config only; no trades/bars/indicators. */
@@ -201,6 +209,8 @@ export interface BacktestRunDetail {
   timeframe: string
   status: BacktestRunStatus
   config: BacktestRequest
+  strategy_version_id?: string | null
+  strategy_bundle_hash?: string | null
   /** Null when the run failed or metrics were not stored. */
   result_summary: BacktestMetrics | null
   error_message: string | null

@@ -48,6 +48,52 @@ export function StrategyParamFields({
         const id = `strategy-param-${spec.name}`
         const hint = showHints ? paramHint(spec) : null
 
+        if (spec.type === 'bool') {
+          return (
+            <LabeledField
+              key={spec.name}
+              label={spec.label}
+              htmlFor={id}
+              hint={hint && hintMode === 'paragraph' ? hint : undefined}
+              labelEnd={
+                hint && hintMode === 'compact' ? <ParamHintCompact hint={hint} /> : undefined
+              }
+            >
+              <input
+                id={id}
+                type="checkbox"
+                checked={value === true}
+                onChange={(e) => onChange(spec.name, e.target.checked)}
+                className="accent-brass-500 h-4 w-4"
+              />
+            </LabeledField>
+          )
+        }
+
+        if (spec.type === 'time') {
+          return (
+            <LabeledField
+              key={spec.name}
+              label={spec.label}
+              htmlFor={id}
+              hint={hint && hintMode === 'paragraph' ? hint : undefined}
+              labelEnd={
+                hint && hintMode === 'compact' ? <ParamHintCompact hint={hint} /> : undefined
+              }
+            >
+              <input
+                id={id}
+                type="time"
+                value={String(value)}
+                onChange={(e) => {
+                  if (e.target.value) onChange(spec.name, e.target.value)
+                }}
+                className={inputClass}
+              />
+            </LabeledField>
+          )
+        }
+
         if (spec.type === 'categorical') {
           const choices = spec.choices ?? []
           return (
@@ -78,6 +124,7 @@ export function StrategyParamFields({
 
         const step = spec.step ?? (spec.type === 'int' ? 1 : 'any')
         const numValue = Number(value)
+        // Numeric branch: `int` and `float` specs carry numbers; anything else was handled above.
         const belowMin = spec.min != null && numValue < spec.min
         const aboveMax = spec.max != null && numValue > spec.max
 

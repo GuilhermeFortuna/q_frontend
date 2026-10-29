@@ -165,7 +165,13 @@ function RunListItem({
   return (
     <HistoryCard
       title={`${run.symbol} · ${run.strategy}`}
-      subtitle={`${run.timeframe} · ${formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}`}
+      subtitle={[
+        run.timeframe,
+        run.strategy_bundle_hash ? run.strategy_bundle_hash.slice(0, 8) : null,
+        formatDistanceToNow(new Date(run.created_at), { addSuffix: true }),
+      ]
+        .filter(Boolean)
+        .join(' · ')}
       badge={run.origin === 'script' ? <ScriptBadge /> : null}
       status={run.status}
       statusClassName={statusStyles[run.status]}
@@ -431,6 +437,14 @@ export function BacktestHistoryPanel({
                   <h3 className="text-silver-100 text-lg font-semibold">
                     {detail.symbol} · {detail.strategy}
                   </h3>
+                  {detail.strategy_bundle_hash ? (
+                    <p
+                      className="text-silver-500 mt-1 font-mono text-xs"
+                      data-testid="run-strategy-version"
+                    >
+                      Strategy file · {detail.strategy_bundle_hash.slice(0, 8)}
+                    </p>
+                  ) : null}
                   <p className="text-silver-400 mt-1 text-sm">
                     {detail.timeframe} · {formatDisplayDateTime(detail.created_at)}
                   </p>

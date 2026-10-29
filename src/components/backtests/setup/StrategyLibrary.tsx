@@ -1,4 +1,4 @@
-import { Cpu, Plus, Trash2 } from 'lucide-react'
+import { Cpu, FileCode, Plus, Trash2 } from 'lucide-react'
 import { memo, useMemo, useState } from 'react'
 
 import { LibraryCard } from '@/components/backtests/setup/LibraryCard'
@@ -17,6 +17,9 @@ import {
 } from '@/lib/strategies/strategyPresentation'
 import { cn } from '@/lib/utils'
 import type { CustomStrategy, StrategyCategory, StrategyInfo } from '@/types/strategies'
+import type { StrategyFile } from '../../../../contracts/api'
+
+const STRATEGY_FILES_FILTER_LABEL = 'Strategy files'
 
 type StrategyLibraryProps = {
   strategies: StrategyInfo[]
@@ -33,9 +36,14 @@ type StrategyLibraryProps = {
   multiSelect?: boolean
   instanceCounts?: Record<string, number>
   onAddEntry?: (name: string) => void
+  /** Strategy files in the stack's strategy directory; shown on the candle engine only. */
+  strategyFiles?: StrategyFile[]
+  strategyFilesLoading?: boolean
+  selectedStrategyFileId?: string | null
+  onSelectStrategyFile?: (id: string) => void
 }
 
-type CategoryFilter = StrategyCategory | 'all' | 'saved'
+type CategoryFilter = StrategyCategory | 'all' | 'saved' | 'files'
 
 export const StrategyLibrary = memo(function StrategyLibrary({
   strategies,
@@ -52,8 +60,14 @@ export const StrategyLibrary = memo(function StrategyLibrary({
   multiSelect = false,
   instanceCounts = {},
   onAddEntry,
+  strategyFiles = [],
+  strategyFilesLoading = false,
+  selectedStrategyFileId = null,
+  onSelectStrategyFile,
 }: StrategyLibraryProps) {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
+  const showStrategyFiles =
+    engine === 'candle' && (strategyFiles.length > 0 || strategyFilesLoading)
 
   const engineFiltered = useMemo(
     () => strategies.filter((entry) => strategyEngine(entry) === engine),
@@ -82,7 +96,7 @@ export const StrategyLibrary = memo(function StrategyLibrary({
   )
 
   const visibleStrategies = useMemo(() => {
-    if (categoryFilter === 'saved') return []
+    if (categoryFilter === 'saved' || categoryFilter === 'files') return []
     if (categoryFilter === 'all') return engineFiltered
     return engineFiltered.filter((entry) => strategyCategory(entry) === categoryFilter)
   }, [engineFiltered, categoryFilter])
@@ -95,8 +109,11 @@ export const StrategyLibrary = memo(function StrategyLibrary({
     if (hasSaved || loadingSaved) {
       options.push({ value: 'saved', label: CUSTOM_STRATEGY_CATEGORY_LABEL })
     }
+    if (showStrategyFiles) {
+      options.push({ value: 'files', label: STRATEGY_FILES_FILTER_LABEL })
+    }
     return options
-  }, [availableCategories, hasSaved, loadingSaved])
+  }, [availableCategories, hasSaved, loadingSaved, showStrategyFiles])
 
   if (loading) {
     return (
@@ -116,7 +133,26 @@ export const StrategyLibrary = memo(function StrategyLibrary({
         aria-label="Entry strategy categories"
       />
 
-      {categoryFilter === 'saved' ? (
+      {categoryFilter === 'files' ? (
+        strategyFilesLoading ? (
+          <div className="text-silver-400 flex flex-1 items-center justify-center text-sm">
+            Loading strategy files…
+          </div>
+        ) : strategyFiles.length === 0 ? (
+          <p className="text-silver-400 text-sm">No strategy files in Q_STRATEGY_DIR.</p>
+        ) : (
+          <div className="grid min-h-0 flex-1 auto-rows-min gap-2 overflow-y-auto p-1.5 pb-4 sm:grid-cols-2 xl:grid-cols-3">
+            {strategyFiles.map((file) => (
+              <StrategyFileCard
+                key={file.id}
+                file={file}
+                selected={selectedStrategyFileId === file.id}
+                onSelect={() => onSelectStrategyFile?.(file.id)}
+              />
+            ))}
+          </div>
+        )
+      ) : categoryFilter === 'saved' ? (
         loadingSaved ? (
           <div className="text-silver-400 flex flex-1 items-center justify-center text-sm">
             Loading saved strategies…
@@ -241,6 +277,33 @@ function StrategyCard({
           Add another {strategy.label}
         </button>
       ) : null}
+    </div>
+  )
+}
+
+function StrategyFileCard({
+  file,
+  selected,
+  onSelect,
+}: {
+  file: StrategyFile
+  selected: boolean
+  onSelect: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-1" data-testid={`strategy-file-card-${file.id}`}>
+      <EntityCard
+        title={file.label}
+        tag="File"
+        description={
+          file.valid ? file.description || file.class_name || file.id : (file.error ?? 'Invalid')
+        }
+        meta={file.valid ? file.id : undefined}
+        selected={selected}
+        disabled={!file.valid}
+        onSelect={onSelect}
+        badges={<FileCode className="text-brass-400 h-4 w-4 shrink-0" aria-hidden />}
+      />
     </div>
   )
 }
