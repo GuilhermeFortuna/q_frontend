@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { memo, type ReactNode } from 'react'
 
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
@@ -190,7 +190,7 @@ function contextFor(
   }
 }
 
-export function StrategyIndicatorLayer({
+function StrategyIndicatorLayerImpl({
   allBars,
   visibleBars,
   xScale,
@@ -223,7 +223,7 @@ export function StrategyIndicatorLayer({
   )
 }
 
-export function StrategyOscillatorLayer({
+function StrategyOscillatorLayerImpl({
   allBars,
   visibleBars,
   xScale,
@@ -275,3 +275,6 @@ export function StrategyOscillatorLayer({
     </g>
   )
 }
+
+export const StrategyIndicatorLayer = memo(StrategyIndicatorLayerImpl)
+export const StrategyOscillatorLayer = memo(StrategyOscillatorLayerImpl)

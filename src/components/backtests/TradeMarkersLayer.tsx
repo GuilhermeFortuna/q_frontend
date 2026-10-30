@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 
 import { barCenterX } from '@/components/charts/hooks/useChartScales'
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
@@ -147,7 +147,7 @@ function ExitMarker({
   )
 }
 
-export function TradeMarkersLayer({
+function TradeMarkersLayerImpl({
   trades,
   allBars,
   visibleTimestamps,
@@ -298,3 +298,5 @@ export function TradeMarkersLayer({
     </g>
   )
 }
+
+export const TradeMarkersLayer = memo(TradeMarkersLayerImpl)

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { AxisBottom, AxisRight } from '@visx/axis'
 import type { BandScale, LinearScale } from '@/components/charts/types/scales'
 
@@ -42,7 +43,7 @@ const axisStyle = {
   tickStroke: chartTheme.axis.stroke,
 }
 
-export function ChartAxes({
+function ChartAxesImpl({
   xScale,
   priceScale,
   volumeScale,
@@ -98,3 +99,5 @@ export function ChartAxes({
     </>
   )
 }
+
+export const ChartAxes = memo(ChartAxesImpl)

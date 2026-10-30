@@ -374,6 +374,36 @@ function ChartInner({
     [onHoverTradeChange],
   )
 
+  // Stable props keep the memoized axes from re-rendering on every crosshair move.
+  const axesOscillatorScales = useMemo(
+    () =>
+      hasOscillator && scales.oscillatorScale
+        ? [{ key: 'backtest-oscillator', scale: scales.oscillatorScale }]
+        : [],
+    [hasOscillator, scales.oscillatorScale],
+  )
+  const axesLayout = useMemo(
+    () => ({
+      priceTop: layout.priceTop,
+      priceHeight: layout.priceHeight,
+      volumeTop: layout.volumeTop,
+      volumeHeight: layout.volumeHeight,
+      innerWidth: layout.innerWidth,
+      innerHeight: layout.innerHeight,
+      oscillators:
+        layout.oscillatorTop !== undefined && layout.oscillatorHeight !== undefined
+          ? [
+              {
+                key: 'backtest-oscillator',
+                top: layout.oscillatorTop,
+                height: layout.oscillatorHeight,
+              },
+            ]
+          : [],
+    }),
+    [layout],
+  )
+
   const activeBar = hoveredBar || visibleBars[visibleBars.length - 1] || null
   const activeIndex = activeBar
     ? processed.findIndex((b) => b.timestamp === activeBar.timestamp)
@@ -749,29 +779,8 @@ function ChartInner({
           xScale={scales.xScale}
           priceScale={scales.priceScale}
           volumeScale={scales.volumeScale}
-          oscillatorScales={
-            hasOscillator && scales.oscillatorScale
-              ? [{ key: 'backtest-oscillator', scale: scales.oscillatorScale }]
-              : []
-          }
-          layout={{
-            priceTop: layout.priceTop,
-            priceHeight: layout.priceHeight,
-            volumeTop: layout.volumeTop,
-            volumeHeight: layout.volumeHeight,
-            innerWidth: layout.innerWidth,
-            innerHeight: layout.innerHeight,
-            oscillators:
-              layout.oscillatorTop !== undefined && layout.oscillatorHeight !== undefined
-                ? [
-                    {
-                      key: 'backtest-oscillator',
-                      top: layout.oscillatorTop,
-                      height: layout.oscillatorHeight,
-                    },
-                  ]
-                : [],
-          }}
+          oscillatorScales={axesOscillatorScales}
+          layout={axesLayout}
           timeframe={timeframe}
           left={CHART_MARGINS.left}
           bottom={CHART_MARGINS.bottom}
