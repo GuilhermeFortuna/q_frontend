@@ -319,7 +319,6 @@
     position: absolute;
     inset: 0;
     z-index: 0;
-    will-change: filter;
     opacity: var(--outer, 0.7);
     border-radius: inherit;
     border: none;
@@ -363,6 +362,22 @@
 
   [data-glow] > [data-glow-bloom]::after {
     content: none;
+  }
+
+  /* The border light and bloom only paint a gradient at the pointer, so they exist only while
+     the host is hovered with pointer glow on. Idle cards would otherwise each keep a masked
+     layer and a blurred composited layer alive, which WebKitGTK pays for on every scroll frame. */
+  [data-glow]:not(:hover)::before,
+  [data-glow]:not(:hover)::after,
+  [data-glow]:not(:hover) > [data-glow-bloom],
+  [data-glow='tile'] > [data-glow-bloom],
+  :root[data-pointer-glow='off'] [data-glow]::before,
+  :root[data-pointer-glow='off'] [data-glow]::after,
+  :root[data-pointer-glow='off'] [data-glow] > [data-glow-bloom],
+  :root[data-reduced-motion='true'] [data-glow]::before,
+  :root[data-reduced-motion='true'] [data-glow]::after,
+  :root[data-reduced-motion='true'] [data-glow] > [data-glow-bloom] {
+    display: none;
   }
 
   :root[data-reduced-motion='true'] [data-glow] {

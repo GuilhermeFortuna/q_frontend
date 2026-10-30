@@ -437,7 +437,7 @@ function ChartInner({
     >
       {/* Floating HUD status line */}
       {activeBar && (
-        <div className="surface-float surface-float--blur text-silver-300 absolute top-2.5 left-3.5 z-10 flex flex-wrap items-center gap-x-3.5 gap-y-1 rounded-lg px-3 py-1.5 font-mono text-[10px] transition-opacity duration-150 select-none sm:text-xs">
+        <div className="surface-float text-silver-300 absolute top-2.5 left-3.5 z-10 flex flex-wrap items-center gap-x-3.5 gap-y-1 rounded-lg px-3 py-1.5 font-mono text-[10px] transition-opacity duration-150 select-none sm:text-xs">
           {/* Symbol & Timeframe */}
           <span className="text-brass-400 font-bold tracking-wider uppercase">
             {symbol} · {timeframe}
@@ -504,7 +504,7 @@ function ChartInner({
       )}
 
       {/* Floating Toolbar Controls */}
-      <div className="surface-float surface-float--blur absolute top-2.5 right-3.5 z-10 flex items-center gap-1 rounded-lg p-1 transition-opacity duration-150 select-none">
+      <div className="surface-float absolute top-2.5 right-3.5 z-10 flex items-center gap-1 rounded-lg p-1 transition-opacity duration-150 select-none">
         <div
           role="group"
           aria-label="Filter trades by outcome"
