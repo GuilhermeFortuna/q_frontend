@@ -7,7 +7,6 @@ import { BackendStatusIndicator } from '@/components/layout/BackendStatusIndicat
 import { BrightnessToggle } from '@/components/layout/BrightnessToggle'
 import { DigitalClock } from '@/components/layout/DigitalClock'
 import { LiveUpdatesIndicator } from '@/components/layout/LiveUpdatesIndicator'
-import { MotionToggle } from '@/components/layout/MotionToggle'
 import { ReaderWindowShell } from '@/components/layout/ReaderWindowShell'
 import { WorkspaceGridTransition } from '@/components/transitions/WorkspaceGridTransition'
 import { useWorkspaceTransitionStore } from '@/components/transitions/workspaceTransitionStore'
@@ -68,9 +67,9 @@ export function AppShell({ children }: AppShellProps) {
         <PointerSpotlight />
         <header
           data-tauri-drag-region
-          className="surface-shell surface-shell--blur border-brass-600/15 relative z-40 flex items-center justify-between border-b px-6 py-2.5 select-none"
+          className="surface-shell surface-shell--blur border-brass-600/15 relative z-40 grid grid-cols-[1fr_auto_1fr] items-center border-b px-6 py-2.5 select-none"
         >
-          <div className="flex items-center gap-2.5" data-tauri-drag-region>
+          <div className="flex items-center gap-2.5 justify-self-start" data-tauri-drag-region>
             <img
               src="/quant-logo-text.png"
               alt="QUANT"
@@ -78,16 +77,12 @@ export function AppShell({ children }: AppShellProps) {
             />
           </div>
 
-          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="pointer-events-auto">
-              <DigitalClock />
-            </div>
-          </div>
+          {/* Centered by grid columns, not translate: a fractional translate blurs the text. */}
+          <DigitalClock />
 
-          <div className="flex h-full items-center gap-2">
+          <div className="flex h-full items-center gap-2 justify-self-end">
             <BackendStatusIndicator />
             <LiveUpdatesIndicator />
-            <MotionToggle />
             <BrightnessToggle />
             <WindowControls />
           </div>

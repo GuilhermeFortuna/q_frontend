@@ -51,7 +51,7 @@ describe('Motion Presets & useReducedMotion', () => {
     expect(staggerPreset.visible.transition.staggerChildren).toBe(0)
   })
 
-  it('useReducedMotion returns true under mocked prefers-reduced-motion and MotionToggle system mode', () => {
+  it('useReducedMotion returns true under mocked prefers-reduced-motion and motionMode system', () => {
     // Mock matchMedia to return reduce
     window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === '(prefers-reduced-motion: reduce)',
