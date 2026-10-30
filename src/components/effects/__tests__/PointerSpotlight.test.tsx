@@ -1,5 +1,7 @@
+import { cleanup, render } from '@testing-library/react'
 import { describe, expect, it, afterEach } from 'vitest'
 
+import { PointerSpotlight } from '@/components/effects/PointerSpotlight'
 import {
   clearGlowVars,
   collectGlowAncestors,
@@ -7,6 +9,7 @@ import {
   writeGlowSpotVars,
   writeLivingSpotVars,
 } from '@/components/effects/pointerSpotlightUtils'
+import { useAppStore } from '@/store/useAppStore'
 
 function stubRect(el: HTMLElement, left: number, top: number, width: number, height: number) {
   el.getBoundingClientRect = () =>
@@ -155,5 +158,52 @@ describe('pointerSpotlightUtils', () => {
     expect(card.style.getPropertyValue('--y')).toBe('-999px')
     expect(card.style.getPropertyValue('--xp')).toBe('')
     expect(card.style.getPropertyValue('--yp')).toBe('')
+  })
+})
+
+describe('PointerSpotlight pointer glow setting', () => {
+  afterEach(() => {
+    cleanup()
+    document.body.innerHTML = ''
+    useAppStore.setState({ pointerGlowMode: 'on' })
+    delete document.documentElement.dataset.pointerGlow
+  })
+
+  function renderLivingPanel() {
+    document.body.innerHTML = `
+      <div class="surface-panel--living" id="panel">
+        <button type="button" id="target">Go</button>
+      </div>
+    `
+    const panel = document.getElementById('panel') as HTMLElement
+    stubRect(panel, 0, 0, 400, 400)
+    render(<PointerSpotlight />)
+    return { panel, target: document.getElementById('target') as HTMLElement }
+  }
+
+  async function movePointerOver(target: HTMLElement) {
+    target.dispatchEvent(new MouseEvent('pointermove', { clientX: 50, clientY: 60, bubbles: true }))
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+  }
+
+  it('writes spot vars and marks the document on by default', async () => {
+    const { panel, target } = renderLivingPanel()
+
+    await movePointerOver(target)
+
+    expect(document.documentElement.dataset.pointerGlow).toBe('on')
+    expect(panel.style.getPropertyValue('--spot-x')).toBe('50px')
+    expect(panel.style.getPropertyValue('--spot-y')).toBe('60px')
+  })
+
+  it('stops writing spot vars and marks the document off when disabled', async () => {
+    useAppStore.setState({ pointerGlowMode: 'off' })
+    const { panel, target } = renderLivingPanel()
+
+    await movePointerOver(target)
+
+    expect(document.documentElement.dataset.pointerGlow).toBe('off')
+    expect(panel.style.getPropertyValue('--spot-x')).toBe('')
+    expect(panel.style.getPropertyValue('--spot-y')).toBe('')
   })
 })

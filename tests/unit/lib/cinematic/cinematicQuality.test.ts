@@ -12,8 +12,7 @@ describe('resolveCinematicQuality', () => {
     })
 
     expect(profile.mode).toBe('reduced-motion')
-    expect(profile.showParticles).toBe(false)
-    expect(profile.animateLoop).toBe(false)
+    expect(profile.sceneDim).toBe(0)
   })
 
   it('returns heavy-3d profile when a feature canvas is active', () => {
@@ -25,12 +24,10 @@ describe('resolveCinematicQuality', () => {
     })
 
     expect(profile.mode).toBe('heavy-3d')
-    expect(profile.showParticles).toBe(false)
-    expect(profile.animateLoop).toBe(false)
     expect(profile.sceneDim).toBeGreaterThan(0)
   })
 
-  it('returns launcher profile without particles on the launcher workspace', () => {
+  it('returns launcher profile on the launcher workspace', () => {
     const profile = resolveCinematicQuality({
       activeWorkspace: 'launcher',
       reducedMotion: false,
@@ -39,21 +36,25 @@ describe('resolveCinematicQuality', () => {
     })
 
     expect(profile.mode).toBe('launcher')
-    expect(profile.showParticles).toBe(false)
-    expect(profile.animateLoop).toBe(true)
+    expect(profile.sceneDim).toBe(0)
   })
 
-  it('throttles launcher ambience when the document is hidden', () => {
-    const profile = resolveCinematicQuality({
+  it('dims launcher ambience when the document is hidden', () => {
+    const visible = resolveCinematicQuality({
+      activeWorkspace: 'launcher',
+      reducedMotion: false,
+      documentHidden: false,
+      hasActiveFeature3D: false,
+    })
+    const hidden = resolveCinematicQuality({
       activeWorkspace: 'launcher',
       reducedMotion: false,
       documentHidden: true,
       hasActiveFeature3D: false,
     })
 
-    expect(profile.mode).toBe('launcher')
-    expect(profile.animateLoop).toBe(false)
-    expect(profile.particleOpacity).toBeLessThan(0.85)
+    expect(hidden.mode).toBe('launcher')
+    expect(hidden.sceneDim).toBeGreaterThan(visible.sceneDim)
   })
 
   it('returns analysis profile for dense operational workspaces', () => {
@@ -65,7 +66,6 @@ describe('resolveCinematicQuality', () => {
     })
 
     expect(profile.mode).toBe('analysis')
-    expect(profile.showParticles).toBe(false)
-    expect(profile.animateLoop).toBe(false)
+    expect(profile.sceneDim).toBe(0)
   })
 })

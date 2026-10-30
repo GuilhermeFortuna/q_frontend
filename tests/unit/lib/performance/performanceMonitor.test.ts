@@ -69,7 +69,7 @@ describe('performanceMonitor math', () => {
     monitor.getSnapshot()
 
     monitor.setRouteMountQueryCount(3)
-    monitor.setCinematicStats({ qualityMode: 'launcher', loopActive: true })
+    monitor.setCinematicStats({ qualityMode: 'launcher' })
     monitor.stop()
 
     const latest = monitor.getSnapshot()
@@ -79,7 +79,6 @@ describe('performanceMonitor math', () => {
     expect(latest?.canvasCount).toBe(1)
     expect(latest?.routeMountQueryCount).toBe(3)
     expect(latest?.cinematicQualityMode).toBe('launcher')
-    expect(latest?.cinematicLoopActive).toBe(true)
   })
 })
 

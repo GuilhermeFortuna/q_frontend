@@ -1,24 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CinematicScene } from '@/components/cinematic/CinematicScene'
-import { resetAnimationLoopRegistry } from '@/lib/performance/animationLoopRegistry'
 import { resetPerformanceMonitorForTests } from '@/lib/performance/performanceMonitor'
 import { useAppStore } from '@/store/useAppStore'
-
-vi.mock('@react-three/fiber', () => ({
-  Canvas: ({ children, frameloop }: any) => (
-    <div data-testid="cinematic-canvas" data-frameloop={frameloop}>
-      {children}
-    </div>
-  ),
-  useFrame: () => undefined,
-}))
-
-vi.mock('@/components/cinematic/CinematicParticles', () => ({
-  CinematicParticles: () => <div data-testid="cinematic-particles" />,
-}))
 
 function setReducedMotion(matches: boolean) {
   Object.defineProperty(window, 'matchMedia', {
@@ -34,7 +19,6 @@ function setReducedMotion(matches: boolean) {
 
 describe('CinematicScene', () => {
   beforeEach(() => {
-    resetAnimationLoopRegistry()
     resetPerformanceMonitorForTests()
     setReducedMotion(false)
     useAppStore.setState({ activeWorkspace: 'launcher' })
@@ -42,7 +26,6 @@ describe('CinematicScene', () => {
   })
 
   afterEach(() => {
-    resetAnimationLoopRegistry()
     resetPerformanceMonitorForTests()
     vi.restoreAllMocks()
   })
@@ -52,10 +35,9 @@ describe('CinematicScene', () => {
 
     expect(screen.getByTestId('cinematic-scene')).toBeInTheDocument()
     expect(screen.getByTestId('cinematic-scene')).toHaveAttribute('data-quality-mode', 'launcher')
-    expect(screen.queryByTestId('cinematic-canvas')).not.toBeInTheDocument()
   })
 
-  it('disables the animation loop when reduced motion is preferred', () => {
+  it('uses the reduced-motion profile when reduced motion is preferred', () => {
     setReducedMotion(true)
     useAppStore.setState({ motionMode: 'system' })
 
@@ -65,17 +47,6 @@ describe('CinematicScene', () => {
       'data-quality-mode',
       'reduced-motion',
     )
-    expect(screen.getByTestId('cinematic-scene')).toHaveAttribute('data-loop-active', 'false')
-    expect(screen.queryByTestId('cinematic-canvas')).not.toBeInTheDocument()
-  })
-
-  it('pauses the canvas frameloop when the document is hidden', () => {
-    Object.defineProperty(document, 'hidden', { configurable: true, value: true })
-
-    render(<CinematicScene />)
-
-    expect(screen.queryByTestId('cinematic-canvas')).not.toBeInTheDocument()
-    expect(screen.getByTestId('cinematic-scene')).toHaveAttribute('data-loop-active', 'false')
   })
 
   it('uses analysis quality on operational workspaces', () => {
@@ -84,6 +55,5 @@ describe('CinematicScene', () => {
     render(<CinematicScene />)
 
     expect(screen.getByTestId('cinematic-scene')).toHaveAttribute('data-quality-mode', 'analysis')
-    expect(screen.queryByTestId('cinematic-canvas')).not.toBeInTheDocument()
   })
 })

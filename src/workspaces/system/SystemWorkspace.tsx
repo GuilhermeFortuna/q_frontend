@@ -31,6 +31,8 @@ export function SystemWorkspace() {
   const lowStart = useAppStore((s) => s.autoBrightnessLowStart)
   const setAutoBrightnessConfig = useAppStore((s) => s.setAutoBrightnessConfig)
   const resolvedBrightness = useResolvedBrightness()
+  const pointerGlowMode = useAppStore((s) => s.pointerGlowMode)
+  const setPointerGlowMode = useAppStore((s) => s.setPointerGlowMode)
 
   const [localTimeStr, setLocalTimeStr] = useState(() =>
     new Date().toLocaleTimeString(undefined, {
@@ -143,6 +145,21 @@ export function SystemWorkspace() {
               </LabeledField>
             </Panel>
           ) : null}
+
+          <LabeledField
+            label="Pointer glow"
+            hint="The gold light that follows the cursor across panels and cards."
+          >
+            <SegmentedToggle
+              aria-label="Pointer glow"
+              value={pointerGlowMode}
+              onChange={setPointerGlowMode}
+              options={[
+                { value: 'on', label: 'On' },
+                { value: 'off', label: 'Off' },
+              ]}
+            />
+          </LabeledField>
 
           <Panel className="flex flex-wrap items-center justify-between gap-3 p-3">
             <StatTile

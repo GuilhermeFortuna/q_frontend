@@ -8,7 +8,7 @@ function readOsReduce(): boolean {
 }
 
 /**
- * Effective reduced-motion for decorative effects (particles, panel sheen, spotlight).
+ * Effective reduced-motion for decorative effects (panel sheen, spotlight, pointer glow).
  *
  * `motionMode` is the authority: 'full' (default) never reduces; 'system' honors the OS query.
  * This indirection exists because WebKitGTK (Tauri desktop) reports `prefers-reduced-motion: reduce`

@@ -4,10 +4,6 @@ export type CinematicQualityMode = 'launcher' | 'analysis' | 'heavy-3d' | 'reduc
 
 export type CinematicQualityProfile = {
   mode: CinematicQualityMode
-  showParticles: boolean
-  particleOpacity: number
-  animateLoop: boolean
-  dpr: number
   sceneDim: number
   vignetteOpacity: number
   noiseOpacity: number
@@ -26,10 +22,6 @@ export function resolveCinematicQuality(input: {
   if (reducedMotion) {
     return {
       mode: 'reduced-motion',
-      showParticles: false,
-      particleOpacity: 0,
-      animateLoop: false,
-      dpr: 1,
       sceneDim: 0,
       vignetteOpacity: 1,
       noiseOpacity: 0.015,
@@ -39,10 +31,6 @@ export function resolveCinematicQuality(input: {
   if (hasActiveFeature3D) {
     return {
       mode: 'heavy-3d',
-      showParticles: false,
-      particleOpacity: 0,
-      animateLoop: false,
-      dpr: 1,
       sceneDim: 0.55,
       vignetteOpacity: 0.65,
       noiseOpacity: 0.008,
@@ -54,10 +42,6 @@ export function resolveCinematicQuality(input: {
   if (isLauncher) {
     return {
       mode: 'launcher',
-      showParticles: false,
-      particleOpacity: 0,
-      animateLoop: !documentHidden,
-      dpr: 1,
       sceneDim: documentHidden ? 0.25 : 0,
       vignetteOpacity: 1,
       noiseOpacity: 0.015,
@@ -66,10 +50,6 @@ export function resolveCinematicQuality(input: {
 
   return {
     mode: 'analysis',
-    showParticles: false,
-    particleOpacity: 0,
-    animateLoop: false,
-    dpr: 1,
     sceneDim: documentHidden ? 0.15 : 0,
     vignetteOpacity: 0.9,
     noiseOpacity: 0.012,

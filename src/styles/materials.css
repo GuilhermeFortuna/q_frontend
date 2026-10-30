@@ -140,6 +140,12 @@
     opacity: 1;
   }
 
+  /* Pointer glow off (System → Display): drop the hover fill entirely, not just its tracking. */
+  :root[data-pointer-glow='off'] .surface-panel--living::after {
+    opacity: 0;
+    transition: none;
+  }
+
   .surface-panel--living > * {
     position: relative;
     z-index: 2;

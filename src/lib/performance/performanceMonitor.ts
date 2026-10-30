@@ -8,7 +8,6 @@ export type PerformanceSnapshot = {
   canvasCount: number
   animationLoopCount: number
   cinematicQualityMode: string | null
-  cinematicLoopActive: boolean
   currentRoute: string
   routeSettleMs: number | null
   routeMountQueryCount: number
@@ -29,7 +28,6 @@ export const INITIAL_SNAPSHOT: PerformanceSnapshot = {
   canvasCount: 0,
   animationLoopCount: 0,
   cinematicQualityMode: null,
-  cinematicLoopActive: false,
   currentRoute: '/',
   routeSettleMs: null,
   routeMountQueryCount: 0,
@@ -133,7 +131,6 @@ const defaultDeps = (): PerformanceMonitorDeps => {
 
 export type CinematicPerfStats = {
   qualityMode: string
-  loopActive: boolean
 }
 
 export type PerformanceMonitor = {
@@ -300,7 +297,6 @@ export function createPerformanceMonitor(
       snapshot = {
         ...snapshot,
         cinematicQualityMode: stats.qualityMode,
-        cinematicLoopActive: stats.loopActive,
       }
       emit()
     },

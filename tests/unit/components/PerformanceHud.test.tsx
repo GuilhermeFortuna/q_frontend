@@ -23,7 +23,6 @@ describe('PerformanceHud', () => {
       canvasCount: 0,
       animationLoopCount: 0,
       cinematicQualityMode: null,
-      cinematicLoopActive: false,
       currentRoute: '/',
       routeSettleMs: null,
       routeMountQueryCount: 0,

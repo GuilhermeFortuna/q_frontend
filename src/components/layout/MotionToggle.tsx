@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Sparkles, Zap } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useAppStore } from '@/store/useAppStore'
@@ -9,10 +9,6 @@ import { cn } from '@/lib/utils'
 export function MotionToggle() {
   const motionMode = useAppStore((s) => s.motionMode)
   const setMotionMode = useAppStore((s) => s.setMotionMode)
-  const particleSpeedMode = useAppStore((s) => s.particleSpeedMode ?? 'normal')
-  const particleColorMode = useAppStore((s) => s.particleColorMode ?? 'gold')
-  const setParticleSpeedMode = useAppStore((s) => s.setParticleSpeedMode)
-  const setParticleColorMode = useAppStore((s) => s.setParticleColorMode)
   const reduced = usePrefersReducedMotion()
 
   const [isOpen, setIsOpen] = useState(false)
@@ -37,20 +33,6 @@ export function MotionToggle() {
     setMotionMode(motionMode === 'full' ? 'system' : 'full')
   }
 
-  const speedOptions = [
-    { value: 'zero-g', label: 'Zero-G', desc: '0.1x drift' },
-    { value: 'normal', label: 'Drift', desc: '1.0x normal' },
-    { value: 'hyper', label: 'Warp', desc: '5.0x speed' },
-    { value: 'reverse', label: 'Reverse', desc: '-1.0x flow' },
-  ] as const
-
-  const colorOptions = [
-    { value: 'gold', label: 'Amber', class: 'bg-amber-500 shadow-amber-500/50' },
-    { value: 'cyan', label: 'Quantum', class: 'bg-cyan-400 shadow-cyan-400/50' },
-    { value: 'violet', label: 'Orchid', class: 'bg-purple-500 shadow-purple-500/50' },
-    { value: 'silver', label: 'Silver', class: 'bg-slate-300 shadow-slate-300/50' },
-  ] as const
-
   return (
     <div ref={containerRef} className="relative h-8 w-8">
       {/* Trigger Button */}
@@ -61,8 +43,8 @@ export function MotionToggle() {
           'focus-visible:outline-brass-500 transition-[transform,box-shadow,border-color] duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95',
           isOpen ? 'border-brass-500/80 shadow-[0_0_8px_rgba(217,158,34,0.3)]' : '',
         )}
-        title="Adjust background particle effects"
-        aria-label="Toggle background particle settings"
+        title="Adjust ambient effects"
+        aria-label="Toggle ambient effect settings"
         aria-expanded={isOpen}
       >
         <Sparkles
@@ -89,7 +71,7 @@ export function MotionToggle() {
                 Aesthetic Settings
               </span>
               <p className="text-silver-500 mt-0.5 font-mono text-[8px] tracking-wider uppercase">
-                Background Particles Modulator
+                Background Motion
               </p>
             </div>
 
@@ -117,57 +99,6 @@ export function MotionToggle() {
                 >
                   {motionMode === 'full' ? 'Full' : 'System'}
                 </button>
-              </div>
-
-              {/* Colors Modulator */}
-              <div className="space-y-1.5">
-                <span className="text-silver-400 block font-mono text-[9px] font-bold tracking-wider uppercase">
-                  Cosmic Palette
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {colorOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setParticleColorMode(opt.value)}
-                      className={cn(
-                        'surface-control hover:border-brass-500/30 flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 transition-all active:scale-95',
-                        particleColorMode === opt.value
-                          ? 'border-brass-500 bg-brass-500/5 text-brass-400 font-semibold'
-                          : 'text-silver-300 hover:text-silver-100',
-                      )}
-                    >
-                      <span className={cn('h-1.5 w-1.5 rounded-full shadow-sm', opt.class)} />
-                      <span className="font-mono text-[9px] font-bold tracking-tight">
-                        {opt.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Speed Modulator */}
-              <div className="space-y-1.5">
-                <span className="text-silver-400 block font-mono text-[9px] font-bold tracking-wider uppercase">
-                  Drift Dynamics
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {speedOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setParticleSpeedMode(opt.value)}
-                      className={cn(
-                        'surface-control hover:border-brass-500/30 flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border py-1.5 transition-all active:scale-95',
-                        particleSpeedMode === opt.value
-                          ? 'border-brass-500 bg-brass-500/5 text-brass-400 font-semibold'
-                          : 'text-silver-300 hover:text-silver-100',
-                      )}
-                      title={opt.desc}
-                    >
-                      {opt.value === 'hyper' && <Zap className="text-brass-400 h-3 w-3" />}
-                      <span className="font-mono text-[9px]">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           </motion.div>

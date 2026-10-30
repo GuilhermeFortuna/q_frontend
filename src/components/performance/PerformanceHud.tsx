@@ -19,7 +19,6 @@ export function PerformanceHud() {
   const canvasCount = usePerformanceStore((s) => s.canvasCount)
   const animationLoopCount = usePerformanceStore((s) => s.animationLoopCount)
   const cinematicQualityMode = usePerformanceStore((s) => s.cinematicQualityMode)
-  const cinematicLoopActive = usePerformanceStore((s) => s.cinematicLoopActive)
   const currentRoute = usePerformanceStore((s) => s.currentRoute)
   const routeSettleMs = usePerformanceStore((s) => s.routeSettleMs)
   const routeMountQueryCount = usePerformanceStore((s) => s.routeMountQueryCount)
@@ -57,10 +56,7 @@ export function PerformanceHud() {
         loops {animationLoopCount}
         {featureRendererBudget ? ` / ${featureRendererBudget.animationLoops}` : ''}
       </div>
-      <div className="truncate text-white/60">
-        cinematic {cinematicQualityMode ?? '—'}
-        {cinematicLoopActive ? ' · loop on' : ''}
-      </div>
+      <div className="truncate text-white/60">cinematic {cinematicQualityMode ?? '—'}</div>
       <div className="truncate text-white/70">{currentRoute}</div>
       <div>settle {formatSettle(routeSettleMs)}</div>
       <div className={queryWarn ? 'text-amber-300' : undefined}>

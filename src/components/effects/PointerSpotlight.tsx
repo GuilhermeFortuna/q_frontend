@@ -19,14 +19,23 @@ import { useAppStore } from '@/store/useAppStore'
  * and clears glow vars on hosts that are no longer under the pointer
  * (prevents frozen border light on random edges).
  *
+ * When the user turns the pointer glow off, no vars are written and
+ * `<html data-pointer-glow="off">` lets CSS hide the static hover fill.
+ *
  * Renders nothing; mount once near the app root.
  */
 export function PointerSpotlight() {
   const activeWorkspace = useAppStore((s) => s.activeWorkspace)
+  const pointerGlowMode = useAppStore((s) => s.pointerGlowMode)
   const reducedMotion = usePrefersReducedMotion()
+  const glowEnabled = pointerGlowMode === 'on'
 
   useEffect(() => {
-    if (reducedMotion) {
+    document.documentElement.dataset.pointerGlow = glowEnabled ? 'on' : 'off'
+  }, [glowEnabled])
+
+  useEffect(() => {
+    if (reducedMotion || !glowEnabled) {
       return
     }
 
@@ -91,7 +100,7 @@ export function PointerSpotlight() {
       window.removeEventListener('blur', clear)
       clear()
     }
-  }, [activeWorkspace, reducedMotion])
+  }, [activeWorkspace, reducedMotion, glowEnabled])
 
   return null
 }

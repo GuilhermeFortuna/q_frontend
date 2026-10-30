@@ -23,7 +23,6 @@ function logRoutePerf(pathname: string) {
     canvases: snapshot.canvasCount,
     animationLoops: snapshot.animationLoopCount,
     cinematicQuality: snapshot.cinematicQualityMode,
-    cinematicLoop: snapshot.cinematicLoopActive,
     routeMountQueries: snapshot.routeMountQueryCount,
     queryBudget: budget,
     inactiveRefetches: snapshot.inactiveRouteRefetchCount,
