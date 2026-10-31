@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { discoveryTrialPage } from '@/mocks/discoveryTrials'
+import { replayHandlers } from '@/mocks/replay'
 
 import {
   createMockEvalJob,
@@ -232,6 +233,7 @@ export function resetMockStorageDeletes() {
 }
 
 export const handlers = [
+  ...replayHandlers,
   http.get('*/api/v1/system/health', () => HttpResponse.json(mockSystemHealth)),
 
   http.get('*/api/v1/system/data-source', () => HttpResponse.json(mockDataSource)),

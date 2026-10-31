@@ -35,6 +35,11 @@ export const loadResearchWorkspace = () =>
     default: module.ResearchWorkspace,
   }))
 
+export const loadReplayWorkspace = () =>
+  import('@/workspaces/replay/ReplayWorkspace').then((module) => ({
+    default: module.ReplayWorkspace,
+  }))
+
 export const loadStrategyBuilderWorkspace = () =>
   import('@/workspaces/strategy-builder/StrategyBuilderWorkspace').then((module) => ({
     default: module.StrategyBuilderWorkspace,
@@ -49,6 +54,7 @@ const WORKSPACE_LOADERS: Record<WorkspaceId, () => Promise<unknown>> = {
   'strategy-builder': loadStrategyBuilderWorkspace,
   discover: loadDiscoverWorkspace,
   research: loadResearchWorkspace,
+  replay: loadReplayWorkspace,
   system: loadSystemWorkspace,
 }
 

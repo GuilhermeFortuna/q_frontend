@@ -6,6 +6,7 @@ export type WorkspaceId =
   | 'validate'
   | 'discover'
   | 'research'
+  | 'replay'
   | 'system'
   | 'strategy-builder'
 
