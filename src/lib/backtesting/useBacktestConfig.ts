@@ -218,6 +218,7 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
     return {
       ...common,
       strategy_file: strategyFileId,
+      research_data_mode: 'auto',
       strategy_params: strategyFileParams ?? {},
       exit_params: {},
     }

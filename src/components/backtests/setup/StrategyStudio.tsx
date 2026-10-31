@@ -210,6 +210,10 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
               <h5 className="text-silver-400 mb-3 text-xs font-semibold tracking-wide uppercase">
                 {selectedStrategyFile.label} · strategy file
               </h5>
+              <p className="text-silver-400 mb-4 text-xs leading-relaxed">
+                Tick data is downloaded automatically when the strategy needs it. Tick-backed runs
+                use candles from the same history and include only completed sessions.
+              </p>
               {selectedStrategyFile.parameters.length > 0 ? (
                 <StrategyParamFields
                   params={selectedStrategyFile.parameters}

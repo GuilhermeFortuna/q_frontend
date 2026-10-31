@@ -334,3 +334,12 @@ Make sure to re-skin newly added shadcn components inside `src/styles/globals.cs
 ### ML filter training feedback
 
 The training job panel stays visible across workflow stages. It distinguishes accepted requests waiting for a worker from active training, shows server stage counts, and flags a queue that has reported no progress after 30 seconds of observation. Request and polling errors are visible beside the workflow. Completed runs show saved model versions and their validation ROC AUC; **Review validation results** opens that run's dataset in Compare. Run comparison to inspect trading metrics, then freeze a model and threshold for Final Evaluation. Monitoring time is local observation time; stage counts come from the server.
+
+### Strategy-file backtest data
+
+Strategy-file backtests select data automatically. Tick hooks load ticks upfront. Otherwise a run
+starts with provider candles; an order requiring ticks triggers one restart with a fresh strategy
+instance and tick-derived candles. Candle-only runs never download ticks. Missing completed sessions
+are downloaded through the configured gateway; download failures stop the run. Current sessions and
+W1/MN1 tick aggregation are unsupported. The resolved mode is saved and pinned when rerunning a frozen
+version from history. Earlier explicit Bars/Ticks configurations retain their meaning.

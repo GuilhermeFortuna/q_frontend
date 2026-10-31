@@ -522,3 +522,20 @@ describe('buildBacktestRequest for strategy files', () => {
     expect(payload.strategy).toBe('MACrossover')
   })
 })
+
+describe('automatic strategy-file market data', () => {
+  it('requests automatic data only for strategy files', () => {
+    expect(
+      buildBacktestRequest(candleFields({ strategyFileId: 'session_breakout' })).research_data_mode,
+    ).toBe('auto')
+    expect(buildBacktestRequest(candleFields()).research_data_mode).toBeUndefined()
+  })
+
+  it('does not require the user to select tick data', async () => {
+    const { result } = renderHook(() => useBacktestConfig(), { wrapper })
+    await waitFor(() => expect(result.current.strategyFiles.length).toBeGreaterThan(0))
+    const { act } = await import('@testing-library/react')
+    act(() => result.current.setters.selectStrategyFile('session_breakout'))
+    expect(result.current.buildRequest().research_data_mode).toBe('auto')
+  })
+})

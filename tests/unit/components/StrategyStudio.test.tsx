@@ -401,3 +401,16 @@ describe('StrategyStudio', () => {
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 })
+
+it('explains automatic data selection without asking the user to choose', async () => {
+  const user = userEvent.setup()
+  renderWithQueryClient(<StrategyStudioHarness />)
+  await user.click(await screen.findByRole('radio', { name: 'Strategy files' }))
+  await user.click(
+    within(await screen.findByTestId('strategy-file-card-session_breakout')).getByRole('button'),
+  )
+  expect(screen.queryByRole('radiogroup', { name: 'Backtest data' })).not.toBeInTheDocument()
+  expect(
+    screen.getByText(/Tick data is downloaded automatically when the strategy needs it/),
+  ).toBeInTheDocument()
+})
