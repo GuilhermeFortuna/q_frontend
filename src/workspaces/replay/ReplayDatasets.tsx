@@ -22,8 +22,8 @@ export function ReplayDatasets({ selectedId, onSelect }: ReplayDatasetsProps) {
 
       {datasets.data && datasets.data.length === 0 ? (
         <p className="text-silver-400 text-sm">
-          No dataset is frozen yet. Freeze a TickStore range below; freezing never changes the
-          TickStore.
+          No dataset is frozen yet. Open “Freeze a new dataset” below, freeze a TickStore range,
+          then choose it here.
         </p>
       ) : null}
 

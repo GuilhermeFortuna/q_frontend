@@ -62,13 +62,13 @@ export function parseStepMarketMs(text: string): number | null {
 
 /**
  * Exchange-local wall time to a UTC ISO instant; null when malformed. Accepts `YYYY-MM-DD HH:mm`
- * (the form's format) or the ISO `T` separator, with optional seconds.
+ * (the form's format, with a one- or two-digit hour), or the ISO `T` separator, with optional seconds.
  */
 export function exchangeLocalToUtc(local: string): string | null {
-  const normalized = local.trim().replace(' ', 'T')
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(normalized)) return null
-  const withSeconds = normalized.length === 16 ? `${normalized}:00` : normalized
-  const moment = new Date(`${withSeconds}${EXCHANGE_OFFSET}`)
+  const match = /^(\d{4}-\d{2}-\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(local.trim())
+  if (!match) return null
+  const [, day, hour, minute, second = '00'] = match
+  const moment = new Date(`${day}T${hour.padStart(2, '0')}:${minute}:${second}${EXCHANGE_OFFSET}`)
   if (Number.isNaN(moment.getTime())) return null
   return moment.toISOString().replace('.000Z', 'Z')
 }
