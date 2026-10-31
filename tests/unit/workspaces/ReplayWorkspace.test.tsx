@@ -150,3 +150,18 @@ describe('ReplayWorkspace', () => {
     await waitFor(() => expect(stops).toBe(1))
   })
 })
+
+describe('ReplayWorkspace start form memory', () => {
+  it('shows the last values typed when the page is opened again', async () => {
+    window.localStorage.clear()
+    const first = renderWithQueryClient(<ReplayWorkspace />)
+    const user = userEvent.setup()
+    const capital = await screen.findByLabelText('Initial capital (BRL)')
+    await user.clear(capital)
+    await user.type(capital, '31000.00')
+    first.unmount()
+
+    renderWithQueryClient(<ReplayWorkspace />)
+    expect(await screen.findByLabelText('Initial capital (BRL)')).toHaveValue('31000.00')
+  })
+})

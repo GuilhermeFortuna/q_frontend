@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 
 import { replayErrorMessage, useStartReplay, type ReplayStartPhase } from '@/api/queries/replay'
 import { Button } from '@/components/ui/button'
@@ -6,10 +6,10 @@ import { LabeledField } from '@/components/ui/LabeledField'
 import { wellInputClass } from '@/components/ui/wellInputStyles'
 import {
   buildReplayPlan,
-  EMPTY_REPLAY_FORM,
   type FormErrors,
   type ReplayForm,
 } from '@/workspaces/replay/replayControls'
+import { loadReplayForm, saveReplayForm } from '@/workspaces/replay/replayFormStorage'
 
 const PHASE_TEXT: Record<ReplayStartPhase, string> = {
   freezing: 'Freezing the TickStore range…',
@@ -18,7 +18,10 @@ const PHASE_TEXT: Record<ReplayStartPhase, string> = {
 
 /** Start a replay from a symbol, a date range, the capital and the instrument's point value. */
 export function ReplayStartForm() {
-  const [values, setValues] = useState<ReplayForm>(EMPTY_REPLAY_FORM)
+  const [values, setValues] = useState<ReplayForm>(loadReplayForm)
+  useEffect(() => {
+    saveReplayForm(values)
+  }, [values])
   const [errors, setErrors] = useState<FormErrors>({})
   const [phase, setPhase] = useState<ReplayStartPhase | null>(null)
   const start = useStartReplay()
