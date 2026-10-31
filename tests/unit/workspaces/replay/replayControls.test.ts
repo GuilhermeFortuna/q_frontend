@@ -5,6 +5,7 @@ import {
   buildFreezeRequest,
   buildStartRequest,
   exchangeLocalToUtc,
+  REPLAY_ACCOUNT_LOGIN,
   parseSpeed,
   parseStepMarketMs,
   transportState,
@@ -128,7 +129,6 @@ const RUN_FORM: RunForm = {
   endLocal: '2026-10-01T10:00',
   warmupLocal: '',
   initialBalance: '100000.00',
-  login: '900001',
   currency: 'BRL',
   marketDataMs: '0',
   orderTransportMs: '50',
@@ -148,7 +148,7 @@ describe('buildStartRequest', () => {
       end_utc: '2026-10-01T13:00:00Z',
       warmup_start_utc: null,
       initial_balance: '100000.00',
-      account: { login: 900001, currency: 'BRL' },
+      account: { login: REPLAY_ACCOUNT_LOGIN, currency: 'BRL' },
       latency: {
         market_data_ms: 0,
         order_transport_ms: 50,
@@ -171,15 +171,13 @@ describe('buildStartRequest', () => {
     expect(errors.endLocal).toMatch(/after the start/)
   })
 
-  it('refuses a malformed login, currency and out-of-range speed', () => {
+  it('refuses a malformed currency and out-of-range speed', () => {
     const { body, errors } = buildStartRequest({
       ...RUN_FORM,
-      login: '0',
       currency: 'real',
       rate: '12',
     })
     expect(body).toBeNull()
-    expect(errors.login).toBeDefined()
     expect(errors.currency).toBeDefined()
     expect(errors.rate).toBeDefined()
   })

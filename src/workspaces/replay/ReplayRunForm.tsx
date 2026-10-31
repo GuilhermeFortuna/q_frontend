@@ -20,7 +20,6 @@ const EMPTY: RunFormValues = {
   endLocal: '',
   warmupLocal: '',
   initialBalance: '100000.00',
-  login: '',
   currency: 'BRL',
   marketDataMs: '0',
   orderTransportMs: '0',
@@ -142,15 +141,6 @@ export function ReplayRunForm({ datasetId }: ReplayRunFormProps) {
             className={wellInputClass}
             value={values.initialBalance}
             onChange={update('initialBalance')}
-          />
-        </LabeledField>
-        <LabeledField label="Demo account login" htmlFor="replay-run-login" error={errors.login}>
-          <input
-            id="replay-run-login"
-            inputMode="numeric"
-            className={wellInputClass}
-            value={values.login}
-            onChange={update('login')}
           />
         </LabeledField>
         <LabeledField

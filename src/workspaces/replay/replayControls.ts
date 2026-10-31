@@ -148,13 +148,18 @@ export function buildFreezeRequest(form: FreezeForm): {
   }
 }
 
+/**
+ * Login of the simulated demo account. The simulator reports it to the terminal and the launcher
+ * allowlists it for execution, so the operator does not choose it. Any positive whole number works.
+ */
+export const REPLAY_ACCOUNT_LOGIN = 900001
+
 export type RunForm = {
   datasetId: string
   startLocal: string
   endLocal: string
   warmupLocal: string
   initialBalance: string
-  login: string
   currency: string
   marketDataMs: string
   orderTransportMs: string
@@ -194,9 +199,6 @@ export function buildStartRequest(form: RunForm): {
   if (!MONEY.test(form.initialBalance.trim()) || Number(form.initialBalance) <= 0) {
     errors.initialBalance = 'Initial balance is a positive decimal amount.'
   }
-  const login = Number(form.login)
-  if (!/^\d+$/.test(form.login.trim()) || login < 1)
-    errors.login = 'Account login is a positive whole number.'
   if (!/^[A-Z]{3}$/.test(form.currency.trim()))
     errors.currency = 'Currency is a three-letter code such as BRL.'
   const latency = {
@@ -221,7 +223,7 @@ export function buildStartRequest(form: RunForm): {
       end_utc: end,
       warmup_start_utc: warmup,
       initial_balance: form.initialBalance.trim(),
-      account: { login, currency: form.currency.trim() },
+      account: { login: REPLAY_ACCOUNT_LOGIN, currency: form.currency.trim() },
       latency: {
         market_data_ms: latency.market_data_ms as number,
         order_transport_ms: latency.order_transport_ms as number,
