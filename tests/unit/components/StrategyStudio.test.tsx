@@ -402,40 +402,15 @@ describe('StrategyStudio', () => {
   })
 })
 
-it('offers Bars and Ticks for a strategy file', async () => {
+it('explains automatic data selection without asking the user to choose', async () => {
   const user = userEvent.setup()
   renderWithQueryClient(<StrategyStudioHarness />)
   await user.click(await screen.findByRole('radio', { name: 'Strategy files' }))
   await user.click(
     within(await screen.findByTestId('strategy-file-card-session_breakout')).getByRole('button'),
   )
-  const data = screen.getByRole('radiogroup', { name: 'Backtest data' })
-  expect(within(data).getByRole('radio', { name: 'Bars' })).toHaveAttribute('aria-checked', 'true')
-  await user.click(within(data).getByRole('radio', { name: 'Ticks' }))
-  expect(within(data).getByRole('radio', { name: 'Ticks' })).toHaveAttribute('aria-checked', 'true')
-  expect(screen.getByText(/Missing ticks are downloaded automatically/)).toBeInTheDocument()
-})
-
-it('selects Ticks and disables Bars when the strategy requires tick hooks', async () => {
-  const { mockStrategyFiles } = await import('@/mocks/strategyFiles')
-  server.use(
-    http.get('*/api/v1/strategy-files', () =>
-      HttpResponse.json({
-        strategy_files: mockStrategyFiles.strategy_files.map((file) => ({
-          ...file,
-          requires_tick_data: true,
-        })),
-      }),
-    ),
-  )
-  const user = userEvent.setup()
-  renderWithQueryClient(<StrategyStudioHarness />)
-  await user.click(await screen.findByRole('radio', { name: 'Strategy files' }))
-  await user.click(
-    within(await screen.findByTestId('strategy-file-card-session_breakout')).getByRole('button'),
-  )
-  const data = screen.getByRole('radiogroup', { name: 'Backtest data' })
-  expect(within(data).getByRole('radio', { name: 'Bars' })).toBeDisabled()
-  expect(within(data).getByRole('radio', { name: 'Ticks' })).toHaveAttribute('aria-checked', 'true')
-  expect(screen.getByText(/This strategy requires ticks/)).toBeInTheDocument()
+  expect(screen.queryByRole('radiogroup', { name: 'Backtest data' })).not.toBeInTheDocument()
+  expect(
+    screen.getByText(/Tick data is downloaded automatically when the strategy needs it/),
+  ).toBeInTheDocument()
 })

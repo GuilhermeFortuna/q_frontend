@@ -337,10 +337,9 @@ The training job panel stays visible across workflow stages. It distinguishes ac
 
 ### Strategy-file backtest data
 
-Strategy files offer a **Backtest data** choice separate from the engine selector. **Bars**
-(default) uses provider candles without ticks. **Ticks** downloads missing completed sessions,
-builds candles from that tick history, and uses it for tick hooks and order execution. Required
-tick hooks select Ticks automatically; select it explicitly for tick-confirmed stop/limit orders.
-The gateway must be configured for missing history. Download failures stop the run; current
-sessions and W1/MN1 tick aggregation are unsupported. The selected mode is saved for reruns.
-Older configurations default to Bars; cached ticks no longer change their execution implicitly.
+Strategy-file backtests select data automatically. Tick hooks load ticks upfront. Otherwise a run
+starts with provider candles; an order requiring ticks triggers one restart with a fresh strategy
+instance and tick-derived candles. Candle-only runs never download ticks. Missing completed sessions
+are downloaded through the configured gateway; download failures stop the run. Current sessions and
+W1/MN1 tick aggregation are unsupported. The resolved mode is saved and pinned when rerunning a frozen
+version from history. Earlier explicit Bars/Ticks configurations retain their meaning.
