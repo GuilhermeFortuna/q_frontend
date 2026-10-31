@@ -64,6 +64,17 @@ describe('ReplayWorkspace', () => {
     expect(screen.getByText(/Times are America\/Sao_Paulo wall time/)).toBeInTheDocument()
   })
 
+  it('lets the operator type the run start and end in exchange time', async () => {
+    renderWithQueryClient(<ReplayWorkspace />)
+    const user = userEvent.setup()
+    const start = await screen.findByLabelText('Start (inclusive)')
+    await user.type(start, '2026-10-01 09:00')
+    expect(start).toHaveValue('2026-10-01 09:00')
+    const end = screen.getByLabelText('End (exclusive)')
+    await user.type(end, '2026-10-01 10:30')
+    expect(end).toHaveValue('2026-10-01 10:30')
+  })
+
   it('a paused run enables step and resume, and not pause', async () => {
     server.use(overviewWith('paused'), emptyJournal)
     renderWithQueryClient(<ReplayWorkspace />)

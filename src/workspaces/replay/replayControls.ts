@@ -60,10 +60,14 @@ export function parseStepMarketMs(text: string): number | null {
   return minutes * 60_000
 }
 
-/** Exchange-local wall time (`YYYY-MM-DDTHH:mm`) to a UTC ISO instant; null when malformed. */
+/**
+ * Exchange-local wall time to a UTC ISO instant; null when malformed. Accepts `YYYY-MM-DD HH:mm`
+ * (the form's format) or the ISO `T` separator, with optional seconds.
+ */
 export function exchangeLocalToUtc(local: string): string | null {
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(local)) return null
-  const withSeconds = local.length === 16 ? `${local}:00` : local
+  const normalized = local.trim().replace(' ', 'T')
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(normalized)) return null
+  const withSeconds = normalized.length === 16 ? `${normalized}:00` : normalized
   const moment = new Date(`${withSeconds}${EXCHANGE_OFFSET}`)
   if (Number.isNaN(moment.getTime())) return null
   return moment.toISOString().replace('.000Z', 'Z')
@@ -173,16 +177,16 @@ export function buildStartRequest(form: RunForm): {
   const errors: FormErrors<keyof RunForm> = {}
   if (!form.datasetId) errors.datasetId = 'Choose a ready dataset or freeze one first.'
   const start = exchangeLocalToUtc(form.startLocal)
-  if (!start) errors.startLocal = 'Enter the start as date and time in exchange time.'
+  if (!start) errors.startLocal = 'Enter the start as YYYY-MM-DD HH:mm (exchange time).'
   const end = exchangeLocalToUtc(form.endLocal)
-  if (!end) errors.endLocal = 'Enter the end as date and time in exchange time.'
+  if (!end) errors.endLocal = 'Enter the end as YYYY-MM-DD HH:mm (exchange time).'
   if (start && end && Date.parse(end) <= Date.parse(start)) {
     errors.endLocal = 'The end must be after the start (the interval excludes the end).'
   }
   let warmup: string | null = null
   if (form.warmupLocal.trim() !== '') {
     warmup = exchangeLocalToUtc(form.warmupLocal.trim())
-    if (!warmup) errors.warmupLocal = 'Enter the warmup start as date and time in exchange time.'
+    if (!warmup) errors.warmupLocal = 'Enter the warmup start as YYYY-MM-DD HH:mm (exchange time).'
     else if (start && Date.parse(warmup) >= Date.parse(start)) {
       errors.warmupLocal = 'Warmup must begin before the start.'
     }

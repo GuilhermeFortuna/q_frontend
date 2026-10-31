@@ -114,7 +114,10 @@ describe('input parsing', () => {
   it('reads exchange-local wall time as UTC-3', () => {
     expect(exchangeLocalToUtc('2026-10-01T09:00')).toBe('2026-10-01T12:00:00Z')
     expect(exchangeLocalToUtc('2026-10-01T09:00:30')).toBe('2026-10-01T12:00:30Z')
-    expect(exchangeLocalToUtc('2026-10-01 09:00')).toBeNull()
+    expect(exchangeLocalToUtc('2026-10-01 09:00')).toBe('2026-10-01T12:00:00Z')
+    expect(exchangeLocalToUtc(' 2026-10-01T09:00 ')).toBe('2026-10-01T12:00:00Z')
+    expect(exchangeLocalToUtc('2026-10-01 9:00')).toBeNull()
+    expect(exchangeLocalToUtc('01/10/2026 09:00')).toBeNull()
   })
 })
 

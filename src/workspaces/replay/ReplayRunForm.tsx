@@ -78,8 +78,8 @@ export function ReplayRunForm({ datasetId }: ReplayRunFormProps) {
   return (
     <form className="space-y-4" onSubmit={submit} noValidate>
       <p className="text-silver-300 text-sm">
-        Times are {EXCHANGE_TIMEZONE} wall time (BRT). The run starts paused: deploy strategies in
-        q_terminal before you resume.
+        Times are {EXCHANGE_TIMEZONE} wall time (BRT), typed as YYYY-MM-DD HH:mm. The run starts
+        paused: deploy strategies in q_terminal before you resume.
       </p>
       {errors.datasetId ? (
         <Callout type="warning" title="No dataset selected">
@@ -94,7 +94,10 @@ export function ReplayRunForm({ datasetId }: ReplayRunFormProps) {
         >
           <input
             id="replay-run-start"
-            type="datetime-local"
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="2026-10-01 09:00"
             className={wellInputClass}
             value={values.startLocal}
             onChange={update('startLocal')}
@@ -103,7 +106,10 @@ export function ReplayRunForm({ datasetId }: ReplayRunFormProps) {
         <LabeledField label="End (exclusive)" htmlFor="replay-run-end" error={errors.endLocal}>
           <input
             id="replay-run-end"
-            type="datetime-local"
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="2026-10-01 09:00"
             className={wellInputClass}
             value={values.endLocal}
             onChange={update('endLocal')}
@@ -116,7 +122,10 @@ export function ReplayRunForm({ datasetId }: ReplayRunFormProps) {
         >
           <input
             id="replay-run-warmup"
-            type="datetime-local"
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="2026-10-01 09:00"
             className={wellInputClass}
             value={values.warmupLocal}
             onChange={update('warmupLocal')}
