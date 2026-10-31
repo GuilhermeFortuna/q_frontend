@@ -1,4 +1,4 @@
-// GENERATED FILE - DO NOT EDIT. Source schemas: schema/edge/common/error.schema.json, schema/edge/common/health.schema.json, schema/edge/execution/account-request.schema.json, schema/edge/execution/account-response.schema.json, schema/edge/execution/check-request.schema.json, schema/edge/execution/check-response.schema.json, schema/edge/execution/deal.schema.json, schema/edge/execution/deals-request.schema.json, schema/edge/execution/deals-response.schema.json, schema/edge/execution/lookup-outcome.schema.json, schema/edge/execution/lookup-request.schema.json, schema/edge/execution/order.schema.json, schema/edge/execution/orders-request.schema.json, schema/edge/execution/orders-response.schema.json, schema/edge/execution/pending-lookup-outcome.schema.json, schema/edge/execution/position.schema.json, schema/edge/execution/positions-request.schema.json, schema/edge/execution/positions-response.schema.json, schema/edge/execution/quote-request.schema.json, schema/edge/execution/quote-response.schema.json, schema/edge/execution/submit-outcome.schema.json, schema/edge/execution/submit-request.schema.json, schema/edge/execution/working-order.schema.json
+// GENERATED FILE - DO NOT EDIT. Source schemas: schema/edge/clock/snapshot.schema.json, schema/edge/common/error.schema.json, schema/edge/common/health.schema.json, schema/edge/execution/account-request.schema.json, schema/edge/execution/account-response.schema.json, schema/edge/execution/check-request.schema.json, schema/edge/execution/check-response.schema.json, schema/edge/execution/deal.schema.json, schema/edge/execution/deals-request.schema.json, schema/edge/execution/deals-response.schema.json, schema/edge/execution/lookup-outcome.schema.json, schema/edge/execution/lookup-request.schema.json, schema/edge/execution/order.schema.json, schema/edge/execution/orders-request.schema.json, schema/edge/execution/orders-response.schema.json, schema/edge/execution/pending-lookup-outcome.schema.json, schema/edge/execution/position.schema.json, schema/edge/execution/positions-request.schema.json, schema/edge/execution/positions-response.schema.json, schema/edge/execution/quote-request.schema.json, schema/edge/execution/quote-response.schema.json, schema/edge/execution/submit-outcome.schema.json, schema/edge/execution/submit-request.schema.json, schema/edge/execution/working-order.schema.json
 
 export interface AccountRequest {
 }
@@ -106,6 +106,15 @@ export interface LookupRequest {
   magic?: number
   window_end: string | number
   window_start: string | number
+}
+
+export interface MarketClockSnapshot {
+  generation: string
+  market_time_us: number
+  market_time_utc: string
+  rate: number
+  sequence: number
+  state: "running" | "paused" | "completed" | "stopped"
 }
 
 export interface OrdersRequest {
