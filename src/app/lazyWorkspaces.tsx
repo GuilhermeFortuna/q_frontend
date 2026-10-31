@@ -5,6 +5,7 @@ import {
   loadDiscoverWorkspace,
   loadLauncherWorkspace,
   loadMarketDataWorkspace,
+  loadReplayWorkspace,
   loadResearchWorkspace,
   loadStorageWorkspace,
   loadStrategyBuilderWorkspace,
@@ -24,6 +25,8 @@ export const LazyBacktestsWorkspace = lazy(loadBacktestsWorkspace)
 export const LazyDiscoverWorkspace = lazy(loadDiscoverWorkspace)
 
 export const LazyResearchWorkspace = lazy(loadResearchWorkspace)
+
+export const LazyReplayWorkspace = lazy(loadReplayWorkspace)
 
 export const LazyWalkForwardWorkspace = lazy(() =>
   import('@/workspaces/walkforward/WalkForwardWorkspace').then((module) => ({

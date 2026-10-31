@@ -12,6 +12,7 @@ import {
   LazyLauncherWorkspace,
   LazyMarketDataWorkspace,
   LazyNewsReaderWorkspace,
+  LazyReplayWorkspace,
   LazyResearchWorkspace,
   LazyStorageWorkspace,
   LazySystemWorkspace,
@@ -36,6 +37,7 @@ export const WORKSPACE_PATH_ORDER = [
   '/validate',
   '/discover',
   '/research',
+  '/replay',
   '/system',
 ] as const
 
@@ -240,6 +242,17 @@ const researchRoute = createRoute({
   },
 })
 
+const replayRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/replay',
+  beforeLoad: () => syncWorkspace('replay'),
+  component: () => (
+    <LazyRouteBoundary label="Loading replay">
+      <LazyReplayWorkspace />
+    </LazyRouteBoundary>
+  ),
+})
+
 const executionRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/execution',
@@ -295,6 +308,7 @@ const routeTree = rootRoute.addChildren([
   validateRoute,
   discoverRoute,
   researchRoute,
+  replayRoute,
   executionRoute,
   newsReaderRoute,
   strategyRoute,

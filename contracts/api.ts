@@ -1,4 +1,4 @@
-// GENERATED FILE - DO NOT EDIT. Source schemas: schema/api/arrow/bars.schema.json, schema/api/arrow/ticks.schema.json, schema/api/arrow/trades.schema.json, schema/api/error.schema.json, schema/api/openapi.yaml
+// GENERATED FILE - DO NOT EDIT. Source schemas: schema/api/arrow/bars.schema.json, schema/api/arrow/ticks.schema.json, schema/api/arrow/trades.schema.json, schema/api/error.schema.json, schema/api/openapi.yaml, schema/api/replay/command.schema.json, schema/api/replay/dataset-request.schema.json, schema/api/replay/dataset.schema.json, schema/api/replay/journal-entry.schema.json, schema/api/replay/journal-page.schema.json, schema/api/replay/overview.schema.json, schema/api/replay/run-config.schema.json, schema/api/replay/run-state.schema.json, schema/api/replay/start-run.schema.json, schema/api/replay/tickstore.schema.json
 
 export interface AiModelOption {
   available?: boolean
@@ -377,6 +377,14 @@ export interface ChartIndicatorSeries {
   values: Array<number | null>
 }
 
+export interface CommandResult {
+  accepted: boolean
+  command_id: string
+  reason: null | "stale_revision" | "invalid_transition" | "step_requires_pause" | "invalid_rate" | "run_not_active" | "queue_limit"
+  revision: number
+  state: "prepared" | "paused" | "running" | "completed" | "stopped" | "failed"
+}
+
 export interface CompileStrategySpecErrorResponse {
   errors?: Array<ValidationErrorDetail>
   status?: "validation_failed" | "compile_failed"
@@ -494,6 +502,13 @@ export interface DecisionResponse {
   strategy_version: number
   symbol: string
   timeframe: string
+}
+
+export interface DemoAccountCapability {
+  available: boolean
+  currency?: string | null
+  login?: number | null
+  reason?: string | null
 }
 
 export interface DeploymentActionRequest {
@@ -810,6 +825,7 @@ export interface ExecutionAssumptions {
 export interface ExecutionHealthResponse {
   api_status: "ok" | "degraded" | "unavailable"
   checked_at: string
+  demo_account?: DemoAccountCapability
   deployments: Array<DeploymentHealthResponse>
   edge?: EdgeStatusResponse
   kill_switch_enabled: boolean
@@ -1993,6 +2009,102 @@ export interface ReasonStats {
   reason: string
   trades: number
   win_rate: number
+}
+
+export interface ReplayCommand {
+  action: "pause" | "resume" | "speed" | "step" | "stop"
+  command_id: string
+  expected_revision: number
+  market_ms?: number
+  rate?: number
+}
+
+export interface ReplayDataset {
+  coverage_end_utc: string | null
+  coverage_start_utc: string | null
+  dataset_id: string
+  end_day: string
+  error: string | null
+  manifest_path: string | null
+  start_day: string
+  state: "preparing" | "ready" | "failed"
+  symbol: string
+}
+
+export interface ReplayDatasetRequest {
+  end_day: string
+  start_day: string
+  symbol: string
+  symbol_spec: { commission_per_contract?: string; description?: string; digits: number; margin_per_contract: string; point: number; slippage_ticks?: number; trade_contract_size: number; volume_max: number; volume_min: number; volume_step: number }
+}
+
+export interface ReplayJournalEntry {
+  generation: string
+  intent_id: string | null
+  kind: "command" | "ingress" | "scheduled" | "broker_outcome" | "visibility" | "cursor"
+  market_time_us: number
+  payload: Record<string, unknown>
+  payload_hash: string
+  priority: number
+  seq: number
+}
+
+export interface ReplayJournalPage {
+  entries: Array<{ kind: string; market_time_utc: string; payload: Record<string, unknown>; payload_hash: string; seq: number }>
+  next_after_seq: number | null
+}
+
+export interface ReplayOverview {
+  last_error: string | null
+  phase: "idle" | "starting" | "ready" | "stopping" | "failed"
+  run: Record<string, unknown> | null
+  terminal_running: boolean
+}
+
+export interface ReplayRunConfig {
+  account: { currency: string; login: number }
+  end_utc: string
+  initial_balance: string
+  latency?: { broker_accept_ms?: number; broker_execution_ms?: number; broker_response_ms?: number; market_data_ms?: number; order_transport_ms?: number }
+  limits: { max_journal_bytes: number; max_queued_events: number }
+  manifest_path: string
+  rate?: number
+  start_utc: string
+  symbols: Array<string>
+  warmup_start_utc?: string | null
+}
+
+export interface ReplayRunState {
+  canonical_cursor_utc: string
+  config_hash: string
+  dataset_checksums: Array<string>
+  generation: string
+  lag_ms: number
+  last_error: string | null
+  outstanding_intents: number
+  queue_depth: number
+  rate: number
+  revision: number
+  run_id: string
+  source_coverage?: { coverage_end_utc: string; coverage_start_utc: string; symbols: Array<string> }
+  state: "prepared" | "paused" | "running" | "completed" | "stopped" | "failed"
+  visible_cursor_utc: string
+}
+
+export interface ReplayStartRequest {
+  account: { currency: string; login: number }
+  dataset_id: string
+  end_utc: string
+  initial_balance: string
+  latency?: { broker_accept_ms?: number; broker_execution_ms?: number; broker_response_ms?: number; market_data_ms?: number; order_transport_ms?: number }
+  rate?: number
+  start_utc: string
+  warmup_start_utc?: string | null
+}
+
+export interface ReplayTickStoreSymbol {
+  days: Array<string>
+  symbol: string
 }
 
 export interface ResearchCollectionSummary {

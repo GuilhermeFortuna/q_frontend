@@ -716,3 +716,30 @@ export function StrategyBuilderIcon({ className }: DockIconProps) {
     </svg>
   )
 }
+
+export function ReplayIcon({ className }: DockIconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn('h-6 w-6 overflow-visible', className)}
+      aria-hidden="true"
+    >
+      <path
+        d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"
+        stroke="#cfab6c"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4.2 3.8v3.4h3.4"
+        stroke="#cfab6c"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M10 8.6v6.8l5.6-3.4L10 8.6Z" fill="#f5d08f" />
+    </svg>
+  )
+}
