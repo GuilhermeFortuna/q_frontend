@@ -26,6 +26,7 @@ const CONFIG = {
   strategy_version_id: MOCK_STRATEGY_VERSION_ID,
   strategy_params: { range_bars: 12, enter_after: '10:00', use_filter: true },
   day_trade: false,
+  research_data_mode: 'ticks' as const,
 }
 
 describe('BacktestHistoryPanel strategy-file runs', () => {
@@ -94,6 +95,7 @@ describe('BacktestHistoryPanel strategy-file runs', () => {
     const request = onReRun.mock.calls[0]![0] as Record<string, unknown>
     expect(request.strategy_version_id).toBe(MOCK_STRATEGY_VERSION_ID)
     expect(request.strategy).toBeUndefined()
+    expect(request.research_data_mode).toBe('ticks')
     expect(within(document.body).queryByText(/Strategy file · 3f9a1c0d/)).toBeInTheDocument()
   })
 })

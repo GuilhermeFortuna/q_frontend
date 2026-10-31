@@ -63,6 +63,7 @@ import { partitionStrategyParamSpecs } from '@/workspaces/strategy/exitWorkbench
 import type { StrategyFile } from '../../../contracts/api'
 
 export type BacktestEngine = 'candle' | 'tick'
+export type ResearchDataMode = 'bars' | 'ticks'
 
 export const DISPLAY_TIMEFRAME_OPTIONS = ['M1', 'M5', 'M10', 'M15', 'H1', 'H2', 'H4'] as const
 
@@ -94,6 +95,8 @@ export type BacktestConfigFields = {
   tickFlags: 'all' | 'trade'
   /** Only meaningful for MACrossoverMLFilter; omitted from every other request. */
   mlFilter?: MlFilterFormState
+  /** Market data for a strategy-file run, independent of the engine selector. */
+  researchDataMode?: ResearchDataMode
   /** A strategy file in the stack's strategy directory, by id; when set, the run uses it. */
   strategyFileId?: string | null
   /** Parameter values of the selected strategy file, in their wire form. */
@@ -119,6 +122,7 @@ export type BacktestConfigSetters = {
   setEngine: (value: BacktestEngine) => void
   setDisplayTimeframe: (value: string) => void
   setTickFlags: (value: 'all' | 'trade') => void
+  setResearchDataMode: (value: ResearchDataMode) => void
   selectStrategyFile: (id: string) => void
   handleStrategyFileParamChange: (name: string, value: StrategyParamValue) => void
   handleEngineChange: (nextEngine: BacktestEngine) => void
@@ -185,6 +189,7 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
     mlFilter,
     strategyFileId,
     strategyFileParams,
+    researchDataMode = 'bars',
   } = fields
 
   const common = {
@@ -218,6 +223,7 @@ export function buildBacktestRequest(fields: BacktestConfigFields): BacktestRequ
     return {
       ...common,
       strategy_file: strategyFileId,
+      research_data_mode: researchDataMode,
       strategy_params: strategyFileParams ?? {},
       exit_params: {},
     }
@@ -295,6 +301,7 @@ export function useBacktestConfig() {
   const [authoringError, setAuthoringError] = useState<string | null>(null)
   const [mlFilterForm, setMlFilterForm] = useState<MlFilterFormState>(defaultMlFilterFormState)
   const [mlFilterBaselineError, setMlFilterBaselineError] = useState<string | null>(null)
+  const [researchDataMode, setResearchDataMode] = useState<ResearchDataMode>('bars')
   const [strategyFileId, setStrategyFileId] = useState<string | null>(null)
   const [strategyFileParams, setStrategyFileParams] = useState<Record<string, StrategyParamValue>>(
     {},
@@ -615,6 +622,7 @@ export function useBacktestConfig() {
       setEngine('candle')
       setEntries([])
       setStrategyFileId(file.id)
+      setResearchDataMode(file.requires_tick_data ? 'ticks' : 'bars')
       setStrategyFileParams(
         Object.fromEntries(
           file.parameters.map((spec) => [spec.name, spec.default as StrategyParamValue]),
@@ -775,6 +783,7 @@ export function useBacktestConfig() {
     tickFlags,
     strategyFileId,
     strategyFileParams,
+    researchDataMode: selectedStrategyFile?.requires_tick_data ? 'ticks' : researchDataMode,
   }
 
   const mlFilterValidation = useMemo<MlFilterValidation>(() => {
@@ -883,6 +892,7 @@ export function useBacktestConfig() {
     mlFilter: mlFilterForm,
     strategyFileId,
     strategyFileParams,
+    researchDataMode: selectedStrategyFile?.requires_tick_data ? 'ticks' : researchDataMode,
   }
 
   const setters: BacktestConfigSetters = {
@@ -908,6 +918,7 @@ export function useBacktestConfig() {
     handleStrategyChange,
     handleParamChange,
     selectStrategyFile,
+    setResearchDataMode,
     handleStrategyFileParamChange,
     addEntry,
     removeEntry,

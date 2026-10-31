@@ -1,3 +1,4 @@
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle'
 import { Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -210,6 +211,27 @@ export function StrategyStudio({ config }: StrategyStudioProps) {
               <h5 className="text-silver-400 mb-3 text-xs font-semibold tracking-wide uppercase">
                 {selectedStrategyFile.label} · strategy file
               </h5>
+              <div className="mb-4 space-y-2">
+                <p className="text-silver-300 text-xs font-semibold">Backtest data</p>
+                <SegmentedToggle
+                  aria-label="Backtest data"
+                  options={[
+                    {
+                      value: 'bars',
+                      label: 'Bars',
+                      disabled: selectedStrategyFile.requires_tick_data,
+                    },
+                    { value: 'ticks', label: 'Ticks' },
+                  ]}
+                  value={fields.researchDataMode ?? 'bars'}
+                  onChange={setters.setResearchDataMode}
+                />
+                <p className="text-silver-400 text-xs leading-relaxed" role="status">
+                  {fields.researchDataMode === 'ticks'
+                    ? `${selectedStrategyFile.requires_tick_data ? 'This strategy requires ticks. ' : ''}Missing ticks are downloaded automatically. Candles and order fills use the same tick history. Only completed sessions are included.`
+                    : 'Use provider candles. Select Ticks for tick indicators or tick-confirmed stop and limit orders.'}
+                </p>
+              </div>
               {selectedStrategyFile.parameters.length > 0 ? (
                 <StrategyParamFields
                   params={selectedStrategyFile.parameters}

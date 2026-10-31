@@ -522,3 +522,50 @@ describe('buildBacktestRequest for strategy files', () => {
     expect(payload.strategy).toBe('MACrossover')
   })
 })
+
+describe('strategy-file market data selection', () => {
+  it('sends the selected mode only for strategy files', () => {
+    expect(
+      buildBacktestRequest(
+        candleFields({ strategyFileId: 'session_breakout', researchDataMode: 'ticks' }),
+      ).research_data_mode,
+    ).toBe('ticks')
+    expect(
+      buildBacktestRequest(candleFields({ strategyFileId: 'session_breakout' })).research_data_mode,
+    ).toBe('bars')
+    expect(
+      buildBacktestRequest(candleFields({ researchDataMode: 'ticks' })).research_data_mode,
+    ).toBeUndefined()
+  })
+
+  it('defaults to Bars and permits explicit Ticks for priced orders', async () => {
+    const { result } = renderHook(() => useBacktestConfig(), { wrapper })
+    await waitFor(() => expect(result.current.strategyFiles.length).toBeGreaterThan(0))
+    const { act } = await import('@testing-library/react')
+    act(() => result.current.setters.selectStrategyFile('session_breakout'))
+    expect(result.current.fields.researchDataMode).toBe('bars')
+    act(() => result.current.setters.setResearchDataMode('ticks'))
+    expect(result.current.buildRequest().research_data_mode).toBe('ticks')
+  })
+
+  it('automatically selects Ticks for required hooks and prevents Bars', async () => {
+    const { mockStrategyFiles } = await import('@/mocks/strategyFiles')
+    server.use(
+      http.get('*/api/v1/strategy-files', () =>
+        HttpResponse.json({
+          strategy_files: mockStrategyFiles.strategy_files.map((file) => ({
+            ...file,
+            requires_tick_data: true,
+          })),
+        }),
+      ),
+    )
+    const { result } = renderHook(() => useBacktestConfig(), { wrapper })
+    await waitFor(() => expect(result.current.strategyFiles.length).toBeGreaterThan(0))
+    const { act } = await import('@testing-library/react')
+    act(() => result.current.setters.selectStrategyFile('session_breakout'))
+    expect(result.current.fields.researchDataMode).toBe('ticks')
+    act(() => result.current.setters.setResearchDataMode('bars'))
+    expect(result.current.buildRequest().research_data_mode).toBe('ticks')
+  })
+})

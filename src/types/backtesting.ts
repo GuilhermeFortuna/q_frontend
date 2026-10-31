@@ -71,6 +71,7 @@ export interface BacktestRequest {
   point_value?: number
   strategy?: string
   /** A strategy file in the stack's strategy directory, by id. Excludes strategy and entries. */
+  research_data_mode?: 'bars' | 'ticks'
   strategy_file?: string | null
   /** A frozen strategy version to re-run. Excludes strategy, entries and strategy_file. */
   strategy_version_id?: string | null

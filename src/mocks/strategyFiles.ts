@@ -30,6 +30,7 @@ export const mockStrategyFiles: StrategyFileListResponse = {
         { name: 'use_filter', label: 'Use filter', type: 'bool', default: true },
       ],
       uses_tick_hooks: false,
+      requires_tick_data: false,
     },
     {
       id: 'broken_breakout',
@@ -41,6 +42,7 @@ export const mockStrategyFiles: StrategyFileListResponse = {
       error: 'ImportError: No module named talib',
       parameters: [],
       uses_tick_hooks: false,
+      requires_tick_data: false,
     },
   ],
 }
