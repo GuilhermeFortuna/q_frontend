@@ -155,9 +155,13 @@ function ChartInner({
 
     setViewport({ startIndex: start, endIndex: end })
   }, [focusedTradeId, processed, trades, findBar, setViewport])
-  const { pricePanOffset, priceScaleFactor, resetPriceAxis, stretchPriceByPixels } = usePriceAxis(
-    String(processed.length),
-  )
+  const {
+    pricePanOffset,
+    priceScaleFactor,
+    resetPriceAxis,
+    panPriceByPixels,
+    stretchPriceByPixels,
+  } = usePriceAxis(String(processed.length))
   const viewportSlots = useMemo(
     () => buildViewportSlots(processed, viewport),
     [processed, viewport],
@@ -295,7 +299,13 @@ function ChartInner({
         )
         if (barDelta !== 0) {
           panBy(-barDelta)
-          panStart.current = { x: point.x, y: point.y }
+          panStart.current.x = point.x
+        }
+        const deltaY = point.y - panStart.current.y
+        if (deltaY !== 0) {
+          const [domainMin, domainMax] = scales.priceScale.domain()
+          panPriceByPixels(deltaY, layout.priceHeight, Math.abs(domainMax - domainMin))
+          panStart.current.y = point.y
         }
         return
       }
@@ -305,7 +315,7 @@ function ChartInner({
       setHoveredBar(bar || null)
       setMouseY(y)
     },
-    [panBy, scales, visibleBars],
+    [panBy, panPriceByPixels, scales, visibleBars, layout.priceHeight],
   )
 
   const handleMouseDown = useCallback((event: React.MouseEvent<SVGRectElement>) => {

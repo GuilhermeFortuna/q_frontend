@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { BacktestStrategyChart } from '@/components/backtests/BacktestStrategyChart'
@@ -106,6 +106,30 @@ describe('BacktestStrategyChart', () => {
     )
 
     expect(screen.getByText('DC')).toBeInTheDocument()
+  })
+
+  it('pans the price axis when the chart is dragged vertically', () => {
+    const response = getMockBacktestResponse(mockRequest)
+
+    const { container } = render(
+      <BacktestStrategyChart
+        bars={response.bars}
+        indicators={response.indicators}
+        trades={response.trades}
+        symbol={mockRequest.symbol}
+        timeframe={mockRequest.timeframe}
+      />,
+    )
+
+    const surface = container.querySelector('rect[pointer-events="all"]')
+    expect(surface).not.toBeNull()
+    const axisBefore = container.textContent
+
+    fireEvent.mouseDown(surface!, { button: 0, clientX: 300, clientY: 200 })
+    fireEvent.mouseMove(surface!, { clientX: 300, clientY: 240 })
+    fireEvent.mouseUp(surface!)
+
+    expect(container.textContent).not.toBe(axisBefore)
   })
 
   it('shows an empty state when bars are missing', () => {
