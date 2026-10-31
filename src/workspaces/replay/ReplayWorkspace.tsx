@@ -7,10 +7,8 @@ import {
 import { Callout } from '@/components/ui/Callout'
 import { Panel, PanelHeader } from '@/components/ui/Panel'
 import type { ReplayOverview, ReplayPhase } from '@/types/replay'
-import { ReplayDatasets } from '@/workspaces/replay/ReplayDatasets'
-import { ReplayRunForm } from '@/workspaces/replay/ReplayRunForm'
+import { ReplayStartForm } from '@/workspaces/replay/ReplayStartForm'
 import { ReplayRunPanel } from '@/workspaces/replay/ReplayRunPanel'
-import { useState } from 'react'
 
 const PHASE_LABEL: Record<ReplayPhase, string> = {
   idle: 'Stack idle',
@@ -48,7 +46,6 @@ export function ReplayUnavailable() {
 
 export function ReplayWorkspace() {
   const overview = useReplayOverview()
-  const [datasetId, setDatasetId] = useState('')
 
   if (overview.isPending) {
     return <p className="text-silver-400 p-6 text-sm">Loading replay status…</p>
@@ -94,16 +91,10 @@ export function ReplayWorkspace() {
       ) : null}
 
       {idle ? (
-        <>
-          <Panel className="space-y-4 p-4">
-            <PanelHeader title="1. Dataset" />
-            <ReplayDatasets selectedId={datasetId} onSelect={setDatasetId} />
-          </Panel>
-          <Panel className="space-y-4 p-4">
-            <PanelHeader title="2. Run" />
-            <ReplayRunForm datasetId={datasetId} />
-          </Panel>
-        </>
+        <Panel className="space-y-4 p-4">
+          <PanelHeader title="Start a replay" />
+          <ReplayStartForm />
+        </Panel>
       ) : (
         <ReplayRunPanel overview={data} pollMs={replayOverviewPollMs(data.phase)} />
       )}

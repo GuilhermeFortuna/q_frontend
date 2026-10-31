@@ -10,8 +10,10 @@ import {
   replayOverviewPollMs,
   useReplayCommand,
   useReplayJournal,
+  useStartReplay,
 } from '@/api/queries/replay'
 import { handlers } from '@/mocks/handlers'
+import { buildReplayPlan } from '@/workspaces/replay/replayControls'
 import { resetMockReplayState } from '@/mocks/replay'
 import { createTestProviders, createTestQueryClient } from '../testUtils'
 
@@ -135,5 +137,53 @@ describe('useReplayJournal', () => {
     await waitFor(() => expect(result.current.rows.map((row) => row.seq)).toEqual([0, 1, 2]))
     expect(calls).toBeGreaterThanOrEqual(1)
     expect(result.current.error).toBeNull()
+  })
+})
+
+describe('useStartReplay', () => {
+  const plan = buildReplayPlan({
+    symbol: 'WIN$N',
+    startDay: '2026-10-01',
+    endDay: '2026-10-02',
+    initialCapital: '5000.00',
+    pointValue: '0.20',
+    priceTick: '5',
+  }).plan
+
+  it('freezes the range, then starts the paused run on it', async () => {
+    const phases: string[] = []
+    const { result } = renderHook(() => useStartReplay(), { wrapper: wrapper() })
+    const overview = await act(() =>
+      result.current.mutateAsync({
+        freeze: plan!.freeze,
+        datasetId: plan!.datasetId,
+        run: plan!.run,
+        onPhase: (phase) => phases.push(phase),
+      }),
+    )
+    expect(phases).toEqual(['freezing', 'starting'])
+    expect(overview.phase).toBe('ready')
+    expect(overview.run?.state).toBe('prepared')
+  })
+
+  it('reuses a range that was already frozen', async () => {
+    const { result } = renderHook(() => useStartReplay(), { wrapper: wrapper() })
+    await act(() =>
+      result.current.mutateAsync({
+        freeze: plan!.freeze,
+        datasetId: plan!.datasetId,
+        run: plan!.run,
+      }),
+    )
+    // The stack is now ready; stop it so a second start is accepted, as the page would after shutdown.
+    await apiClient.post('/api/v1/replay/stack/stop')
+    const overview = await act(() =>
+      result.current.mutateAsync({
+        freeze: plan!.freeze,
+        datasetId: plan!.datasetId,
+        run: plan!.run,
+      }),
+    )
+    expect(overview.phase).toBe('ready')
   })
 })

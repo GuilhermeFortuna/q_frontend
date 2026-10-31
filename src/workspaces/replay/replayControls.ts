@@ -12,6 +12,15 @@ export const STEP_MAX_MINUTES = 1440
 export const EXCHANGE_OFFSET = '-03:00'
 export const EXCHANGE_TIMEZONE = 'America/Sao_Paulo'
 
+/**
+ * Login of the simulated demo account. The simulator reports it to the terminal and the launcher
+ * allowlists it for execution, so the operator does not choose it.
+ */
+export const REPLAY_ACCOUNT_LOGIN = 900001
+
+/** Largest span of session days one dataset can cover (the contract allows 32 inclusive days). */
+const MAX_SPAN_DAYS = 31
+
 export type TransportState = {
   pause: boolean
   resume: boolean
@@ -60,10 +69,7 @@ export function parseStepMarketMs(text: string): number | null {
   return minutes * 60_000
 }
 
-/**
- * Exchange-local wall time to a UTC ISO instant; null when malformed. Accepts `YYYY-MM-DD HH:mm`
- * (the form's format, with a one- or two-digit hour), or the ISO `T` separator, with optional seconds.
- */
+/** Exchange-local wall time to a UTC ISO instant; null when malformed. */
 export function exchangeLocalToUtc(local: string): string | null {
   const match = /^(\d{4}-\d{2}-\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(local.trim())
   if (!match) return null
@@ -73,166 +79,127 @@ export function exchangeLocalToUtc(local: string): string | null {
   return moment.toISOString().replace('.000Z', 'Z')
 }
 
-export type FreezeForm = {
+/** The day after an ISO calendar day, as `YYYY-MM-DD`. */
+export function nextDay(day: string): string {
+  const moment = new Date(`${day}T00:00:00Z`)
+  moment.setUTCDate(moment.getUTCDate() + 1)
+  return moment.toISOString().slice(0, 10)
+}
+
+/** Dataset identifier the Research API derives from symbol and session days. */
+export function datasetIdFor(symbol: string, startDay: string, endDay: string): string {
+  const clean = symbol.toLowerCase().replace(/[^a-z0-9]/g, '')
+  return `${clean}-${startDay.replace(/-/g, '')}-${endDay.replace(/-/g, '')}`
+}
+
+export type ReplayForm = {
   symbol: string
   startDay: string
   endDay: string
-  point: string
-  digits: string
-  volumeMin: string
-  volumeStep: string
-  volumeMax: string
-  contractSize: string
-  marginPerContract: string
-  commissionPerContract: string
-  description: string
+  initialCapital: string
+  pointValue: string
+  priceTick: string
 }
 
-export type FormErrors<T extends string> = Partial<Record<T | 'general', string>>
+export const EMPTY_REPLAY_FORM: ReplayForm = {
+  symbol: 'WIN$N',
+  startDay: '',
+  endDay: '',
+  initialCapital: '100000.00',
+  pointValue: '',
+  priceTick: '',
+}
+
+export type ReplayPlan = {
+  /** Freezes the TickStore range; the dataset is reused when it already exists. */
+  freeze: ReplayDatasetRequest
+  /** Run request without the dataset identifier, which comes from the freeze. */
+  run: Omit<ReplayStartRequest, 'dataset_id'>
+  datasetId: string
+}
+
+export type FormErrors = Partial<Record<keyof ReplayForm, string>>
 
 const MONEY = /^\d+(\.\d+)?$/
 
-function positiveNumber(text: string): number | null {
+function positive(text: string): number | null {
   const value = Number(text.trim())
   return text.trim() !== '' && Number.isFinite(value) && value > 0 ? value : null
 }
 
-export function buildFreezeRequest(form: FreezeForm): {
-  body: ReplayDatasetRequest | null
-  errors: FormErrors<keyof FreezeForm>
-} {
-  const errors: FormErrors<keyof FreezeForm> = {}
+/**
+ * Turns the form into the two requests the Research API needs. The instrument specification the
+ * simulator requires is derived here: the point value is the contract size, the price tick sets
+ * the digits, and margin, commission and slippage are zero.
+ */
+export function buildReplayPlan(form: ReplayForm): { plan: ReplayPlan | null; errors: FormErrors } {
+  const errors: FormErrors = {}
   const symbol = form.symbol.trim()
   if (!symbol) errors.symbol = 'Enter the TickStore symbol, for example WIN$N.'
-  if (!form.startDay || !form.endDay) errors.startDay = 'Choose the first and last session days.'
-  else if (form.endDay < form.startDay) errors.endDay = 'The last day is before the first day.'
-  const point = positiveNumber(form.point)
-  if (point === null) errors.point = 'Point must be a positive number.'
-  const digits = Number(form.digits)
-  if (!Number.isInteger(digits) || digits < 0 || digits > 12)
-    errors.digits = 'Digits must be 0 to 12.'
-  const volumeMin = positiveNumber(form.volumeMin)
-  if (volumeMin === null) errors.volumeMin = 'Minimum volume must be positive.'
-  const volumeStep = positiveNumber(form.volumeStep)
-  if (volumeStep === null) errors.volumeStep = 'Volume step must be positive.'
-  const volumeMax = positiveNumber(form.volumeMax)
-  if (volumeMax === null) errors.volumeMax = 'Maximum volume must be positive.'
-  const contractSize = positiveNumber(form.contractSize)
-  if (contractSize === null) errors.contractSize = 'Contract size must be positive.'
-  if (!MONEY.test(form.marginPerContract.trim())) {
-    errors.marginPerContract = 'Margin is a decimal amount such as 1500.00.'
-  }
-  const commission = form.commissionPerContract.trim() || '0'
-  if (!MONEY.test(commission)) errors.commissionPerContract = 'Commission is a decimal amount.'
-
-  if (Object.keys(errors).length > 0) return { body: null, errors }
-  return {
-    body: {
-      symbol,
-      start_day: form.startDay,
-      end_day: form.endDay,
-      symbol_spec: {
-        description: form.description.trim(),
-        point: point as number,
-        digits,
-        volume_min: volumeMin as number,
-        volume_step: volumeStep as number,
-        volume_max: volumeMax as number,
-        trade_contract_size: contractSize as number,
-        margin_per_contract: form.marginPerContract.trim(),
-        commission_per_contract: commission,
-        slippage_ticks: 0,
-      },
-    },
-    errors,
-  }
-}
-
-/**
- * Login of the simulated demo account. The simulator reports it to the terminal and the launcher
- * allowlists it for execution, so the operator does not choose it. Any positive whole number works.
- */
-export const REPLAY_ACCOUNT_LOGIN = 900001
-
-export type RunForm = {
-  datasetId: string
-  startLocal: string
-  endLocal: string
-  warmupLocal: string
-  initialBalance: string
-  currency: string
-  marketDataMs: string
-  orderTransportMs: string
-  brokerAcceptMs: string
-  brokerExecutionMs: string
-  brokerResponseMs: string
-  rate: string
-}
-
-function latencyValue(text: string): number | null {
-  const trimmed = text.trim() === '' ? '0' : text.trim()
-  if (!/^\d+$/.test(trimmed)) return null
-  return Number(trimmed)
-}
-
-export function buildStartRequest(form: RunForm): {
-  body: ReplayStartRequest | null
-  errors: FormErrors<keyof RunForm>
-} {
-  const errors: FormErrors<keyof RunForm> = {}
-  if (!form.datasetId) errors.datasetId = 'Choose a ready dataset or freeze one first.'
-  const start = exchangeLocalToUtc(form.startLocal)
-  if (!start) errors.startLocal = 'Enter the start as YYYY-MM-DD HH:mm (exchange time).'
-  const end = exchangeLocalToUtc(form.endLocal)
-  if (!end) errors.endLocal = 'Enter the end as YYYY-MM-DD HH:mm (exchange time).'
-  if (start && end && Date.parse(end) <= Date.parse(start)) {
-    errors.endLocal = 'The end must be after the start (the interval excludes the end).'
-  }
-  let warmup: string | null = null
-  if (form.warmupLocal.trim() !== '') {
-    warmup = exchangeLocalToUtc(form.warmupLocal.trim())
-    if (!warmup) errors.warmupLocal = 'Enter the warmup start as YYYY-MM-DD HH:mm (exchange time).'
-    else if (start && Date.parse(warmup) >= Date.parse(start)) {
-      errors.warmupLocal = 'Warmup must begin before the start.'
+  if (!form.startDay) errors.startDay = 'Choose the first day.'
+  if (!form.endDay) errors.endDay = 'Choose the last day.'
+  if (form.startDay && form.endDay) {
+    if (form.endDay < form.startDay) errors.endDay = 'The last day is before the first day.'
+    else if (
+      Math.round((Date.parse(form.endDay) - Date.parse(form.startDay)) / 86_400_000) > MAX_SPAN_DAYS
+    ) {
+      errors.endDay = `Choose at most ${MAX_SPAN_DAYS + 1} days.`
     }
   }
-  if (!MONEY.test(form.initialBalance.trim()) || Number(form.initialBalance) <= 0) {
-    errors.initialBalance = 'Initial balance is a positive decimal amount.'
+  if (!MONEY.test(form.initialCapital.trim()) || Number(form.initialCapital) <= 0) {
+    errors.initialCapital = 'Initial capital is a positive amount, such as 100000.00.'
   }
-  if (!/^[A-Z]{3}$/.test(form.currency.trim()))
-    errors.currency = 'Currency is a three-letter code such as BRL.'
-  const latency = {
-    market_data_ms: latencyValue(form.marketDataMs),
-    order_transport_ms: latencyValue(form.orderTransportMs),
-    broker_accept_ms: latencyValue(form.brokerAcceptMs),
-    broker_execution_ms: latencyValue(form.brokerExecutionMs),
-    broker_response_ms: latencyValue(form.brokerResponseMs),
-  }
-  if (Object.values(latency).some((value) => value === null)) {
-    errors.marketDataMs = 'Latencies are whole milliseconds, zero or more.'
-  }
-  const rate = parseSpeed(form.rate)
-  if (rate === null) errors.rate = `Initial speed is between ${SPEED_MIN} and ${SPEED_MAX}.`
+  const pointValue = positive(form.pointValue)
+  if (pointValue === null) errors.pointValue = 'Point value is a positive number (R$ per point).'
+  const tick = positive(form.priceTick)
+  if (tick === null) errors.priceTick = 'Price tick is a positive number (the smallest price step).'
+  const digits = tick === null ? 0 : (String(form.priceTick).trim().split('.')[1] ?? '').length
+  if (digits > 12) errors.priceTick = 'Price tick has too many decimal places.'
 
-  if (Object.keys(errors).length > 0 || !start || !end || rate === null)
-    return { body: null, errors }
+  if (Object.keys(errors).length > 0 || pointValue === null || tick === null) {
+    return { plan: null, errors }
+  }
+  const start = exchangeLocalToUtc(`${form.startDay}T00:00`)
+  const end = exchangeLocalToUtc(`${nextDay(form.endDay)}T00:00`)
+  if (!start || !end) return { plan: null, errors: { startDay: 'The dates are not valid.' } }
+
+  const datasetId = datasetIdFor(symbol, form.startDay, form.endDay)
   return {
-    body: {
-      dataset_id: form.datasetId,
-      start_utc: start,
-      end_utc: end,
-      warmup_start_utc: warmup,
-      initial_balance: form.initialBalance.trim(),
-      account: { login: REPLAY_ACCOUNT_LOGIN, currency: form.currency.trim() },
-      latency: {
-        market_data_ms: latency.market_data_ms as number,
-        order_transport_ms: latency.order_transport_ms as number,
-        broker_accept_ms: latency.broker_accept_ms as number,
-        broker_execution_ms: latency.broker_execution_ms as number,
-        broker_response_ms: latency.broker_response_ms as number,
-      },
-      rate,
-    },
     errors,
+    plan: {
+      datasetId,
+      freeze: {
+        symbol,
+        start_day: form.startDay,
+        end_day: form.endDay,
+        symbol_spec: {
+          description: symbol,
+          point: tick,
+          digits,
+          volume_min: 1,
+          volume_step: 1,
+          volume_max: 100,
+          trade_contract_size: pointValue,
+          margin_per_contract: '0',
+          commission_per_contract: '0',
+          slippage_ticks: 0,
+        },
+      },
+      run: {
+        start_utc: start,
+        end_utc: end,
+        warmup_start_utc: null,
+        initial_balance: form.initialCapital.trim(),
+        account: { login: REPLAY_ACCOUNT_LOGIN, currency: 'BRL' },
+        latency: {
+          market_data_ms: 0,
+          order_transport_ms: 0,
+          broker_accept_ms: 0,
+          broker_execution_ms: 0,
+          broker_response_ms: 0,
+        },
+        rate: 1,
+      },
+    },
   }
 }

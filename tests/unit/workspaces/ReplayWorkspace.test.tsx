@@ -57,22 +57,28 @@ describe('ReplayWorkspace', () => {
     expect(screen.queryByRole('button', { name: /start replay stack/i })).not.toBeInTheDocument()
   })
 
-  it('an idle stack offers dataset selection and the run form', async () => {
+  it('an idle stack offers the simple start form only', async () => {
     renderWithQueryClient(<ReplayWorkspace />)
-    expect(await screen.findByRole('button', { name: /start replay stack/i })).toBeInTheDocument()
-    expect(screen.getByText('1. Dataset')).toBeInTheDocument()
-    expect(screen.getByText(/Times are America\/Sao_Paulo wall time/)).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Start replay' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Symbol')).toBeInTheDocument()
+    expect(screen.getByLabelText('First day')).toBeInTheDocument()
+    expect(screen.getByLabelText('Last day')).toBeInTheDocument()
+    expect(screen.getByLabelText('Initial capital (BRL)')).toBeInTheDocument()
+    expect(screen.getByLabelText(/Point value/)).toBeInTheDocument()
+    expect(screen.queryByText(/Freeze a new dataset/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/latency/i)).not.toBeInTheDocument()
   })
 
-  it('lets the operator type the run start and end in exchange time', async () => {
+  it('lets the operator type the initial capital and point value', async () => {
     renderWithQueryClient(<ReplayWorkspace />)
     const user = userEvent.setup()
-    const start = await screen.findByLabelText('Start (inclusive)')
-    await user.type(start, '2026-10-01 09:00')
-    expect(start).toHaveValue('2026-10-01 09:00')
-    const end = screen.getByLabelText('End (exclusive)')
-    await user.type(end, '2026-10-01 10:30')
-    expect(end).toHaveValue('2026-10-01 10:30')
+    const capital = await screen.findByLabelText('Initial capital (BRL)')
+    await user.clear(capital)
+    await user.type(capital, '25000.00')
+    expect(capital).toHaveValue('25000.00')
+    const point = screen.getByLabelText(/Point value/)
+    await user.type(point, '0.20')
+    expect(point).toHaveValue('0.20')
   })
 
   it('a paused run enables step and resume, and not pause', async () => {

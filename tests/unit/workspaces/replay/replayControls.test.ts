@@ -2,15 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import type { ReplayOverview, ReplayRun } from '@/types/replay'
 import {
-  buildFreezeRequest,
-  buildStartRequest,
+  buildReplayPlan,
   exchangeLocalToUtc,
-  REPLAY_ACCOUNT_LOGIN,
+  nextDay,
   parseSpeed,
   parseStepMarketMs,
+  REPLAY_ACCOUNT_LOGIN,
   transportState,
-  type FreezeForm,
-  type RunForm,
+  type ReplayForm,
 } from '@/workspaces/replay/replayControls'
 import { formatExchangeTime, formatUtcTime } from '@/workspaces/replay/replayTime'
 
@@ -123,35 +122,46 @@ describe('input parsing', () => {
   })
 })
 
-const RUN_FORM: RunForm = {
-  datasetId: 'wdon-20261001-20261001',
-  startLocal: '2026-10-01T09:00',
-  endLocal: '2026-10-01T10:00',
-  warmupLocal: '',
-  initialBalance: '100000.00',
-  currency: 'BRL',
-  marketDataMs: '0',
-  orderTransportMs: '50',
-  brokerAcceptMs: '0',
-  brokerExecutionMs: '0',
-  brokerResponseMs: '0',
-  rate: '1',
+const FORM: ReplayForm = {
+  symbol: 'WIN$N',
+  startDay: '2026-10-01',
+  endDay: '2026-10-02',
+  initialCapital: '5000.00',
+  pointValue: '0.20',
+  priceTick: '5',
 }
 
-describe('buildStartRequest', () => {
-  it('builds the contract body with UTC times and integer latency', () => {
-    const { body, errors } = buildStartRequest(RUN_FORM)
+describe('buildReplayPlan', () => {
+  it('derives the freeze and run requests from the simple form', () => {
+    const { plan, errors } = buildReplayPlan(FORM)
     expect(errors).toEqual({})
-    expect(body).toEqual({
-      dataset_id: 'wdon-20261001-20261001',
-      start_utc: '2026-10-01T12:00:00Z',
-      end_utc: '2026-10-01T13:00:00Z',
+    expect(plan?.datasetId).toBe('winn-20261001-20261002')
+    expect(plan?.freeze).toEqual({
+      symbol: 'WIN$N',
+      start_day: '2026-10-01',
+      end_day: '2026-10-02',
+      symbol_spec: {
+        description: 'WIN$N',
+        point: 5,
+        digits: 0,
+        volume_min: 1,
+        volume_step: 1,
+        volume_max: 100,
+        trade_contract_size: 0.2,
+        margin_per_contract: '0',
+        commission_per_contract: '0',
+        slippage_ticks: 0,
+      },
+    })
+    expect(plan?.run).toEqual({
+      start_utc: '2026-10-01T03:00:00Z',
+      end_utc: '2026-10-03T03:00:00Z',
       warmup_start_utc: null,
-      initial_balance: '100000.00',
+      initial_balance: '5000.00',
       account: { login: REPLAY_ACCOUNT_LOGIN, currency: 'BRL' },
       latency: {
         market_data_ms: 0,
-        order_transport_ms: 50,
+        order_transport_ms: 0,
         broker_accept_ms: 0,
         broker_execution_ms: 0,
         broker_response_ms: 0,
@@ -160,67 +170,39 @@ describe('buildStartRequest', () => {
     })
   })
 
-  it('refuses an end before the start and a missing dataset with reasons', () => {
-    const { body, errors } = buildStartRequest({
-      ...RUN_FORM,
-      datasetId: '',
-      endLocal: '2026-10-01T08:00',
-    })
-    expect(body).toBeNull()
-    expect(errors.datasetId).toMatch(/dataset/i)
-    expect(errors.endLocal).toMatch(/after the start/)
+  it('takes the digits of the price tick from its decimals', () => {
+    const { plan } = buildReplayPlan({ ...FORM, symbol: 'WDO$N', priceTick: '0.5' })
+    expect(plan?.freeze.symbol_spec.point).toBe(0.5)
+    expect(plan?.freeze.symbol_spec.digits).toBe(1)
   })
 
-  it('refuses a malformed currency and out-of-range speed', () => {
-    const { body, errors } = buildStartRequest({
-      ...RUN_FORM,
-      currency: 'real',
-      rate: '12',
+  it('reports each missing or invalid field', () => {
+    const { plan, errors } = buildReplayPlan({
+      ...FORM,
+      symbol: '',
+      startDay: '',
+      initialCapital: '0',
+      pointValue: 'x',
+      priceTick: '',
     })
-    expect(body).toBeNull()
-    expect(errors.currency).toBeDefined()
-    expect(errors.rate).toBeDefined()
+    expect(plan).toBeNull()
+    expect(errors.symbol).toBeDefined()
+    expect(errors.startDay).toBeDefined()
+    expect(errors.initialCapital).toBeDefined()
+    expect(errors.pointValue).toBeDefined()
+    expect(errors.priceTick).toBeDefined()
   })
 
-  it('requires warmup to begin before the start', () => {
-    const { errors } = buildStartRequest({ ...RUN_FORM, warmupLocal: '2026-10-01T09:30' })
-    expect(errors.warmupLocal).toMatch(/before the start/)
+  it('refuses a last day before the first day and a span beyond the contract', () => {
+    expect(buildReplayPlan({ ...FORM, endDay: '2026-09-30' }).errors.endDay).toMatch(/before/)
+    expect(buildReplayPlan({ ...FORM, endDay: '2026-11-15' }).errors.endDay).toMatch(/at most/)
   })
 })
 
-const FREEZE_FORM: FreezeForm = {
-  symbol: 'WIN$N',
-  startDay: '2026-10-01',
-  endDay: '2026-10-01',
-  point: '5',
-  digits: '0',
-  volumeMin: '1',
-  volumeStep: '1',
-  volumeMax: '100',
-  contractSize: '1',
-  marginPerContract: '1500.00',
-  commissionPerContract: '',
-  description: 'mini index',
-}
-
-describe('buildFreezeRequest', () => {
-  it('builds the freeze body with the instrument specification', () => {
-    const { body, errors } = buildFreezeRequest(FREEZE_FORM)
-    expect(errors).toEqual({})
-    expect(body?.symbol_spec.point).toBe(5)
-    expect(body?.symbol_spec.commission_per_contract).toBe('0')
-    expect(body?.start_day).toBe('2026-10-01')
-  })
-
-  it('reports an inverted day range and a non-positive point', () => {
-    const { body, errors } = buildFreezeRequest({
-      ...FREEZE_FORM,
-      endDay: '2026-09-30',
-      point: '0',
-    })
-    expect(body).toBeNull()
-    expect(errors.endDay).toMatch(/before/)
-    expect(errors.point).toBeDefined()
+describe('date helpers', () => {
+  it('finds the next day across month ends', () => {
+    expect(nextDay('2026-10-31')).toBe('2026-11-01')
+    expect(nextDay('2026-02-28')).toBe('2026-03-01')
   })
 })
 

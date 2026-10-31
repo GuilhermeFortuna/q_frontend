@@ -7,7 +7,6 @@ import type {
   ReplayDataset,
   ReplayDatasetRequest,
   ReplayStartRequest,
-  ReplayTickStoreSymbol,
 } from '../../../contracts/api'
 import type {
   ReplayCommandAction,
@@ -23,7 +22,6 @@ export const replayKeys = {
   all: ['replay'] as const,
   overview: () => [...replayKeys.all, 'overview'] as const,
   datasets: () => [...replayKeys.all, 'datasets'] as const,
-  tickstore: () => [...replayKeys.all, 'tickstore'] as const,
 }
 
 /** True when the Research API does not serve replay routes (live API, or container mode). */
@@ -53,11 +51,6 @@ async function fetchDatasets(): Promise<ReplayDataset[]> {
   return data
 }
 
-async function fetchTickstore(): Promise<ReplayTickStoreSymbol[]> {
-  const { data } = await apiClient.get<ReplayTickStoreSymbol[]>('/api/v1/replay/tickstore')
-  return data
-}
-
 async function fetchJournalPage(afterSeq: number, limit: number): Promise<ReplayJournalPageView> {
   const { data } = await apiClient.get<ReplayJournalPageView>(
     '/api/v1/replay/runs/current/journal',
@@ -82,45 +75,62 @@ export function useReplayOverview() {
   })
 }
 
-export function useReplayDatasets() {
-  return useQuery({
-    queryKey: replayKeys.datasets(),
-    queryFn: fetchDatasets,
-    refetchInterval: (query) =>
-      query.state.data?.some((dataset) => dataset.state === 'preparing') ? 1000 : false,
-  })
+/** Pause between dataset status checks while a TickStore range is being frozen. */
+const FREEZE_POLL_MS = 1000
+/** Longest wait for a freeze before the page reports that it did not finish. */
+const FREEZE_TIMEOUT_MS = 10 * 60 * 1000
+
+/**
+ * Makes sure the dataset exists and is ready. A dataset that already exists (409) is reused; a
+ * freeze in progress is waited for; a failed freeze throws its reason.
+ */
+async function ensureReadyDataset(body: ReplayDatasetRequest, datasetId: string): Promise<void> {
+  try {
+    await apiClient.post<ReplayDataset>('/api/v1/replay/datasets', body)
+  } catch (error) {
+    if (!(isAxiosError(error) && error.response?.status === 409)) throw error
+  }
+  const deadline = Date.now() + FREEZE_TIMEOUT_MS
+  for (;;) {
+    const dataset = (await fetchDatasets()).find((item) => item.dataset_id === datasetId)
+    if (dataset?.state === 'ready') return
+    if (dataset?.state === 'failed') {
+      throw new Error(
+        `The TickStore range could not be frozen: ${dataset.error ?? 'unknown reason'}`,
+      )
+    }
+    if (Date.now() > deadline) throw new Error('Freezing the TickStore range took too long.')
+    await new Promise((resolve) => window.setTimeout(resolve, FREEZE_POLL_MS))
+  }
 }
 
-export function useReplayTickstore() {
-  return useQuery({
-    queryKey: replayKeys.tickstore(),
-    queryFn: fetchTickstore,
-    staleTime: 30_000,
-  })
-}
+export type ReplayStartPhase = 'freezing' | 'starting'
 
-export function useFreezeDataset() {
+/**
+ * Starts a replay from the simple form: freezes the TickStore range when needed, then starts the
+ * paused run on it. onPhase reports progress for the page.
+ */
+export function useStartReplay() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (body: ReplayDatasetRequest) => {
-      const { data } = await apiClient.post<ReplayDataset>('/api/v1/replay/datasets', body)
-      return data
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: replayKeys.datasets() })
-    },
-  })
-}
-
-export function useStartReplayRun() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (body: ReplayStartRequest) => {
-      const { data } = await apiClient.post<ReplayOverview>('/api/v1/replay/runs', body)
+    mutationFn: async (input: {
+      freeze: ReplayDatasetRequest
+      datasetId: string
+      run: Omit<ReplayStartRequest, 'dataset_id'>
+      onPhase?: (phase: ReplayStartPhase) => void
+    }) => {
+      input.onPhase?.('freezing')
+      await ensureReadyDataset(input.freeze, input.datasetId)
+      input.onPhase?.('starting')
+      const { data } = await apiClient.post<ReplayOverview>('/api/v1/replay/runs', {
+        ...input.run,
+        dataset_id: input.datasetId,
+      })
       return data
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: replayKeys.overview() })
+      void queryClient.invalidateQueries({ queryKey: replayKeys.datasets() })
     },
   })
 }
